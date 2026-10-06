@@ -11,6 +11,7 @@ import { expectNoA11yViolations } from "../../test/a11y"
 import { StoreCreateForm } from "./store-create-form"
 import {
   sampleColorPresets,
+  sampleOpeningTemplates,
   sampleStoreCategories,
   sampleStoreCreateValues,
 } from "./store.fixtures"
@@ -256,6 +257,59 @@ describe("StoreCreateForm", () => {
 
     renderForm()
     expect(screen.getByLabelText("Clique ou arraste a imagem aqui")).toBeDisabled()
+  })
+
+  describe("the home a shop opens with", () => {
+    const opening = { templates: sampleOpeningTemplates, state: "ready" as const }
+
+    it("offers the choice on the last step, folded away, and creates with none picked", async () => {
+      const { onSubmit } = renderForm({ defaultValues: filled, openingTemplates: opening })
+      await walkToEnd()
+
+      expect(screen.getByRole("heading", { name: "Página inicial" })).toBeInTheDocument()
+      expect(screen.getByText("Escolher outro modelo (opcional)").closest("details")).not.toHaveAttribute("open")
+      await userEvent.click(screen.getByRole("button", { name: "Criar loja" }))
+
+      expect(onSubmit.mock.calls[0]?.[0]).toMatchObject({ homeTemplate: "" })
+    })
+
+    it("hands the model picked over with the rest", async () => {
+      const { onSubmit } = renderForm({ defaultValues: filled, openingTemplates: opening })
+      await walkToEnd()
+
+      await userEvent.click(screen.getByText("Escolher outro modelo (opcional)"))
+      await userEvent.click(screen.getByRole("radio", { name: /Por categorias/ }))
+      await userEvent.click(screen.getByRole("button", { name: "Criar loja" }))
+
+      expect(onSubmit.mock.calls[0]?.[0]).toMatchObject({ homeTemplate: "por-categorias", slug: "doces-da-ana" })
+    })
+
+    it("offers a site none: it opens from its own model", async () => {
+      renderForm({ defaultValues: { ...filled, identity: { ...filled.identity, type: "INSTITUTIONAL" } }, openingTemplates: opening })
+      await walkToEnd()
+
+      expect(screen.queryByRole("heading", { name: "Página inicial" })).not.toBeInTheDocument()
+    })
+
+    it("offers none when the screen wired up no models", async () => {
+      renderForm({ defaultValues: filled })
+      await walkToEnd()
+
+      expect(screen.queryByRole("heading", { name: "Página inicial" })).not.toBeInTheDocument()
+    })
+
+    // The category only orders the models: it is the screen that asks, with what the form tells it.
+    it("tells the screen the type and the category as they are picked", async () => {
+      const onShopKindChange = vi.fn()
+      renderForm({ openingTemplates: opening, onShopKindChange })
+
+      await userEvent.type(screen.getByLabelText(/Nome da loja/), "D")
+      expect(onShopKindChange).not.toHaveBeenCalled()
+
+      await userEvent.click(screen.getByRole("combobox", { name: "Categoria" }))
+      await userEvent.click(await screen.findByRole("option", { name: sampleStoreCategories[0]!.name }))
+      expect(onShopKindChange).toHaveBeenLastCalledWith({ type: "ECOMMERCE", categoryId: sampleStoreCategories[0]!.id })
+    })
   })
 
   it("renders in English when the screen hands it the English dictionary", () => {

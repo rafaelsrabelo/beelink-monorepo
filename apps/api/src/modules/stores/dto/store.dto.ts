@@ -29,10 +29,10 @@ import type {
   StoreLayoutSettings,
   StoreLayoutType,
   StoreType,
-  UpdateStorePayload, PageTemplateId } from '@harness-monorepo/contracts';
+  UpdateStorePayload, OpeningTemplateId } from '@harness-monorepo/contracts';
 
 // App
-import { PAGE_TEMPLATE_IDS } from '../../page/page-templates.js';
+import { OPENING_TEMPLATE_IDS } from '../store-opening.js';
 import { IsStoreLayoutSettings } from '../store-layout-settings.schema.js';
 import {
   DESCRIPTION_MAX_LENGTH,
@@ -86,10 +86,13 @@ export class CreateStoreDto implements CreateStorePayload {
   @IsIn(STORE_TYPES)
   type!: StoreType;
 
-  @ApiPropertyOptional({ enum: PAGE_TEMPLATE_IDS, description: 'Read on a site only. Absent picks the first.' })
+  @ApiPropertyOptional({
+    enum: OPENING_TEMPLATE_IDS,
+    description: 'The model the home opens with. Absent — or one that is not for this type of store — a site opens with its first model and a shop with its default page.',
+  })
   @IsOptional()
-  @IsIn(PAGE_TEMPLATE_IDS)
-  template?: PageTemplateId;
+  @IsIn(OPENING_TEMPLATE_IDS)
+  template?: OpeningTemplateId;
 
   @ApiPropertyOptional({ nullable: true, maxLength: DESCRIPTION_MAX_LENGTH })
   @IsOptional()

@@ -28,6 +28,8 @@ export interface DesignPageListProps {
   /** Put a landing up, take it down, archive it or bring it back. */
   onStatus?: (id: string, status: DesignPageLink["status"]) => void
   onSettings?: (id: string) => void
+  /** Opens the gallery of whole-page models for a page. */
+  onTemplates?: (id: string) => void
   onCreate?: () => void
   /** A change being written: the menus wait for it. */
   busy?: boolean
@@ -52,6 +54,7 @@ export function DesignPageList({
   onNavigate,
   onStatus,
   onSettings,
+  onTemplates,
   onCreate,
   busy = false,
   error = null,
@@ -72,6 +75,7 @@ export function DesignPageList({
       {...(onNavigate ? { onNavigate } : {})}
       {...(onStatus ? { onStatus } : {})}
       {...(onSettings ? { onSettings } : {})}
+      {...(onTemplates ? { onTemplates } : {})}
       {...(linkComponent ? { linkComponent } : {})}
       messages={messages}
     />

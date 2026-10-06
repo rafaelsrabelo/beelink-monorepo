@@ -42,7 +42,7 @@ function band(id: string, position: number, components: ReturnType<typeof compon
  * A client that can only read, and only what a preview of a model with no product reads: a call to
  * anything else — a write above all — is a TypeError, and the test fails.
  */
-function build(found: { type?: 'ECOMMERCE' | 'INSTITUTIONAL'; kind?: 'HOME' | 'LANDING'; draft?: ReturnType<typeof band>[] } = {}) {
+function build(found: { type?: 'ECOMMERCE' | 'INSTITUTIONAL'; kind?: 'HOME' | 'LANDING'; draft?: ReturnType<typeof band>[]; category?: string } = {}) {
   const kind = found.kind ?? 'HOME';
   const row = {
     id: HOME,
@@ -62,7 +62,8 @@ function build(found: { type?: 'ECOMMERCE' | 'INSTITUTIONAL'; kind?: 'HOME' | 'L
     updatedAt: AT,
   };
   const prisma = {
-    store: { findUniqueOrThrow: vi.fn().mockResolvedValue({ type: found.type ?? 'INSTITUTIONAL', paymentMethods: [] }) },
+    store: { findUniqueOrThrow: vi.fn().mockResolvedValue({ type: found.type ?? 'INSTITUTIONAL', paymentMethods: [], category: found.category ? { slug: found.category } : null }) },
+    storeCategory: { findUnique: vi.fn().mockImplementation(({ where }: { where: { id: string } }) => Promise.resolve(where.id === 'cat-moda' ? { slug: 'moda' } : null)) },
     storePage: {
       findFirst: vi.fn().mockResolvedValue({ id: HOME, kind }),
       findUniqueOrThrow: vi
@@ -121,5 +122,62 @@ describe('a model previewed on a page', () => {
     await expect(build({ type: 'ECOMMERCE', kind: 'LANDING' }).service.preview('lessari', 'user-1', 'lancamento')).rejects.toMatchObject(
       refusal('PAGE_PRODUCT_REQUIRED'),
     );
+  });
+});
+
+describe('the models of a page that does not exist yet', () => {
+  const idsOf = (templates: readonly { id: string }[]) => templates.map((template) => template.id);
+
+  it('offers a shop the landings it can make, reading no page', async () => {
+    const { service, prisma } = build({ type: 'ECOMMERCE' });
+
+    expect(idsOf(await service.list('lessari', 'user-1', { kind: 'LANDING' }))).toEqual(['lancamento', 'promocao-relampago', 'colecao', 'em-branco']);
+    expect(prisma.storePage.findFirst).not.toHaveBeenCalled();
+  });
+
+  it('offers a site a blank landing only, and puts the ones suggested for the shop’s category first', async () => {
+    expect(idsOf(await build().service.list('asfalto-norte', 'user-1', { kind: 'LANDING' }))).toEqual(['em-branco']);
+
+    const suggested = await build({ type: 'ECOMMERCE', category: 'moda' }).service.list('lessari', 'user-1', { kind: 'LANDING' });
+    expect(suggested[0]).toMatchObject({ id: 'colecao', recommended: true });
+    expect(suggested).toHaveLength(4);
+  });
+
+  it('answers for the page named when both are sent', async () => {
+    const { service, prisma } = build({ type: 'ECOMMERCE', kind: 'HOME' });
+
+    expect(idsOf(await service.list('lessari', 'user-1', { pageId: HOME, kind: 'LANDING' }))).toEqual(['vitrine-com-capa', 'por-categorias', 'ofertas', 'catalogo-enxuto']);
+    expect(prisma.storePage.findFirst).toHaveBeenCalled();
+  });
+});
+
+describe('the models a store may open with, before it exists', () => {
+  const idsOf = (templates: readonly { id: string }[]) => templates.map((template) => template.id);
+
+  it('offers a shop the four of a home and a site its own, asking no shop', async () => {
+    const { service, stores, prisma } = build();
+
+    expect(idsOf(await service.opening({ storeType: 'ECOMMERCE' }))).toEqual(['vitrine-com-capa', 'por-categorias', 'ofertas', 'catalogo-enxuto']);
+    expect(idsOf(await service.opening({ storeType: 'INSTITUTIONAL' }))).toEqual(['servicos-b2b']);
+    expect(stores.ownedStoreId).not.toHaveBeenCalled();
+    expect(prisma.storeCategory.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('orders by the category picked in the form, and hides none', async () => {
+    const offered = await build().service.opening({ storeType: 'ECOMMERCE', categoryId: 'cat-moda' });
+
+    expect(offered.map((template) => [template.id, template.recommended])).toEqual([
+      ['vitrine-com-capa', true],
+      ['por-categorias', false],
+      ['ofertas', false],
+      ['catalogo-enxuto', false],
+    ]);
+  });
+
+  it('suggests nothing for a category that names no row, rather than refusing', async () => {
+    const offered = await build().service.opening({ storeType: 'ECOMMERCE', categoryId: 'gone' });
+
+    expect(offered).toHaveLength(4);
+    expect(offered.some((template) => template.recommended)).toBe(false);
   });
 });
