@@ -2,6 +2,7 @@
 import palettes from "./store-palettes.json"
 
 // Block
+import type { OpeningTemplateOption } from "./store-opening-template"
 import type { StoreCreateValues, StoreSettingsValues } from "./store-schemas"
 import type {
   StoreCategoryOption,
@@ -87,4 +88,13 @@ export const sampleStoreCreateValues: StoreCreateValues = {
   address: { zipCode: "", street: "", number: "", complement: "", neighborhood: "", city: "", state: "" },
   social: { whatsapp: "", instagram: "", tiktok: "", spotify: "", youtube: "" },
   colors: sampleStoreColors,
+  homeTemplate: "",
 }
+
+/** What the API offers a shop being created whose category suggests one model. */
+export const sampleOpeningTemplates: OpeningTemplateOption[] = [
+  { id: "por-categorias", recommended: true },
+  { id: "vitrine-com-capa", recommended: false },
+  { id: "ofertas", recommended: false },
+  { id: "catalogo-enxuto", recommended: false },
+]

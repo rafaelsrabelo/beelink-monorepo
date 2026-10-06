@@ -2,6 +2,7 @@
 import { Body, Controller, Get, HttpCode, Param, Post } from '@nestjs/common';
 import { RouteConfig } from '@nestjs/platform-fastify';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
@@ -21,6 +22,7 @@ import type { AuthenticatedUser } from '../auth/auth.decorators.js';
 // App
 import { env } from '../../shared/config/env.js';
 import { CurrentUser } from '../auth/auth.decorators.js';
+import { ApplyTemplateDto } from './dto/apply-template.dto.js';
 import { PublishPageDto } from './dto/page-versions.dto.js';
 import {
   PageDraftResponse,
@@ -29,6 +31,7 @@ import {
   PublishPageResultResponse,
 } from './dto/page-versions.response.js';
 import { PAGE_REVISION_DOC, PageRevision } from './page-revision.decorator.js';
+import { PageTemplateApplyService } from './page-template-apply.service.js';
 import { PageVersionsService } from './page-versions.service.js';
 
 /** The shop's write limit, built here for the reason `StoresController` gives. */
@@ -44,7 +47,10 @@ const writeRateLimit = { max: env.STORE_WRITE_RATE_LIMIT_MAX, timeWindow: env.ST
 @ApiConflictResponse({ description: 'PAGE_DRAFT_STALE — another tab wrote to this page since this one read it' })
 @Controller('stores/:storeSlug/pages/:pageId')
 export class PageVersionsController {
-  constructor(private readonly drafts: PageVersionsService) {}
+  constructor(
+    private readonly drafts: PageVersionsService,
+    private readonly templates: PageTemplateApplyService,
+  ) {}
 
   @Get('draft')
   @ApiOperation({ summary: 'The draft, hidden bands and blocks included, and whether it differs from what is served' })
@@ -97,6 +103,26 @@ export class PageVersionsController {
     @PageRevision() revision: number | undefined,
   ): Promise<PageDraftResponse> {
     return this.drafts.restore(storeSlug, current.id, pageId, versionId, revision);
+  }
+
+  @Post('apply-template')
+  @HttpCode(200)
+  @RouteConfig({ rateLimit: writeRateLimit })
+  @ApiOperation({ summary: 'A model’s bands written over the draft, which they replace. It is not published' })
+  @ApiOkResponse({ type: PageDraftResponse })
+  @ApiBadRequestResponse({
+    description:
+      'PAGE_TEMPLATE_UNAVAILABLE — not a model, or not one for this kind of store or page · PAGE_PRODUCT_REQUIRED · PAGE_PRODUCT_INVALID · PAGE_CATEGORY_REQUIRED · PAGE_CATEGORY_INVALID',
+  })
+  @ApiTooManyRequestsResponse({ description: 'RATE_LIMITED — too many writes from this address' })
+  applyTemplate(
+    @Param('storeSlug') storeSlug: string,
+    @Param('pageId') pageId: string,
+    @CurrentUser() current: AuthenticatedUser,
+    @Body() dto: ApplyTemplateDto,
+    @PageRevision() revision: number | undefined,
+  ): Promise<PageDraftResponse> {
+    return this.templates.apply(storeSlug, current.id, pageId, dto, revision);
   }
 
   @Get('problems')

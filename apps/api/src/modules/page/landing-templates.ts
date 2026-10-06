@@ -14,12 +14,6 @@ export const LANDING_TEMPLATE_IDS = [
   'em-branco',
 ] as const satisfies readonly LandingTemplateId[];
 
-/** The templates built around a product. "em-branco" is a heading and nothing to fill it from. */
-export const PRODUCT_TEMPLATE_IDS = ['lancamento', 'promocao-relampago', 'colecao'] as const satisfies readonly LandingTemplateId[];
-
-/** The one a site may open with: the others sell a product, and a site sells none. */
-export const SITE_TEMPLATE_IDS = ['em-branco'] as const satisfies readonly LandingTemplateId[];
-
 /** What a template fills its bands from, read from the shop before anything is written. */
 export interface LandingSubject {
   /** The page's own title, which "em-branco" opens with. */

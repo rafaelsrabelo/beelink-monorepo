@@ -108,11 +108,19 @@ export function defaultPage(paymentMethods: readonly PaymentMethod[]): SeededBan
       section: { width: 'FULL', position: 0, isActive: promises.length > 0 },
       components: [{ kind: 'BENEFITS', items: promises, position: 0, isActive: true }],
     },
-    {
-      section: { width: 'CONTAINED', position: 1, isActive: true },
-      components: [{ kind: 'PRODUCTS', display: 'RAIL', source: 'ALL', items: [], position: 0, isActive: true }],
-    },
+    openingShowcase(1),
   ];
+}
+
+/**
+ * The shelves a shop opens with: every product, as a rail. Also what a model applied to a shop's
+ * home is given when it brought no showcase of its own — the home of a shop that sells always has one.
+ */
+export function openingShowcase(position: number): SeededBand {
+  return {
+    section: { width: 'CONTAINED', position, isActive: true },
+    components: [{ kind: 'PRODUCTS', display: 'RAIL', source: 'ALL', items: [], position: 0, isActive: true }],
+  };
 }
 
 /**

@@ -514,12 +514,16 @@ export type PageErrorCode =
   | "PAGE_SLUG_INVALID"
   /** The home is the shop's own address and is always published: it is not patched as a page. */
   | "PAGE_HOME_FIXED"
-  /** A template this kind of shop cannot use: a site has no catalogue to launch a product from. */
+  /** A template this kind of shop or of page cannot use: a site has no catalogue to launch a product from. */
   | "PAGE_TEMPLATE_UNAVAILABLE"
   /** A template built around a product, sent without one. */
   | "PAGE_PRODUCT_REQUIRED"
   /** A product that is not this shop's. */
   | "PAGE_PRODUCT_INVALID"
+  /** A template built around a category, sent without one. */
+  | "PAGE_CATEGORY_REQUIRED"
+  /** A category that is not this shop's, or one it hides. */
+  | "PAGE_CATEGORY_INVALID"
   /** Another tab wrote to this page's draft since this one read it: reload before writing. */
   | "PAGE_DRAFT_STALE"
   /** An `x-page-revision` that is not a whole number. */
