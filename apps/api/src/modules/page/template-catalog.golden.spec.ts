@@ -3,6 +3,7 @@ import type { LandingTemplateId } from '@harness-monorepo/contracts';
 import type { TemplateSubject } from './template-catalog.js';
 
 // App
+import { EMPTY_SHOP } from './home-templates.js';
 import { promisesOf } from './page-seed.js';
 import { templateOf } from './template-catalog.js';
 
@@ -16,6 +17,7 @@ function subject(over: Partial<TemplateSubject> = {}): TemplateSubject {
     category: CATEGORY,
     promises: promisesOf(['PIX', 'MONEY']),
     saleEndsAt: '2026-09-30T02:00:00.000Z',
+    shop: EMPTY_SHOP,
     ...over,
   };
 }

@@ -21,6 +21,7 @@ const meta = {
     currentId: "lp-1",
     onStatus: fn(),
     onSettings: fn(),
+    onTemplates: fn(),
     onCreate: fn(),
   },
 } satisfies Meta<typeof DesignPageList>

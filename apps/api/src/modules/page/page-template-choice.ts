@@ -11,6 +11,7 @@ import type { PageTemplate, TemplateSubject } from './template-catalog.js';
 // App
 import { sectionInclude } from './page.mapper.js';
 import { arrangedDocument } from './page-template-arrange.js';
+import { shopStockOf } from './page-template-stock.js';
 import { pageError } from './page.rules.js';
 import { shopSubject, TEMPLATE_IDS, templateOf } from './template-catalog.js';
 
@@ -63,7 +64,8 @@ export async function subjectOf(
   paymentMethods: readonly PaymentMethod[],
 ): Promise<TemplateSubject> {
   // Now, and not a clock the caller hands in: a sale's end is the moment the page is made plus three days.
-  const subject = shopSubject(choice.title, paymentMethods, new Date());
+  const now = new Date();
+  const subject = shopSubject(choice.title, paymentMethods, now, template.readsShop ? await shopStockOf(db, storeId, now) : undefined);
 
   if (template.needs.includes('PRODUCT')) {
     if (!choice.productId) throw new BadRequestException(pageError('PAGE_PRODUCT_REQUIRED', 'Escolha o produto da página.'));

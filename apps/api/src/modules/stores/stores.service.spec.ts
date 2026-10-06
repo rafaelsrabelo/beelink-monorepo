@@ -244,6 +244,19 @@ describe('StoresService.create', () => {
     expect(fakes.create.mock.calls[0]?.[0].data.whatsappPhone).toBeNull();
   });
 
+  it('opens a shop from the home model it picked, published like any other', async () => {
+    const { service, fakes } = build(null);
+
+    await service.create(OWNER, { ...createDto, template: 'vitrine-com-capa' } as CreateStoreDto);
+
+    const bands = fakes.seed.mock.calls.map((call) => call[0].data);
+    // A shop with nothing on its shelf: its name where the cover would be, its promises, the shelf a home needs.
+    expect(bands.map((band) => band.components.create[0].kind)).toEqual(['HEADING', 'BENEFITS', 'PRODUCTS']);
+    expect(bands[0].components.create[0].title).toBe(createDto.name);
+    expect(bands.every((band) => band.pageId === HOME && band.isActive)).toBe(true);
+    expect(fakes.freeze).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ pageId: HOME, number: 1 }) }));
+  });
+
   it('refuses a shop with no WhatsApp, before writing anything', async () => {
     const { service, fakes } = build(null);
 

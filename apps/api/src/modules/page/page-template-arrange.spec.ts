@@ -4,6 +4,7 @@ import type { SeededBand } from './page-seed.js';
 
 // App
 import { componentItemsFor } from './component-items.schema.js';
+import { EMPTY_SHOP } from './home-templates.js';
 import { arrangedDocument } from './page-template-arrange.js';
 import { DISPLAYS_OF_KIND } from './page.constants.js';
 import { promisesOf } from './page-seed.js';
@@ -131,7 +132,7 @@ describe('a model arranged as the draft it would leave', () => {
     const draft = [bandOf('b1', [block('form-1', 'CONTACT'), block('c2', 'TEXT')]), bandOf('b2', [block('form-2', 'CONTACT')])];
 
     it('gives the model’s form the id of the one the draft had, so its leads still point at a form', () => {
-      const document = arrangedDocument(templateOf('servicos-b2b').bands({ title: '', product: null, category: null, promises: [], saleEndsAt: '' }), { ...SITE_HOME, draft });
+      const document = arrangedDocument(templateOf('servicos-b2b').bands({ title: '', product: null, category: null, promises: [], saleEndsAt: '', shop: EMPTY_SHOP }), { ...SITE_HOME, draft });
 
       const forms = document.sections.flatMap((section) => section.components).filter((component) => component.kind === 'CONTACT');
       expect(forms.map((component) => component.id)).toEqual(['form-1']);
@@ -157,7 +158,7 @@ describe('a model arranged as the draft it would leave', () => {
   it.each(PAGE_TEMPLATES.flatMap((template) => template.pageKinds.flatMap((pageKind) => template.storeTypes.map((storeType) => [template.id, pageKind, storeType, template] as const))))(
     '%s on a %s of a %s store leaves a page the rules accept, even from a shop with nothing',
     (_id, pageKind, storeType, template) => {
-      const bare = { title: 'Minha página', product: null, category: null, promises: promisesOf([]), saleEndsAt: '2026-09-30T02:00:00.000Z' };
+      const bare = { title: 'Minha página', product: null, category: null, promises: promisesOf([]), saleEndsAt: '2026-09-30T02:00:00.000Z', shop: EMPTY_SHOP };
       const document = arrangedDocument(template.bands(bare), { pageKind, storeType, draft: [] });
       const components = document.sections.flatMap((section) => section.components);
 

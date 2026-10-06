@@ -68,6 +68,8 @@ export function useRoomyEditor(): boolean {
 
 export interface DesignEditorFrameProps {
   bar: ReactNode
+  /** A line under the bar, across the three columns: what was just done to the whole page. */
+  notice?: ReactNode
   /** What the page is made of — the left column, or a drawer from the left. */
   structure: ReactNode
   preview: ReactNode
@@ -95,6 +97,7 @@ export interface DesignEditorFrameProps {
  */
 export function DesignEditorFrame({
   bar,
+  notice,
   structure,
   preview,
   inspector,
@@ -125,6 +128,7 @@ export function DesignEditorFrame({
         {status}
       </p>
       {bar}
+      {notice}
       <div className="flex min-h-0 flex-1">
         {wide ? (
           <aside

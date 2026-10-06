@@ -12,19 +12,21 @@ import { StoreSettingsSkeleton } from "@harness-monorepo/ui/blocks/store/store-s
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Types
-import type { StoreColors } from "@harness-monorepo/contracts"
+import type { StoreColors, StoreType } from "@harness-monorepo/contracts"
 import type { WebMessages } from "@/locales"
 import type { StoreCreateValues } from "@/components/store/store-payloads"
 
 // App
 import { StoreErrorAlert } from "@/components/store/store-error-alert"
 import { firstStoreErrorCopy, storeErrorCopy } from "@/components/store/store-error-copy"
+import { openingOptionsOf } from "@/components/store/opening-options"
 import { toCreatePayload } from "@/components/store/store-payloads"
 import { useAddressSearch, DEBOUNCE_MS } from "@/services/addresses/address-hooks"
 import { mapTileUrl } from "@/services/addresses/map-tiles"
 import type { Point } from "@/services/addresses/map-tiles"
 import { useDebouncedValue } from "@/services/addresses/use-debounced-value"
 import { useZipCodeLookup } from "@/services/cep/cep-hooks"
+import { useOpeningTemplates } from "@/services/page/page-template-hooks"
 import { useCreateStore, useStoreCategories, useStoreColorPresets } from "@/services/stores/store-hooks"
 import { useImageUpload } from "@/services/uploads/upload-hooks"
 
@@ -55,6 +57,10 @@ export function StoreCreateScreen({ ui, web }: StoreCreateScreenProps) {
   const addresses = useAddressSearch(useDebouncedValue(addressQuery, DEBOUNCE_MS))
   const [picked, setPicked] = useState<Point | null>(null)
   const image = useImageUpload()
+  // What the form has picked so far, as it tells it: the models a shop may open with are asked for
+  // by them. A site is offered no choice, so nothing is asked for one.
+  const [kind, setKind] = useState<{ type: StoreType; categoryId: string }>({ type: "ECOMMERCE", categoryId: "" })
+  const opening = useOpeningTemplates("ECOMMERCE", kind.categoryId || null, kind.type === "ECOMMERCE")
 
   if (presets.isPending || categories.isPending) return <StoreSettingsSkeleton messages={ui} />
 
@@ -82,6 +88,12 @@ export function StoreCreateScreen({ ui, web }: StoreCreateScreenProps) {
       zipCodeLookupPending={zipCode.pending}
       onImageUpload={image.upload}
       imageUploadPending={image.pending}
+      onShopKindChange={setKind}
+      openingTemplates={{
+        templates: openingOptionsOf(opening.data ?? []),
+        state: opening.isError ? "failed" : opening.isPending ? "loading" : "ready",
+        onRetry: () => void opening.refetch(),
+      }}
       pending={create.isPending}
       error={firstStoreErrorCopy([create.error, image.error, zipCode.error], web)}
       messages={ui}
@@ -114,5 +126,7 @@ function emptyStore(colors: StoreColors): StoreCreateValues {
     address: { zipCode: "", street: "", number: "", complement: "", neighborhood: "", city: "", state: "" },
     social: { whatsapp: "", instagram: "", tiktok: "", spotify: "", youtube: "" },
     colors,
+    // The default page: a model is a choice nobody has to make.
+    homeTemplate: "",
   }
 }

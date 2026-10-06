@@ -16,7 +16,7 @@ import type { AuthenticatedUser } from '../auth/auth.decorators.js';
 
 // App
 import { CurrentUser } from '../auth/auth.decorators.js';
-import { PageScopeDto } from './dto/page-scope.dto.js';
+import { OpeningTemplatesQueryDto, PageTemplatesQueryDto } from './dto/page-templates-query.dto.js';
 import { PageTemplateResponse } from './dto/page-templates.response.js';
 import { PagePreviewResponse } from './dto/pages.response.js';
 import { TemplatePreviewQueryDto } from './dto/template-preview.dto.js';
@@ -33,14 +33,16 @@ export class PageTemplatesController {
   constructor(private readonly templates: PageTemplatesService) {}
 
   @Get()
-  @ApiOperation({ summary: 'The models this page may be arranged with, the ones suggested for the shop’s category first — the home unless ?pageId=' })
+  @ApiOperation({
+    summary: 'The models this page may be arranged with, the ones suggested for the shop’s category first — the home unless ?pageId=, or a page about to be made with ?kind=',
+  })
   @ApiOkResponse({ type: PageTemplateResponse, isArray: true })
   list(
     @Param('storeSlug') storeSlug: string,
     @CurrentUser() current: AuthenticatedUser,
-    @Query() scope: PageScopeDto,
+    @Query() query: PageTemplatesQueryDto,
   ): Promise<PageTemplateResponse[]> {
-    return this.templates.list(storeSlug, current.id, scope.pageId);
+    return this.templates.list(storeSlug, current.id, query);
   }
 
   @Get(':templateId/preview')
@@ -57,5 +59,25 @@ export class PageTemplatesController {
     @Query() query: TemplatePreviewQueryDto,
   ): Promise<PagePreviewResponse> {
     return this.templates.preview(storeSlug, current.id, templateId, query);
+  }
+}
+
+/**
+ * The models a store may open with, asked while it is being created: there is no shop to scope the
+ * question by yet, only the type picked in the form. Signed in, like the form itself.
+ */
+@ApiTags('pages')
+@ApiBearerAuth()
+@ApiUnauthorizedResponse({ description: 'AUTH_UNAUTHENTICATED' })
+@Controller('page-templates')
+export class OpeningTemplatesController {
+  constructor(private readonly templates: PageTemplatesService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'The models the home of a new store of this type may open with, the ones suggested for ?categoryId= first' })
+  @ApiOkResponse({ type: PageTemplateResponse, isArray: true })
+  @ApiBadRequestResponse({ description: 'PAGE_TEMPLATE_UNAVAILABLE — not a type of store' })
+  opening(@Query() query: OpeningTemplatesQueryDto): Promise<PageTemplateResponse[]> {
+    return this.templates.opening(query);
   }
 }
