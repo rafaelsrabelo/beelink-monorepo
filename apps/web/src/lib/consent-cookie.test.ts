@@ -24,6 +24,14 @@ describe("the consent cookie", () => {
     expect(CONSENT_MAX_AGE_SECONDS).toBe(180 * 24 * 60 * 60)
     expect(CONSENT_COOKIE).toBe("bl_consent")
   })
+
+  // The policy names the cookie and its 180 days; a change here is a new version of that text.
+  it("lasts what the privacy policy says it lasts", async () => {
+    const { legalTexts } = await import("@/locales/legal/pt-BR")
+
+    expect(JSON.stringify(legalTexts.privacy)).toContain(`${CONSENT_COOKIE}: a sua resposta`)
+    expect(JSON.stringify(legalTexts.privacy)).toContain(`dura ${CONSENT_MAX_AGE_SECONDS / 86_400} dias`)
+  })
 })
 
 describe("marketingAllowed", () => {

@@ -16,11 +16,11 @@ export interface LegalTexts {
  * keeps or shares is a new version of these texts, with a new `version`.
  */
 export const legalTexts = {
-  version: "2026-10-02",
+  version: "2026-10-06",
   terms: {
     lang: "pt-BR",
     title: "Termos de uso",
-    effective: "Vigente desde 2 de outubro de 2026",
+    effective: "Vigente desde 6 de outubro de 2026",
     intro: [
       "Estes Termos de uso são as regras para usar o bee-link. Eles explicam o que a plataforma faz, o que ela não faz e o que se espera de cada pessoa que a usa.",
       "Eles valem para dois públicos: o lojista, que cria uma conta no painel para publicar a sua loja, e o cliente, que cria uma conta numa loja para comprar dela. Quando uma regra vale só para um dos dois, o texto diz.",
@@ -360,7 +360,7 @@ export const legalTexts = {
   privacy: {
     lang: "pt-BR",
     title: "Política de privacidade",
-    effective: "Vigente desde 2 de outubro de 2026",
+    effective: "Vigente desde 6 de outubro de 2026",
     intro: [
       "Esta Política de privacidade explica quais dados pessoais o bee-link trata, para quê, com quem os compartilha, por quanto tempo os guarda e como você exerce os seus direitos, conforme a Lei Geral de Proteção de Dados (Lei nº 13.709/2018, a LGPD).",
       "Ela vale para os lojistas, para os clientes das lojas e para quem visita uma loja sem criar conta. Ao criar uma conta, ou ao definir uma senha pelo link enviado por e-mail, você declara que leu esta Política.",
@@ -457,6 +457,7 @@ export const legalTexts = {
             kind: "list",
             items: [
               "o carrinho e o CEP de \"Entregar em\" ficam em cookies no seu navegador, e não no banco de dados do bee-link;",
+              "a sua resposta ao aviso de cookies de uma loja que usa o Pixel da Meta também fica num cookie no seu navegador, e não no banco de dados do bee-link;",
               "o formulário de contato de uma loja ou site guarda o seu nome e as respostas aos campos que o dono escolheu, como e-mail e telefone, e a mensagem também é enviada ao e-mail do dono;",
               "o \"Avise-me\" de um produto esgotado guarda o seu número de WhatsApp e, se você quiser, o seu nome, para que a loja possa avisar quando o produto voltar; esse aviso ainda não existe no bee-link, e hoje o pedido fica guardado sem que a loja o veja.",
             ],
@@ -476,7 +477,7 @@ export const legalTexts = {
           },
           {
             kind: "paragraph",
-            text: "O bee-link não usa ferramentas de análise de audiência, rastreadores, pixels de publicidade nem scripts de terceiros, e não pede a sua localização ao navegador. As fontes das páginas são servidas pelo próprio bee-link, e os e-mails não têm imagens de rastreamento.",
+            text: "O bee-link não usa, por conta própria, ferramentas de análise de audiência, rastreadores nem pixels de publicidade, e não pede a sua localização ao navegador. O único script de terceiros que uma página do bee-link pode carregar é o Pixel da Meta de uma loja que o conectou, e só depois que você aceita, como explica a seção \"Pixel da Meta nas lojas\". As fontes das páginas são servidas pelo próprio bee-link, e os e-mails não têm imagens de rastreamento.",
           },
         ],
       },
@@ -490,12 +491,12 @@ export const legalTexts = {
               "Execução de contrato: criar e manter contas, confirmar o e-mail, redefinir a senha, publicar a loja e localizá-la no mapa, preencher endereços pelo CEP, registrar pedidos e conversas, enviar os e-mails de andamento dos pedidos, registrar o aceite dos Termos de uso e atender o que você pede pelo formulário de contato ou pelo \"Avise-me\".",
               "Cumprimento de obrigação legal: guardar registros de acesso e atender ordens de autoridades, quando a lei exigir.",
               "Legítimo interesse: proteger as contas e a plataforma, prevenir fraudes e abusos, limitar tentativas repetidas e investigar erros, sempre dentro do que se espera de um serviço como este.",
-              "Consentimento: enviar ofertas e novidades de uma loja por e-mail, só a quem aceitou. Você pode retirar o consentimento quando quiser, em \"Avisos por e-mail\", na sua conta na loja.",
+              "Consentimento: enviar ofertas e novidades de uma loja por e-mail, só a quem aceitou, e, numa loja que conectou um Pixel da Meta, enviar à Meta os dados da sua navegação naquela loja, só depois que você aceita no aviso de cookies. Você pode retirar o consentimento quando quiser: o das ofertas, em \"Avisos por e-mail\", na sua conta na loja; o do pixel, no link \"Cookies\", no rodapé da loja.",
             ],
           },
           {
             kind: "paragraph",
-            text: "Para os dados dos clientes, a loja, como controladora, responde pelas bases legais dos usos que fizer deles. O bee-link não usa dados pessoais para publicidade.",
+            text: "Para os dados dos clientes, a loja, como controladora, responde pelas bases legais dos usos que fizer deles. O bee-link não usa dados pessoais para publicidade própria. A loja que conecta um Pixel da Meta usa os dados da navegação de quem aceitou para medir e direcionar os anúncios dela, e responde por esse uso.",
           },
         ],
       },
@@ -528,7 +529,45 @@ export const legalTexts = {
           },
           {
             kind: "paragraph",
+            text: "A Meta só recebe dados numa loja que conectou um Pixel da Meta, e só depois que você aceita no aviso de cookies daquela loja. Ela não é fornecedora do bee-link: o pixel é da loja. O que é enviado e como recusar estão na seção \"Pixel da Meta nas lojas\".",
+          },
+          {
+            kind: "paragraph",
             text: "Os links da loja para redes sociais e para o rastreio de entregas levam a sites de terceiros, que têm políticas próprias. O bee-link também compartilha dados quando a lei ou uma ordem de autoridade competente exigir.",
+          },
+        ],
+      },
+      {
+        heading: "Pixel da Meta nas lojas",
+        blocks: [
+          {
+            kind: "paragraph",
+            text: "Uma loja pode conectar à própria vitrine um Pixel da Meta, a ferramenta com que a Meta, dona do Facebook e do Instagram, mede e direciona anúncios. Quem anuncia é a loja, e não o bee-link: o pixel é da conta de anúncios dela na Meta, é ela quem decide usá-lo, e os relatórios e os anúncios ficam com ela, na Meta. O bee-link não faz anúncios com esses dados e não os recebe de volta da Meta.",
+          },
+          {
+            kind: "paragraph",
+            text: "O pixel só existe nas lojas que o conectaram, e só é carregado depois que você aceita. Nessas lojas, um aviso de cookies pergunta se você aceita ou recusa. Enquanto você não responde, e se você recusa, o script da Meta não é carregado no seu navegador e nada é enviado à Meta por causa da sua visita. A loja funciona do mesmo jeito nos dois casos.",
+          },
+          { kind: "paragraph", text: "Se você aceita, o seu navegador carrega o script da Meta e passa a enviar a ela, direto:" },
+          {
+            kind: "list",
+            items: [
+              "o que você faz naquela loja, como as páginas e os produtos que abre, o que coloca no carrinho e o pedido que faz;",
+              "os dados técnicos que toda conexão leva, como o endereço IP e a identificação do navegador;",
+              "os identificadores que a Meta guarda em cookies no seu navegador, _fbp e _fbc, descritos na seção \"Cookies\".",
+            ],
+          },
+          {
+            kind: "paragraph",
+            text: "Todas as lojas do bee-link ficam no mesmo domínio, e os cookies da Meta valem para o domínio inteiro, e não para uma loja só. Por isso, o identificador que a Meta guarda no seu navegador é um só para todas as lojas do bee-link: se você aceitar em duas lojas que usam pixel, a Meta recebe das duas o mesmo identificador e pode relacionar as duas visitas. O mesmo vale para o registro do clique num anúncio. Já a sua resposta ao aviso é de cada loja: aceitar numa loja não vale para outra, e cada loja que usa pixel pergunta por conta própria.",
+          },
+          {
+            kind: "paragraph",
+            text: "Você pode mudar de ideia quando quiser: o link \"Cookies\", no rodapé da loja, abre o aviso de novo e mostra a sua escolha atual. Se você retira o aceite, aquela loja deixa de enviar dados à Meta. Os cookies da Meta continuam no seu navegador até vencerem ou até você apagá-los nas configurações do navegador, e o que já foi enviado à Meta passa a seguir a política de dados dela.",
+          },
+          {
+            kind: "paragraph",
+            text: "O bee-link guarda a sua resposta só no seu navegador, no cookie bl_consent, e pergunta de novo depois de 180 dias.",
           },
         ],
       },
@@ -560,17 +599,22 @@ export const legalTexts = {
               "bl_oauth_google: guarda por até 10 minutos uma entrada com Google em andamento, para confirmar que ela termina no mesmo navegador em que começou;",
               "bl_cart: o carrinho de cada loja, só com os produtos, as variações e as quantidades; dura 30 dias, renovados a cada mudança;",
               "bl_shop: o CEP informado em \"Entregar em\", em cada loja; dura 1 ano;",
+              "bl_consent: a sua resposta, aceitar ou recusar, ao aviso de cookies de uma loja que usa o Pixel da Meta; vale só para aquela loja e dura 180 dias;",
               "bl_prefs: as preferências de exibição do painel, como o menu recolhido; dura 1 ano;",
               "bl_locale: o idioma escolhido; dura 1 ano.",
             ],
           },
           {
             kind: "paragraph",
-            text: "O bee-link não usa cookies de análise, de publicidade ou de rastreamento, nem outros meios de guardar dados no seu navegador.",
+            text: "O bee-link não grava cookies de análise, de publicidade ou de rastreamento, nem usa outros meios de guardar dados no seu navegador.",
           },
           {
             kind: "paragraph",
-            text: "Você pode apagar os cookies nas configurações do navegador. Como eles são essenciais, isso encerra as suas sessões e esvazia o carrinho.",
+            text: "Os únicos cookies de publicidade que podem existir no endereço do bee-link são os da Meta, _fbp e _fbc. Quem os grava é o script da Meta, e só depois que você aceita o aviso de cookies de uma loja que usa o Pixel da Meta. O _fbp identifica o seu navegador para a Meta, e o _fbc guarda o clique no anúncio que trouxe você. Cada um dura cerca de 90 dias e vale para o domínio inteiro, e não só para a loja em que você aceitou.",
+          },
+          {
+            kind: "paragraph",
+            text: "Você pode apagar os cookies nas configurações do navegador. Apagar os do bee-link, que são essenciais, encerra as suas sessões, esvazia o carrinho e faz as lojas que usam pixel perguntarem de novo. Apagar os da Meta não muda nada no funcionamento das lojas.",
           },
         ],
       },
