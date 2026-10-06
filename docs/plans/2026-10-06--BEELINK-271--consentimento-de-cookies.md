@@ -121,3 +121,7 @@ A tela foi aberta de verdade (`next dev` na 3800, API na 3801, banco `harness_me
 Não visto: uma loja de página escura na tela real (só na story e no teste de componente), a página de produto com a barra de compra do celular (a loja de teste não tem produto; a faixa é `static`, então não há como cobri-la), duas lojas reais lado a lado (há uma só no banco; o isolamento foi visto pelo caminho do cookie), e o Storybook aberto no navegador.
 
 A loja `loja-do-pixel` ficou **com** o pixel `123456789012345` salvo, para o X5 ter onde olhar; a senha da conta de teste mudou.
+
+## 06/10 — a frase do painel mudou
+
+A frase da decisão 27 dizia "sem o aceite do visitante, nada é enviado à Meta". O teste do X3 que impede a tela do pixel de prometer envio (`meta-pixel-screen.test.tsx`, "promises nowhere…") recusa a palavra "enviado" em qualquer frase dali, e com razão: até o X5 nada é enviado a ninguém. A frase ficou **"Com um ID salvo, quem visita a sua loja vê um aviso de cookies e escolhe aceitar ou recusar. O pixel só vale para quem aceitar."** — o teste do X3 não foi tocado. (Na passada pela tela real, acima, a frase vista ainda era a anterior.)

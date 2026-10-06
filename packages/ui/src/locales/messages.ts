@@ -3564,7 +3564,7 @@ export interface UiMessages {
         notesTitle: string
         /**
          * The domain needs no verifying; reports and ads stay at Meta; nothing checks the ID against
-         * Meta; and a visitor is asked before anything reaches Meta (BEELINK-271).
+         * Meta; and a visitor is asked first, the pixel counting only for one who accepts (BEELINK-271).
          */
         notes: Record<"domain" | "reports" | "unchecked" | "consent", string>
       }

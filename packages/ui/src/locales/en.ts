@@ -3177,7 +3177,7 @@ export const en: UiMessages = {
           domain: "You do not need to verify the domain at Meta to use the pixel on your shop.",
           reports: "Reports and ad creation stay at Meta: bee-link does not show how the ads perform.",
           unchecked: "bee-link has no way to check the ID with Meta. Copy and paste the number rather than typing it.",
-          consent: "With an ID saved, whoever visits your shop sees a cookie notice and chooses to accept or refuse. Without the visitor's yes, nothing is sent to Meta.",
+          consent: "With an ID saved, whoever visits your shop sees a cookie notice and chooses to accept or refuse. The pixel only applies to visitors who accept.",
         },
       },
     },
