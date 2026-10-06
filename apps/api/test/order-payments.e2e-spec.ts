@@ -2,7 +2,7 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 
 // Types
-import type { AsaasConnection, AuthSession, CustomerOrder, CustomerOrderPage, CustomerOrderPaymentAnswer, Order, OrderPage, ProductDetail } from '@harness-monorepo/contracts';
+import type { AsaasConnection, AuthSession, CustomerOrder, CustomerOrderPage, CustomerOrderPaymentAnswer, Order, OrderPage, ProductDetail, StorefrontPaymentOptions } from '@harness-monorepo/contracts';
 
 // App
 import { AsaasClient, AsaasOutcomeUnknown, AsaasRefused, AsaasUnreachable } from '../src/modules/integrations/asaas/asaas.client.js';
@@ -190,6 +190,43 @@ describe("an order's charge at the shop's own Asaas account (BEELINK-204)", () =
     });
   });
 
+  describe("what the shop's checkout reads (BEELINK-205)", () => {
+    const options = async (slug = 'lessari') => call('GET', `/api/stores/${slug}/payment-options`);
+
+    it('tells anyone what the connected shop charges online, with the least amounts, and nothing of its account', async () => {
+      const response = await options();
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json<StorefrontPaymentOptions>()).toEqual({ online: { pix: true, card: true, maxInstallments: 6, minimumChargeCents: 500, minimumInstallmentCents: 500 }, offline: true });
+      expect(response.body).not.toContain(KEY);
+      expect(asaas.calls).toEqual([]);
+    });
+
+    it('follows what the shop chose: a way switched off, paying on delivery off, and nothing online with both ways off', async () => {
+      await accept({ card: false, maxInstallments: 6, offline: false });
+      expect((await options()).json<StorefrontPaymentOptions>()).toMatchObject({ online: { pix: true, card: false, maxInstallments: 1 }, offline: false });
+
+      await accept({ pix: false, card: false, offline: true });
+      expect((await options()).json<StorefrontPaymentOptions>()).toEqual({ online: null, offline: true });
+    });
+
+    it('is the checkout of before Asaas for a shop to be reconnected, disconnected, or never connected — whatever it had chosen', async () => {
+      await accept({ offline: false });
+      await prisma.storeIntegration.updateMany({ data: { status: 'NEEDS_RECONNECT' } });
+      expect((await options()).json<StorefrontPaymentOptions>()).toEqual({ online: null, offline: true });
+
+      await call('DELETE', '/api/stores/lessari/integrations/asaas', owner);
+      expect((await options()).json<StorefrontPaymentOptions>()).toEqual({ online: null, offline: true });
+
+      await call('POST', '/api/stores', owner, shopBody('outra'));
+      expect((await options('outra')).json<StorefrontPaymentOptions>()).toEqual({ online: null, offline: true });
+    });
+
+    it('answers 404 for a shop that does not exist', async () => {
+      expect((await options('nenhuma')).json()).toMatchObject({ statusCode: 404, errorCode: 'STORE_NOT_FOUND' });
+    });
+  });
+
   describe('what placing refuses', () => {
     const refusedWith = async (body: object, errorCode: string, statusCode = 400) => expect((await place(body)).json()).toMatchObject({ statusCode, errorCode });
 
@@ -231,6 +268,25 @@ describe("an order's charge at the shop's own Asaas account (BEELINK-204)", () =
       expect((await place({ paymentChannel: 'OFFLINE' })).statusCode).toBe(201);
       await call('DELETE', '/api/stores/lessari/integrations/asaas', owner);
       expect((await place({ paymentChannel: undefined, paymentMethod: 'MONEY' })).json<CustomerOrder>()).toMatchObject({ paymentChannel: 'OFFLINE', installments: 1, payment: null });
+    });
+
+    it('takes an order with nothing left to pay as settled with the shop, even where paying on delivery is off — and only that one', async () => {
+      await accept({ offline: false });
+      const made = await call('POST', '/api/stores/lessari/coupons', owner, { code: 'TUDO', kind: 'FIXED', amountCents: 50000, startsAt: new Date(Date.now() - DAY_MS).toISOString() });
+      expect(made.statusCode).toBe(201);
+
+      // Nothing to charge: Asaas has a least amount, so online is refused and offline is the way.
+      await refusedWith({ couponCode: 'TUDO' }, 'ORDER_PAYMENT_BELOW_MINIMUM', 409);
+      const free = await place({ paymentChannel: 'OFFLINE', couponCode: 'TUDO' });
+      expect(free.statusCode).toBe(201);
+      expect(free.json<CustomerOrder>()).toMatchObject({ totalCents: 0, paymentChannel: 'OFFLINE', payment: null });
+      expect(asaas.calls).toEqual([]);
+
+      // With something to pay, and with a fee still to be agreed, offline stays refused there.
+      await refusedWith({ paymentChannel: 'OFFLINE' }, 'ORDER_PAYMENT_NOT_ACCEPTED');
+      await call('PUT', '/api/stores/lessari/delivery', owner, feeAgreedLater);
+      await refusedWith({ paymentChannel: 'OFFLINE', couponCode: 'TUDO', fulfillment: 'DELIVERY' }, 'ORDER_PAYMENT_NOT_ACCEPTED');
+      expect(await prisma.order.count()).toBe(1);
     });
 
     it("refuses online an order under Asaas's least charge, and a card split into instalments under its least", async () => {

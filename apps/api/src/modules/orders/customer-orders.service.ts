@@ -56,7 +56,7 @@ export class CustomerOrdersService {
     const terms = await this.shipping.forPlacement({ storeId, customerId, fulfillment: dto.fulfillment, addressId, items: dto.items, choice: dto.shipping, shownFeeCents: dto.deliveryFeeCents });
     // A carrier's label is bought with the CPF of who receives it (BEELINK-187): the checkout asks for it first.
     const deliveryDocument = terms.carrier ? await this.documentOf(customerId, dto.recipientDocument, 'ORDER_RECIPIENT_DOCUMENT_MISSING') : null;
-    const online = await this.chargedOnline(storeId, dto);
+    const { online, onlyIfNothingToPay } = await this.channelOf(storeId, dto);
     // Asaas charges a person by their CPF (BEELINK-204): asked at checkout as a carrier's is.
     if (online) await this.documentOf(customerId, dto.recipientDocument, 'ORDER_PAYER_DOCUMENT_MISSING');
 
@@ -68,6 +68,7 @@ export class CustomerOrdersService {
       paymentMethod: dto.paymentMethod,
       paymentChannel: online ? 'ONLINE' : 'OFFLINE',
       installments: dto.installments ?? 1,
+      onlyIfNothingToPay,
       deliveryFeeCents: terms.deliveryFeeCents,
       deliveryWindow: terms.window,
       deliveryCarrier: terms.carrier,
@@ -95,18 +96,22 @@ export class CustomerOrdersService {
    * Whether the order is charged at Asaas, having refused what the shop does not take now
    * (BEELINK-204). Online is Pix or a credit card, of a shop whose Asaas is connected and takes that
    * way, in no more instalments than it offers. Offline is what it was — the shop's own labels, checked
-   * as the order is written — unless the shop, connected, turned paying on delivery off. A shop with
-   * no Asaas in good standing sells as before it.
+   * as the order is written. A shop with no Asaas in good standing sells as before it.
+   *
+   * A connected shop that turned paying on delivery off takes an offline order only when there is
+   * nothing to pay (BEELINK-205): an order a coupon or credit covers whole cannot be charged — Asaas
+   * has a least amount — and would otherwise have no way to be placed. Whether it is so is known
+   * once it is priced, under the order's own transaction.
    */
-  private async chargedOnline(storeId: string, dto: PlaceCustomerOrderDto): Promise<boolean> {
+  private async channelOf(storeId: string, dto: PlaceCustomerOrderDto): Promise<{ online: boolean; onlyIfNothingToPay: boolean }> {
     const online = dto.paymentChannel === 'ONLINE';
     const installments = dto.installments ?? 1;
     const takes = await this.payments.acceptanceOf(storeId);
     const accepted = online
       ? takes.connected && isOnlineMethod(dto.paymentMethod) && (dto.paymentMethod === 'PIX' ? takes.pix && installments === 1 : takes.card && installments <= takes.maxInstallments)
-      : installments === 1 && (!takes.connected || takes.offline);
+      : installments === 1;
     if (!accepted) throw new BadRequestException(orderError('ORDER_PAYMENT_NOT_ACCEPTED', 'The shop does not take that payment'));
-    return online;
+    return { online, onlyIfNothingToPay: !online && takes.connected && !takes.offline };
   }
 
   /** The customer's CPF on file, else the one typed at checkout — which is kept on their record, so it is asked once. */

@@ -73,6 +73,33 @@ export interface CustomerOrderPaymentAnswer {
   payment: CustomerOrderPayment | null;
 }
 
+/**
+ * What a shop charges online right now, as its checkout reads it. Nothing of its Asaas account —
+ * whose it is, its document, which key — travels here: this is read by anyone.
+ */
+export interface StorefrontOnlinePayments {
+  pix: boolean;
+  card: boolean;
+  /** The most instalments a card is charged in, with no interest to the customer; 1 is in full only. */
+  maxInstallments: number;
+  /** Asaas's least charge, in whole cents: a closed total under it is not charged online. */
+  minimumChargeCents: number;
+  /** Asaas's least instalment on a card, in whole cents. */
+  minimumInstallmentCents: number;
+}
+
+/**
+ * `GET /stores/:slug/payment-options` (BEELINK-205): how a shop's checkout is paid. A shop with no
+ * Asaas in good standing — never connected, disconnected, or to be reconnected — answers
+ * `online: null` and `offline: true`, which is the checkout of before Asaas.
+ */
+export interface StorefrontPaymentOptions {
+  /** Null when nothing is charged online: no connection in good standing, or Pix and card both off. */
+  online: StorefrontOnlinePayments | null;
+  /** Paying on delivery or at pickup, by the shop's own labels (`PublicStore.paymentMethods`). Always true while `online` is null. */
+  offline: boolean;
+}
+
 /** The `details` of `ORDER_PAYMENT_BELOW_MINIMUM`: Asaas's least charge, and how many instalments this total splits into. */
 export interface OrderPaymentBelowMinimumDetails {
   minimumCents: number;

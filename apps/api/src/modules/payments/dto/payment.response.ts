@@ -12,6 +12,8 @@ import type {
   OrderPaymentPix,
   OrderPaymentStatus,
   ShopOrderPayment,
+  StorefrontOnlinePayments,
+  StorefrontPaymentOptions,
 } from '@harness-monorepo/contracts';
 
 // App
@@ -54,4 +56,18 @@ export class CustomerOrderPaymentResponse extends OrderPaymentResponse implement
 export class CustomerOrderPaymentAnswerResponse implements CustomerOrderPaymentAnswer {
   @ApiProperty({ type: CustomerOrderPaymentResponse, nullable: true, description: 'Null on an order settled with the shop, and on one charged online with no charge yet.' })
   payment!: CustomerOrderPaymentResponse | null;
+}
+
+export class StorefrontOnlinePaymentsResponse implements StorefrontOnlinePayments {
+  @ApiProperty() pix!: boolean;
+  @ApiProperty() card!: boolean;
+  @ApiProperty({ minimum: 1, maximum: 12, description: 'The most instalments a card is charged in, with no interest to the customer.' }) maxInstallments!: number;
+  @ApiProperty({ example: 500, description: "Asaas's least charge, in cents." }) minimumChargeCents!: number;
+  @ApiProperty({ example: 500, description: "Asaas's least instalment on a card, in cents." }) minimumInstallmentCents!: number;
+}
+
+export class StorefrontPaymentOptionsResponse implements StorefrontPaymentOptions {
+  @ApiProperty({ type: StorefrontOnlinePaymentsResponse, nullable: true, description: 'Null when nothing is charged online: no Asaas in good standing, or Pix and card both off.' })
+  online!: StorefrontOnlinePaymentsResponse | null;
+  @ApiProperty({ description: "Paying on delivery or at pickup, by the shop's own labels. Always true while `online` is null." }) offline!: boolean;
 }

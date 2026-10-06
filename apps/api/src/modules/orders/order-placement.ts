@@ -38,6 +38,11 @@ export interface Placement {
   paymentChannel?: OrderPaymentChannel;
   /** The instalments of an online card; absent is 1. */
   installments?: number;
+  /**
+   * The shop takes no payment on delivery, and this order names one (BEELINK-205): it stands only
+   * with nothing to pay — a closed total of zero, covered by a coupon or by credit — and is refused otherwise.
+   */
+  onlyIfNothingToPay?: boolean;
   /** Null for a delivery whose fee the shop has not told yet. */
   deliveryFeeCents: number | null;
   /** When the quote said a delivery would arrive (BEELINK-178); null where nothing was quoted. */
@@ -150,6 +155,9 @@ export class OrderPlacement {
       // A fee not agreed yet leaves the total open: it is held to Asaas's least when its charge is made.
       const short = online && priced.totals.deliveryFeeCents !== null ? belowMinimumOf(priced.totals.totalCents, installments) : null;
       if (short) throw new ConflictException({ ...orderError('ORDER_PAYMENT_BELOW_MINIMUM', 'The order, or one of its instalments, is under the least amount charged online'), details: short });
+      if (placement.onlyIfNothingToPay && (priced.totals.totalCents !== 0 || priced.totals.deliveryFeeCents === null)) {
+        throw new BadRequestException(orderError('ORDER_PAYMENT_NOT_ACCEPTED', 'The shop does not take that payment'));
+      }
       const cashbackUsedCents = priced.cashbackUse?.appliedCents ?? 0;
       // What it will earn, at the shop's rules as they are now (BEELINK-239).
       const cashback = await earningForOrder(tx, storeId, earningPartsOf(priced, cashbackUsedCents));
