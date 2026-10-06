@@ -122,3 +122,84 @@ grava `order_paid_notices.seenAt`. O toast usa o `approved` do evento.
 Estorno e cancelar pedido pago (Q7). Marcar um `stray` como resolvido (Q7). A página do pedido do
 cliente dizer "cancelado por falta de pagamento" no lugar de "cancelado pela loja" (o contrato
 `cancelledBy` não tem esse lado; fica anotado para o Q7). Mudar `PAYMENT_POLL_MS`.
+
+## Acréscimos de 06/10/2026: o que mudou enquanto foi feito
+
+- **`OrderPayments.converge` não chamava `PaymentNews.tell`** quando achava a cobrança paga durante
+  um `ensure` (o cliente clica em "Gerar pagamento" e o Asaas já tem o pago). Passou a chamar: sem
+  isso o `toldAt` só seria tomado no evento seguinte, e o toast sairia atrasado.
+- **`OrderSummary.strays` é um número,** não um booleano: a linha da lista só precisa saber se há, e
+  o `_count` do Prisma já entrega quantos.
+- **O filtro `PAID` inclui um pedido cancelado que guarda dinheiro** (pago depois de cancelado). É
+  o que a definição diz ("guarda dinheiro do cliente") e é o que a loja precisa achar; a linha dele
+  diz "Pago" e "Pagamento a resolver".
+- **Status e pagamento juntos no filtro:** os dois se somam. Em `PENDING` com um status pedido, vale
+  o status pedido (a condição "não cancelado" do pagamento cede).
+- **Um pedido novo e pago aparece duas vezes no sino** ("Novo pedido" e "Pedido pago"), e conta
+  duas: são duas notícias, e cada uma some pelo seu motivo (aceitar, abrir).
+- **A etapa do pagamento com o pedido ainda em "recebido" é a etapa atual** (o anel), mesmo paga: o
+  check fica para quando a loja confirmar. Com a loja adiante e o pagamento pendente, a etapa fica
+  "a seguir" no meio das feitas.
+- **O histórico do pedido do cliente ganhou a linha "Pagamento aprovado"**, na ordem em que caiu.
+- **O texto do `emptyFiltered` da lista** passou a "essa busca ou esses filtros".
+- **O e2e do e-mail que falha e volta** espera com `vi.waitFor`: a varredura disparada por
+  `PaymentNews` pode ainda estar gravando a nova tentativa quando o teste a adianta.
+
+## Acréscimos de 06/10/2026: ver funcionando
+
+API na 3501 e web na 3500, banco `harness_asaas`, loja `loja-q4`. Sem chave de sandbox, os estados
+foram gravados à mão (`order_payments`, `order_paid_notices`, `order_stray_payments`, a linha
+`PAYMENT_APPROVED` em `order_messages`). Os pedidos 3 a 6 foram feitos pela API, como cliente.
+Capturas em `.claude/worktrees/pagamentos-pr/shots-207/`.
+
+| O quê | Resultado |
+|---|---|
+| Pedido do cliente pendente, 1280 e 390 px | "Pedido feito" feito, "Aguardando pagamento" atual, o resto a seguir; sem rolagem lateral |
+| O mesmo pedido pago | "Pagamento aprovado" com a data; o histórico com a linha; a caixa diz "Pagamento aprovado" |
+| Pedido de cartão pago e aceito | "Pagamento aprovado" feito, "Loja confirmou" atual |
+| Comprovante de pedido online pago | "Pagamento online: Pix · Pagamento aprovado" |
+| E-mail | a linha de `order_paid_notices` com `sentAt` nulo foi paga pela varredura de verdade: um e-mail no Mailpit, "Loja Q4 — pagamento do pedido nº 1 aprovado", com o valor, o link do pedido e o de desligar; `attempts = 1` |
+| Lista do painel, 1280 e 390 px | "Pago", "Aguardando pagamento", "Pagamento a resolver" na célula; o pedido combinado com a loja não diz nada |
+| Filtros | `?payment=PAID` → 4, 3, 1; `PENDING` → 5; `STRAY` → 4; com `status=DELIVERED` → "Nenhum pedido com essa busca ou esses filtros." |
+| Sino | 5 (três novos, dois pagos), com "Pedido nº 3 pago" e "Pedido nº 1 pago"; abrir o pedido 1 → 4; abrir o 3 → 3; o título da aba acompanha |
+| Pedido do painel pago (Pix e cartão em 3x), com recusa do Asaas, e com dinheiro indevido | o cartão do pagamento como desenhado; o aviso fixo com o motivo, o valor e o que fazer |
+| Conversa, dos dois lados | "Pagamento aprovado." para o cliente, "Pagamento aprovado" para a loja |
+
+**O que não deu para exercitar no navegador:**
+
+- **O toast de "pedido pago" e a tela mudando sozinha:** o evento `order.payment` só sai de
+  `PaymentNews.tell`, que só roda quando uma leitura do Asaas muda o pagamento. Está no e2e (o
+  publicador é espiado: `approved: true` uma vez, `false` depois) e em `panel-notifications.test.ts`.
+- **O pedido virar pago de ponta a ponta** (evento, leitura, e-mail, linha, sino): só no e2e, com o
+  Asaas falso. No navegador o e-mail saiu da varredura do outbox, não do disparo de `tell`.
+- **O cancelamento por falta de pagamento** no navegador e no Mailpit: a rotina só cancela depois
+  de conferir no Asaas. A frase da conversa e a do e-mail estão no e2e
+  (`payment-reconciliation.e2e-spec.ts`) e nos testes das libs.
+- **Nada com o Asaas de verdade.**
+
+## Para os próximos tickets
+
+### Q7 (BEELINK-208): estorno e cancelar pedido pago
+
+- **Marcar um `stray` como resolvido.** `order_stray_payments` continua sem coluna de resolvido: o
+  aviso "Pagamento a resolver" no pedido, a marca na lista e o filtro `STRAY` (`payment-filter.ts`)
+  nunca somem. Quando o estorno existir, acrescente a coluna e troque `strayPayments: { some: {} }`
+  e o `_count` de `ORDER_SUMMARY_INCLUDE` por "não resolvidos". A frase `strayAction` (em
+  `packages/ui/src/locales/`) manda estornar pelo painel do Asaas: passa a ser um botão.
+- **O cartão do pagamento no pedido do painel** é `OrderPaymentCard`
+  (`packages/ui/src/blocks/orders/order-payment-card.tsx`): o botão de estornar, o valor estornado
+  (`refundedCents` ainda não é desenhado) e o motivo entram ali. `providerStatuses` já tem as frases
+  de `REFUND_REQUESTED`, `REFUND_IN_PROGRESS` e dos chargebacks.
+- **`order_paid_notices` é uma linha por pedido, para sempre.** Um pedido estornado e pago de novo
+  não avisa de novo. O e-mail de "pagamento estornado" pede o próprio outbox (ou uma coluna de
+  tipo); `OrderPaidMailer` desiste de um aviso cujo pagamento já não guarda dinheiro.
+- **A etapa do cliente continua "Pagamento aprovado" num pedido estornado** (decisão 7); a caixa de
+  pagamento é que diz o estorno. Se o Q7 quiser a etapa dizendo "estornado", o lugar é
+  `paymentStepOf` em `apps/web/src/lib/order-steps.ts`.
+- **A página do pedido do cliente diz "Cancelado pela loja" num cancelamento automático.**
+  `CustomerOrder.cancelledBy` só tem dois lados (`sideOf('SYSTEM')` é `SHOP`). A conversa e o
+  e-mail já dizem o motivo; a página pede um terceiro valor no contrato.
+- **O filtro `PAID` inclui `PARTIALLY_REFUNDED`** e exclui `REFUNDED`; a linha da lista já diz
+  "Estornado" e "Estornado em parte" (`orderPaymentStateOf`).
+- **Cancelar um pedido pago com estorno junto** deve decidir o que fazer com o aviso do sino
+  (`seenAt`) e com a linha "Pagamento aprovado" da conversa, que fica como história.
