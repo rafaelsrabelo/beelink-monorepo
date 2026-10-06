@@ -11,6 +11,7 @@ import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
 import { toOrderCashback } from '../cashback/cashback.mapper.js';
+import { toOrderPayment, toPaymentBrief } from '../payments/payment.mapper.js';
 import { toDeliveryAddress, toDeliveryWindow } from './order-delivery.js';
 import { toCustomerDelivery } from './order-tracking.js';
 import { toOrderCoupon } from './orders.mapper.js';
@@ -37,6 +38,7 @@ export const CUSTOMER_ORDER_INCLUDE = {
   events: { orderBy: { createdAt: 'asc' }, select: { status: true, actor: true, createdAt: true } },
   delivery: true,
   cashbackCredit: true,
+  payments: true,
 } as const satisfies Prisma.OrderInclude;
 
 type CustomerOrderRow = Prisma.OrderGetPayload<{ include: typeof CUSTOMER_ORDER_INCLUDE }>;
@@ -90,6 +92,9 @@ export function toCustomerOrder(row: CustomerOrderRow): CustomerOrder {
     fulfillment: row.fulfillment,
     deliveryAddress: toDeliveryAddress(row),
     paymentMethod: row.paymentMethod,
+    paymentChannel: row.paymentChannel,
+    installments: row.paymentInstallments,
+    payment: toOrderPayment(row.payments),
     items: row.items.map(toItem),
     subtotalCents: row.subtotalCents,
     deliveryFeeCents: row.deliveryFeeCents,
@@ -118,6 +123,8 @@ export function toCustomerOrderSummary(row: CustomerOrderRow): CustomerOrderSumm
     fulfillment: row.fulfillment,
     recipientName: toDeliveryAddress(row)?.recipientName ?? null,
     paymentMethod: row.paymentMethod,
+    paymentChannel: row.paymentChannel,
+    payment: toPaymentBrief(row.payments),
     totalCents: row.totalCents,
     deliveryFeeCents: row.deliveryFeeCents,
     discountCents: row.discountCents,

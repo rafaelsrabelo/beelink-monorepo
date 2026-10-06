@@ -15,6 +15,7 @@ import type {
   OrderFulfillment,
   OrderItem,
   OrderPage,
+  OrderPaymentChannel,
   OrderStatus,
   OrderSummary,
   PaymentMethod,
@@ -24,6 +25,7 @@ import type {
 import { ShopOrderCashbackResponse } from '../../cashback/dto/cashback.response.js';
 import { ShippingWindowResponse } from '../../delivery/dto/delivery.response.js';
 import { COUPON_KINDS } from '../../promotions/promotions.constants.js';
+import { ORDER_PAYMENT_CHANNELS, OrderPaymentBriefResponse, ShopOrderPaymentResponse } from '../../payments/dto/payment.response.js';
 import { PAYMENT_METHODS } from '../../stores/stores.constants.js';
 import { ORDER_DELIVERY_KINDS, ORDER_FULFILLMENTS, ORDER_STATUSES } from '../orders.constants.js';
 
@@ -100,6 +102,10 @@ export class OrderResponse implements Order {
   })
   deliveryAddress!: OrderDeliveryAddressResponse | null;
   @ApiProperty({ enum: PAYMENT_METHODS }) paymentMethod!: PaymentMethod;
+  @ApiProperty({ enum: ORDER_PAYMENT_CHANNELS, description: 'OFFLINE is settled between the shop and the customer; ONLINE is charged at Asaas.' }) paymentChannel!: OrderPaymentChannel;
+  @ApiProperty({ minimum: 1, maximum: 12, description: 'The instalments the customer chose; 1 unless it is an online card.' }) installments!: number;
+  @ApiProperty({ type: ShopOrderPaymentResponse, nullable: true, description: 'Its charge at Asaas: the one standing, else the last tried. Null offline, and online while it has none.' })
+  payment!: ShopOrderPaymentResponse | null;
   @ApiProperty({ type: [OrderItemResponse] }) items!: OrderItemResponse[];
   @ApiProperty() subtotalCents!: number;
   @ApiProperty({ type: Number, nullable: true, description: 'Null while a delivery\'s fee is not agreed ("a combinar"); zero is a free delivery.' }) deliveryFeeCents!: number | null;
@@ -127,6 +133,8 @@ export class OrderSummaryResponse implements OrderSummary {
   @ApiProperty({ type: OrderCustomerResponse }) customer!: OrderCustomerResponse;
   @ApiProperty({ enum: ORDER_FULFILLMENTS }) fulfillment!: OrderFulfillment;
   @ApiProperty({ enum: PAYMENT_METHODS }) paymentMethod!: PaymentMethod;
+  @ApiProperty({ enum: ORDER_PAYMENT_CHANNELS, description: 'OFFLINE is settled between the shop and the customer; ONLINE is charged at Asaas.' }) paymentChannel!: OrderPaymentChannel;
+  @ApiProperty({ type: OrderPaymentBriefResponse, nullable: true }) payment!: OrderPaymentBriefResponse | null;
   @ApiProperty() totalCents!: number;
   @ApiProperty({ type: Number, nullable: true, description: 'Null while a delivery\'s fee is not agreed ("a combinar"); zero is a free delivery.' }) deliveryFeeCents!: number | null;
   @ApiProperty({ description: 'Units across every line.' }) itemsCount!: number;

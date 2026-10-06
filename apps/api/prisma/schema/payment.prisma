@@ -1,0 +1,86 @@
+/// Where an order is paid (BEELINK-204): settled between the shop and the customer, as before Asaas,
+/// or charged at the shop's own Asaas account.
+enum OrderPaymentChannel {
+  OFFLINE
+  ONLINE
+}
+
+/// Who charges an order paid online.
+enum PaymentProvider {
+  ASAAS
+}
+
+/// Where a charge stands. Paid is CONFIRMED or RECEIVED. OVERDUE is still payable at Asaas until it
+/// is removed there. CANCELLED was removed from Asaas; FAILED is one Asaas refused to create.
+enum OrderPaymentStatus {
+  PENDING
+  CONFIRMED
+  RECEIVED
+  OVERDUE
+  REFUNDED
+  PARTIALLY_REFUNDED
+  CANCELLED
+  FAILED
+}
+
+/// One attempt at charging an order online (BEELINK-204), apart from the order's own status: an order
+/// may have several, and one alive at a time — every status but CANCELLED and FAILED — by the partial
+/// unique index below. A row leaves the living only once Asaas confirmed its charge is gone, so two
+/// charges of one order are never payable at once. Every amount is whole cents.
+model OrderPayment {
+  id       String          @id @default(uuid(7)) @db.Uuid
+  orderId  String          @db.Uuid
+  order    Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  /// Repeated from the order, as `OrderLabel` does: a webhook finds a charge within its shop.
+  storeId  String          @db.Uuid
+  provider PaymentProvider @default(ASAAS)
+  /// Asaas's id of the charge — the first instalment's, on a plan. Null only on a FAILED attempt.
+  providerId            String? @unique @db.VarChar(64)
+  /// Asaas's id of the whole instalment plan, when the card is paid in more than one.
+  providerInstallmentId String? @db.VarChar(64)
+
+  method        PaymentMethod
+  installments  Int                @default(1)
+  amountCents   Int
+  refundedCents Int                @default(0)
+  status        OrderPaymentStatus @default(PENDING)
+  /// The status in Asaas's own word, which says more than ours: AWAITING_RISK_ANALYSIS, CHARGEBACK_REQUESTED…
+  providerStatus String? @db.VarChar(40)
+  /// What Asaas last refused about it, in its words, for the shop to read; never told to the customer.
+  lastError      String? @db.VarChar(500)
+
+  /// Asaas's hosted invoice: where a card is paid.
+  invoiceUrl String? @db.VarChar(500)
+  /// The Pix's copy-and-paste code and its QR (a PNG in base64), read from Asaas once.
+  pixPayload String?
+  pixImage   String?
+
+  /// The due day sent to Asaas, a day of Brasília's calendar.
+  dueDate     DateTime? @db.Date
+  /// Until when it is offered here: the end of that day in Brasília, or sooner when the Pix's code ends sooner.
+  expiresAt   DateTime?
+  paidAt      DateTime?
+  cancelledAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([orderId], where: raw("(status <> ALL (ARRAY['CANCELLED'::\"OrderPaymentStatus\", 'FAILED'::\"OrderPaymentStatus\"]))"), map: "order_payments_one_live_key")
+  @@index([orderId, createdAt])
+  @@index([storeId, status])
+  @@map("order_payments")
+}
+
+/// A shop's customer as the shop's Asaas account knows them (BEELINK-204): the id a charge is made
+/// for, kept so the account is asked once. Apart from the customer's record, whose `updatedAt` is the
+/// customer's own. The CPF it was found by is kept: a record whose CPF changed is looked up again.
+model AsaasCustomer {
+  customerId String   @id @db.Uuid
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  providerId String   @db.VarChar(64)
+  cpf        String   @db.Char(11)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("asaas_customers")
+}

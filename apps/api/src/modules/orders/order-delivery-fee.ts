@@ -7,6 +7,7 @@ import type { Prisma } from '../../generated/prisma/client.js';
 // App
 import type { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { refreshBooks } from '../customers/customer-books.js';
+import { refusePaidOrder } from '../payments/payment-guards.js';
 import { totalRefusalOf } from './order-totals.js';
 import { orderError } from './orders.constants.js';
 import { ORDER_INCLUDE } from './orders.mapper.js';
@@ -35,6 +36,9 @@ export async function agreeDeliveryFee(prisma: PrismaService, storeId: string, n
     if (current.status === 'CANCELLED') {
       throw new ConflictException(orderError('ORDER_CANCELLED', 'A cancelled order does not change'));
     }
+
+    // The charge was paid at the total as it was (BEELINK-204).
+    await refusePaidOrder(tx, current.id);
 
     // A free-delivery coupon takes the fee off, whatever it turns out to be: its discount follows
     // the fee, and so does the use on the coupon's list.

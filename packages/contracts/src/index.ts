@@ -1,6 +1,7 @@
 export type * from "./asaas.js";
 export type * from "./auth.js";
 export type * from "./page.js";
+export type * from "./payment.js";
 export type * from "./page-items.js";
 export type * from "./cashback.js";
 export type * from "./catalog.js";

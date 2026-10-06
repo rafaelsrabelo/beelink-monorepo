@@ -1,8 +1,8 @@
 // Nest
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
 
 // Types
-import type { CreateOrderItemInput, OrderActor, OrderFulfillment, OrderStatus, PaymentMethod, ShippingCarrier, ShippingWindow } from '@harness-monorepo/contracts';
+import type { CreateOrderItemInput, OrderActor, OrderFulfillment, OrderPaymentChannel, OrderStatus, PaymentMethod, ShippingCarrier, ShippingWindow } from '@harness-monorepo/contracts';
 import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
@@ -10,6 +10,7 @@ import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { earningForOrder, holdOrderCashback } from '../cashback/cashback-orders.js';
 import { redeemCashback } from '../cashback/cashback-redemption.js';
 import { noteOrderStatus } from '../conversations/order-status-notice.js';
+import { belowMinimumOf } from '../payments/payment-terms.js';
 import { refreshBooks } from '../customers/customer-books.js';
 import { lockCustomer } from '../customers/customer-lock.js';
 import { redeemCoupon } from '../promotions/order-discounts.js';
@@ -33,6 +34,10 @@ export interface Placement {
   /** The customer's saved address a delivery goes to; null is their default. */
   addressId: string | null;
   paymentMethod: PaymentMethod;
+  /** Where it is paid (BEELINK-204); absent is `OFFLINE`, as a sale registered in the panel always is. Whether the shop takes it online is the caller's to have checked. */
+  paymentChannel?: OrderPaymentChannel;
+  /** The instalments of an online card; absent is 1. */
+  installments?: number;
   /** Null for a delivery whose fee the shop has not told yet. */
   deliveryFeeCents: number | null;
   /** When the quote said a delivery would arrive (BEELINK-178); null where nothing was quoted. */
@@ -105,7 +110,10 @@ export class OrderPlacement {
   async place(placement: Placement): Promise<PlacedOrderRow> {
     const { storeId, status, actor, userId } = placement;
     const store = await this.prisma.store.findUniqueOrThrow({ where: { id: storeId }, select: { paymentMethods: true } });
-    if (!store.paymentMethods.includes(placement.paymentMethod)) {
+    const online = placement.paymentChannel === 'ONLINE';
+    const installments = placement.installments ?? 1;
+    // The shop's own list is of the labels it settles by hand: what Asaas charges is not on it.
+    if (!online && !store.paymentMethods.includes(placement.paymentMethod)) {
       throw new BadRequestException(orderError('ORDER_PAYMENT_NOT_ACCEPTED', 'The shop does not take that payment'));
     }
 
@@ -139,6 +147,9 @@ export class OrderPlacement {
       });
       if (priced.refusal) throw couponRefused(priced.refusal);
       if (priced.cashbackUse?.refusal) throw cashbackRefused(priced.cashbackUse.refusal);
+      // A fee not agreed yet leaves the total open: it is held to Asaas's least when its charge is made.
+      const short = online && priced.totals.deliveryFeeCents !== null ? belowMinimumOf(priced.totals.totalCents, installments) : null;
+      if (short) throw new ConflictException({ ...orderError('ORDER_PAYMENT_BELOW_MINIMUM', 'The order, or one of its instalments, is under the least amount charged online'), details: short });
       const cashbackUsedCents = priced.cashbackUse?.appliedCents ?? 0;
       // What it will earn, at the shop's rules as they are now (BEELINK-239).
       const cashback = await earningForOrder(tx, storeId, earningPartsOf(priced, cashbackUsedCents));
@@ -151,6 +162,8 @@ export class OrderPlacement {
           status,
           fulfillment: placement.fulfillment,
           paymentMethod: placement.paymentMethod,
+          paymentChannel: online ? 'ONLINE' : 'OFFLINE',
+          paymentInstallments: installments,
           ...delivery,
           ...deliveryWindowColumnsOf(delivering ? placement.deliveryWindow : null),
           deliveryDocument: delivering && placement.deliveryCarrier ? (placement.deliveryDocument ?? null) : null,

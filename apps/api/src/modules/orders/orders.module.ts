@@ -5,6 +5,7 @@ import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module.js';
 import { CustomersModule } from '../customers/customers.module.js';
 import { DeliveryModule } from '../delivery/delivery.module.js';
+import { PaymentsModule } from '../payments/payments.module.js';
 import { RealtimePublisherModule } from '../realtime/realtime-publisher.module.js';
 import { StoresModule } from '../stores/stores.module.js';
 import { CartQuoteController } from './cart-quote.controller.js';
@@ -21,10 +22,11 @@ import { OrdersService } from './orders.service.js';
 /**
  * A shop's orders: the owner's side, the shopper's own from the cart, and what a cart would cost. StoresModule for who owns
  * the shop; CustomersModule and AuthModule for the shopper's record and door; DeliveryModule for what a
- * delivery costs and when it arrives (BEELINK-178); PrismaModule is global.
+ * delivery costs and when it arrives (BEELINK-178); PaymentsModule for the charge of an order paid online
+ * (BEELINK-204), which never imports this one back; PrismaModule is global.
  */
 @Module({
-  imports: [StoresModule, CustomersModule, AuthModule, RealtimePublisherModule, DeliveryModule],
+  imports: [StoresModule, CustomersModule, AuthModule, RealtimePublisherModule, DeliveryModule, PaymentsModule],
   controllers: [OrdersController, CustomerOrdersController, CartQuoteController, CustomerCartQuoteController],
   providers: [OrdersService, CustomerOrdersService, OrderPlacement, OrderQuotes, OrderShipping, OrderStatusMailer],
   // For a carrier moving an order along (BEELINK-188).

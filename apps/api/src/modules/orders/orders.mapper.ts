@@ -4,6 +4,7 @@ import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
 import { toOrderCashback } from '../cashback/cashback.mapper.js';
+import { toPaymentBrief, toShopOrderPayment } from '../payments/payment.mapper.js';
 import { toDeliveryAddress, toDeliveryWindow } from './order-delivery.js';
 import { toShopDelivery } from './order-tracking.js';
 
@@ -19,12 +20,14 @@ export const ORDER_INCLUDE = {
   events: { orderBy: { createdAt: 'asc' } },
   delivery: true,
   cashbackCredit: true,
+  payments: true,
 } as const satisfies Prisma.OrderInclude;
 
 /** What a row of the list is read with: the units, not the lines. */
 export const ORDER_SUMMARY_INCLUDE = {
   customer: { select: customerSelect },
   items: { select: { quantity: true } },
+  payments: { select: { status: true, expiresAt: true, createdAt: true } },
 } as const satisfies Prisma.OrderInclude;
 
 type OrderRow = Prisma.OrderGetPayload<{ include: typeof ORDER_INCLUDE }>;
@@ -48,6 +51,9 @@ export function toOrder(row: OrderRow): Order {
     fulfillment: row.fulfillment,
     deliveryAddress: toDeliveryAddress(row),
     paymentMethod: row.paymentMethod,
+    paymentChannel: row.paymentChannel,
+    installments: row.paymentInstallments,
+    payment: toShopOrderPayment(row.payments),
     items: row.items.map((item) => ({
       id: item.id,
       productId: item.productId,
@@ -87,6 +93,8 @@ export function toOrderSummary(row: OrderSummaryRow): OrderSummary {
     customer: toCustomer(row.customer),
     fulfillment: row.fulfillment,
     paymentMethod: row.paymentMethod,
+    paymentChannel: row.paymentChannel,
+    payment: toPaymentBrief(row.payments),
     totalCents: row.totalCents,
     deliveryFeeCents: row.deliveryFeeCents,
     itemsCount: row.items.reduce((sum, item) => sum + item.quantity, 0),

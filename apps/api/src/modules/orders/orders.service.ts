@@ -21,6 +21,8 @@ import { ORDER_INCLUDE, ORDER_SUMMARY_INCLUDE, toOrder, toOrderSummary } from '.
 import { releaseOrderCashback, revokeOrderCashback } from '../cashback/cashback-orders.js';
 import { isOpen } from '../conversations/conversations.constants.js';
 import { noteOrderStatus } from '../conversations/order-status-notice.js';
+import { OrderPayments } from '../payments/order-payments.service.js';
+import { refusePaidOrder } from '../payments/payment-guards.js';
 import { RealtimePublisher } from '../realtime/realtime-publisher.js';
 
 type Tx = Prisma.TransactionClient;
@@ -40,6 +42,7 @@ export class OrdersService {
     private readonly placement: OrderPlacement,
     private readonly realtime: RealtimePublisher,
     private readonly mailer: OrderStatusMailer,
+    private readonly payments: OrderPayments,
   ) {}
 
   async create(storeSlug: string, userId: string, dto: CreateOrderDto): Promise<Order> {
@@ -168,6 +171,8 @@ export class OrdersService {
         throw new ConflictException(orderError('ORDER_CANCELLED', 'A cancelled order does not change status'));
       }
       if (current.status === status || !allowed(current.status)) return null;
+      // A paid order is not cancelled before it is refunded (BEELINK-204).
+      if (status === 'CANCELLED') await refusePaidOrder(tx, current.id);
 
       await tx.order.update({ where: { id: current.id }, data: { status, events: { create: { status, actor: by.actor, userId: by.userId } } } });
       const now = new Date();
@@ -185,6 +190,8 @@ export class OrdersService {
     });
     if (!moved) return null;
     if (moved.owed) this.mailer.dispatch();
+    // After the commit, and never undoing it: a charge still waiting must not be paid for a cancelled order.
+    if (status === 'CANCELLED') await this.payments.release(storeId, moved.order.id);
 
     // Told once the change is committed: both sides read the order again, and a conversation it
     // closes stops taking messages.
@@ -267,7 +274,10 @@ export class OrdersService {
   /** The fee the shop agreed for a delivery; see `agreeDeliveryFee`. */
   async setDeliveryFee(storeSlug: string, userId: string, number: number, { deliveryFeeCents }: SetOrderDeliveryFeeDto): Promise<Order> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
-    return toOrder(await agreeDeliveryFee(this.prisma, storeId, number, deliveryFeeCents));
+    const order = await agreeDeliveryFee(this.prisma, storeId, number, deliveryFeeCents);
+    // A charge still waiting was made at the total as it was: it goes, and the next is made at this one.
+    await this.payments.release(storeId, order.id);
+    return toOrder(await this.prisma.order.findUniqueOrThrow({ where: { id: order.id }, include: ORDER_INCLUDE }));
   }
 
   private notFound(number: number): NotFoundException {

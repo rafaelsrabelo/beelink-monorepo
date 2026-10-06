@@ -34,6 +34,8 @@ const order: CustomerOrderSummary = {
   fulfillment: "DELIVERY",
   recipientName: "Bia Cliente",
   paymentMethod: "PIX",
+  paymentChannel: "OFFLINE",
+  payment: null,
   totalCents: 23722,
   deliveryFeeCents: 1000,
   discountCents: 0,

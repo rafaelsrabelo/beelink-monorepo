@@ -16,6 +16,10 @@ import { OrderShipping } from './order-shipping.js';
 import { reorderOf } from './order-reorder.js';
 import { CUSTOMER_ORDER_SITUATIONS, CUSTOMER_ORDERS_PAGE_SIZE, CUSTOMER_ORDERS_PAGE_SIZE_MAX, orderError } from './orders.constants.js';
 import { noteOrderStatus } from '../conversations/order-status-notice.js';
+import { OrderPayments } from '../payments/order-payments.service.js';
+import { refusePaidOrder } from '../payments/payment-guards.js';
+import { isOnlineMethod } from '../payments/payment-terms.js';
+import { PLACE_CHARGE_BUDGET_MS } from '../payments/payments.constants.js';
 import { RealtimePublisher } from '../realtime/realtime-publisher.js';
 
 /** The shops are Brazilian, and so is a customer's year: "2025" starts at midnight in Brasília. */
@@ -37,6 +41,7 @@ export class CustomerOrdersService {
     private readonly placement: OrderPlacement,
     private readonly shipping: OrderShipping,
     private readonly realtime: RealtimePublisher,
+    private readonly payments: OrderPayments,
   ) {}
 
   /**
@@ -50,7 +55,10 @@ export class CustomerOrdersService {
     const addressId = dto.addressId?.toLowerCase() ?? null;
     const terms = await this.shipping.forPlacement({ storeId, customerId, fulfillment: dto.fulfillment, addressId, items: dto.items, choice: dto.shipping, shownFeeCents: dto.deliveryFeeCents });
     // A carrier's label is bought with the CPF of who receives it (BEELINK-187): the checkout asks for it first.
-    const deliveryDocument = terms.carrier ? await this.recipientDocumentOf(customerId, dto.recipientDocument) : null;
+    const deliveryDocument = terms.carrier ? await this.documentOf(customerId, dto.recipientDocument, 'ORDER_RECIPIENT_DOCUMENT_MISSING') : null;
+    const online = await this.chargedOnline(storeId, dto);
+    // Asaas charges a person by their CPF (BEELINK-204): asked at checkout as a carrier's is.
+    if (online) await this.documentOf(customerId, dto.recipientDocument, 'ORDER_PAYER_DOCUMENT_MISSING');
 
     const placed = await this.placement.place({
       storeId,
@@ -58,6 +66,8 @@ export class CustomerOrdersService {
       fulfillment: dto.fulfillment,
       addressId,
       paymentMethod: dto.paymentMethod,
+      paymentChannel: online ? 'ONLINE' : 'OFFLINE',
+      installments: dto.installments ?? 1,
       deliveryFeeCents: terms.deliveryFeeCents,
       deliveryWindow: terms.window,
       deliveryCarrier: terms.carrier,
@@ -74,14 +84,36 @@ export class CustomerOrdersService {
       customerOf: async () => customerId,
     });
     this.realtime.publish({ storeId, customerId }, { type: 'order.created', orderNumber: placed.number, placedBy: 'CUSTOMER' });
+    // After the commit, with no lock held, and never failing the order: should Asaas not answer, the
+    // order goes back without a charge and its customer makes one from it. A fee not agreed yet is
+    // no total to charge.
+    if (online && placed.deliveryFeeCents !== null) await this.payments.ensureWithin(storeId, placed.id, PLACE_CHARGE_BUDGET_MS);
     return this.read(storeId, customerId, placed.number);
   }
 
+  /**
+   * Whether the order is charged at Asaas, having refused what the shop does not take now
+   * (BEELINK-204). Online is Pix or a credit card, of a shop whose Asaas is connected and takes that
+   * way, in no more instalments than it offers. Offline is what it was — the shop's own labels, checked
+   * as the order is written — unless the shop, connected, turned paying on delivery off. A shop with
+   * no Asaas in good standing sells as before it.
+   */
+  private async chargedOnline(storeId: string, dto: PlaceCustomerOrderDto): Promise<boolean> {
+    const online = dto.paymentChannel === 'ONLINE';
+    const installments = dto.installments ?? 1;
+    const takes = await this.payments.acceptanceOf(storeId);
+    const accepted = online
+      ? takes.connected && isOnlineMethod(dto.paymentMethod) && (dto.paymentMethod === 'PIX' ? takes.pix && installments === 1 : takes.card && installments <= takes.maxInstallments)
+      : installments === 1 && (!takes.connected || takes.offline);
+    if (!accepted) throw new BadRequestException(orderError('ORDER_PAYMENT_NOT_ACCEPTED', 'The shop does not take that payment'));
+    return online;
+  }
+
   /** The customer's CPF on file, else the one typed at checkout — which is kept on their record, so it is asked once. */
-  private async recipientDocumentOf(customerId: string, typed: string | undefined): Promise<string> {
+  private async documentOf(customerId: string, typed: string | undefined, missing: 'ORDER_RECIPIENT_DOCUMENT_MISSING' | 'ORDER_PAYER_DOCUMENT_MISSING'): Promise<string> {
     const { cpf } = await this.prisma.customer.findUniqueOrThrow({ where: { id: customerId }, select: { cpf: true } });
     if (cpf) return cpf;
-    if (!typed) throw new BadRequestException(orderError('ORDER_RECIPIENT_DOCUMENT_MISSING', 'A carrier needs the CPF of who receives the order'));
+    if (!typed) throw new BadRequestException(orderError(missing, "A carrier's delivery and an online payment need the customer's CPF"));
     await this.prisma.customer.update({ where: { id: customerId }, data: { cpf: typed } });
     return typed;
   }
@@ -175,6 +207,7 @@ export class CustomerOrdersService {
   async cancel(storeSlug: string, userId: string, number: number): Promise<CustomerOrder> {
     const { storeId, customerId } = await this.customers.shopperAt(storeSlug, userId);
 
+    let orderId: string | null = null;
     const conversation = await this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT 1 FROM "stores" WHERE "id" = ${storeId}::uuid FOR UPDATE`;
 
@@ -183,6 +216,7 @@ export class CustomerOrdersService {
         select: { id: true, status: true, customerId: true, stockTaken: true },
       });
       if (!current) throw notFound(number);
+      orderId = current.id;
       // Already cancelled — by the shop, or by a second press — is said as such, not as "accepted".
       if (current.status === 'CANCELLED') {
         throw new ConflictException(orderError('ORDER_CANCELLED', 'The order is already cancelled'));
@@ -190,6 +224,8 @@ export class CustomerOrdersService {
       if (current.status !== 'RECEIVED') {
         throw new ConflictException(orderError('ORDER_NOT_CANCELLABLE', "Only an order the shop has not accepted is the customer's to cancel"));
       }
+      // A paid order is not cancelled before it is refunded (BEELINK-204).
+      await refusePaidOrder(tx, current.id);
 
       await tx.order.update({
         where: { id: current.id },
@@ -202,6 +238,8 @@ export class CustomerOrdersService {
     });
     this.realtime.publish({ storeId, customerId }, { type: 'order.status', orderNumber: number, status: 'CANCELLED' });
     if (conversation) this.realtime.publish({ storeId, customerId }, { type: 'conversation.closed', orderNumber: number });
+    // After the commit, and never undoing it: a charge still waiting must not be paid for a cancelled order.
+    if (orderId) await this.payments.release(storeId, orderId);
     return this.read(storeId, customerId, number);
   }
 
