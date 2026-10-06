@@ -1,11 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
-import { IntegrationCatalog } from "./integration-catalog"
-import { IntegrationList } from "./integration-list"
 import { IntegrationsFailed } from "./integrations-failed"
 import { IntegrationsResult } from "./integrations-result"
 import { IntegrationsSkeleton } from "./integrations-skeleton"
-import { asaasOption, asaasRow, connected, melhorEnvioOption, melhorEnvioRow, services, shipping } from "./integrations.fixtures"
+import { MELHOR_ENVIO_LOGO, connected, services, shipping } from "./integrations.fixtures"
 import { MelhorEnvioCard } from "./melhor-envio-card"
 import { ShippingSettingsForm } from "./shipping-settings-form"
 
@@ -17,7 +15,7 @@ function IntegrationsScreen() {
   return (
     <div className="flex max-w-3xl flex-col gap-6">
       <IntegrationsResult tone="done" message="Melhor Envio conectado. Escolha abaixo como a loja envia." />
-      <MelhorEnvioCard view={connected} connectHref={CONNECT} onDisconnect={noop} />
+      <MelhorEnvioCard logoSrc={MELHOR_ENVIO_LOGO} view={connected} connectHref={CONNECT} onDisconnect={noop} />
       <ShippingSettingsForm value={shipping} onChange={noop} onSubmit={noop} services={services} />
     </div>
   )
@@ -38,7 +36,7 @@ export const Conectado: Story = {}
 export const NaoConectado: Story = {
   render: () => (
     <div className="max-w-3xl">
-      <MelhorEnvioCard view={{ ...connected, status: "DISCONNECTED", account: null }} connectHref={CONNECT} onDisconnect={noop} />
+      <MelhorEnvioCard logoSrc={MELHOR_ENVIO_LOGO} view={{ ...connected, status: "DISCONNECTED", account: null }} connectHref={CONNECT} onDisconnect={noop} />
     </div>
   ),
 }
@@ -48,7 +46,7 @@ export const PrecisaReconectar: Story = {
   render: () => (
     <div className="flex max-w-3xl flex-col gap-6">
       <IntegrationsResult tone="failed" message="O Melhor Envio recusou a autorização. Tente conectar de novo." />
-      <MelhorEnvioCard view={{ ...connected, status: "NEEDS_RECONNECT", wallet: { state: "failed" } }} connectHref={CONNECT} onDisconnect={noop} />
+      <MelhorEnvioCard logoSrc={MELHOR_ENVIO_LOGO} view={{ ...connected, status: "NEEDS_RECONNECT", wallet: { state: "failed" } }} connectHref={CONNECT} onDisconnect={noop} />
     </div>
   ),
 }
@@ -57,7 +55,7 @@ export const PrecisaReconectar: Story = {
 export const Indisponivel: Story = {
   render: () => (
     <div className="max-w-3xl">
-      <MelhorEnvioCard view={{ ...connected, available: false, status: "DISCONNECTED", account: null }} connectHref={CONNECT} onDisconnect={noop} />
+      <MelhorEnvioCard logoSrc={MELHOR_ENVIO_LOGO} view={{ ...connected, available: false, status: "DISCONNECTED", account: null }} connectHref={CONNECT} onDisconnect={noop} />
     </div>
   ),
 }
@@ -84,46 +82,6 @@ export const CarregandoEFalha: Story = {
     <div className="flex max-w-3xl flex-col gap-6">
       <IntegrationsSkeleton />
       <IntegrationsFailed onRetry={noop} />
-    </div>
-  ),
-}
-
-/** A lista das integrações da loja: cada uma leva à sua própria página. */
-export const Lista: Story = {
-  render: () => (
-    <div className="flex max-w-3xl flex-col gap-6">
-      <IntegrationList rows={[melhorEnvioRow, asaasRow]} newHref="#nova" />
-      <IntegrationList rows={[{ ...melhorEnvioRow, status: "NEEDS_RECONNECT", sandbox: false }, { ...asaasRow, status: "NEEDS_RECONNECT", sandbox: false }]} newHref="#nova" />
-    </div>
-  ),
-}
-
-/** Uma das conexões não pôde ser lida: a que foi lida aparece, e a falha é dita ao lado dela. */
-export const ListaComFalha: Story = {
-  render: () => (
-    <div className="flex max-w-3xl flex-col gap-6">
-      <IntegrationList rows={[melhorEnvioRow]} newHref="#nova" />
-      <IntegrationsFailed onRetry={noop} message="Não foi possível carregar todas as integrações." />
-    </div>
-  ),
-}
-
-/** A loja ainda sem nenhuma integração: a lista leva à página de conectar uma. */
-export const ListaVazia: Story = {
-  render: () => (
-    <div className="max-w-3xl">
-      <IntegrationList rows={[]} newHref="#nova" />
-    </div>
-  ),
-}
-
-/** Nova integração: o que há para conectar; um serviço já conectado leva à página dele. */
-export const NovaIntegracao: Story = {
-  render: () => (
-    <div className="flex max-w-3xl flex-col gap-6">
-      <IntegrationCatalog options={[melhorEnvioOption, asaasOption]} />
-      <IntegrationCatalog options={[{ ...melhorEnvioOption, state: "connected" }, { ...asaasOption, state: "connected" }]} />
-      <IntegrationCatalog options={[{ ...melhorEnvioOption, state: "unavailable" }, { ...asaasOption, state: "unavailable" }]} />
     </div>
   ),
 }

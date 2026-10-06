@@ -4,7 +4,7 @@
 import { useId, useState } from "react"
 
 // Libs
-import { TriangleAlertIcon, TruckIcon } from "lucide-react"
+import { CheckIcon, TriangleAlertIcon } from "lucide-react"
 
 // UI
 import {
@@ -27,8 +27,13 @@ import { cn } from "@harness-monorepo/ui/lib/utils"
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
+// Block
+import { IntegrationLogo } from "./integration-logo"
+
 export interface MelhorEnvioCardProps {
   view: MelhorEnvioCardView
+  /** The brand's own mark, as a file the app serves. */
+  logoSrc: string
   /** Where "Conectar" goes: the web's route that sends the browser to Melhor Envio. */
   connectHref: string
   onDisconnect: () => void
@@ -48,7 +53,7 @@ export interface MelhorEnvioCardProps {
  * "Conectar" is a plain anchor, never the app's link: a router link prefetches its address, and this
  * one begins an authorization at Melhor Envio the moment it is fetched.
  */
-export function MelhorEnvioCard({ view, connectHref, onDisconnect, disconnecting = false, disconnectError, headingAs: Heading = "h2", messages = defaultMessages }: MelhorEnvioCardProps) {
+export function MelhorEnvioCard({ view, logoSrc, connectHref, onDisconnect, disconnecting = false, disconnectError, headingAs: Heading = "h2", messages = defaultMessages }: MelhorEnvioCardProps) {
   const text = messages.integrations.melhorEnvio
   const id = useId()
   const [confirming, setConfirming] = useState(false)
@@ -57,13 +62,16 @@ export function MelhorEnvioCard({ view, connectHref, onDisconnect, disconnecting
   return (
     <section aria-labelledby={`${id}-title`} className="bg-shell-surface border-shell-border flex flex-col gap-4 rounded-xl border p-4 shadow-xs sm:p-6">
       <div className="flex flex-wrap items-center gap-3">
-        <span className="bg-muted flex size-10 items-center justify-center rounded-lg">
-          <TruckIcon aria-hidden="true" className="size-5" />
-        </span>
+        <IntegrationLogo src={logoSrc} />
         <Heading id={`${id}-title`} className={Heading === "h1" ? "text-2xl font-semibold" : "font-semibold"}>
           {text.title}
         </Heading>
-        {view.available ? <Badge variant={view.status === "CONNECTED" ? "default" : view.status === "NEEDS_RECONNECT" ? "destructive" : "outline"}>{badge}</Badge> : null}
+        {view.available ? (
+          <Badge variant={view.status === "CONNECTED" ? "success" : view.status === "NEEDS_RECONNECT" ? "destructive" : "outline"}>
+            {view.status === "CONNECTED" ? <CheckIcon aria-hidden="true" /> : null}
+            {badge}
+          </Badge>
+        ) : null}
         {view.available && view.sandbox ? (
           <Badge variant="secondary" title={text.sandboxHint}>
             {text.sandbox}

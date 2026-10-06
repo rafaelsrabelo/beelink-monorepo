@@ -1,16 +1,15 @@
 "use client"
 
 // UI
-import { IntegrationList } from "@harness-monorepo/ui/blocks/integrations/integration-list"
-import { IntegrationsFailed } from "@harness-monorepo/ui/blocks/integrations/integrations-failed"
-import { buttonVariants } from "@harness-monorepo/ui/components/button"
+import { IntegrationCards } from "@harness-monorepo/ui/blocks/integrations/integration-cards"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import { AppLink } from "@/components/app-link"
-import { integrationPagesOf, integrationRowsOf } from "@/lib/integration-pages"
+import { connectionReadOf, integrationCardsOf, integrationPagesOf } from "@/lib/integration-pages"
 import { useAsaasConnection } from "@/services/integrations/asaas-hooks"
 import { useMelhorEnvioConnection } from "@/services/integrations/integration-hooks"
+import { melhorEnvioConnectHref } from "@/services/integrations/integration-requests"
 
 export interface IntegrationsScreenProps {
   slug: string
@@ -18,42 +17,26 @@ export interface IntegrationsScreenProps {
 }
 
 /**
- * The shop's integrations, as a list: what it connected, each leading to its own page. Adding one is
- * a page of its own, `integrations/new`, as making anything else in the panel is.
+ * The panel's Integrations, on one page: every third party a shop can connect, a card each, whether
+ * it connected it or not — where it stands, whose account, and the way to connect it or set it up.
  *
- * Each connection is read on its own. One that could not be read is said so beside the rows of those
- * that were — and the list never claims the shop connected nothing while a read is missing.
+ * Each connection is read on its own, and its card alone waits for it or says its read failed: one
+ * never hides another, and a read that is missing is never drawn as a shop that connected nothing.
  */
 export function IntegrationsScreen({ slug, messages }: IntegrationsScreenProps) {
   const text = messages.integrations
-  const pages = integrationPagesOf(slug)
   const melhorEnvio = useMelhorEnvioConnection(slug)
   const asaas = useAsaasConnection(slug)
-  const failed = [melhorEnvio, asaas].filter((connection) => connection.isError)
-  const reading = melhorEnvio.isPending || asaas.isPending
-  const rows = integrationRowsOf({ melhorEnvio: melhorEnvio.data, asaas: asaas.data }, pages)
+  const cards = integrationCardsOf({ melhorEnvio: connectionReadOf(melhorEnvio), asaas: connectionReadOf(asaas) }, integrationPagesOf(slug), melhorEnvioConnectHref(slug))
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 lg:px-6">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        {/* A basis of its own: sized by its sentence, the intro takes the whole row and pushes the button under it. */}
-        <div className="flex min-w-0 flex-1 basis-72 flex-col gap-1">
-          <h1 className="text-2xl font-semibold">{text.title}</h1>
-          <p className="text-muted-foreground text-sm">{text.intro}</p>
-        </div>
-        <AppLink href={pages.new} className={buttonVariants()}>
-          {text.newIntegration}
-        </AppLink>
+      <header className="flex flex-col gap-1">
+        <h1 className="text-2xl font-semibold">{text.title}</h1>
+        <p className="text-muted-foreground text-sm">{text.intro}</p>
       </header>
 
-      {reading ? (
-        <IntegrationList rows="loading" newHref={pages.new} linkComponent={AppLink} messages={messages} />
-      ) : rows.length > 0 || failed.length === 0 ? (
-        <IntegrationList rows={rows} newHref={pages.new} linkComponent={AppLink} messages={messages} />
-      ) : null}
-      {failed.length > 0 ? (
-        <IntegrationsFailed onRetry={() => failed.forEach((connection) => void connection.refetch())} message={failed.length === 1 ? text.failedSome : undefined} messages={messages} />
-      ) : null}
+      <IntegrationCards cards={cards} onRetry={(provider) => void { MELHOR_ENVIO: melhorEnvio, ASAAS: asaas }[provider].refetch()} linkComponent={AppLink} messages={messages} />
     </div>
   )
 }

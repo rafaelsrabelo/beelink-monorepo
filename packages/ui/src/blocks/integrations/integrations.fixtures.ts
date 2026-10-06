@@ -1,5 +1,5 @@
 // Block
-import type { AsaasCardView, IntegrationOptionView, IntegrationRowView, MelhorEnvioCardView, PaymentSettingsFormValues, ShippingServiceView, ShippingSettingsFormValues } from "@harness-monorepo/ui/lib/integrations"
+import type { AsaasCardView, IntegrationCardView, MelhorEnvioCardView, PaymentSettingsFormValues, ShippingServiceView, ShippingSettingsFormValues } from "@harness-monorepo/ui/lib/integrations"
 
 export const connected: MelhorEnvioCardView = {
   available: true,
@@ -18,25 +18,28 @@ export const services: ShippingServiceView[] = [
 
 export const shipping: ShippingSettingsFormValues = { serviceIds: [1, 2, 3], handlingDays: "1", weight: "500", length: "20", width: "15", height: "10", senderDocument: "11222333000181", senderStateRegister: "" }
 
-export const melhorEnvioRow: IntegrationRowView = { provider: "MELHOR_ENVIO", status: "CONNECTED", account: "Loja Lessari", sandbox: true, href: "/admin/lessari/integrations/melhor-envio" }
+/** Stand-ins for the brands' marks: the real files are the app's, and reach a block by prop. */
+export const MELHOR_ENVIO_LOGO = "/brand/integrations/melhor-envio-icon.png"
+export const ASAAS_LOGO = "/brand/integrations/asaas-icon.png"
 
-export const melhorEnvioOption: IntegrationOptionView = {
+/** A shop that connected neither, on a sandbox installation. Melhor Envio's way in begins its authorization. */
+export const melhorEnvioCard: IntegrationCardView = {
   provider: "MELHOR_ENVIO",
-  state: "available",
+  logoSrc: MELHOR_ENVIO_LOGO,
+  href: "/admin/lessari/integrations/melhor-envio",
   connectHref: "/api/stores/lessari/integrations/melhor-envio/connect",
   connectBy: "authorization",
-  href: "/admin/lessari/integrations/melhor-envio",
+  connection: { state: "disconnected", account: null, sandbox: true },
 }
 
-export const asaasRow: IntegrationRowView = { provider: "ASAAS", status: "CONNECTED", account: "Lessari Moda LTDA", sandbox: true, href: "/admin/lessari/integrations/asaas" }
-
 /** Connecting Asaas is typing a key on its own page: both ways lead there. */
-export const asaasOption: IntegrationOptionView = {
+export const asaasCard: IntegrationCardView = {
   provider: "ASAAS",
-  state: "available",
+  logoSrc: ASAAS_LOGO,
+  href: "/admin/lessari/integrations/asaas",
   connectHref: "/admin/lessari/integrations/asaas",
   connectBy: "page",
-  href: "/admin/lessari/integrations/asaas",
+  connection: { state: "disconnected", account: null, sandbox: true },
 }
 
 /** A shop connected in the sandbox. No fixture holds a key: the card takes none as a prop. */

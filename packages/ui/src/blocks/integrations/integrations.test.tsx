@@ -11,7 +11,7 @@ import { expectNoA11yViolations } from "../../test/a11y"
 import { IntegrationsFailed } from "./integrations-failed"
 import { IntegrationsResult } from "./integrations-result"
 import { IntegrationsSkeleton } from "./integrations-skeleton"
-import { connected, services, shipping } from "./integrations.fixtures"
+import { MELHOR_ENVIO_LOGO, connected, services, shipping } from "./integrations.fixtures"
 import { MelhorEnvioCard } from "./melhor-envio-card"
 import { ShippingSettingsForm } from "./shipping-settings-form"
 
@@ -19,7 +19,7 @@ const CONNECT = "/api/stores/lessari/integrations/melhor-envio/connect"
 
 describe("MelhorEnvioCard", () => {
   it("offers to connect a shop that has not, as a plain link to the route that leaves for Melhor Envio", async () => {
-    const { container } = render(<MelhorEnvioCard view={{ ...connected, status: "DISCONNECTED", account: null }} connectHref={CONNECT} onDisconnect={() => {}} />)
+    const { container } = render(<MelhorEnvioCard logoSrc={MELHOR_ENVIO_LOGO} view={{ ...connected, status: "DISCONNECTED", account: null }} connectHref={CONNECT} onDisconnect={() => {}} />)
 
     const card = screen.getByRole("region", { name: "Melhor Envio" })
     expect(within(card).getByRole("link", { name: "Conectar Melhor Envio" })).toHaveAttribute("href", CONNECT)
@@ -29,7 +29,7 @@ describe("MelhorEnvioCard", () => {
   })
 
   it("says whose account is connected, that it is the sandbox, and what the wallet holds", async () => {
-    const { container } = render(<MelhorEnvioCard view={connected} connectHref={CONNECT} onDisconnect={() => {}} />)
+    const { container } = render(<MelhorEnvioCard logoSrc={MELHOR_ENVIO_LOGO} view={connected} connectHref={CONNECT} onDisconnect={() => {}} />)
 
     expect(screen.getByText("Conectado")).toBeInTheDocument()
     expect(screen.getByText("Sandbox")).toBeInTheDocument()
@@ -41,16 +41,16 @@ describe("MelhorEnvioCard", () => {
 
   /** A wallet that could not be read is not an empty one: zero there would tell the shop it cannot buy labels. */
   it("says the balance could not be read, never a zero in its place, and holds its place while it is read", () => {
-    const { rerender } = render(<MelhorEnvioCard view={{ ...connected, wallet: { state: "failed" } }} connectHref={CONNECT} onDisconnect={() => {}} />)
+    const { rerender } = render(<MelhorEnvioCard logoSrc={MELHOR_ENVIO_LOGO} view={{ ...connected, wallet: { state: "failed" } }} connectHref={CONNECT} onDisconnect={() => {}} />)
     expect(screen.getByText("Não foi possível ler o saldo agora.")).toBeInTheDocument()
     expect(screen.queryByText(/R\$/)).toBeNull()
 
-    rerender(<MelhorEnvioCard view={{ ...connected, wallet: { state: "loading" } }} connectHref={CONNECT} onDisconnect={() => {}} />)
+    rerender(<MelhorEnvioCard logoSrc={MELHOR_ENVIO_LOGO} view={{ ...connected, wallet: { state: "loading" } }} connectHref={CONNECT} onDisconnect={() => {}} />)
     expect(screen.getByText("Saldo da carteira").nextElementSibling).toHaveAttribute("aria-busy", "true")
   })
 
   it("warns when Melhor Envio stopped accepting the connection, and offers to connect again", () => {
-    render(<MelhorEnvioCard view={{ ...connected, status: "NEEDS_RECONNECT" }} connectHref={CONNECT} onDisconnect={() => {}} />)
+    render(<MelhorEnvioCard logoSrc={MELHOR_ENVIO_LOGO} view={{ ...connected, status: "NEEDS_RECONNECT" }} connectHref={CONNECT} onDisconnect={() => {}} />)
 
     expect(screen.getByRole("alert")).toHaveTextContent("parou de aceitar esta conexão")
     expect(screen.getByRole("link", { name: "Conectar de novo" })).toHaveAttribute("href", CONNECT)
@@ -59,7 +59,7 @@ describe("MelhorEnvioCard", () => {
 
   it("asks before disconnecting, keeping the connection on the default answer", async () => {
     const onDisconnect = vi.fn()
-    render(<MelhorEnvioCard view={connected} connectHref={CONNECT} onDisconnect={onDisconnect} />)
+    render(<MelhorEnvioCard logoSrc={MELHOR_ENVIO_LOGO} view={connected} connectHref={CONNECT} onDisconnect={onDisconnect} />)
 
     await userEvent.click(screen.getByRole("button", { name: "Desconectar" }))
     const dialog = screen.getByRole("alertdialog", { name: "Desconectar o Melhor Envio?" })
@@ -72,7 +72,7 @@ describe("MelhorEnvioCard", () => {
   })
 
   it("says this installation has no app, offering nothing to press, in the language it is handed", () => {
-    render(<MelhorEnvioCard view={{ ...connected, available: false, status: "DISCONNECTED", account: null }} connectHref={CONNECT} onDisconnect={() => {}} messages={en} />)
+    render(<MelhorEnvioCard logoSrc={MELHOR_ENVIO_LOGO} view={{ ...connected, available: false, status: "DISCONNECTED", account: null }} connectHref={CONNECT} onDisconnect={() => {}} messages={en} />)
 
     expect(screen.getByText("Melhor Envio is not set up on this installation yet.")).toBeInTheDocument()
     expect(screen.queryByRole("link")).toBeNull()
@@ -82,8 +82,17 @@ describe("MelhorEnvioCard", () => {
 
 describe("MelhorEnvioCard as its own page", () => {
   it("is the page's title where it stands for the page", () => {
-    render(<MelhorEnvioCard view={connected} connectHref={CONNECT} onDisconnect={vi.fn()} headingAs="h1" />)
+    render(<MelhorEnvioCard logoSrc={MELHOR_ENVIO_LOGO} view={connected} connectHref={CONNECT} onDisconnect={vi.fn()} headingAs="h1" />)
     expect(screen.getByRole("heading", { level: 1, name: "Melhor Envio" })).toBeInTheDocument()
+  })
+
+  /** The name is written beside the mark, so the mark is read out as nothing; connected is said in green. */
+  it("wears the brand's own mark, as the file it is handed, and marks a connection in green", () => {
+    const { container } = render(<MelhorEnvioCard logoSrc={MELHOR_ENVIO_LOGO} view={connected} connectHref={CONNECT} onDisconnect={vi.fn()} />)
+
+    expect(container.querySelector("img")).toHaveAttribute("src", MELHOR_ENVIO_LOGO)
+    expect(container.querySelector("img")).toHaveAttribute("alt", "")
+    expect(screen.getByText("Conectado")).toHaveAttribute("data-variant", "success")
   })
 })
 

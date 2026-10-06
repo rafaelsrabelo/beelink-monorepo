@@ -1,10 +1,15 @@
+// Libs
+import { redirect } from "next/navigation"
+
 // App
-import { NewIntegrationScreen } from "@/components/integrations/new-integration-screen"
-import { getMessages } from "@/lib/locale"
+import { integrationPagesOf } from "@/lib/integration-pages"
 
-/** Adding an integration: what there is to connect, on a page of its own and not above the list. */
+/**
+ * "Nova integração" was a page of its own until the list began showing every third party there is.
+ * The address still answers, for whoever kept it: it leads to the list, where connecting now is.
+ */
 export default async function NewIntegrationPage({ params }: PageProps<"/admin/[slug]/integrations/new">) {
-  const [{ slug }, { ui }] = await Promise.all([params, getMessages()])
+  const { slug } = await params
 
-  return <NewIntegrationScreen slug={slug} messages={ui} />
+  redirect(integrationPagesOf(slug).list as Parameters<typeof redirect>[0])
 }

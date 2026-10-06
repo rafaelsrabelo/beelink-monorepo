@@ -3393,15 +3393,24 @@ export interface UiMessages {
     title: string
     intro: string
     failed: string
-    /** A connection could not be read while another was: said beside the rows of those that were. */
-    failedSome: string
     retry: string
-    /** The way to the page that adds one, and that page's own title. */
-    newIntegration: string
-    /** The shop's connections, one row each. */
-    list: { empty: string; emptyHint: string; open: string; openLabel: string; account: string }
-    /** The third parties there are to connect. */
-    catalog: { intro: string; connected: string; open: string; openLabel: string }
+    /** The page's cards, one per third party: what every card says whoever it is of. */
+    cards: {
+      /** The way in, short: the card's own title says whose. Read out as the provider's `connect`. */
+      connect: string
+      configure: string
+      /** {name} */
+      configureLabel: string
+      reconnect: string
+      /** {name} */
+      reconnectLabel: string
+      /** {name} */
+      account: string
+      /** This card's connection could not be read; the others stand. */
+      failed: string
+      /** {name} */
+      retryLabel: string
+    }
     /** What came of a connection, on the way back from the third party. */
     result: {
       connected: string
@@ -3411,7 +3420,6 @@ export interface UiMessages {
     melhorEnvio: IntegrationProviderMessages & {
       reconnect: string
       needsReconnect: string
-      disconnectedBadge: string
       account: string
       balance: string
       balanceHint: string
@@ -3424,7 +3432,6 @@ export interface UiMessages {
       disconnectFailed: string
     }
     asaas: IntegrationProviderMessages & {
-      disconnectedBadge: string
       /** Said in the card itself: on a phone the badge's hint cannot be hovered. */
       sandboxNote: string
       keyLabel: string
@@ -3517,18 +3524,23 @@ export interface UiMessages {
 }
 
 /**
- * What every third party says of itself wherever the Integrations pages list or offer it. Each
- * provider's slice holds at least this, so the list and the catalogue read any of them alike.
+ * What every third party says of itself wherever the Integrations pages show it. Each provider's
+ * slice holds at least this, so the list's cards read any of them alike.
  */
 export interface IntegrationProviderMessages {
   title: string
-  /** What connecting gives the shop. */
+  /** What connecting gives the shop, in a line or two: the list's card. */
+  summary: string
+  /** The same at length, on the integration's own page. */
   lead: string
   unavailable: string
-  /** The way in, on the catalogue: names the provider, since several cards share the page. */
+  /** The way in, naming the provider: several cards share the list. */
   connect: string
   connected: string
+  disconnectedBadge: string
   needsReconnectBadge: string
+  /** The third party stopped accepting the connection, as the list's card warns of it: its own page says how to mend it. */
+  needsReconnectCard: string
   sandbox: string
   sandboxHint: string
 }

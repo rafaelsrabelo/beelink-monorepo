@@ -14,7 +14,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import { IntegrationFrame } from "@/components/integrations/integration-frame"
-import { integrationPagesOf } from "@/lib/integration-pages"
+import { INTEGRATION_LOGOS, integrationPagesOf } from "@/lib/integration-pages"
 import { melhorEnvioCardOf, shippingErrorOf, shippingFormOf, shippingPayloadOf } from "@/lib/melhor-envio-form"
 import { useDisconnectMelhorEnvio, useMelhorEnvioAccount, useMelhorEnvioConnection, useMelhorEnvioSettings, useSaveMelhorEnvioSettings } from "@/services/integrations/integration-hooks"
 import { IntegrationError, melhorEnvioConnectHref } from "@/services/integrations/integration-requests"
@@ -67,6 +67,7 @@ export function MelhorEnvioScreen({ slug, result, locale, messages }: MelhorEnvi
     <IntegrationFrame back={back} result={result}>
       <MelhorEnvioCard
         headingAs="h1"
+        logoSrc={INTEGRATION_LOGOS.MELHOR_ENVIO}
         view={melhorEnvioCardOf(connection.data, account, money)}
         connectHref={melhorEnvioConnectHref(slug)}
         onDisconnect={() => disconnect.mutate(undefined, { onSuccess: () => setTyped(null) })}
