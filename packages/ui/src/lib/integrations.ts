@@ -1,7 +1,7 @@
 /**
  * The panel's Integrations as its blocks read them (BEELINK-183). They mirror the wire's shapes in
- * `packages/contracts/src/integration.ts` and `asaas.ts`; this package does not import them, so a
- * screen hands its data over and the blocks never learn where it came from.
+ * `packages/contracts/src/integration.ts`, `asaas.ts` and `meta-pixel.ts`; this package does not
+ * import them, so a screen hands its data over and the blocks never learn where it came from.
  */
 
 /** Where a shop's connection to a third party stands. Mirrors `IntegrationStatus`. */
@@ -63,7 +63,28 @@ export interface PaymentSettingsFormValues {
 }
 
 /** The third parties the panel can offer, by the wire's name. Mirrors `IntegrationProvider`. */
-export type IntegrationProviderValue = "MELHOR_ENVIO" | "ASAAS"
+export type IntegrationProviderValue = "MELHOR_ENVIO" | "ASAAS" | "META_PIXEL"
+
+/** The Meta Pixel card (BEELINK-270). Mirrors `MetaPixelConnection`: connected is an ID saved, and nothing else. */
+export interface MetaPixelCardView {
+  /** Digits only; null while disconnected. */
+  pixelId: string | null
+  /** Which connection this is: it changes with every ID saved. Null while disconnected. */
+  connectedAt: string | null
+  /** When the ID was saved, already in words; null while disconnected. */
+  savedAt: string | null
+}
+
+/**
+ * What was typed or pasted as a pixel's ID, as the API takes it: 10 to 20 digits and nothing else
+ * (`META_PIXEL_ID` in the API's DTO). White space is dropped wherever it is — a number pasted with a
+ * line break, or in groups, is still that number. Anything else is refused, never cleaned: a letter
+ * or a whole snippet is not an ID with noise around it.
+ */
+export function metaPixelIdOf(typed: string): string | null {
+  const id = typed.replace(/\s+/g, "")
+  return /^[0-9]{10,20}$/.test(id) ? id : null
+}
 
 /** Where a card's connection stands once it was read. */
 export interface IntegrationCardConnection {

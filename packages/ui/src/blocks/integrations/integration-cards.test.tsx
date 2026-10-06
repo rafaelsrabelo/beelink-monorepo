@@ -13,7 +13,7 @@ import { en } from "@harness-monorepo/ui/locales/index"
 import { expectNoA11yViolations } from "../../test/a11y"
 import type { LinkComponent } from "../auth/auth-link"
 import { IntegrationCards } from "./integration-cards"
-import { ASAAS_LOGO, BEEFLOW_LOGO, MELHOR_ENVIO_LOGO, asaasCard, beeflowUpcoming, melhorEnvioCard } from "./integrations.fixtures"
+import { ASAAS_LOGO, BEEFLOW_LOGO, MELHOR_ENVIO_LOGO, META_LOGO, asaasCard, beeflowUpcoming, melhorEnvioCard, metaPixelCard } from "./integrations.fixtures"
 
 /** The app's link, as a test can tell it from a plain anchor. */
 const AppLink: LinkComponent = ({ href, ...props }) => <a href={href} data-app-link="" {...props} />
@@ -168,6 +168,32 @@ describe("IntegrationCards", () => {
     expect(beeflow.queryByText(/R\$/)).toBeNull()
     expect(card("BeeFlow")).not.toHaveAttribute("aria-busy")
     await expectNoA11yViolations(container)
+  })
+
+  /** BEELINK-270: the pixel is an ID saved or not — no account, no sandbox, nothing a third party can stop accepting. */
+  it("shows the Meta Pixel among them: under Meta's mark, to connect on its own page, and in green once an ID is saved", async () => {
+    const { container, rerender } = show([melhorEnvioCard, asaasCard, metaPixelCard])
+    const pixel = () => within(card("Pixel da Meta"))
+
+    expect(screen.getAllByRole("listitem")).toHaveLength(3)
+    expect(container.querySelector(`img[src="${META_LOGO}"]`)).toHaveAttribute("alt", "")
+    expect(pixel().getByText("O pixel dos seus anúncios no Facebook e no Instagram, informado pelo ID. Os relatórios continuam na Meta.")).toBeInTheDocument()
+    expect(pixel().getByText("Não conectado")).toHaveAttribute("data-variant", "outline")
+    const wayIn = pixel().getByRole("link", { name: "Conectar Pixel da Meta" })
+    expect(wayIn).toHaveTextContent(/^Conectar$/)
+    expect(wayIn).toHaveAttribute("href", "/admin/lessari/integrations/meta-pixel")
+    expect(wayIn).toHaveAttribute("data-app-link")
+    // The ID is typed on the pixel's own page, never on the list.
+    expect(screen.queryByRole("textbox")).toBeNull()
+    await expectNoA11yViolations(container)
+
+    rerender(<IntegrationCards cards={[melhorEnvioCard, asaasCard, { ...metaPixelCard, connection: { state: "connected", account: null, sandbox: false } }]} onRetry={() => {}} linkComponent={AppLink} />)
+    expect(pixel().getByText("Conectado")).toHaveAttribute("data-variant", "success")
+    expect(pixel().queryByText(/^Conta:/)).toBeNull()
+    expect(pixel().queryByText("Sandbox")).toBeNull()
+    expect(pixel().queryByRole("alert")).toBeNull()
+    expect(pixel().getAllByRole("link")).toHaveLength(1)
+    expect(pixel().getByRole("link", { name: "Configurar Pixel da Meta" })).toHaveAttribute("href", "/admin/lessari/integrations/meta-pixel")
   })
 
   it("speaks the language it is handed", () => {

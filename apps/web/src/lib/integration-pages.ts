@@ -1,23 +1,25 @@
 // Types
-import type { AsaasConnection, MelhorEnvioConnection } from "@harness-monorepo/contracts"
+import type { AsaasConnection, MelhorEnvioConnection, MetaPixelConnection } from "@harness-monorepo/contracts"
 import type { IntegrationCardConnection, IntegrationCardView, IntegrationProviderValue, UpcomingIntegrationView } from "@harness-monorepo/ui/lib/integrations"
 
 /**
  * The panel's Integrations as pages: the one that shows every third party there is, and each
  * integration's own. Every link to them is built here, so none points at a page that moved.
  */
-export function integrationPagesOf(slug: string): { list: string; melhorEnvio: string; asaas: string } {
+export function integrationPagesOf(slug: string): { list: string; melhorEnvio: string; asaas: string; metaPixel: string } {
   const list = `/admin/${encodeURIComponent(slug)}/integrations`
-  return { list, melhorEnvio: `${list}/melhor-envio`, asaas: `${list}/asaas` }
+  return { list, melhorEnvio: `${list}/melhor-envio`, asaas: `${list}/asaas`, metaPixel: `${list}/meta-pixel` }
 }
 
 /**
  * Each brand's own mark, as its site publishes it, under `public/brand/integrations/`: the square
- * one, since the name is always written beside it. The files are used as they came.
+ * one, since the name is always written beside it. The files are used as they came. Meta's is its
+ * symbol alone, as an SVG file on a white square (BEELINK-270): served from here, never from Meta.
  */
 export const INTEGRATION_LOGOS: Record<IntegrationProviderValue, string> = {
   MELHOR_ENVIO: "/brand/integrations/melhor-envio-icon.png",
   ASAAS: "/brand/integrations/asaas-icon.png",
+  META_PIXEL: "/brand/integrations/meta-icon.svg",
 }
 
 /**
@@ -50,17 +52,27 @@ function cardConnectionOf(read: ConnectionRead<Connection>): IntegrationCardView
 }
 
 /**
+ * The pixel's card: an ID is saved or it is not. It has no account to name, no sandbox, and nothing
+ * a deployment lacks or a third party stops accepting — nothing is asked of Meta.
+ */
+function pixelConnectionOf(read: ConnectionRead<Pick<MetaPixelConnection, "status">>): IntegrationCardView["connection"] {
+  if (read === "loading" || read === "failed") return read
+  return { state: read.status === "CONNECTED" ? "connected" : "disconnected", account: null, sandbox: false }
+}
+
+/**
  * The Integrations page's cards: every third party there is, whatever the shop did with it, in the
- * page's order. Melhor Envio's way in is the route that leaves for its authorization; Asaas's is only
- * its own page, where the key is typed.
+ * page's order. Melhor Envio's way in is the route that leaves for its authorization; Asaas's and the
+ * Meta Pixel's are only their own pages, where the key or the ID is typed.
  */
 export function integrationCardsOf(
-  reads: { melhorEnvio: ConnectionRead<MelhorEnvioConnection>; asaas: ConnectionRead<AsaasConnection> },
-  pages: { melhorEnvio: string; asaas: string },
+  reads: { melhorEnvio: ConnectionRead<MelhorEnvioConnection>; asaas: ConnectionRead<AsaasConnection>; metaPixel: ConnectionRead<MetaPixelConnection> },
+  pages: { melhorEnvio: string; asaas: string; metaPixel: string },
   melhorEnvioConnectHref: string,
 ): IntegrationCardView[] {
   return [
     { provider: "MELHOR_ENVIO", logoSrc: INTEGRATION_LOGOS.MELHOR_ENVIO, href: pages.melhorEnvio, connectHref: melhorEnvioConnectHref, connectBy: "authorization", connection: cardConnectionOf(reads.melhorEnvio) },
     { provider: "ASAAS", logoSrc: INTEGRATION_LOGOS.ASAAS, href: pages.asaas, connectHref: pages.asaas, connectBy: "page", connection: cardConnectionOf(reads.asaas) },
+    { provider: "META_PIXEL", logoSrc: INTEGRATION_LOGOS.META_PIXEL, href: pages.metaPixel, connectHref: pages.metaPixel, connectBy: "page", connection: pixelConnectionOf(reads.metaPixel) },
   ]
 }

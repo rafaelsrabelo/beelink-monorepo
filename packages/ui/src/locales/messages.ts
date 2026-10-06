@@ -3510,6 +3510,45 @@ export interface UiMessages {
         recheckErrors: Record<"INTEGRATION_UNREACHABLE" | "RATE_LIMITED" | "UNKNOWN", string>
       }
     }
+    /**
+     * The shop's Meta Pixel (BEELINK-270): named by its ID, and by nothing else. No sentence here says
+     * that anything is being sent — what the shop window sends, and when, is said by what sends it.
+     */
+    metaPixel: IntegrationCardMessages & {
+      idLabel: string
+      idPlaceholder: string
+      /** What an ID is, and that a pasted snippet is not one. */
+      idHint: string
+      connectSubmit: string
+      connecting: string
+      /** When the ID in hand was saved. */
+      savedAt: string
+      replaceId: string
+      replaceLabel: string
+      replaceSubmit: string
+      replaceCancel: string
+      /** Over the page once an ID was saved, there and then. */
+      connectedNotice: string
+      disconnect: string
+      disconnectTitle: string
+      disconnectBody: string
+      disconnectConfirm: string
+      disconnectCancel: string
+      disconnectFailed: string
+      /** By the API's code; `UNKNOWN` for any other. The first is also what the form says of an ID it would not send. */
+      errors: Record<"META_PIXEL_ID_INVALID" | "UNKNOWN", string>
+      /** Where the ID is copied from at Meta, and what stays there. */
+      guide: {
+        title: string
+        steps: Record<"open" | "sources" | "pick" | "copy", string>
+        openLink: string
+        /** Read out after a link that opens another tab. */
+        newTab: string
+        notesTitle: string
+        /** The domain needs no verifying; reports and ads stay at Meta; nothing checks the ID against Meta. */
+        notes: Record<"domain" | "reports" | "unchecked", string>
+      }
+    }
     /** How the shop is paid once its Asaas is connected (BEELINK-203). */
     payments: {
       title: string
@@ -3564,20 +3603,28 @@ export interface UiMessages {
 }
 
 /**
- * What every third party says of itself wherever the Integrations pages show it. Each provider's
- * slice holds at least this, so the list's cards read any of them alike.
+ * What every integration says of itself wherever the Integrations pages show it. Each one's slice
+ * holds at least this, so the list's cards read any of them alike.
  */
-export interface IntegrationProviderMessages {
+export interface IntegrationCardMessages {
   title: string
   /** What connecting gives the shop, in a line or two: the list's card. */
   summary: string
   /** The same at length, on the integration's own page. */
   lead: string
-  unavailable: string
   /** The way in, naming the provider: several cards share the list. */
   connect: string
   connected: string
   disconnectedBadge: string
+}
+
+/**
+ * What an integration that is an account at a third party says besides: a deployment may not be set
+ * up for it, it may run against a sandbox, and the third party may stop accepting the connection.
+ * The Meta Pixel is none of that — an ID is saved or it is not — and says none of it.
+ */
+export interface IntegrationProviderMessages extends IntegrationCardMessages {
+  unavailable: string
   needsReconnectBadge: string
   /** The third party stopped accepting the connection, as the list's card warns of it: its own page says how to mend it. */
   needsReconnectCard: string

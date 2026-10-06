@@ -8,6 +8,8 @@ import type {
   MelhorEnvioConnection,
   MelhorEnvioSettings,
   MelhorEnvioSettingsPayload,
+  MetaPixelConnectPayload,
+  MetaPixelConnection,
 } from "@harness-monorepo/contracts"
 
 /** What a failed call carries: the API's stable code, never a sentence (apps/web/AGENTS.md, rule 9). */
@@ -81,4 +83,19 @@ export function fetchAsaasSettings(slug: string): Promise<AsaasSettings> {
 
 export function saveAsaasSettings(slug: string, payload: AsaasSettingsPayload): Promise<AsaasSettings> {
   return ask(`${asaas(slug)}/settings`, "PUT", payload)
+}
+
+const metaPixel = (slug: string) => `/api/stores/${encodeURIComponent(slug)}/integrations/meta-pixel`
+
+export function fetchMetaPixelConnection(slug: string): Promise<MetaPixelConnection> {
+  return ask(metaPixel(slug))
+}
+
+/** Saves the shop's pixel ID, or replaces the one saved: the answer is the connection as it then stands. */
+export function saveMetaPixel(slug: string, payload: MetaPixelConnectPayload): Promise<MetaPixelConnection> {
+  return ask(metaPixel(slug), "POST", payload)
+}
+
+export function removeMetaPixel(slug: string): Promise<object> {
+  return ask(metaPixel(slug), "DELETE")
 }
