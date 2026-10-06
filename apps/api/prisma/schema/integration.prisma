@@ -2,6 +2,8 @@
 enum IntegrationProvider {
   MELHOR_ENVIO
   ASAAS
+  /// The shop's Meta Pixel (BEELINK-269): its ID in `pixelId`, public, and nothing sealed.
+  META_PIXEL
 }
 
 /// Where a connection stands. A shop with no row is disconnected.
@@ -47,7 +49,14 @@ model StoreIntegration {
   /// The access itself, as JSON — `{ accessToken, refreshToken }` for Melhor Envio, `{ apiKey }` for
   /// Asaas — sealed with AES-256-GCM under INTEGRATIONS_SECRET_KEY, bound to this shop and party.
   /// Read and written only under src/modules/integrations (gate `api/sealed-secret-in-integrations`).
-  secretSealed String
+  /// Empty is nothing sealed: a Meta Pixel's row holds only a public ID (BEELINK-269), and is written
+  /// with no key set. A secret of that party's, when one comes, is sealed here like the others.
+  secretSealed String @default("")
+
+  /// The shop's Meta Pixel ID (BEELINK-269), on the `META_PIXEL` row alone: 10 to 20 digits and
+  /// nothing else, by a CHECK. It is served to anyone in the shop's public data, so the database
+  /// itself refuses what a page could not carry safely. Never a script: shops share one domain.
+  pixelId String? @db.VarChar(20)
 
   /// When the access in hand runs out, and when the means to renew it does. Null for a key that does not.
   accessExpiresAt  DateTime?
