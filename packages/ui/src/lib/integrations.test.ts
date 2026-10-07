@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest"
 
 // Lib
-import { metaPixelIdOf, metaTestCodeOf, metaTokenOf } from "./integrations"
+import { googleAnalyticsIdOf, metaPixelIdOf, metaTestCodeOf, metaTokenOf } from "./integrations"
 
 describe("metaPixelIdOf (BEELINK-270)", () => {
   /** The API's own bounds (`META_PIXEL_ID`, `^[0-9]{10,20}$`): a form that took more would only be refused there. */
@@ -42,5 +42,29 @@ describe("metaTokenOf and metaTestCodeOf (BEELINK-274)", () => {
     expect(metaTestCodeOf(" TEST12345 ")).toBe("TEST12345")
     expect(metaTestCodeOf("a_b-C")).toBe("a_b-C")
     for (const typed of ["", "ab", "x".repeat(41), "TEST 123", "TEST&x=1", "<b>"]) expect(metaTestCodeOf(typed)).toBeNull()
+  })
+})
+
+describe("googleAnalyticsIdOf (BEELINK-302)", () => {
+  /** The API's own bounds (`GOOGLE_ANALYTICS_ID`, `^G-[A-Z0-9]{6,16}$`): a form that took more would only be refused there. */
+  it("takes G- and 6 to 16 capital letters or digits, and nothing shorter or longer", () => {
+    expect(googleAnalyticsIdOf("G-AB12CD34EF")).toBe("G-AB12CD34EF")
+    expect(googleAnalyticsIdOf("G-ABC123")).toBe("G-ABC123")
+    expect(googleAnalyticsIdOf("G-ABCDEFGH12345678")).toBe("G-ABCDEFGH12345678")
+    expect(googleAnalyticsIdOf("G-ABC12")).toBeNull()
+    expect(googleAnalyticsIdOf("G-ABCDEFGH123456789")).toBeNull()
+    expect(googleAnalyticsIdOf("")).toBeNull()
+  })
+
+  it("drops the white space an ID was pasted with, wherever it is", () => {
+    expect(googleAnalyticsIdOf("  G-AB12CD34EF\n")).toBe("G-AB12CD34EF")
+    expect(googleAnalyticsIdOf("G-AB12 CD34EF")).toBe("G-AB12CD34EF")
+    expect(googleAnalyticsIdOf("\tG-AB12CD34EF\r\n")).toBe("G-AB12CD34EF")
+    expect(googleAnalyticsIdOf("   ")).toBeNull()
+  })
+
+  /** Refused, never cleaned: another Google product's code, small letters or a snippet is not an ID with noise around it. */
+  it("refuses another product's code, small letters, and anything around the ID", () => {
+    for (const typed of ["UA-12345678-1", "GTM-AB12CD3", "AW-1234567890", "g-ab12cd34ef", "G-ab12cd34ef", "AB12CD34EF", "G_AB12CD34EF", "G-AB12-CD34", "G-ÁB12CD34EF", "gtag('config', 'G-AB12CD34EF');", "ID: G-AB12CD34EF"]) expect(googleAnalyticsIdOf(typed)).toBeNull()
   })
 })
