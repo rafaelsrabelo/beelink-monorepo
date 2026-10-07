@@ -98,7 +98,7 @@ describe('visitorsReadAnother', () => {
 
 describe('toPopupSettings', () => {
   it('reads the defaults, switched off, for a shop that never saved', () => {
-    expect(toPopupSettings(null)).toEqual({ enabled: false, imageUrl: null, title: null, text: null, buttonLabel: null, trigger: 'ON_ARRIVAL', delaySeconds: 5, benefitSource: 'AUTO', benefitId: null, keepReminder: true, revision: 1, updatedAt: null });
+    expect(toPopupSettings(null)).toEqual({ enabled: false, imageUrl: null, title: null, text: null, buttonLabel: null, trigger: 'ON_ARRIVAL', delaySeconds: 5, benefitSource: 'AUTO', benefitId: null, keepReminder: false, revision: 1, updatedAt: null });
   });
 
   it('says which of the two columns names the benefit', () => {

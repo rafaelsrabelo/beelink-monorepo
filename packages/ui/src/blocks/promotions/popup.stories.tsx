@@ -56,8 +56,8 @@ export const SemBeneficio: Story = { args: { words: popupPlainWords, customerWor
 /** A loja tem só promoção de primeira compra: em "Cliente sem pedido" a prévia não tem código e o botão só fecha. */
 export const ClienteComPromocao: Story = { args: { customerWords: popupCustomerPromotionWords } }
 
-/** Lembrete desligado: depois de fechado o pop-up, a faixa não aparece na loja. */
-export const SemLembrete: Story = { args: { initial: { enabled: true, keepReminder: false } } }
+/** Lembrete ligado: depois de fechado o pop-up, a faixa fica abaixo do cabeçalho até ser fechada também. Desligado é o padrão. */
+export const ComLembrete: Story = { args: { initial: { enabled: true, keepReminder: true } } }
 
 /** Gatilho "ao sair": a ajuda diz o que acontece no celular. */
 export const AoSair: Story = { args: { initial: { enabled: true, trigger: "ON_LEAVE" } } }

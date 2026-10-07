@@ -217,11 +217,11 @@ describe("offersAt — what the shop says of its offers to anyone", () => {
     expect(asked[0]?.tags).toContain(offersTag("loja"))
   })
 
-  // BEELINK-310: an answer kept across the deploy must not take the strip away from a shop that never chose to.
-  it("reads a pop-up kept from before its reminder could be switched as keeping it", async () => {
+  // BEELINK-311: the reminder is asked for, never assumed — an answer with no word of it keeps none.
+  it("reads a pop-up kept from before its reminder could be switched as keeping none", async () => {
     stubApi(() => ({ ...HEADLINE, popup: { revision: 2, imageUrl: null, title: null, text: null, buttonLabel: null, trigger: "ON_ARRIVAL", delaySeconds: 5, benefit: null } }))
 
-    expect((await offersAt("loja")).popup?.keepReminder).toBe(true)
+    expect((await offersAt("loja")).popup?.keepReminder).toBe(false)
   })
 
   it("is no offer when the read fails: the strip then promises nothing", async () => {

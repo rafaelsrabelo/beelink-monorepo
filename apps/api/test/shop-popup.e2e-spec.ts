@@ -1,3 +1,6 @@
+// Node
+import { readFileSync } from 'node:fs';
+
 // Nest
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 
@@ -85,7 +88,7 @@ describe("a shop's first-purchase pop-up", () => {
 
       expect(response.statusCode).toBe(200);
       expect(response.json<StorePopupOverview>()).toEqual({
-        settings: { enabled: false, imageUrl: null, title: null, text: null, buttonLabel: null, trigger: 'ON_ARRIVAL', delaySeconds: 5, benefitSource: 'AUTO', benefitId: null, keepReminder: true, revision: 1, updatedAt: null },
+        settings: { enabled: false, imageUrl: null, title: null, text: null, buttonLabel: null, trigger: 'ON_ARRIVAL', delaySeconds: 5, benefitSource: 'AUTO', benefitId: null, keepReminder: false, revision: 1, updatedAt: null },
         benefit: null,
         headline: null,
         options: [],
@@ -312,14 +315,36 @@ describe("a shop's first-purchase pop-up", () => {
   });
 
   describe("the strip's reminder (BEELINK-310)", () => {
-    it('is on for a shop that never said, and for a pop-up saved before the switch existed', async () => {
-      expect((await overview()).settings.keepReminder).toBe(true);
+    // BEELINK-311: the reminder is asked for, never assumed.
+    it('is off for a shop that never said, and for a pop-up saved without it', async () => {
+      expect((await overview()).settings.keepReminder).toBe(false);
 
-      // A row as the first migration wrote it: the column's own default answers.
+      // A row written with nothing said of the reminder: the column's own default answers.
       const { id: storeId } = await prisma.store.findUniqueOrThrow({ where: { slug: 'lessari' }, select: { id: true } });
       await prisma.storePopup.create({ data: { storeId, enabled: true } });
-      expect((await overview()).settings.keepReminder).toBe(true);
+      expect((await overview()).settings.keepReminder).toBe(false);
+      expect((await served()).popup?.keepReminder).toBe(false);
+    });
+
+    // The switch shipped on by default (BEELINK-310); the migration that turned the default took every row with it.
+    it('was switched off, by its migration, at every shop that had it on', async () => {
+      const { id: storeId } = await prisma.store.findUniqueOrThrow({ where: { slug: 'lessari' }, select: { id: true } });
+      await prisma.storePopup.create({ data: { storeId, enabled: true, keepReminder: true } });
       expect((await served()).popup?.keepReminder).toBe(true);
+
+      const statements = readFileSync(new URL('../prisma/migrations/20261007235000_store_popup_reminder_off/migration.sql', import.meta.url), 'utf8')
+        .split('\n')
+        .filter((line) => !line.startsWith('--'))
+        .join('\n')
+        .split(';')
+        .map((statement) => statement.trim())
+        .filter(Boolean);
+      for (const statement of statements) await prisma.$executeRawUnsafe(statement);
+
+      expect((await overview()).settings.keepReminder).toBe(false);
+      expect((await served()).popup?.keepReminder).toBe(false);
+      const [column] = await prisma.$queryRaw<{ column_default: string }[]>`SELECT column_default FROM information_schema.columns WHERE table_name = 'store_popups' AND column_name = 'keepReminder'`;
+      expect(column?.column_default).toBe('false');
     });
 
     it('is saved, read back and served as saved', async () => {

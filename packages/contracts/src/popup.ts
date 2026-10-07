@@ -43,8 +43,8 @@ export interface StorePopupSettings {
   /**
    * Whether the offer strip under the header stays, as a reminder, for whoever already closed the
    * pop-up (BEELINK-310). Read only while the pop-up is switched on: on, the strip is drawn once the
-   * dialog is no longer due to whoever is looking; off, the shop draws no strip at all. A shop that
-   * never saved reads true.
+   * dialog is no longer due to whoever is looking, until they close the strip too (BEELINK-311);
+   * off, the shop draws no strip at all. A shop that never saved reads false.
    */
   keepReminder: boolean;
 }
@@ -101,7 +101,7 @@ export interface StorefrontPopup {
   delaySeconds: number;
   /** Null: nothing for a first purchase is in force, or the one the shop named is not. */
   benefit: FirstPurchaseHeadline | null;
-  /** As `StorePopupSettings.keepReminder`: whether the offer strip is drawn once the pop-up is no longer due. */
+  /** As `StorePopupSettings.keepReminder`: whether the offer strip is drawn once the pop-up is no longer due, until it is closed itself. */
   keepReminder: boolean;
 }
 
