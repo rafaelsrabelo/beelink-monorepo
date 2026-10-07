@@ -133,6 +133,9 @@ export class PublicStoreResponse implements PublicStore {
   @ApiProperty({ type: PublicCashbackResponse, nullable: true, description: 'Its cashback while switched on; null while off.' })
   cashback!: PublicCashbackResponse | null;
 
+  @ApiProperty({ nullable: true, type: String, example: '1234567890123456', description: "The shop's Meta Pixel ID, digits only; null with none saved." })
+  metaPixelId!: string | null;
+
   @ApiProperty({ type: [PublicSectionResponse], description: "The blocks the landing page is made of, in order." })
   sections!: PublicSectionResponse[];
 }

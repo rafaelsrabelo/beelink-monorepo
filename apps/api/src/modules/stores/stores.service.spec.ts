@@ -26,6 +26,7 @@ const row = {
   categoryId: null,
   pageVersions: [],
   pages: [],
+  integrations: [],
   category: null,
   layoutType: 'DEFAULT',
   colorBackground: '#F0F9FF',

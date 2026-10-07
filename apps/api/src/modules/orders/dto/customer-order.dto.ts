@@ -17,6 +17,8 @@ import type {
   CustomerOrderSituation,
   CustomerOrderSummary,
   OrderFulfillment,
+  OrderMarketingConsentInput,
+  OrderOriginInput,
   OrderPaymentChannel,
   OrderCancelledBy,
   OrderPlacedBy,
@@ -30,6 +32,7 @@ import type {
 import { OrderCashbackResponse } from '../../cashback/dto/cashback.response.js';
 import { ShippingWindowResponse } from '../../delivery/dto/delivery.response.js';
 import { cpfDigitsOf, IsCpf } from '../../../shared/http/cpf.js';
+import { clickIdOf, FBCLID_MAX, FBP_MAX, fbpOf, ORIGIN_LABEL_MAX, originLabelOf, PAGE_URL_MAX, pageUrlOf, pastInstantOf, USER_AGENT_MAX, userAgentOf } from '../order-origin.js';
 import { ORDER_PAYMENT_CHANNELS, OrderPaymentBriefResponse, OrderPaymentResponse } from '../../payments/dto/payment.response.js';
 import { blankToNull, trim } from '../../stores/dto/store-fields.dto.js';
 import { PAYMENT_METHODS } from '../../stores/stores.constants.js';
@@ -50,6 +53,95 @@ import { OrderCouponResponse, OrderDeliveryAddressResponse, OrderDeliveryRespons
 const SITUATIONS = Object.keys(CUSTOMER_ORDER_SITUATIONS) as CustomerOrderSituation[];
 const SIDES = ['CUSTOMER', 'SHOP'] as const satisfies readonly OrderPlacedBy[];
 const CANCELLERS = [...SIDES, 'SYSTEM'] as const satisfies readonly OrderCancelledBy[];
+
+type Sent = { value: unknown };
+
+/**
+ * The campaign the buyer arrived by (BEELINK-275). Every label is cleaned and cut as it comes in,
+ * and one that is nothing after that is dropped: no value here refuses the order.
+ */
+export class OrderOriginDto implements OrderOriginInput {
+  @ApiPropertyOptional({ type: String, nullable: true, maxLength: ORIGIN_LABEL_MAX, example: 'facebook', description: '`utm_source`; kept in lower case.' })
+  @Transform(({ value }: Sent) => originLabelOf(value, true))
+  @IsOptional()
+  @IsString()
+  @MaxLength(ORIGIN_LABEL_MAX)
+  source?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, maxLength: ORIGIN_LABEL_MAX, example: 'cpc', description: '`utm_medium`; kept in lower case.' })
+  @Transform(({ value }: Sent) => originLabelOf(value, true))
+  @IsOptional()
+  @IsString()
+  @MaxLength(ORIGIN_LABEL_MAX)
+  medium?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, maxLength: ORIGIN_LABEL_MAX, description: '`utm_campaign`, as written.' })
+  @Transform(({ value }: Sent) => originLabelOf(value))
+  @IsOptional()
+  @IsString()
+  @MaxLength(ORIGIN_LABEL_MAX)
+  campaign?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, maxLength: ORIGIN_LABEL_MAX })
+  @Transform(({ value }: Sent) => originLabelOf(value))
+  @IsOptional()
+  @IsString()
+  @MaxLength(ORIGIN_LABEL_MAX)
+  content?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, maxLength: ORIGIN_LABEL_MAX })
+  @Transform(({ value }: Sent) => originLabelOf(value))
+  @IsOptional()
+  @IsString()
+  @MaxLength(ORIGIN_LABEL_MAX)
+  term?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, format: 'date-time', description: 'When the visitor arrived by it. One in the future, or older than ninety days, is dropped.' })
+  @Transform(({ value }: Sent) => pastInstantOf(value))
+  @IsOptional()
+  @IsString()
+  arrivedAt?: string | null;
+}
+
+/**
+ * What stood in the buyer's browser with their yes to the shop's pixel (BEELINK-275). Sent only
+ * while that yes stood: the object being there is the fact. What is not in its shape is dropped.
+ */
+export class OrderMarketingConsentDto implements OrderMarketingConsentInput {
+  @ApiPropertyOptional({ type: String, nullable: true, maxLength: FBCLID_MAX, description: "Meta's click identifier as this shop received it; kept only with `clickedAt`." })
+  @Transform(({ value }: Sent) => clickIdOf(value))
+  @IsOptional()
+  @IsString()
+  @MaxLength(FBCLID_MAX)
+  fbclid?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, format: 'date-time', description: 'When that click arrived.' })
+  @Transform(({ value }: Sent) => pastInstantOf(value))
+  @IsOptional()
+  @IsString()
+  clickedAt?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, maxLength: FBP_MAX, example: 'fb.1.1759795200000.1234567890', description: "Meta's `_fbp` cookie." })
+  @Transform(({ value }: Sent) => fbpOf(value))
+  @IsOptional()
+  @IsString()
+  @MaxLength(FBP_MAX)
+  fbp?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, maxLength: USER_AGENT_MAX })
+  @Transform(({ value }: Sent) => userAgentOf(value))
+  @IsOptional()
+  @IsString()
+  @MaxLength(USER_AGENT_MAX)
+  userAgent?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, maxLength: PAGE_URL_MAX, description: 'The page the order was placed from; its query is dropped.' })
+  @Transform(({ value }: Sent) => pageUrlOf(value))
+  @IsOptional()
+  @IsString()
+  @MaxLength(PAGE_URL_MAX)
+  pageUrl?: string | null;
+}
 
 /** The cart as the shopper sends it: no price, no customer, no address — the API has them. */
 export class PlaceCustomerOrderDto implements PlaceCustomerOrderPayload {
@@ -108,6 +200,18 @@ export class PlaceCustomerOrderDto implements PlaceCustomerOrderPayload {
   @Min(0)
   @Max(ORDER_AMOUNT_MAX_CENTS)
   deliveryFeeCents?: number | null;
+
+  @ApiPropertyOptional({ type: OrderOriginDto, description: "The campaign the buyer arrived by at this shop, read by the web's order handler from the shop's own cookie." })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => OrderOriginDto)
+  origin?: OrderOriginDto;
+
+  @ApiPropertyOptional({ type: OrderMarketingConsentDto, description: "Present only while the buyer's yes to this shop's pixel stood: absent is no consent, and nothing of it is kept." })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => OrderMarketingConsentDto)
+  marketingConsent?: OrderMarketingConsentDto;
 }
 
 export class CustomerOrderItemResponse implements CustomerOrderItem {
@@ -131,6 +235,7 @@ export class CustomerOrderEventResponse implements CustomerOrderEvent {
 }
 
 export class CustomerOrderResponse implements CustomerOrder {
+  @ApiProperty({ format: 'uuid', description: "The order's own id: what names its purchase to an advertising tool. No route takes it." }) id!: string;
   @ApiProperty({ description: 'Sequential within the shop.' }) number!: number;
   @ApiProperty({ enum: ORDER_STATUSES }) status!: OrderStatus;
   @ApiProperty({ enum: SIDES, description: 'The customer from the cart, or the shop from its panel.' }) placedBy!: OrderPlacedBy;

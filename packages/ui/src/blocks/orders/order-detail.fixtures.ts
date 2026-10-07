@@ -64,3 +64,14 @@ export const awaitingOnlineOrder: OrderDetailView = { ...order, status: "RECEIVE
 
 /** Cancelled, and paid afterwards: the money is the shop's to give back. */
 export const paidAfterCancelledOrder: OrderDetailView = { ...order, status: "CANCELLED", paymentChannel: "ONLINE", payment: paidAfterCancelled }
+
+/** Placed from the cart by a buyer an ad of Meta's brought, with the campaign's labels (BEELINK-275). */
+export const campaignOrder: OrderDetailView = {
+  ...order,
+  status: "RECEIVED",
+  events: [{ status: "RECEIVED", actor: "CUSTOMER", at: "2026-09-25T14:30:00.000Z" }],
+  origin: { source: "facebook", medium: "cpc", campaign: "Black Friday", content: "vídeo 1", term: null, metaAd: true },
+}
+
+/** Placed from the cart by a buyer who came by no campaign. */
+export const directOrder: OrderDetailView = { ...campaignOrder, origin: null }

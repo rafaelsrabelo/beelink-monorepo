@@ -1,3 +1,6 @@
+// React
+import type { ReactNode } from "react"
+
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
@@ -22,11 +25,20 @@ export interface StorefrontLink {
   href: string
 }
 
+/**
+ * One line of a column: a place to go, or something to do on this page — the way back to the cookie
+ * choice (BEELINK-271) is a button, not an address. An action arrives drawn, by
+ * `storefront-footer-action`, because this block is rendered on the server and holds no handler.
+ */
+export type StorefrontFooterItem =
+  | { label: string; href: string; id?: undefined; action?: undefined }
+  | { id: string; action: ReactNode; label?: undefined; href?: undefined }
+
 /** One column of the footer. The screen builds them, because a block knows no address. */
 export interface StorefrontFooterColumn {
   id: string
   title: string
-  items: readonly { label: string; href: string }[]
+  items: readonly StorefrontFooterItem[]
 }
 
 export interface StorefrontFooterProps {
@@ -116,13 +128,17 @@ export function StorefrontFooter({
               <nav key={column.id} aria-label={column.title} className="flex flex-col gap-3">
                 <p className="text-xs font-semibold tracking-widest uppercase opacity-60">{column.title}</p>
                 <ul className="flex flex-col gap-2 text-sm">
-                  {column.items.map((item) => (
-                    <li key={item.href}>
-                      <Link href={item.href} className="opacity-80 transition-opacity hover:opacity-100">
-                        {item.label}
-                      </Link>
-                    </li>
-                  ))}
+                  {column.items.map((item) =>
+                    item.href === undefined ? (
+                      <li key={item.id}>{item.action}</li>
+                    ) : (
+                      <li key={item.href}>
+                        <Link href={item.href} className="opacity-80 transition-opacity hover:opacity-100">
+                          {item.label}
+                        </Link>
+                      </li>
+                    ),
+                  )}
                 </ul>
               </nav>
             ))}

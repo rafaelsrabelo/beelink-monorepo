@@ -4,8 +4,11 @@
  * the shopkeeper's own account; bee-link holds the access it was given, sealed, and never shows it.
  */
 
-/** The third parties a shop can connect, one connection each. */
-export type IntegrationProvider = "MELHOR_ENVIO" | "ASAAS";
+/**
+ * The third parties a shop can connect, one connection each. `META_PIXEL` (BEELINK-269) is the odd
+ * one: what the shop gives is its pixel's ID, which is public — nothing of it is sealed.
+ */
+export type IntegrationProvider = "MELHOR_ENVIO" | "ASAAS" | "META_PIXEL";
 
 /**
  * Where a shop's connection stands. `NEEDS_RECONNECT` is the third party refusing the access it gave
@@ -78,7 +81,13 @@ export type IntegrationErrorCode =
   /** An API key from the other environment: a sandbox key on production, or the reverse (BEELINK-202). */
   | "INTEGRATION_KEY_WRONG_ENVIRONMENT"
   /** A way of being paid out of range: instalments that are no whole number from 1 to 12, a switch that is no boolean, or every way off (BEELINK-203). */
-  | "ASAAS_SETTINGS_INVALID";
+  | "ASAAS_SETTINGS_INVALID"
+  /** A Meta Pixel ID that is not 10 to 20 digits and nothing else: missing, with a letter, a whole snippet pasted (BEELINK-269). */
+  | "META_PIXEL_ID_INVALID"
+  /** A Conversions API token no token could be: blank, with spaces, too short or too long (BEELINK-274). */
+  | "META_PIXEL_TOKEN_INVALID"
+  /** A test event code no code could be (BEELINK-274). */
+  | "META_PIXEL_TEST_CODE_INVALID";
 
 /** The `details` of an integration refusal raised after the state named the shop: where to send the browser back. */
 export interface IntegrationRefusalDetails {

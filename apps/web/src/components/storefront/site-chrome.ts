@@ -6,7 +6,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // App
 import { drawnSectionsOf } from "./empty-component"
 import { orderHrefOf } from "./storefront-links"
-import { legalFooterColumnOf } from "@/lib/legal-routes"
+import { shopLegalColumnOf } from "./shop-legal-column"
 
 /**
  * The anchor a named band answers to, from its name: "Como funciona" → `#como-funciona`.
@@ -116,6 +116,6 @@ export function siteFooterColumnsOf(
       ? [{ id: "navigation", title: text.footerNavigation, items: menu.map(({ label, href }) => ({ label, href })) }]
       : []),
     ...(whatsapp ? [{ id: "contact", title: text.footerContact, items: [{ label: text.networks.whatsapp, href: whatsapp }] }] : []),
-    legalFooterColumnOf(messages),
+    shopLegalColumnOf(store, messages),
   ]
 }

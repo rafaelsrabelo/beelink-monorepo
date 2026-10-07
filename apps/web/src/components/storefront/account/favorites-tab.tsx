@@ -112,6 +112,7 @@ export async function FavoritesTab({ slug, routes, query, notices, locale, error
                   <FavoriteCartLive
                     productId={favorite.productId}
                     name={favorite.name}
+                    priceCents={favorite.priceCents}
                     variantId={favorite.variant?.id ?? null}
                     choose={favorite.variant === null && favorite.hasOptions}
                     messages={messages}

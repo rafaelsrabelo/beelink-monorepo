@@ -111,6 +111,24 @@ export interface OrderDeliveryPayload {
   estimateTo?: string | null;
 }
 
+/**
+ * Where the visit that ended in an order came from (BEELINK-275): the campaign labels of the link
+ * its buyer arrived by at this shop, as the shop's own sales attribution. Never Meta's click
+ * identifier itself — only whether one was kept, which takes the buyer's yes to the shop's pixel.
+ */
+export interface OrderOrigin {
+  /** `utm_source`, lower case: "facebook". */
+  source: string | null;
+  /** `utm_medium`, lower case: "cpc". */
+  medium: string | null;
+  /** `utm_campaign`, as it was written. */
+  campaign: string | null;
+  content: string | null;
+  term: string | null;
+  /** The visit came by a click on a Meta ad, kept because the buyer had said yes to the shop's pixel. */
+  metaAd: boolean;
+}
+
 /** An order as its shop reads it. Every amount is whole cents, computed by the API. */
 export interface Order {
   id: string;
@@ -154,6 +172,11 @@ export interface Order {
   cashbackUsedCents: number;
   totalCents: number;
   note: string | null;
+  /**
+   * Where its buyer came from (BEELINK-275); null with no campaign and no ad click kept — a direct
+   * visit, an order placed before origins were kept, and every sale registered in the panel.
+   */
+  origin: OrderOrigin | null;
   /** When it was sold, ISO-8601 — which may be before it was registered. */
   placedAt: string;
   /** Oldest first; the first is how the order started. */
@@ -263,6 +286,39 @@ export interface UpdateOrderStatusPayload {
 export type OrderShippingChoice = { kind: "OWN_DELIVERY" } | { kind: "CARRIER"; serviceId: number };
 
 /**
+ * The campaign the buyer arrived by at this shop, as its order records it (BEELINK-275). Read by the
+ * web's order handler from the shop's own `bl_origin` cookie, never from what the page sent. Labels
+ * out of a link anyone may write: the API cleans and cuts each, and a bad one never refuses an order.
+ */
+export interface OrderOriginInput {
+  source?: string | null;
+  medium?: string | null;
+  campaign?: string | null;
+  content?: string | null;
+  term?: string | null;
+  /** When the visitor arrived by it, ISO-8601. */
+  arrivedAt?: string | null;
+}
+
+/**
+ * What stood in the buyer's browser as the order was placed, with their yes to this shop's pixel
+ * (BEELINK-275) — what a purchase told to Meta from the server will need and cannot ask for later.
+ * Its presence is the fact: the buyer's marketing consent stood at this shop, then. Without that
+ * yes it is not sent at all, and nothing below is kept.
+ */
+export interface OrderMarketingConsentInput {
+  /** Meta's click identifier as this shop received it in the link; with `clickedAt` or not at all. */
+  fbclid?: string | null;
+  /** When that click arrived, ISO-8601 to the millisecond: Meta's `fbc` is built from the two. */
+  clickedAt?: string | null;
+  /** Meta's browser identifier, the `_fbp` cookie, as it was. */
+  fbp?: string | null;
+  userAgent?: string | null;
+  /** The page the order was placed from: origin and path, no query. */
+  pageUrl?: string | null;
+}
+
+/**
  * The cart as its signed-in customer places it: the lines, how it leaves and how it is paid. The
  * prices and the totals are the API's. A delivery goes to the saved address chosen, or to the
  * default without one (`ORDER_DELIVERY_ADDRESS_MISSING` when there is nowhere to go). It starts
@@ -298,6 +354,10 @@ export interface PlaceCustomerOrderPayload {
    * place it at another price. Absent is not checked; ignored on a pick-up.
    */
   deliveryFeeCents?: number | null;
+  /** The campaign the buyer arrived by (BEELINK-275), with or without a pixel and a yes. */
+  origin?: OrderOriginInput;
+  /** Present only while the buyer's yes to this shop's pixel stood (BEELINK-275): its absence is "no consent". */
+  marketingConsent?: OrderMarketingConsentInput;
 }
 
 /** One line as its customer reads it: what was bought, at the price of that moment. */
@@ -343,6 +403,12 @@ export type CustomerOrderSituation = "ACTIVE" | "DELIVERED" | "CANCELLED";
  * what the shop's books say about the customer.
  */
 export interface CustomerOrder {
+  /**
+   * The order's own id, which never changes and no other order shares (BEELINK-273). Nothing is
+   * asked for by it — every route takes the number. It is what names the order's purchase to an
+   * advertising tool, alike from the browser and from the server, so the two are counted once.
+   */
+  id: string;
   /** Sequential within the shop: what the customer says to the shop. */
   number: number;
   status: OrderStatus;

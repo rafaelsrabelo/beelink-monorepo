@@ -24,6 +24,7 @@ import { PromotionsModule } from './modules/promotions/promotions.module.js';
 import { CarrierTrackingModule } from './modules/carrier-tracking/carrier-tracking.module.js';
 import { CashbackModule } from './modules/cashback/cashback.module.js';
 import { RealtimeModule } from './modules/realtime/realtime.module.js';
+import { ReportsModule } from './modules/reports/reports.module.js';
 import { ReviewsModule } from './modules/reviews/reviews.module.js';
 import { StoresModule } from './modules/stores/stores.module.js';
 import { UploadsModule } from './modules/uploads/uploads.module.js';
@@ -67,6 +68,7 @@ import { PrismaModule } from './shared/prisma/prisma.module.js';
     CarrierTrackingModule,
     PaymentEventsModule,
     IntegrationsModule,
+    ReportsModule,
     UploadsModule,
   ],
   controllers: [HealthController],

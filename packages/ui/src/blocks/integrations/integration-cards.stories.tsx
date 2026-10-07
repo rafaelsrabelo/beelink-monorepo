@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 
 // Block
 import { IntegrationCards } from "./integration-cards"
-import { asaasCard, beeflowUpcoming, melhorEnvioCard } from "./integrations.fixtures"
+import { asaasCard, beeflowUpcoming, melhorEnvioCard, metaPixelCard } from "./integrations.fixtures"
 
 const noop = () => {}
 
@@ -11,13 +11,13 @@ const meta = {
   title: "Blocos/Painel/Integrações/Lista",
   component: IntegrationCards,
   decorators: [(Story) => <div className="max-w-6xl">{Story()}</div>],
-  args: { cards: [melhorEnvioCard, asaasCard], onRetry: noop },
+  args: { cards: [melhorEnvioCard, asaasCard, metaPixelCard], onRetry: noop },
 } satisfies Meta<typeof IntegrationCards>
 
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** A loja que ainda não conectou nada: os dois serviços, cada um com o seu "Conectar". */
+/** A loja que ainda não conectou nada: os três, cada um com o seu "Conectar". */
 export const NaoConectadas: Story = {}
 
 /** Conectadas: o selo verde, de quem é a conta e "Configurar", que leva à página de cada uma. */
@@ -26,6 +26,7 @@ export const Conectadas: Story = {
     cards: [
       { ...melhorEnvioCard, connection: { state: "connected", account: "Loja Lessari", sandbox: false } },
       { ...asaasCard, connection: { state: "connected", account: "Lessari Moda LTDA", sandbox: true } },
+      { ...metaPixelCard, connection: { state: "connected", account: null, sandbox: false } },
     ],
   },
 }

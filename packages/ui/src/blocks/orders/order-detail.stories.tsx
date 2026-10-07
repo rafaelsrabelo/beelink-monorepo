@@ -5,7 +5,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 import { OrderDeliveryCard } from "./order-delivery-card"
 import { OrderFeeCard } from "./order-fee-card"
 import { OrderDetail } from "./order-detail"
-import { awaitingOnlineOrder, cashbackOrder, order, paidAfterCancelledOrder, paidOnlineOrder } from "./order-detail.fixtures"
+import { awaitingOnlineOrder, campaignOrder, cashbackOrder, directOrder, order, paidAfterCancelledOrder, paidOnlineOrder } from "./order-detail.fixtures"
 
 const meta = {
   title: "Blocks/Orders/OrderDetail",
@@ -93,3 +93,9 @@ export const ComEntrega: Story = {
     ),
   },
 }
+
+/** O pedido do carrinho de quem veio por um anúncio da Meta: a linha "Origem" diz a campanha, nunca o identificador do clique (BEELINK-275). */
+export const ComOrigem: Story = { args: { order: campaignOrder } }
+
+/** O pedido do carrinho de quem não veio por campanha nenhuma. */
+export const OrigemDireta: Story = { args: { order: directOrder } }

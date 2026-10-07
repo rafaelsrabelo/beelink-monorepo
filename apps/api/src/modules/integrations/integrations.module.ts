@@ -24,6 +24,11 @@ import { MelhorEnvioRefresher } from './melhor-envio/melhor-envio-refresher.js';
 import { MelhorEnvioSettingsController } from './melhor-envio/melhor-envio-settings.controller.js';
 import { MelhorEnvioSettingsService } from './melhor-envio/melhor-envio-settings.service.js';
 import { MelhorEnvioService } from './melhor-envio/melhor-envio.service.js';
+import { MetaConversionsClient } from './meta-pixel/meta-conversions.client.js';
+import { MetaConversionsHttpClient } from './meta-pixel/meta-conversions-http.client.js';
+import { MetaPixelController } from './meta-pixel/meta-pixel.controller.js';
+import { MetaPixelService } from './meta-pixel/meta-pixel.service.js';
+import { MetaPurchases } from './meta-pixel/meta-purchases.service.js';
 
 /**
  * A shop's own accounts at the third parties that act in its name (BEELINK-182): Melhor Envio now,
@@ -40,10 +45,14 @@ import { MelhorEnvioService } from './melhor-envio/melhor-envio.service.js';
  * token a request carries, `AsaasWebhookKeeper` keeps the webhook sending and the key in use, and
  * `AsaasConnectionService` is exported for its `beforeKeyLeaves` alone. `AsaasApproval` is exported for
  * the payments too (BEELINK-278): a charge Asaas refused makes it ask whether the account is approved.
+ * A shop's Meta Pixel (BEELINK-269) is kept here as well: its ID, public and never sealed, and the
+ * Conversions API token its purchases are told to Meta with from the server (BEELINK-274), sealed and
+ * opened under `meta-pixel/` alone. `MetaConversionsClient` is a port, bound here to Meta over HTTP;
+ * `MetaPurchases` pays what `owePurchase` wrote, on its own clock.
  */
 @Module({
   imports: [StoresModule],
-  controllers: [MelhorEnvioController, MelhorEnvioCallbackController, MelhorEnvioSettingsController, OrderLabelsController, AsaasController, AsaasSettingsController],
+  controllers: [MelhorEnvioController, MelhorEnvioCallbackController, MelhorEnvioSettingsController, OrderLabelsController, AsaasController, AsaasSettingsController, MetaPixelController],
   providers: [
     MelhorEnvioClient,
     MelhorEnvioService,
@@ -60,7 +69,10 @@ import { MelhorEnvioService } from './melhor-envio/melhor-envio.service.js';
     AsaasCharges,
     AsaasWebhookDoor,
     AsaasWebhookKeeper,
+    { provide: MetaConversionsClient, useClass: MetaConversionsHttpClient },
+    MetaPixelService,
+    MetaPurchases,
   ],
-  exports: [MelhorEnvioService, MelhorEnvioSettingsService, CarrierGapsService, CarrierQuotes, MelhorEnvioClient, AsaasAcceptance, AsaasApproval, AsaasCharges, AsaasConnectionService, AsaasWebhookDoor, AsaasWebhookKeeper],
+  exports: [MelhorEnvioService, MelhorEnvioSettingsService, CarrierGapsService, CarrierQuotes, MelhorEnvioClient, AsaasAcceptance, AsaasApproval, AsaasCharges, AsaasConnectionService, AsaasWebhookDoor, AsaasWebhookKeeper, MetaPurchases],
 })
 export class IntegrationsModule {}

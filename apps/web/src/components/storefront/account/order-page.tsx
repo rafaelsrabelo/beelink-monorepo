@@ -26,6 +26,7 @@ import { customerOrderAt } from "@/lib/customer-orders"
 import { getMessages } from "@/lib/locale"
 import { isOrderInProgress, orderActionOf } from "@/lib/order-card-view"
 import { holdsMoney, orderPaymentLabelOf } from "@/lib/order-payment-label"
+import { purchaseOf, purchaseOrderOf } from "@/lib/purchase"
 import { fullMomentOf, orderHandoverOf, orderHistoryOf, orderItemsOf, orderPaymentOf, orderPlacedLineOf, orderStatusViewOf, orderTrackingOf } from "@/lib/order-page-view"
 import { reorderActionOf } from "@/lib/reorder-view"
 import { shopperAt } from "@/lib/shopper"
@@ -33,6 +34,7 @@ import { navigationAt, shopAt } from "@/lib/storefront-data"
 import { accountOrderNumberOf, BACK_KEY, paramOf, PAYMENT_KEY, RECEIPT_KEY, sectionOf, storefrontRoutes } from "@/lib/storefront-routes"
 import type { SectionQuery } from "@/lib/storefront-section"
 import { OrderTalkLive } from "../conversations/order-talk-live"
+import { PurchaseTold } from "../tracking/purchase-told"
 import { OrderCancelLive } from "./order-cancel-live"
 import { OrderCancelNotice } from "./order-cancel-notice"
 import { OrderCancelNoticeLine } from "./order-cancel-notice-line"
@@ -135,7 +137,7 @@ export async function OrderPage({ query, ...params }: OrderPageProps) {
     // An order settled with the shop has no payment screen: its page says how it was agreed.
     if (order.paymentChannel !== "ONLINE") redirect(routes.accountOrder(number) as Parameters<typeof redirect>[0])
     const profileHref = `${routes.accountTab("profile")}?${BACK_KEY}=${encodeURIComponent(here)}`
-    return frame(<OrderPaymentLive slug={store.slug} number={order.number} orderHref={routes.accountOrder(number)} profileHref={profileHref} order={facts} locale={context.locale} messages={ui} />)
+    return frame(<OrderPaymentLive slug={store.slug} number={order.number} orderHref={routes.accountOrder(number)} profileHref={profileHref} order={facts} sale={purchaseOrderOf(order)} locale={context.locale} messages={ui} />)
   }
 
   if (receipt) {
@@ -194,6 +196,8 @@ export async function OrderPage({ query, ...params }: OrderPageProps) {
             {/* While it waits for money, the page follows the charge and is read again when it is paid. */}
             {orderPaymentLabelOf(order, ui.storefront, new Date())?.tone === "wait" ? <OrderPaymentWatch slug={store.slug} number={order.number} status={order.payment?.status ?? null} order={facts} /> : null}
             {handover ? <StorefrontOrderAddress {...handover} /> : null}
+            {/* The order as a purchase (BEELINK-273), by this server's clock: told once, to a buyer who said yes, and only in the day after it counted. */}
+            <PurchaseTold slug={store.slug} purchase={purchaseOf(purchaseOrderOf(order), new Date())} />
           </>
         }
       />

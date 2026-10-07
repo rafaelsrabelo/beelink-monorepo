@@ -1174,6 +1174,23 @@ export interface UiMessages {
     /** "© {year} {name}. Todos os direitos reservados." — the year is the screen's. */
     copyright: string
     /**
+     * The cookie strip of a shop with a Meta Pixel (BEELINK-271). It says what happens on a yes and
+     * on a no, and never calls one of them the better answer.
+     */
+    consent: {
+      title: string
+      /** {privacy} is the link to the privacy policy, worded by `legal.privacy`. */
+      body: string
+      refuse: string
+      accept: string
+      /** On a strip opened again from the footer: the answer in force. */
+      current: Record<"granted" | "denied", string>
+      /** Said aloud once an answer is given, since the strip leaves the page with it. */
+      saved: Record<"granted" | "denied", string>
+      /** The footer's way back to the choice. */
+      footerLink: string
+    }
+    /**
      * What the shop takes, said to a customer rather than to the shopkeeper. `admin.store.payment`
      * has the same four names, and they are not reusable here: its hints explain a checkbox to the
      * person ticking it ("Pagamento em espécie na entrega"), which is not what a band above the
@@ -2116,6 +2133,20 @@ export interface UiMessages {
       deliverTo: string
       /** A delivery placed before orders kept where they went. */
       deliveryNotRecorded: string
+      /** Where the buyer came from (BEELINK-275), on an order placed from the cart. */
+      origin: {
+        label: string
+        /** No campaign and no ad click kept. */
+        direct: string
+        /** A click on a Meta ad was kept. Never the identifier. */
+        metaAd: string
+        /** "campanha {name}". */
+        campaign: string
+        /** "Conteúdo: {value}". */
+        content: string
+        /** "Termo: {value}". */
+        term: string
+      }
       /** Who receives it, when not the customer: "Recebe: {name}". */
       recipient: string
       items: string
@@ -2475,6 +2506,46 @@ export interface UiMessages {
     orderSection: string
     navUnread: string
     navUnreadOne: string
+  }
+  /** What the shop sold, read back in groups (BEELINK-275). */
+  reports: {
+    salesByOrigin: {
+      title: string
+      description: string
+      /** Names the group of period links. */
+      periodLabel: string
+      /** `{days}`. One period on offer: "30 dias". */
+      periodDays: string
+      /** `{from}`, `{to}`: the days the numbers are of, as dates. */
+      periodRange: string
+      /** `{from}`, `{to}`. The table's caption, for a screen reader. */
+      caption: string
+      columns: { origin: string; orders: string; revenue: string; share: string }
+      /** The line of sales the shopkeeper registered in the panel, which have no origin. */
+      panel: string
+      /** `{count}`, `{total}`. Under a campaign some of whose orders came by a kept Meta ad click. */
+      metaAdOrders: string
+      total: string
+      /** Where a share cannot be said: nothing was sold for money in the period. */
+      noShare: string
+      empty: {
+        title: string
+        /** How an origin gets recorded; the example link follows it. */
+        text: string
+        exampleLabel: string
+      }
+      notes: {
+        title: string
+        /** `{link}` is not in it: the example is drawn after the sentence, as text. */
+        links: string
+        counted: string
+        older: string
+        metaClicks: string
+        meta: string
+      }
+      failed: string
+      retry: string
+    }
   }
   leads: {
     title: string
@@ -3510,6 +3581,107 @@ export interface UiMessages {
         recheckErrors: Record<"INTEGRATION_UNREACHABLE" | "RATE_LIMITED" | "UNKNOWN", string>
       }
     }
+    /**
+     * The shop's Meta Pixel (BEELINK-270): named by its ID, and by nothing else. No sentence here says
+     * that anything is being sent — what the shop window sends, and when, is said by what sends it.
+     */
+    metaPixel: IntegrationCardMessages & {
+      idLabel: string
+      idPlaceholder: string
+      /** What an ID is, and that a pasted snippet is not one. */
+      idHint: string
+      connectSubmit: string
+      connecting: string
+      /** When the ID in hand was saved. */
+      savedAt: string
+      replaceId: string
+      replaceLabel: string
+      replaceSubmit: string
+      replaceCancel: string
+      /** Over the page once an ID was saved, there and then. */
+      connectedNotice: string
+      disconnect: string
+      disconnectTitle: string
+      disconnectBody: string
+      disconnectConfirm: string
+      disconnectCancel: string
+      disconnectFailed: string
+      /** By the API's code; `UNKNOWN` for any other. The first is also what the form says of an ID it would not send. */
+      errors: Record<"META_PIXEL_ID_INVALID" | "UNKNOWN", string>
+      /** The way from this page to the report of sales by origin (BEELINK-275), which needs no pixel. */
+      salesByOrigin: { title: string; text: string; link: string }
+      /** Where the ID is copied from at Meta, and what stays there. */
+      guide: {
+        title: string
+        steps: Record<"open" | "sources" | "pick" | "copy", string>
+        openLink: string
+        /** Read out after a link that opens another tab. */
+        newTab: string
+        notesTitle: string
+        /**
+         * The domain needs no verifying; reports and ads stay at Meta; nothing checks the ID against
+         * Meta; and a visitor is asked first, the pixel counting only for one who accepts (BEELINK-271).
+         */
+        notes: Record<"domain" | "reports" | "unchecked" | "consent" | "events", string>
+      }
+    }
+    /**
+     * The purchases told to Meta from the server (BEELINK-274): the Conversions API token, where
+     * it is generated, and the test event. Apart from `metaPixel`, whose sentences are held to
+     * their own rule about what is sent; these are held to theirs (`meta-pixel-screen.test.tsx`).
+     */
+    metaConversions: {
+      title: string
+      lead: string
+      badges: Record<"NONE" | "SET" | "REJECTED" | "UNAVAILABLE", string>
+      /** This deployment has nowhere to seal a token. */
+      unavailable: string
+      /** A token is saved, and is not shown again. */
+      tokenSet: string
+      /** Meta refused the token, or the pixel under it: what stopped, and what mends it. */
+      refusals: Record<"TOKEN_REJECTED" | "PIXEL_NOT_FOUND", string>
+      tokenLabel: string
+      tokenPlaceholder: string
+      tokenHint: string
+      showToken: string
+      hideToken: string
+      tokenSubmit: string
+      tokenSaving: string
+      replaceToken: string
+      replaceLabel: string
+      replaceSubmit: string
+      replaceCancel: string
+      /** Over the page once a token was saved, there and then. */
+      savedNotice: string
+      remove: string
+      removeTitle: string
+      removeBody: string
+      removeConfirm: string
+      removeCancel: string
+      removeFailed: string
+      /** By the API's code; `UNKNOWN` for any other. The first is also what the form says of a token it would not send. */
+      errors: Record<"META_PIXEL_TOKEN_INVALID" | "INTEGRATION_UNAVAILABLE" | "INTEGRATION_NOT_CONNECTED" | "UNKNOWN", string>
+      /** Where the token is generated at Meta. */
+      guide: {
+        title: string
+        steps: Record<"open" | "pick" | "settings" | "generate" | "paste", string>
+      }
+      /** One synthetic event, sent with the Events Manager's test code, and what Meta said of it. */
+      test: {
+        title: string
+        lead: string
+        codeLabel: string
+        codePlaceholder: string
+        codeHint: string
+        submit: string
+        sending: string
+        outcomes: Record<"ACCEPTED" | "TOKEN_REJECTED" | "PIXEL_NOT_FOUND" | "EVENT_REFUSED" | "UNREACHABLE", string>
+        /** Before Meta's own words for a refusal. */
+        detailLabel: string
+        /** By the API's code; the first is also what the form says of a code it would not send. */
+        errors: Record<"META_PIXEL_TEST_CODE_INVALID" | "RATE_LIMITED" | "INTEGRATION_NOT_CONNECTED" | "INTEGRATION_NEEDS_RECONNECT" | "INTEGRATION_UNAVAILABLE" | "UNKNOWN", string>
+      }
+    }
     /** How the shop is paid once its Asaas is connected (BEELINK-203). */
     payments: {
       title: string
@@ -3564,20 +3736,28 @@ export interface UiMessages {
 }
 
 /**
- * What every third party says of itself wherever the Integrations pages show it. Each provider's
- * slice holds at least this, so the list's cards read any of them alike.
+ * What every integration says of itself wherever the Integrations pages show it. Each one's slice
+ * holds at least this, so the list's cards read any of them alike.
  */
-export interface IntegrationProviderMessages {
+export interface IntegrationCardMessages {
   title: string
   /** What connecting gives the shop, in a line or two: the list's card. */
   summary: string
   /** The same at length, on the integration's own page. */
   lead: string
-  unavailable: string
   /** The way in, naming the provider: several cards share the list. */
   connect: string
   connected: string
   disconnectedBadge: string
+}
+
+/**
+ * What an integration that is an account at a third party says besides: a deployment may not be set
+ * up for it, it may run against a sandbox, and the third party may stop accepting the connection.
+ * The Meta Pixel is none of that — an ID is saved or it is not — and says none of it.
+ */
+export interface IntegrationProviderMessages extends IntegrationCardMessages {
+  unavailable: string
   needsReconnectBadge: string
   /** The third party stopped accepting the connection, as the list's card warns of it: its own page says how to mend it. */
   needsReconnectCard: string

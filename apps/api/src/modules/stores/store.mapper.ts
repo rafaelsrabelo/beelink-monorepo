@@ -28,6 +28,8 @@ export type StoreRow = StoreModel & {
   pages: { slug: string | null; title: string }[];
   /** Its cashback rules (BEELINK-243); none until first saved. */
   cashbackSettings: CashbackSettingsModel | null;
+  /** Its Meta Pixel's row (BEELINK-269), by the ID alone; none while no pixel is saved. */
+  integrations: { pixelId: string | null }[];
 };
 
 /** The one query shape the store mappers accept, so a call site cannot forget the include. */
@@ -50,6 +52,9 @@ export const storeInclude = {
     select: { slug: true, title: true },
   },
   cashbackSettings: true,
+  // The pixel's ID and nothing else of an integration's row: what a third party gave a shop is
+  // sealed, and never read out here (gate `api/sealed-secret-in-integrations`).
+  integrations: { where: { provider: 'META_PIXEL' }, select: { pixelId: true } },
 } as const;
 
 /** The home's bands a visitor is served, from its last published version. None before the first. */
@@ -116,6 +121,7 @@ export function toPublicStore(
     paymentMethods: row.paymentMethods,
     // Only while on: a shop window says what comes back, never that nothing does.
     cashback: row.cashbackSettings?.enabled ? { rateBps: row.cashbackSettings.rateBps, minSubtotalCents: row.cashbackSettings.minSubtotalCents } : null,
+    metaPixelId: row.integrations[0]?.pixelId ?? null,
     // Resolved here, where the shop's slug and its route words are already in hand: a banner
     // stores what it points at, never where it lives.
     sections: sections.map((section) =>

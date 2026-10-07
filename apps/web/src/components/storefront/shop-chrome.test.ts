@@ -10,6 +10,7 @@ import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 // App
 import { storefrontRoutes } from "@/lib/storefront-routes"
 import { shopFooterColumnsOf } from "./shop-chrome"
+import { StorefrontConsentReopen } from "./storefront-consent-reopen"
 
 const routes = storefrontRoutes({
   slug: "mutante",
@@ -45,5 +46,21 @@ describe("shopFooterColumnsOf", () => {
         { label: "Política de privacidade", href: "/privacidade" },
       ],
     })
+  })
+
+  /** BEELINK-271: the way back to the cookie choice, only where a choice was asked for. */
+  it("adds \"Cookies\" to the legal column of a shop with a Meta Pixel, as a button and not an address", () => {
+    const store = { socialNetworks: { whatsapp: null }, metaPixelId: "123456789012345" } as unknown as PublicStore
+
+    const items = shopFooterColumnsOf(store, routes, ptBR).at(-1)?.items ?? []
+
+    expect(items.map((item) => item.href ?? item.id)).toEqual(["/termos", "/privacidade", "cookies"])
+    expect(items.at(-1)?.action).toMatchObject({ type: StorefrontConsentReopen, props: { label: "Cookies" } })
+  })
+
+  it("adds nothing at a shop with no pixel, which asked its visitor nothing", () => {
+    const store = { socialNetworks: { whatsapp: null }, metaPixelId: null } as unknown as PublicStore
+
+    expect(shopFooterColumnsOf(store, routes, ptBR).at(-1)?.items.map((item) => item.href)).toEqual(["/termos", "/privacidade"])
   })
 })
