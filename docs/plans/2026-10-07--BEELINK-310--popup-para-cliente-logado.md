@@ -107,3 +107,47 @@ Duas coisas explicam o que ele viu:
 **Não visto no navegador:** a promoção automática (a loja de teste tinha cupom; a variante está em teste e em story); o gatilho "ao sair" com a variante do cliente (o gatilho é o mesmo código, coberto por `use-popup-trigger.test.tsx`); a imagem no diálogo do cliente (sem Cloudinary aqui; em teste e story); o cadastro pela tela (as contas foram criadas pela API e confirmadas pelo e-mail do Mailpit próprio; o caminho do cadastro foi percorrido no BEELINK-306 e não mudou); "Copiar" de fato escrevendo na área de transferência (em teste); loja com pixel e aviso de cookies (em teste); leitor de tela; Storybook aberto.
 
 **Banco e e-mail desta passada.** As portas 5432 e 1025 eram de outro projeto (`tradvogados-*`). O e2e e a passada no navegador rodaram num Postgres 18 e num Mailpit próprios (`beelink-310-db` em 5447, `beelink-310-mail` em 1047/8047), por configuração local não commitada; contêineres e configuração removidos ao fim. O `apps/api/.env` deste worktree (não versionado, deixado por uma sessão anterior) ainda aponta para `localhost:5432` e `:1025`: não foi usado nem alterado.
+
+## Acréscimo (07/10/2026, noite): busca do topo, de novo
+
+Entrou neste PR a pedido do dono, depois de ele olhar a busca em produção de novo (já com o ajuste do PR #233: barra com teto de 30rem, "Buscar em" com 10rem). Nas palavras dele: "o buscar no header tá ridículo e não tá funcional, tá muito grande; o filtro de categoria, se tiver alguma categoria com nome grande, fica gigante horizontalmente. Tá completamente ridículo, quebra o layout da tela."
+
+**O que foi visto em produção** (`beelink.biz/mutante-suplementos`, Chromium sem tela, 07/10/2026):
+
+| Largura | Barra | "Buscar em" (mostrando "Todos") | Campo | Botão |
+|---|---|---|---|---|
+| 950 px | 480 × 44 | 160 × 44 | 264 | 56 |
+| 1280 px | 480 × 44 | 160 × 44 | 264 | 56 |
+| 1024 px | 390 × 44 | 160 × 44 | 174 | 56 |
+| 768 px | 468 × 44 | 160 × 44 | 252 | 56 |
+| 390 px | 358 × 44 | 120 × 44 | 182 | 56 |
+
+- **O tamanho é o defeito, e é real.** O "Buscar em" era um `<select>` nativo: ele tem a largura da opção mais comprida ("Termogênicos e Controles de peso") ou a que lhe mandam ter, nunca a do que está mostrando. Com o teto de 10rem do #233 ele ficou com 160 px fixos escrevendo "Todos"; a 1024 px sobravam 174 px para o campo.
+- **"Não tá funcional": não encontrei nada quebrado.** O que foi tentado, a 950, 1280 e 390 px: digitar "creatina" abre 2 sugestões; Enter leva a `/busca?categoria=&q=creatina` e a lista não reabre na página de resultados; seta para baixo + Enter abre o produto sugerido; clicar numa sugestão abre o produto; trocar a categoria não navega (esperado) e a busca seguinte, só pelo teclado, vai com `categoria=energia-e-foco`; o botão busca; Escape fecha a lista; clicar fora fecha. Nenhuma rolagem lateral em nenhuma largura. Minha leitura, **não confirmada pelo dono**: "não funcional" é a barra ocupar o topo e espremer o resto, não um comando que falha.
+
+**Decisões do assistente, para o dono confirmar.**
+
+1. **Barra com teto de 22rem (352 px)** do `shop-md` em diante, centrada como antes; **40 px de altura** no computador (os controles vizinhos têm 36 px; 44 lia como a coisa mais pesada da linha) e botão de 44 px de largura com lupa de 18 px. No celular continua na linha própria, com 44 px de altura (alvo de dedo) e botão de 48 px.
+2. **"Buscar em" deixa de ser `<select>` nativo** e passa a ser o select do design system (`components/select`, já instalado; nenhuma dependência nova) desenhado como um botão compacto dentro da barra: ocupa o que o nome escolhido pede, até 7rem (112 px), com reticências; o nome inteiro está no `title` e na lista. Bloco novo: `blocks/storefront/storefront-search-scope`.
+3. **O que a busca envia não mudou**: o slug escolhido vai como `categoria` num campo oculto do mesmo formulário GET, vazio para a loja toda. O endereço é o que o select nativo produzia (`/busca?categoria=…&q=…`).
+4. **A lista** abre embaixo do botão, alinhada à esquerda dele, com no máximo 20rem ou a largura da tela menos 2rem; um nome comprido quebra em duas linhas em vez de ser cortado. É desenhada num portal, fora do elemento que carrega as cores da loja: o bloco copia do próprio botão as quatro variáveis `--shop-*` que a lista usa, ao abrir.
+5. **O custo, assumido:** antes de o script chegar (ou com ele desligado) o botão não abre a lista; o formulário continua buscando, na categoria com que a página foi servida. O select nativo trocava de categoria sem script.
+6. Tudo o que o #233 acertou fica: Enter envia; a lista de sugestões só abre ao digitar ou com seta para baixo, fecha ao enviar, ao sair do campo e com Escape; o ponteiro sobre uma sugestão não sequestra o Enter.
+
+**Depois** (a mesma medição, loja de teste com as categorias da Mutante e mais uma de 61 caracteres, `next build` + `next start`):
+
+| Largura | Barra | "Buscar em" com "Todos" | com a categoria de 61 caracteres | Campo | Botão | Folga até a conta |
+|---|---|---|---|---|---|---|
+| 950 px | 352 × 40 | 76 | 112 | 232 (196 com a longa) | 44 | — |
+| 1280 px | 352 × 40 | 76 | 112 | 232 (196) | 44 | 219 px |
+| 1024 px | 352 × 40 | 76 | — | 232 | 44 | 91 px |
+| 768 px | 352 × 40 | 76 | — | 232 | 44 | 118 px |
+| 390 px | 358 × 44 | 76 | 112 | 234 (198) | 48 | (linha própria) |
+
+Nas três larguras exercitadas (950, 1280, 390; 73 verificações, todas passaram): a lista do "Buscar em" abre pelo teclado, inteira dentro da tela, embaixo da barra, nas cores da página da loja, com o nome de 61 caracteres inteiro em duas linhas; escolhida a categoria longa pelo teclado, o botão fica em 112 px com reticências, a seta continua desenhada, nada passa por cima do campo, a barra não muda de largura, o foco volta ao botão e a página não navega; Tab chega ao campo; Enter busca com `?categoria=<slug>&q=creatina` (as mesmas duas chaves, na mesma ordem); na página de resultados a categoria continua escolhida e a lista de sugestões fechada; digitar abre as sugestões; Enter com o ponteiro parado numa sugestão busca; seta + Enter abre a sugestão; clicar numa sugestão abre; Escape fecha, digitar reabre, sair do campo fecha; o botão busca; escolher categoria pelo ponteiro funciona. Sem rolagem lateral em nenhuma das cinco larguras. Com JavaScript desligado, Enter busca na categoria com que a página foi servida.
+
+Um defeito meu pego nessa passada e corrigido antes do commit: o nome longo escolhido vazava por cima do campo (o valor do select do design system é uma caixa flex com `line-clamp`, que não corta nada num botão tão estreito). O valor agora é um bloco que trunca, e a medição no navegador prende isso.
+
+**Cobertura.** `packages/ui/src/blocks/storefront/storefront-search-scope.test.tsx` (11 casos, com axe fechado e aberto: é um botão nomeado "Buscar em"; ocupa só o nome escolhido, com teto; categoria de 60+ caracteres; envia `categoria` com o formulário e vazio para a loja toda; a lista e a escolha; só teclado; avisa a tela; tokens da loja, nenhuma cor literal); `storefront-search.test.tsx` › "the scope" (ordem dos controles, categoria da página, categoria de 60 caracteres sem tirar o lugar do campo, barra de 40 px); `storefront-search-combobox.test.tsx` › "the scope" (avisa a escolha, envia a categoria, teto, abrir a lista do escopo não abre as sugestões) e todos os casos do #233, sem mudança; `storefront-masthead.test.tsx` › "puts the search between the delivery block and the account, capped and centred…" (22rem). O jsdom não mede largura: "sem transbordo a 768–1024" está na medição do navegador acima. Stories: "Blocos/Vitrine/Busca/Buscar em" (Todos, Categoria curta, Categoria longa, Loja escura).
+
+**Não visto:** um iPhone de verdade (o zoom do iOS ao tocar; o campo continua com 16 px no celular); leitor de tela; Firefox e Safari; a loja Mutante com o código novo (a medição "depois" é numa loja de teste local com os mesmos nomes de categoria).

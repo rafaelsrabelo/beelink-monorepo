@@ -52,7 +52,7 @@ export const Padrao: Story = {}
 /** Com o "Buscar em": o nome escolhido é cortado com reticências, e inteiro no `title` e na lista. */
 export const ComCategoriaLonga: Story = {
   render: () => (
-    <div className="max-w-[30rem]">
+    <div className="max-w-[22rem]">
       <Harness scopes={[{ value: "longa", label: "Suplementos para academia, treino funcional e corrida de rua" }, { value: "whey", label: "Whey" }]} scope="longa" />
     </div>
   ),

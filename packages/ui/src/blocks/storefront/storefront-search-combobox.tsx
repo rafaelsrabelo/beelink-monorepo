@@ -11,16 +11,8 @@ import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
-import {
-  SEARCH_BAR,
-  SEARCH_BUTTON,
-  SEARCH_FIELD,
-  SEARCH_SCOPE,
-  SEARCH_SCOPE_NAME,
-  scopeTitleOf,
-  searchButtonStyle,
-  type StorefrontSearchScope,
-} from "./storefront-search"
+import { SEARCH_BAR, SEARCH_BUTTON, SEARCH_FIELD, searchButtonStyle } from "./storefront-search"
+import { StorefrontSearchScopeSelect, type StorefrontSearchScope } from "./storefront-search-scope"
 import { StorefrontSearchSuggestions, type StorefrontSuggestion } from "./storefront-search-suggestions"
 
 // Declared beside the list that draws them; re-exported because screens import it from here.
@@ -149,24 +141,7 @@ export function StorefrontSearchCombobox({
         className={SEARCH_BAR}
         style={{ backgroundColor: "var(--shop-background)", color: "var(--shop-on-background)" }}
       >
-        {scopes?.length ? (
-          <select
-            name={SEARCH_SCOPE_NAME}
-            value={scope}
-            onChange={(event) => onScopeChange?.(event.target.value)}
-            aria-label={text.searchScope}
-            title={scopeTitleOf(scopes, scope, text.searchScopeAll)}
-            className={SEARCH_SCOPE}
-            style={{ borderColor: "var(--shop-frame)" }}
-          >
-            <option value="">{text.searchScopeAll}</option>
-            {scopes.map((entry) => (
-              <option key={entry.value} value={entry.value}>
-                {entry.label}
-              </option>
-            ))}
-          </select>
-        ) : null}
+        {scopes?.length ? <StorefrontSearchScopeSelect scopes={scopes} value={scope} onValueChange={(next) => onScopeChange?.(next)} messages={messages} /> : null}
 
         <label className="flex min-w-0 flex-1">
           <span className="sr-only">{text.search}</span>
@@ -201,7 +176,7 @@ export function StorefrontSearchCombobox({
         </label>
 
         <button type="submit" aria-label={text.searchAction} className={SEARCH_BUTTON} style={searchButtonStyle(tone)}>
-          <SearchIcon aria-hidden="true" className="size-5" strokeWidth={2} />
+          <SearchIcon aria-hidden="true" className="size-[18px]" strokeWidth={2} />
         </button>
       </form>
 

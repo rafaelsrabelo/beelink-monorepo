@@ -67,7 +67,7 @@ describe("StorefrontMasthead", () => {
     const order = [...row.children].map((child) => child.textContent?.slice(0, 12))
     expect(order).toEqual(["Lessari", "Entregar em", "Buscar nesta", "Olá, entreMi"])
     const cap = screen.getByRole("search").parentElement!
-    expect(cap).toHaveClass("w-full", "min-w-0", "shop-md:mx-auto", "shop-md:max-w-[30rem]")
+    expect(cap).toHaveClass("w-full", "min-w-0", "shop-md:mx-auto", "shop-md:max-w-[22rem]")
     expect(cap.parentElement).toHaveClass("flex-1", "min-w-0")
   })
 
@@ -83,7 +83,7 @@ describe("StorefrontMasthead", () => {
     expect(row).toHaveClass("flex-wrap", "shop-md:flex-nowrap", "shop-md:h-[72px]")
     expect(row.style.height).toBe("")
     // The cap is `shop-md`'s alone: on its own line the search is the row.
-    expect(screen.getByRole("search").parentElement).not.toHaveClass("max-w-[30rem]", "mx-auto")
+    expect(screen.getByRole("search").parentElement).not.toHaveClass("max-w-[22rem]", "mx-auto")
     expect(screen.getByRole("search").parentElement!.parentElement).toHaveClass(
       "order-last",
       "basis-full",
