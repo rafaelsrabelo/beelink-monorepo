@@ -77,6 +77,13 @@ describe("PromotionsScreen", () => {
     expect(mocks.toggle).toHaveBeenCalledWith({ id: "p2", active: true })
   })
 
+  // BEELINK-306: the pop-up announces one of these, and is configured on a page of its own.
+  it("leads to the first-purchase pop-up's own page in one click", () => {
+    view()
+
+    expect(screen.getByRole("link", { name: "Pop-up de primeira compra" })).toHaveAttribute("href", "/admin/loja/coupons/popup")
+  })
+
   it("makes and changes a promotion on pages of their own, never in a form above the list", async () => {
     mocks.search = new URLSearchParams("situacao=pausadas&pagina=2")
     view()

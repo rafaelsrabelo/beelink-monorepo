@@ -86,7 +86,14 @@ export interface PublicProductCategory {
   slug: string;
   name: string;
   description: string | null;
+  /** The card's picture, square. */
   imageUrl: string | null;
+  /**
+   * The wide picture the category's own page opens with, between the trail and the title; null is
+   * none. The category's own, in the panel's read and the visitor's alike: a subcategory with none
+   * is drawn with its parent's by the page, which holds both, so this field never means two things.
+   */
+  bannerUrl: string | null;
   /**
    * The category this one sits under, or null for a top level. Exactly two levels: the URL is
    * `/<shop>/<category>` flat, so a grandchild would have nowhere to live that its grandparent
@@ -473,6 +480,8 @@ export interface CreateProductCategoryPayload {
   slug?: string;
   description?: string | null;
   imageUrl?: string | null;
+  /** `http`/`https` only, as `imageUrl`. Null clears it; absent, on an update, leaves it alone. */
+  bannerUrl?: string | null;
   /**
    * The category this one goes under. Null, or absent, makes it a top level.
    *

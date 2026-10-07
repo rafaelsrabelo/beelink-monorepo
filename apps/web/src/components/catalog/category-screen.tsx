@@ -23,39 +23,7 @@ import {
   useUpdateProductCategory,
 } from "@/services/catalog/catalog-hooks"
 import { useImageUpload } from "@/services/uploads/upload-hooks"
-
-const EMPTY: CategoryFormValues = {
-  name: "",
-  slug: "",
-  description: "",
-  imageUrl: "",
-  parentId: "",
-  isActive: true,
-}
-
-/** The wire's nulls become the form's empty strings, which is the only shape an input can hold. */
-function toForm(category: ProductCategory, parentId: string): CategoryFormValues {
-  return {
-    name: category.name,
-    slug: category.slug,
-    description: category.description ?? "",
-    imageUrl: category.imageUrl ?? "",
-    parentId,
-    isActive: category.isActive,
-  }
-}
-
-/** And back: an empty string is "no value", which on the wire is null and not `""`. */
-function toPayload(value: CategoryFormValues) {
-  return {
-    name: value.name.trim(),
-    slug: value.slug.trim() || undefined,
-    description: value.description.trim() || null,
-    imageUrl: value.imageUrl.trim() || null,
-    parentId: value.parentId || null,
-    isActive: value.isActive,
-  }
-}
+import { categoryToForm, categoryToPayload, EMPTY_CATEGORY } from "./category-form-values"
 
 export interface CategoryScreenProps {
   slug: string
@@ -81,10 +49,12 @@ export function CategoryScreen({ slug, messages }: CategoryScreenProps) {
   const update = useUpdateProductCategory(slug)
   const remove = useDeleteProductCategory(slug)
   const image = useImageUpload()
+  // A second one: each field reports its own upload, by the same path.
+  const banner = useImageUpload()
 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [open, setOpen] = useState(false)
-  const [value, setValue] = useState<CategoryFormValues>(EMPTY)
+  const [value, setValue] = useState<CategoryFormValues>(EMPTY_CATEGORY)
 
   const rows = categories.data ?? []
   const bySlug = new Map(rows.map((row) => [row.slug, row]))
@@ -99,7 +69,7 @@ export function CategoryScreen({ slug, messages }: CategoryScreenProps) {
 
   function openNew() {
     setEditingId(null)
-    setValue(EMPTY)
+    setValue(EMPTY_CATEGORY)
     setOpen(true)
   }
 
@@ -108,16 +78,16 @@ export function CategoryScreen({ slug, messages }: CategoryScreenProps) {
     if (!category) return
 
     setEditingId(categoryId)
-    setValue(toForm(category, idOfParent(category)))
+    setValue(categoryToForm(category, idOfParent(category)))
     setOpen(true)
   }
 
   function save() {
-    const payload = toPayload(value)
+    const payload = categoryToPayload(value)
     const done = () => {
       setOpen(false)
       setEditingId(null)
-      setValue(EMPTY)
+      setValue(EMPTY_CATEGORY)
     }
 
     if (editingId) update.mutate({ categoryId: editingId, payload }, { onSuccess: done })
@@ -181,6 +151,8 @@ export function CategoryScreen({ slug, messages }: CategoryScreenProps) {
             shopSlug={slug}
             onUploadImage={image.upload}
             imagePending={image.pending}
+            onUploadBanner={banner.upload}
+            bannerPending={banner.pending}
             onSubmit={save}
             onCancel={() => {
               setOpen(false)

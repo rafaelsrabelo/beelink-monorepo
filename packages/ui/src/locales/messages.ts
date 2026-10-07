@@ -261,6 +261,23 @@ export interface UiMessages {
      * to open an account, or the first-order benefit — and the cart's "Cupons disponíveis". Every
      * number in them (`{value}`, `{amount}`) is the API's, formatted by the screen.
      */
+    /** The first-purchase pop-up (BEELINK-306): what a visitor reads where the shopkeeper wrote nothing. */
+    popup: {
+      close: string
+      /** `{beneficio}` — the announced benefit, in words. The default title while one is in force. */
+      title: string
+      text: string
+      /** The default text when the benefit is a free delivery, which is no discount. */
+      textFreeShipping: string
+      /** The default button's label, by what the benefit is: a coupon is a code to get, a promotion applies by itself. */
+      button: { COUPON: string; PROMOTION: string }
+      /** What stands in for any sentence that names a benefit while none is in force. */
+      plainTitle: string
+      plainText: string
+      plainButton: string
+      /** A second line, under the text, on a promotion that is not over the whole cart. */
+      selected: string
+    }
     offers: {
       /** The strip's accessible name. */
       region: string
@@ -2465,6 +2482,60 @@ export interface UiMessages {
       pauseLabel: string
       resumeLabel: string
     }
+    /** The first-purchase pop-up's own screen in the panel (BEELINK-306). */
+    popup: {
+      title: string
+      intro: string
+      /** The way here from the coupons' and the promotions' lists. */
+      open: string
+      back: string
+      enabled: string
+      enabledHelp: string
+      image: string
+      imageHelp: string
+      titleLabel: string
+      textLabel: string
+      buttonLabel: string
+      /** `{placeholder}` — the literal `{beneficio}`. Under the three sentences. */
+      copyHelp: string
+      /** `{count}`, `{max}`. */
+      counter: string
+      benefit: string
+      benefitAuto: string
+      /** `{label}`, `{benefit}` — one promotion or coupon the form may name. */
+      benefitPromotion: string
+      benefitCoupon: string
+      /** The option that stands for a named one no longer in force. */
+      benefitGone: string
+      benefitHelp: string
+      /** `{benefit}`. */
+      announcing: string
+      announcingNothing: string
+      /** When the one named is out of force. */
+      announcingGone: string
+      /** With no benefit, when a sentence was written by hand: it is shown as written. */
+      announcingTyped: string
+      trigger: string
+      triggerArrival: string
+      triggerLeave: string
+      triggerLeaveHelp: string
+      delay: string
+      delayHelp: string
+      seconds: string
+      where: string
+      preview: string
+      previewHelp: string
+      previewDesktop: string
+      previewPhone: string
+      previewWidth: string
+      save: string
+      saving: string
+      saved: string
+      failed: string
+      retry: string
+      issues: { title: string; text: string; buttonLabel: string; delay: string; typedDiscount: string }
+      errors: { POPUP_SETTINGS_INVALID: string; POPUP_TEXT_PROMISES_NUMBER: string; POPUP_BENEFIT_INVALID: string; UNKNOWN: string }
+    }
     coupons: {
       title: string
       intro: string
@@ -3012,6 +3083,11 @@ export interface UiMessages {
       descriptionLabel: string
       descriptionHelp: string
       imageLabel: string
+      bannerLabel: string
+      /** Under the banner field: what it is and where it shows. */
+      bannerHelp: string
+      /** The same, on a subcategory's form: with none of its own it shows its parent's. */
+      bannerHelpChild: string
       /** The select that puts a category under another. Two levels, so a child cannot be chosen. */
       parentLabel: string
       parentNone: string

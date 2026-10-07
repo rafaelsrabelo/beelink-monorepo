@@ -102,6 +102,14 @@ describe("bee-link's legal texts (BEELINK-171)", () => {
       expect(cookies).toMatch(/numa loja que usa o Pixel da Meta, só depois que você aceita, o identificador do clique no anúncio \(fbclid\) com que você chegou; vale só para aquela loja e dura 30 dias a partir da chegada/)
     })
 
+    // BEELINK-306: and so is the cookie that remembers a shop's pop-up was closed — which is no tracking.
+    it("names the cookie that remembers a closed pop-up: its revision, nothing of the person, one shop, 30 days", () => {
+      const cookies = textOf("Cookies")
+
+      expect(cookies).toMatch(/bl_popup: numa loja que mostra um aviso de primeira compra \(pop-up\), que você já fechou esse aviso ou apertou o botão dele, para que ele não abra de novo/)
+      expect(cookies).toMatch(/guarda só o número da versão do aviso, e nada sobre você; vale só para aquela loja e dura 30 dias/)
+    })
+
     // BEELINK-274: the purchase is told from bee-link's server too, and the order keeps what that needs.
     describe("on the purchase told from the server", () => {
       it("says who sends, to whom, when, and only for an order placed after a yes", () => {

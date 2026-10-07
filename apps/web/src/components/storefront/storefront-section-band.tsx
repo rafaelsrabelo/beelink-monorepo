@@ -7,12 +7,13 @@ import type { StorefrontCatalog } from "@harness-monorepo/contracts"
 // UI
 import { Skeleton } from "@harness-monorepo/ui/components/skeleton"
 import { StorefrontBreadcrumb } from "@harness-monorepo/ui/blocks/storefront/storefront-breadcrumb"
+import { StorefrontCategoryBanner } from "@harness-monorepo/ui/blocks/storefront/storefront-category-banner"
 import { StorefrontResultsBand } from "@harness-monorepo/ui/blocks/storefront/storefront-results-band"
 import { StorefrontSort } from "@harness-monorepo/ui/blocks/storefront/storefront-sort"
 
 // App
 import { StorefrontResultsSummary } from "./storefront-results-summary"
-import { headingOf, sortFormOf, sortOptionsOf, type SectionPlace } from "@/lib/storefront-section"
+import { bannerOf, headingOf, sortFormOf, sortOptionsOf, type SectionPlace } from "@/lib/storefront-section"
 import type { StorefrontRoutes } from "@/lib/storefront-routes"
 
 export interface StorefrontSectionBandProps {
@@ -35,6 +36,7 @@ export interface StorefrontSectionBandProps {
 export function StorefrontSectionBand({ place, routes, catalogue, locale }: StorefrontSectionBandProps) {
   const { category, parentCategory, section, term, messages: ui } = place
   const heading = headingOf(place)
+  const banner = bannerOf(place)
   const sort = catalogue ? sortFormOf(place, routes) : null
   // A search with nothing typed has nothing to count against.
   const counted = catalogue && !(section.kind === "search" && !term)
@@ -42,6 +44,7 @@ export function StorefrontSectionBand({ place, routes, catalogue, locale }: Stor
   return (
     <StorefrontResultsBand
       heading={heading}
+      {...(banner ? { banner: <StorefrontCategoryBanner imageUrl={banner} /> } : {})}
       breadcrumb={
         <StorefrontBreadcrumb
           homeHref={routes.home}

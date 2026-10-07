@@ -99,6 +99,13 @@ describe("CouponsScreen", () => {
   })
 
   /** BEELINK-245. */
+  // BEELINK-306: the pop-up announces one of these, and is configured on a page of its own.
+  it("leads to the first-purchase pop-up's own page in one click", () => {
+    view()
+
+    expect(screen.getByRole("link", { name: "Pop-up de primeira compra" })).toHaveAttribute("href", "/admin/loja/coupons/popup")
+  })
+
   it("marks a coupon that is only for a first purchase on its row", () => {
     view()
     // One row is marked: the coupon for everyone says nothing.

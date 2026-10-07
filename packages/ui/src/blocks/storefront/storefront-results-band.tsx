@@ -7,6 +7,11 @@ import { BAND } from "./storefront-band"
 export interface StorefrontResultsBandProps {
   /** The trail, "Início › Produtos › Categoria". */
   breadcrumb?: ReactNode
+  /**
+   * A picture of the page's own, drawn the band's whole width between the trail and the title — a
+   * category's banner. Without one the band is drawn exactly as it always was.
+   */
+  banner?: ReactNode
   /** The page's title. The band draws it as the page's `h1`. */
   heading: string
   /** The line beside the title: the count, or what a search found. */
@@ -21,12 +26,19 @@ export interface StorefrontResultsBandProps {
  * Meant for the window's `pageHeader` slot, which opens the main landmark — so the `h1` is where a
  * reader who skips to the content lands.
  */
-export function StorefrontResultsBand({ breadcrumb, heading, summary, children }: StorefrontResultsBandProps) {
+export function StorefrontResultsBand({ breadcrumb, banner, heading, summary, children }: StorefrontResultsBandProps) {
   return (
     <div className="border-b border-shop-line bg-shop-background text-shop-on-background">
       <div className={`${BAND} flex flex-wrap items-center gap-4 py-4`}>
+        {/* A row of its own: the band wraps, and a full-width child takes the whole first line. */}
+        {banner ? (
+          <div className="flex w-full flex-col gap-3">
+            {breadcrumb}
+            {banner}
+          </div>
+        ) : null}
         <div className="flex min-w-0 flex-col gap-1">
-          {breadcrumb}
+          {banner ? null : breadcrumb}
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
             <h1 className="text-[26px] leading-tight font-extrabold">{heading}</h1>
             {summary}

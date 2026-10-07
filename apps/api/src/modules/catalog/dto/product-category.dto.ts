@@ -56,6 +56,12 @@ export class CreateProductCategoryDto implements CreateProductCategoryPayload {
   @blankToNull
   imageUrl?: string | null;
 
+  @ApiPropertyOptional({ nullable: true, description: 'The wide picture the category’s page opens with. http(s) only; null clears it.' })
+  @IsOptional()
+  @imageUrl
+  @blankToNull
+  bannerUrl?: string | null;
+
   @ApiPropertyOptional({
     nullable: true,
     format: 'uuid',
