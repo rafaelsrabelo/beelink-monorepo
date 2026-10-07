@@ -11,8 +11,9 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import { AppLink } from "@/components/app-link"
-import { useCart } from "./cart-provider"
 import { StorefrontFavoriteLive } from "./favorites/storefront-favorite-live"
+import { useTrackView } from "./tracking/use-track"
+import { useAddToCart } from "./use-add-to-cart"
 import { useRestockRequest } from "@/services/storefront/storefront-hooks"
 
 /** The refusals a visitor can meet asking for a restock, as sentences picked on the server. */
@@ -48,12 +49,20 @@ export interface StorefrontProductLiveProps {
   messages: UiMessages
 }
 
+/** What one unit costs: the combination chosen, or the only one of a product without options — as the cart prices its line. */
+function priceOf(product: PublicProductDetail, variantId: string | null): number {
+  return product.variants.find((variant) => (variantId ? variant.id === variantId : product.variants.length === 1))?.priceCents ?? product.priceCents
+}
+
 /**
  * The product block, choosing and asking for real.
  *
  * The block draws; this keeps the address in step with the choice, puts the choice in the cart and
  * sends the "Avise-me", because a design-system block may not reach the network, the history or
  * the cart.
+ *
+ * It is also where the product is told as seen (BEELINK-272): once per product, whichever combination
+ * the address opens on — an event names the product, never a combination.
  */
 export function StorefrontProductLive({
   slug,
@@ -73,7 +82,8 @@ export function StorefrontProductLive({
   messages,
 }: StorefrontProductLiveProps) {
   const restock = useRestockRequest(slug)
-  const add = useCart((cart) => cart.add)
+  const add = useAddToCart()
+  useTrackView({ name: "ViewContent", product: { id: product.id, name: product.name, priceCents: product.priceCents, category: product.category?.name ?? null } }, product.id)
   // A request that never reached the API — offline, a dropped connection — has no code, and is still a
   // failure the visitor must be told about.
   const code = restock.error ? ("errorCode" in restock.error ? String(restock.error.errorCode) : "UNKNOWN") : null
@@ -89,13 +99,13 @@ export function StorefrontProductLive({
       promotionName={product.promotionName}
       images={product.images}
       orderHref={orderHref}
-      cart={{ onAdd: (variantId, qty) => add({ productId: product.id, variantId, qty }), href: cartHref }}
+      cart={{ onAdd: (variantId, qty) => add({ productId: product.id, variantId, qty }, { name: product.name, unitPriceCents: priceOf(product, variantId) }), href: cartHref }}
       rating={
         showRating && product.rating ? (
           <StorefrontRating average={product.rating.average} count={product.rating.count} reviewsHref={`#${PRODUCT_REVIEWS_ID}`} locale="pt-BR" size="product" linkComponent={AppLink} messages={messages} />
         ) : undefined
       }
-      favorite={(variantId, look) => <StorefrontFavoriteLive productId={product.id} productName={product.name} variantId={variantId} look={look} messages={messages} />}
+      favorite={(variantId, look) => <StorefrontFavoriteLive productId={product.id} productName={product.name} priceCents={product.priceCents} variantId={variantId} look={look} messages={messages} />}
       soldOut={product.soldOut}
       options={product.options}
       variants={product.variants}

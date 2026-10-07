@@ -21,6 +21,7 @@ import { CartPriceControls } from "./cart-price-controls"
 import { useCart } from "./cart-provider"
 import { useCartCheckout } from "./use-cart-checkout"
 import { useCartOrder } from "./use-cart-order"
+import { useCheckoutTracking } from "./use-checkout-tracking"
 import { waysBackWithCoupon } from "@/lib/cart-coupon"
 import type { ServedQuote } from "@/lib/cart-pricing"
 import { cartViewOf, orderItemsOf, rowKeyOf } from "@/lib/cart-view"
@@ -108,6 +109,7 @@ export function StorefrontCartLive({
   // What the last press on the button found missing, before anything was sent.
   const [asked, setAsked] = useState<"payment" | "coupon" | "credit" | "shipping" | null>(null)
   const view = useMemo(() => cartViewOf(lines, products), [lines, products])
+  const told = useCheckoutTracking(view)
   const byKey = useMemo(() => new Map(view.rows.map((row) => [rowKeyOf(row), row])), [view.rows])
   const { addresses, choice, setChoice, pricing, shipping, blocked, sent: leaving, recipientDocument, offlineMethods, online, nothingToPay, payment } = useCartCheckout({ slug, view, shopper, paymentMethods, paymentOptions, deliverTo, served, arrivedWith: coupon, locale, messages })
   const paysOnline = payment?.paymentChannel === "ONLINE"
@@ -214,7 +216,10 @@ export function StorefrontCartLive({
               online={online}
               nothingToPay={nothingToPay}
               choice={choice}
-              onChoiceChange={(next) => changed(() => setChoice(next))}
+              onChoiceChange={(next) => {
+                if (next.paymentMethod && next.paymentMethod !== choice.paymentMethod) told.paymentPicked()
+                changed(() => setChoice(next))
+              }}
               shipping={shipping}
               recipientDocument={recipientDocument}
               onPlace={place}

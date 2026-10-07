@@ -1,6 +1,6 @@
 // Libs
 import { fireEvent, render, screen } from "@testing-library/react"
-import { afterEach, beforeEach, describe, expect, it } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 // UI
 import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
@@ -10,8 +10,9 @@ import { CART_COOKIE } from "@/lib/cart-cookie"
 import { CartProvider } from "./cart-provider"
 import { StorefrontCardCartLive } from "./storefront-card-cart-live"
 import { StorefrontCartLinkLive } from "./storefront-cart-link-live"
+import { TrackingContext } from "./tracking/use-track"
 
-const product = { id: "01a0d395-c1ab-7399-a472-000000000001", name: "Camiseta preta", hasOptions: false }
+const product = { id: "01a0d395-c1ab-7399-a472-000000000001", name: "Camiseta preta", priceCents: 5990, hasOptions: false }
 
 beforeEach(() => {
   window.history.replaceState(null, "", "/loja/produtos")
@@ -34,6 +35,21 @@ describe("StorefrontCardCartLive", () => {
     fireEvent.click(screen.getByRole("button", { name: "Adicionado" }))
 
     expect(screen.getByRole("link", { name: "Carrinho, 2 itens" })).toBeInTheDocument()
+  })
+
+  it("tells each press as one unit added, by the product's id and at its price", () => {
+    const track = vi.fn()
+    render(
+      <TrackingContext value={{ allowed: true, track }}>
+        <CartProvider slug="loja" lines={[]}>
+          <StorefrontCardCartLive product={product} messages={ptBR} />
+        </CartProvider>
+      </TrackingContext>,
+    )
+
+    fireEvent.click(screen.getByRole("button", { name: "Adicionar ao carrinho" }))
+
+    expect(track.mock.calls).toEqual([[{ name: "AddToCart", item: { productId: product.id, qty: 1, name: "Camiseta preta", unitPriceCents: 5990 } }]])
   })
 
   it("adds nothing from the card for a product with options", () => {

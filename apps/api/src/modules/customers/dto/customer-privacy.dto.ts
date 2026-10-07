@@ -5,7 +5,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsString, MaxLength } from 'class-validator';
 
 // Types
-import type { CustomerDataAccount, CustomerDataExport, CustomerDataRecord, CustomerSignInMethod, CustomerTermsAcceptance, DeleteCustomerAccountPayload, LegalAcceptanceChannel } from '@harness-monorepo/contracts';
+import type { CustomerDataAccount, CustomerDataExport, CustomerDataOrderOrigin, CustomerDataRecord, CustomerSignInMethod, CustomerTermsAcceptance, DeleteCustomerAccountPayload, LegalAcceptanceChannel } from '@harness-monorepo/contracts';
 
 // App
 import { CustomerDataCashbackResponse } from '../../cashback/dto/cashback.response.js';
@@ -46,6 +46,27 @@ class CustomerDataRecordResponse implements CustomerDataRecord {
   @ApiProperty({ nullable: true, type: String }) claimedPhone!: string | null;
 }
 
+class CustomerDataMarketingConsentResponse {
+  @ApiProperty({ nullable: true, type: String }) fbclid!: string | null;
+  @ApiProperty({ format: 'date-time', nullable: true, type: String }) clickedAt!: string | null;
+  @ApiProperty({ nullable: true, type: String }) fbp!: string | null;
+  @ApiProperty({ nullable: true, type: String }) userAgent!: string | null;
+  @ApiProperty({ nullable: true, type: String }) pageUrl!: string | null;
+  @ApiProperty({ format: 'date-time' }) recordedAt!: string;
+}
+
+class CustomerDataOrderOriginResponse implements CustomerDataOrderOrigin {
+  @ApiProperty() orderNumber!: number;
+  @ApiProperty({ nullable: true, type: String }) source!: string | null;
+  @ApiProperty({ nullable: true, type: String }) medium!: string | null;
+  @ApiProperty({ nullable: true, type: String }) campaign!: string | null;
+  @ApiProperty({ nullable: true, type: String }) content!: string | null;
+  @ApiProperty({ nullable: true, type: String }) term!: string | null;
+  @ApiProperty({ format: 'date-time', nullable: true, type: String }) arrivedAt!: string | null;
+  @ApiProperty({ type: CustomerDataMarketingConsentResponse, nullable: true, description: "What was kept of their browser with their yes to the shop's pixel; null without it." })
+  marketingConsent!: CustomerDataMarketingConsentResponse | null;
+}
+
 class CustomerDataShopResponse {
   @ApiProperty() name!: string;
   @ApiProperty() slug!: string;
@@ -58,6 +79,7 @@ export class CustomerDataExportResponse implements CustomerDataExport {
   @ApiProperty({ type: CustomerProfileResponse }) profile!: CustomerProfileResponse;
   @ApiProperty({ type: CustomerDataRecordResponse }) record!: CustomerDataRecordResponse;
   @ApiProperty({ type: [CustomerOrderResponse] }) orders!: CustomerOrderResponse[];
+  @ApiProperty({ type: [CustomerDataOrderOriginResponse], description: 'One per order that recorded where its visit came from.' }) orderOrigins!: CustomerDataOrderOriginResponse[];
   @ApiProperty({ type: [CustomerFavoriteResponse] }) favorites!: CustomerFavoriteResponse[];
   @ApiProperty({ type: [CustomerReviewResponse] }) reviews!: CustomerReviewResponse[];
   @ApiProperty({ type: [CustomerConversationResponse] }) conversations!: CustomerConversationResponse[];

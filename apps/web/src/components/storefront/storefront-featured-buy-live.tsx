@@ -5,10 +5,10 @@ import { StorefrontFeaturedBuy } from "@harness-monorepo/ui/blocks/storefront/st
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
-import { useCart } from "./cart-provider"
+import { useAddToCart } from "./use-add-to-cart"
 
 export interface StorefrontFeaturedBuyLiveProps {
-  product: { id: string; name: string; hasOptions?: boolean; soldOut: boolean }
+  product: { id: string; name: string; priceCents: number; hasOptions?: boolean; soldOut: boolean }
   /** Strings and not `StorefrontRoutes`: its functions cannot cross into a client component. */
   productHref: string
   cartHref: string | null
@@ -20,7 +20,7 @@ export interface StorefrontFeaturedBuyLiveProps {
  * itself, with no variant to name, on the way to the cart; everything else goes to its page.
  */
 export function StorefrontFeaturedBuyLive({ product, productHref, cartHref, messages }: StorefrontFeaturedBuyLiveProps) {
-  const add = useCart((cart) => cart.add)
+  const add = useAddToCart()
 
   return (
     <StorefrontFeaturedBuy
@@ -29,7 +29,7 @@ export function StorefrontFeaturedBuyLive({ product, productHref, cartHref, mess
       cartHref={cartHref}
       {...(product.hasOptions !== undefined ? { hasOptions: product.hasOptions } : {})}
       soldOut={product.soldOut}
-      onBuy={() => add({ productId: product.id, variantId: null, qty: 1 })}
+      onBuy={() => add({ productId: product.id, variantId: null, qty: 1 }, { name: product.name, unitPriceCents: product.priceCents })}
       messages={messages}
     />
   )

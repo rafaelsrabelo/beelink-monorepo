@@ -41,6 +41,33 @@ export interface CustomerDataRecord {
 }
 
 /**
+ * What one of their orders recorded of the visit it came from (BEELINK-275): the campaign of the link
+ * they arrived by and, where they had said yes to the shop's pixel, what was kept of their browser
+ * then — as it is stored.
+ */
+export interface CustomerDataOrderOrigin {
+  orderNumber: number;
+  source: string | null;
+  medium: string | null;
+  campaign: string | null;
+  content: string | null;
+  term: string | null;
+  /** ISO-8601: when they arrived by that link; null with no campaign kept. */
+  arrivedAt: string | null;
+  /** Null when their yes did not stand as the order was placed, and once it was deleted. */
+  marketingConsent: {
+    fbclid: string | null;
+    /** ISO-8601. */
+    clickedAt: string | null;
+    fbp: string | null;
+    userAgent: string | null;
+    pageUrl: string | null;
+    /** ISO-8601: when it was recorded, with the order. */
+    recordedAt: string;
+  } | null;
+}
+
+/**
  * Everything a shop keeps about the signed-in shopper, in the shapes their account already reads it
  * in — "Baixar meus dados". Every order and conversation, never a page of them.
  */
@@ -54,6 +81,8 @@ export interface CustomerDataExport {
   record: CustomerDataRecord;
   /** Most recent first. */
   orders: CustomerOrder[];
+  /** One per order that recorded where its visit came from (BEELINK-275), most recent first. */
+  orderOrigins: CustomerDataOrderOrigin[];
   /** Most recently liked first. */
   favorites: CustomerFavorite[];
   /** Most recent first, hidden ones too. */

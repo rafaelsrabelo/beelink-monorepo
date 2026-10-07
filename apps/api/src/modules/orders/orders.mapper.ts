@@ -6,6 +6,7 @@ import type { Prisma } from '../../generated/prisma/client.js';
 import { toOrderCashback } from '../cashback/cashback.mapper.js';
 import { toPaymentBrief, toShopOrderPayment } from '../payments/payment.mapper.js';
 import { toDeliveryAddress, toDeliveryWindow } from './order-delivery.js';
+import { toOrderOrigin } from './order-origin.js';
 import { toShopDelivery } from './order-tracking.js';
 
 const customerSelect = { id: true, name: true, phone: true } as const;
@@ -82,6 +83,7 @@ export function toOrder(row: OrderRow): Order {
     cashbackUsedCents: row.cashbackUsedCents,
     totalCents: row.totalCents,
     note: row.note,
+    origin: toOrderOrigin(row),
     placedAt: row.placedAt.toISOString(),
     events: row.events.map((event) => ({ status: event.status, actor: event.actor, at: event.createdAt.toISOString() })),
     delivery: row.delivery ? toShopDelivery(row.delivery) : null,
