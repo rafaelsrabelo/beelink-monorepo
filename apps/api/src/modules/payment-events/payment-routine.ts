@@ -4,6 +4,7 @@ import { Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from '@ne
 // App
 import { env } from '../../shared/config/env.js';
 import { AsaasWebhookKeeper } from '../integrations/asaas/asaas-webhook-keeper.js';
+import { FunnelRetention } from '../reports/funnel-retention.js';
 import { AsaasEvents } from './asaas-events.service.js';
 import { PAYMENT_ROUTINE_MS } from './payment-events.constants.js';
 import { PaymentReconciliation } from './payment-reconciliation.js';
@@ -12,7 +13,8 @@ import { UnpaidOrders } from './unpaid-orders.js';
 /**
  * The clock of the payments (BEELINK-206), every minute: the events that failed are tried again,
  * the waiting charges due are asked about, the unpaid orders past their time are cancelled, the
- * shops' webhooks not looked at for a day are looked at, and the events done a month ago go. Each
+ * shops' webhooks not looked at for a day are looked at, and the events done a month ago go — and,
+ * once a day, the funnel's counters older than thirteen months (BEELINK-276). Each
  * step decides by the database what is due, so a pass with nothing to do costs a few queries; each
  * fails alone.
  */
@@ -27,6 +29,7 @@ export class PaymentRoutine implements OnModuleInit, OnModuleDestroy {
     private readonly reconciliation: PaymentReconciliation,
     private readonly unpaid: UnpaidOrders,
     private readonly keeper: AsaasWebhookKeeper,
+    private readonly funnel: FunnelRetention,
   ) {}
 
   onModuleInit(): void {
@@ -55,6 +58,8 @@ export class PaymentRoutine implements OnModuleInit, OnModuleDestroy {
       await this.step('cancel the unpaid orders', () => this.unpaid.cancelDue(now));
       await this.step("check the shops' Asaas webhooks", () => this.keeper.checkDue(now));
       await this.step('prune the Asaas events', () => this.events.prune(now));
+      // Not a payment's business: this is the one clock that already deletes what is old, and a second timer for one delete a day would be one more thing to keep alive.
+      await this.step("prune the funnel's old days", () => this.funnel.pruneDue(now));
     } finally {
       this.running = false;
     }

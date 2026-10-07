@@ -31,7 +31,7 @@ export function reportError(errorCode: ReportErrorCode, message: string): { erro
 const refuse = (message: string) => new BadRequestException(reportError('REPORT_PERIOD_INVALID', message));
 
 /** Midnight of that day on the shop's clock; null for what is not a day — "2026-02-30" has the shape and names none. */
-function startOfDay(day: string): Date | null {
+export function startOfShopDay(day: string): Date | null {
   if (!DAY.test(day)) return null;
   const instant = new Date(`${day}T00:00:00.000${SHOP_OFFSET}`);
   if (Number.isNaN(instant.getTime())) return null;
@@ -52,11 +52,11 @@ export function reportPeriodOf(query: SalesByOriginQuery, now = new Date()): Rep
   if ((query.from === undefined) !== (query.to === undefined)) throw refuse('from and to come together');
 
   const to = query.to ?? shopDayOf(now);
-  const last = startOfDay(to);
+  const last = startOfShopDay(to);
   if (!last) throw refuse('to is not a day (YYYY-MM-DD)');
 
   const from = query.from ?? shopDayOf(new Date(last.getTime() - (REPORT_DEFAULT_DAYS - 1) * DAY_MS));
-  const start = startOfDay(from);
+  const start = startOfShopDay(from);
   if (!start) throw refuse('from is not a day (YYYY-MM-DD)');
 
   if (start.getTime() > last.getTime()) throw refuse('from is after to');

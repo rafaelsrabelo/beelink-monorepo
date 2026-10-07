@@ -7,7 +7,9 @@ import type { AuthenticatedUser } from '../auth/auth.decorators.js';
 
 // App
 import { CurrentUser } from '../auth/auth.decorators.js';
+import { StoreFunnelQueryDto, StoreFunnelResponse } from './dto/funnel.dto.js';
 import { SalesByOriginDto, SalesByOriginResponse } from './dto/sales-by-origin.dto.js';
+import { FunnelService } from './funnel.service.js';
 import { ReportsService } from './reports.service.js';
 
 /** What a shop sold, for its owner. Closed, like every panel route; a shopper's token is refused. */
@@ -18,7 +20,10 @@ import { ReportsService } from './reports.service.js';
 @ApiForbiddenResponse({ description: 'STORE_FORBIDDEN' })
 @Controller('stores/:storeSlug/reports')
 export class ReportsController {
-  constructor(private readonly reports: ReportsService) {}
+  constructor(
+    private readonly reports: ReportsService,
+    private readonly funnels: FunnelService,
+  ) {}
 
   @Get('sales-by-origin')
   @ApiOperation({
@@ -32,5 +37,19 @@ export class ReportsController {
   @ApiBadRequestResponse({ description: 'REPORT_PERIOD_INVALID — not two days in YYYY-MM-DD, `from` after `to`, only one of them, or more than 366 days' })
   salesByOrigin(@Param('storeSlug') storeSlug: string, @CurrentUser() current: AuthenticatedUser, @Query() query: SalesByOriginDto): Promise<SalesByOriginResponse> {
     return this.reports.salesByOrigin(storeSlug, current.id, query);
+  }
+
+  @Get('funnel')
+  @ApiOperation({
+    summary: "A period's funnel: pages seen, products seen, additions to the cart, checkouts begun, purchases",
+    description:
+      'The first four steps are anonymous counters the shop window raises — per shop, day and step, nothing per visitor — so they count events, not people: one visitor opening five products is five. ' +
+      'PURCHASE is never a browser\'s word: it is the sales of `sales-by-origin` (same rule) that customers placed from the cart, on the day they were placed; sales registered in the panel are `panelSales`, apart. ' +
+      'Both are counted from `countingSince`, the first day this shop has a counter of. Counters are kept for `retentionMonths` months. Days as in `sales-by-origin`.',
+  })
+  @ApiOkResponse({ type: StoreFunnelResponse })
+  @ApiBadRequestResponse({ description: 'REPORT_PERIOD_INVALID — not two days in YYYY-MM-DD, `from` after `to`, only one of them, or more than 366 days' })
+  funnel(@Param('storeSlug') storeSlug: string, @CurrentUser() current: AuthenticatedUser, @Query() query: StoreFunnelQueryDto): Promise<StoreFunnelResponse> {
+    return this.funnels.funnel(storeSlug, current.id, query);
   }
 }
