@@ -139,3 +139,33 @@ Tudo numa consulta: `prisma.order.findUnique({ where: { id }, include: { marketi
 - Mostrar a origem na lista de pedidos, filtrar pedidos por origem.
 - Guardar outros identificadores de clique (`gclid`, `ttclid`).
 - e2e de Playwright novo no CI: a suíte da web não cria loja com pixel (como do X3 ao X6). A prova no navegador é feita uma vez, à mão, e contada abaixo.
+
+## 06/10, depois do código — o que mudou ao escrever
+
+- **A função da regra chama `originAfter(guardada, chegada, permitido)`** e ganhou um caso: se outra aba já guardou uma chegada mais recente, a chegada mais velha desta página não passa por cima dela.
+- **Um não também vale para o clique que estava esperando.** Quem recusa e depois muda de ideia na mesma carga de página não tem o `fbclid` daquela chegada guardado: o não foi dado sobre ele.
+- **A loja só é lida no handler quando o `bl_consent` diz `granted`.** Sem sim, o pedido não custa uma leitura a mais.
+- **A API recusa o caractere nulo em qualquer texto do corpo**, antes de qualquer DTO (`api-validation.pipe.ts`, regra antiga). É a única coisa nesses campos que ainda recusa um pedido, e a web nunca o envia: a limpeza do cookie tira os caracteres de controle antes.
+- **`arrivedAt` e `clickedAt` com mais de 90 dias ou no futuro são descartados pela API** (até 5 minutos de relógio adiantado contam como "agora"). A janela de 30 dias é regra da web; a API só recusa datas que não fazem sentido. Um clique sem instante não é gravado.
+- **`originAt` de um pedido só com clique** (sem UTMs) é o instante do clique.
+- **A linha "Origem" entrou no `OrderFacts`** (o cartão "Cliente"), por `originLinesOf` (`packages/ui/src/lib/order-origin.ts`), com story (`ComOrigem`, `OrigemDireta`) e teste próprio com axe.
+- **A linha da política** ficou: "bl_origin: a campanha do link pelo qual você chegou a uma loja, isto é, os parâmetros utm_source, utm_medium, utm_campaign, utm_content e utm_term do endereço, para que o pedido que você fizer ali registre de qual campanha veio; e, numa loja que usa o Pixel da Meta, só depois que você aceita, o identificador do clique no anúncio (fbclid) com que você chegou; vale só para aquela loja e dura 30 dias a partir da chegada;".
+- **A exportação** ganhou `orderOrigins`; o `CustomerOrder` segue sem origem (o teste que lista as chaves do pedido do cliente não mudou).
+
+## 06/10 — o que foi visto no navegador
+
+A vitrine foi aberta de verdade (`next dev` na 3800, API na 3801, banco `harness_meta_pixel`, lojas `loja-do-pixel` e `loja-b`, as duas com pixel de mentira) e percorrida pelo Playwright, com **toda requisição a `facebook.com` e `connect.facebook.net` abortada**: nada chegou à Meta. Um cliente novo foi criado e confirmado pelo e-mail (Mailpit); a senha da conta de teste do lojista foi redefinida pelo link do e-mail, de novo. Os servidores foram parados depois. Os pedidos nº 4 a 9 de `loja-do-pixel` ficaram no banco.
+
+- **Chegada com `?utm_source=facebook&utm_medium=cpc&utm_campaign=teste&fbclid=abc123`, antes de responder ao aviso:** `bl_origin` com `Path=/loja-do-pixel`, 30 dias, `SameSite=Lax`, sem `httpOnly`, valor `{"s":"facebook","m":"cpc","c":"teste","a":<ms>}` — sem o `fbclid`. O cookie não é enviado a `/loja-b`, `/` nem `/privacidade`.
+- **"Aceitar" na mesma página:** o valor ganha `"f":"abc123"`, com a **mesma** data da chegada. Navegar pela loja e recarregar outra página não muda nada.
+- **Pedido (nº 4)**, retirada e dinheiro: o corpo que a página enviou não nomeia `origin` nem `marketingConsent`; a resposta ao cliente não tem `origin`. Linha no banco: `facebook | cpc | teste`, `originMetaAd` verdadeiro, e em `order_marketing_consents` `fbclid = abc123`, `clickedAt` = o instante da chegada (ao milissegundo), agente do navegador, `pageUrl = http://localhost:3800/loja-do-pixel/carrinho`. `fbp` vazio — ver abaixo.
+- **Painel, pedido nº 4:** o cartão "Cliente" termina com "Origem — Anúncio da Meta · facebook / cpc · campanha teste". Nem a página nem a resposta da API ao painel (`origin: { source, medium, campaign, content, term, metaAd: true }`) trazem `abc123`, `_fbp`, agente do navegador ou o endereço do carrinho.
+- **Chegada na `loja-b` com outra campanha e `fbclid`, aceite lá, depois pedido na `loja-do-pixel` (nº 5):** a `loja-do-pixel` não tem `bl_origin`; o handler do pedido não recebeu nenhum (cabeçalho `Cookie` conferido); o pedido ficou sem UTMs, `originMetaAd` falso. No painel: "Direto / sem campanha". (O cliente aceitou os cookies também na `loja-do-pixel`, então há linha de consentimento, sem `fbclid`.)
+- **Chegada com `fbclid` e "Recusar" (nº 6):** cookie só com as UTMs; pedido com `facebook | cpc | teste`, `originMetaAd` falso, **nenhuma** linha em `order_marketing_consents`; nenhuma requisição à Meta. No painel: "facebook / cpc · campanha teste".
+- **Sim e depois "Cookies" → "Recusar":** o `fbclid` sai do cookie; as UTMs e a data da chegada ficam.
+- **Entrada na loja sem recarga** (`router.push` de `/loja-b` para `/loja-do-pixel?utm_source=newsletter…`, pela API de desenvolvimento do Next): a origem foi guardada na `loja-do-pixel`, e a `loja-b` ficou sem cookie.
+- **Venda registrada no painel (nº 7):** `origin: null` na resposta, colunas nulas, nenhuma linha de consentimento; o cartão "Cliente" não tem a linha "Origem".
+- **`_fbp`:** com a biblioteca da Meta abortada, nada grava o `_fbp`. Ele foi **plantado pelo teste** (`fb.0.1791333000000.…`, no domínio inteiro): com "Aceitar" (nº 8) foi gravado no pedido; com "Recusar" (nº 9) o handler o recebeu no cabeçalho e **não** o repassou — nenhuma linha.
+- Console sem erros no percurso.
+
+**Não rodado:** um `_fbp` escrito pela biblioteca real da Meta; o build de produção e o site atrás do Traefik (o `Referer` e o `publicOriginOf` com `https` estão só em teste de unidade); uma loja sem pixel no navegador (teste de componente e de handler); a exportação e a exclusão da conta na tela (e2e da API); um pedido `ONLINE`.
