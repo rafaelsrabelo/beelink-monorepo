@@ -600,6 +600,7 @@ export const legalTexts = {
               "bl_cart: o carrinho de cada loja, só com os produtos, as variações e as quantidades; dura 30 dias, renovados a cada mudança;",
               "bl_shop: o CEP informado em \"Entregar em\", em cada loja; dura 1 ano;",
               "bl_consent: a sua resposta, aceitar ou recusar, ao aviso de cookies de uma loja que usa o Pixel da Meta; vale só para aquela loja e dura 180 dias;",
+              "bl_purchases: numa loja que usa o Pixel da Meta, e só depois que você aceita, os códigos dos seus últimos pedidos já informados à Meta, para que o mesmo pedido não seja informado duas vezes; vale só para aquela loja e dura 7 dias, renovados a cada pedido informado;",
               "bl_prefs: as preferências de exibição do painel, como o menu recolhido; dura 1 ano;",
               "bl_locale: o idioma escolhido; dura 1 ano.",
             ],

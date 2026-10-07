@@ -89,6 +89,11 @@ describe("bee-link's legal texts (BEELINK-171)", () => {
       expect(cookies).toMatch(/_fbp e _fbc\. Quem os grava é o script da Meta, e só depois que você aceita/)
     })
 
+    // BEELINK-273: the list of cookies is a list of all of them.
+    it("names the cookie that keeps which orders were already told to Meta, written only after a yes", () => {
+      expect(textOf("Cookies")).toMatch(/bl_purchases: numa loja que usa o Pixel da Meta, e só depois que você aceita, os códigos dos seus últimos pedidos já informados à Meta, para que o mesmo pedido não seja informado duas vezes; vale só para aquela loja e dura 7 dias/)
+    })
+
     it("no longer says no advertising pixel and no third-party script is ever used", () => {
       const all = JSON.stringify(legalTexts.privacy)
 
