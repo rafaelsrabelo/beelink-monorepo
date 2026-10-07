@@ -64,6 +64,8 @@ export interface StorePopupOverview {
   };
   /** What the pop-up as saved announces now; null promises no discount — the plain invitation. */
   benefit: FirstPurchaseHeadline | null;
+  /** What following the shop (`AUTO`) announces now, whatever is saved: the form's preview of that choice. */
+  headline: FirstPurchaseHeadline | null;
   /** What the form may name: the first-purchase promotions running and the shown first-purchase coupons in force. */
   options: PopupBenefitOption[];
 }

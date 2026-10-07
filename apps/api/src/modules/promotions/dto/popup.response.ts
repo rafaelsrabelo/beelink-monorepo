@@ -42,5 +42,6 @@ class PopupBenefitOptionResponse implements PopupBenefitOption {
 export class StorePopupOverviewResponse implements StorePopupOverview {
   @ApiProperty({ type: StorePopupSettingsResponse }) settings!: StorePopupSettingsResponse;
   @ApiProperty({ type: FirstPurchaseHeadlineResponse, nullable: true, description: 'What the pop-up as saved announces now.' }) benefit!: FirstPurchaseHeadlineResponse | null;
+  @ApiProperty({ type: FirstPurchaseHeadlineResponse, nullable: true, description: "What following the shop's headline announces now, whatever is saved." }) headline!: FirstPurchaseHeadlineResponse | null;
   @ApiProperty({ type: [PopupBenefitOptionResponse], description: 'The first-purchase promotions running and shown coupons in force.' }) options!: PopupBenefitOptionResponse[];
 }

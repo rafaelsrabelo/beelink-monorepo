@@ -10,7 +10,7 @@ import { StoresService } from '../stores/stores.service.js';
 import type { StorePopupDto } from './dto/popup.dto.js';
 import { runningPromotions } from './order-discounts.js';
 import { UUID } from './promotions.constants.js';
-import { shownFirstPurchaseCoupon, shownFirstPurchaseCouponById, shownFirstPurchaseCoupons } from './shop-offers.js';
+import { firstPurchaseHeadlineOf, shownFirstPurchaseCoupon, shownFirstPurchaseCouponById, shownFirstPurchaseCoupons } from './shop-offers.js';
 import { couponOptionOf, popupBenefitOf, popupError, promotionOptionOf, refuseTypedDiscounts, toPopupSettings, visitorsReadAnother } from './shop-popup.js';
 
 /**
@@ -88,6 +88,7 @@ export class PopupService {
     return {
       settings: toPopupSettings(row),
       benefit: popupBenefitOf(row, { promotions, headlineCoupon, namedCoupon }),
+      headline: firstPurchaseHeadlineOf(promotions, headlineCoupon),
       options: [...promotions.filter((promotion) => promotion.audience === 'FIRST_PURCHASE').map(promotionOptionOf), ...coupons.map(couponOptionOf)],
     } satisfies StorePopupOverview;
   }

@@ -87,6 +87,7 @@ describe("a shop's first-purchase pop-up", () => {
       expect(response.json<StorePopupOverview>()).toEqual({
         settings: { enabled: false, imageUrl: null, title: null, text: null, buttonLabel: null, trigger: 'ON_ARRIVAL', delaySeconds: 5, benefitSource: 'AUTO', benefitId: null, revision: 1, updatedAt: null },
         benefit: null,
+        headline: null,
         options: [],
       });
       expect(await prisma.storePopup.count()).toBe(0);
@@ -191,6 +192,8 @@ describe("a shop's first-purchase pop-up", () => {
       const named = await saved({ benefitSource: 'COUPON', benefitId: first.id });
       expect(named.settings).toMatchObject({ benefitSource: 'COUPON', benefitId: first.id });
       expect(named.benefit).toEqual({ source: 'COUPON', kind: 'PERCENT', percentBps: 1000, amountCents: null, minSubtotalCents: 0, endsAt: null, wholeCart: true });
+      // What following the shop would say is still told, for the form to preview that choice.
+      expect(named.headline).toMatchObject({ source: 'PROMOTION', percentBps: 1500 });
 
       expect((await saved({ benefitSource: 'PROMOTION', benefitId: deal.id })).benefit).toMatchObject({ source: 'PROMOTION', percentBps: 1500, wholeCart: true });
       // Back to following the shop: an id sent along is not kept.
