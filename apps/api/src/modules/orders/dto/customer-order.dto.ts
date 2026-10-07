@@ -131,6 +131,7 @@ export class CustomerOrderEventResponse implements CustomerOrderEvent {
 }
 
 export class CustomerOrderResponse implements CustomerOrder {
+  @ApiProperty({ format: 'uuid', description: "The order's own id: what names its purchase to an advertising tool. No route takes it." }) id!: string;
   @ApiProperty({ description: 'Sequential within the shop.' }) number!: number;
   @ApiProperty({ enum: ORDER_STATUSES }) status!: OrderStatus;
   @ApiProperty({ enum: SIDES, description: 'The customer from the cart, or the shop from its panel.' }) placedBy!: OrderPlacedBy;

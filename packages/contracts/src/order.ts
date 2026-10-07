@@ -343,6 +343,12 @@ export type CustomerOrderSituation = "ACTIVE" | "DELIVERED" | "CANCELLED";
  * what the shop's books say about the customer.
  */
 export interface CustomerOrder {
+  /**
+   * The order's own id, which never changes and no other order shares (BEELINK-273). Nothing is
+   * asked for by it — every route takes the number. It is what names the order's purchase to an
+   * advertising tool, alike from the browser and from the server, so the two are counted once.
+   */
+  id: string;
   /** Sequential within the shop: what the customer says to the shop. */
   number: number;
   status: OrderStatus;

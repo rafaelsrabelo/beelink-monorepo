@@ -123,6 +123,7 @@ describe("a shopper's order from the cart", () => {
         'discountCents',
         'events',
         'fulfillment',
+        'id',
         'installments',
         'items',
         'number',
@@ -141,6 +142,9 @@ describe("a shopper's order from the cart", () => {
     const panel = (await call('GET', '/api/stores/lessari/orders/1', owner)).json<Order>();
     expect(panel).toMatchObject({ status: 'RECEIVED', customer: { name: 'Bia Cliente', phone: '5511988887777' }, note: null });
     expect(panel.events).toEqual([expect.objectContaining({ status: 'RECEIVED', actor: 'CUSTOMER' })]);
+    // The order's own id, the same on both sides (BEELINK-273): what names its purchase to an advertising tool.
+    expect(order.id).toBe(panel.id);
+    expect((await call('GET', '/api/stores/lessari/customer/orders/1', shopper)).json<CustomerOrder>().id).toBe(panel.id);
     const record = await prisma.customer.findUniqueOrThrow({ where: { id: panel.customer.id } });
     expect(record).toMatchObject({ ordersCount: 1, totalSpentCents: 23970n });
     expect(record.userId).not.toBeNull();
