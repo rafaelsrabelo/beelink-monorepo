@@ -25,6 +25,8 @@ export interface StorefrontOfferStripProps {
   code?: string | null
   /** Where the offer leads: the shop's sign-up, or the cart with the coupon in its address. */
   action?: { label: string; href: string } | null
+  /** The offer's link was pressed: the screen may count the offer as used. The link is followed either way. */
+  onAction?: () => void
   /** Closes the strip. Absent, there is no button: a strip nobody can close is not offered one. */
   onDismiss?: () => void
   linkComponent?: LinkComponent
@@ -45,7 +47,7 @@ const ACTION = "inline-flex h-11 shrink-0 items-center rounded-full bg-shop-prim
  * It says only what it is handed. Which offer is true of this visitor at this shop, and every number
  * in the sentence, are the screen's, read from the API.
  */
-export function StorefrontOfferStrip({ message, detail = null, code = null, action = null, onDismiss, linkComponent: Link = AnchorLink, messages = defaultMessages }: StorefrontOfferStripProps) {
+export function StorefrontOfferStrip({ message, detail = null, code = null, action = null, onAction, onDismiss, linkComponent: Link = AnchorLink, messages = defaultMessages }: StorefrontOfferStripProps) {
   const text = messages.storefront.offers
   const codeId = useId()
 
@@ -70,7 +72,7 @@ export function StorefrontOfferStrip({ message, detail = null, code = null, acti
             <div className="flex flex-wrap items-center gap-2">
               {code ? <StorefrontCopyButton value={code} label={text.copy} doneLabel={text.copied} selectedLabel={text.copySelected} targetId={codeId} /> : null}
               {action ? (
-                <Link href={action.href} className={ACTION}>
+                <Link href={action.href} onClick={onAction} className={ACTION}>
                   {action.label}
                 </Link>
               ) : null}

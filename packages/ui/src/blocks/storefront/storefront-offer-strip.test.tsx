@@ -89,6 +89,23 @@ describe("StorefrontOfferStrip", () => {
       expect(onDismiss).toHaveBeenCalledTimes(1)
     })
 
+    // BEELINK-311: following the offer's link is using it, and the screen is told.
+    it("tells the screen when its link is pressed — and not when the code is copied", async () => {
+      const onAction = vi.fn()
+      Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: vi.fn().mockResolvedValue(undefined) } })
+      render(<StorefrontOfferStrip {...coupon} onAction={onAction} onDismiss={() => {}} />)
+
+      await userEvent.click(screen.getByRole("button", { name: "Copiar" }))
+      expect(onAction).not.toHaveBeenCalled()
+
+      const link = screen.getByRole("link", { name: "Usar no carrinho" })
+      link.addEventListener("click", (event) => event.preventDefault())
+      await userEvent.click(link)
+      expect(onAction).toHaveBeenCalledTimes(1)
+      // The link is still a link: the press is not swallowed.
+      expect(link).toHaveAttribute("href", "/loja/carrinho?cupom=PRIMEIRA10")
+    })
+
     it("offers none when the screen cannot close it", () => {
       render(<StorefrontOfferStrip {...signUp} />)
 
