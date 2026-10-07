@@ -2133,6 +2133,20 @@ export interface UiMessages {
       deliverTo: string
       /** A delivery placed before orders kept where they went. */
       deliveryNotRecorded: string
+      /** Where the buyer came from (BEELINK-275), on an order placed from the cart. */
+      origin: {
+        label: string
+        /** No campaign and no ad click kept. */
+        direct: string
+        /** A click on a Meta ad was kept. Never the identifier. */
+        metaAd: string
+        /** "campanha {name}". */
+        campaign: string
+        /** "Conteúdo: {value}". */
+        content: string
+        /** "Termo: {value}". */
+        term: string
+      }
       /** Who receives it, when not the customer: "Recebe: {name}". */
       recipient: string
       items: string
