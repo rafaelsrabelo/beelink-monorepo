@@ -9,7 +9,7 @@ import { en } from "../../locales/en"
 // Block
 import { expectNoA11yViolations } from "../../test/a11y"
 import { AdminSidebar } from "./admin-sidebar"
-import { sampleAdminFooterNav, sampleAdminNav } from "./admin.fixtures"
+import { sampleAdminFooterNav, sampleAdminNav, sampleAdminNavWithCounts } from "./admin.fixtures"
 
 function renderSidebar(overrides: Partial<Parameters<typeof AdminSidebar>[0]> = {}) {
   return render(
@@ -101,6 +101,51 @@ describe("AdminSidebar", () => {
     renderSidebar({ messages: en })
 
     expect(screen.getByRole("complementary", { name: "Shop navigation" })).toBeInTheDocument()
+  })
+
+  describe("an item with a count (BEELINK-309)", () => {
+    const withCount = (badge: number | undefined, badgeLabel?: string) =>
+      sampleAdminNav.map((item) => (item.title === "Pedidos" ? { ...item, badge, badgeLabel } : item))
+
+    it("says the count in words in the item's name, never as a bare number", () => {
+      renderSidebar({ items: sampleAdminNavWithCounts })
+
+      expect(screen.getByRole("link", { name: "Pedidos, 3 em aberto" })).toHaveAttribute("href", "/admin/lessari/orders")
+      expect(screen.getByRole("link", { name: "Clientes, 128 novos" })).toHaveTextContent("99+")
+      // An item with nothing waiting keeps its plain name.
+      expect(screen.getByRole("link", { name: "Produtos" })).toBeInTheDocument()
+    })
+
+    it.each([undefined, 0])("draws no badge and adds nothing to the name at %s", (badge) => {
+      const { container } = renderSidebar({ items: withCount(badge, "0 em aberto") })
+
+      expect(screen.getByRole("link", { name: "Pedidos" })).toBeInTheDocument()
+      expect(container.querySelector('[data-slot="nav-badge"]')).toBeNull()
+    })
+
+    it("keeps the badge and the same name when the rail is icons only", () => {
+      const { container } = renderSidebar({ items: sampleAdminNavWithCounts, collapsed: true })
+
+      const orders = screen.getByRole("link", { name: "Pedidos, 3 em aberto" })
+      expect(orders.querySelector('[data-slot="nav-badge"]')).toHaveTextContent("3")
+      // The item is what the corner badge is placed against.
+      expect(orders).toHaveClass("relative")
+      expect(container.querySelectorAll('[data-slot="nav-badge"]')).toHaveLength(2)
+    })
+
+    // A count that moves all day must not speak at every move: the name changes, nothing announces it.
+    it("announces nothing by itself when the count changes", () => {
+      const { container, rerender } = renderSidebar({ items: withCount(3, "3 em aberto") })
+      rerender(<AdminSidebar items={withCount(4, "4 em aberto")} footerItems={sampleAdminFooterNav} />)
+
+      expect(screen.getByRole("link", { name: "Pedidos, 4 em aberto" })).toBeInTheDocument()
+      expect(container.querySelector("[aria-live], [role=status], [role=alert]")).toBeNull()
+    })
+
+    it("has no accessibility violations, expanded or collapsed", async () => {
+      await expectNoA11yViolations(renderSidebar({ items: sampleAdminNavWithCounts }).container)
+      await expectNoA11yViolations(renderSidebar({ items: sampleAdminNavWithCounts, collapsed: true }).container)
+    })
   })
 
   it("has no accessibility violations", async () => {

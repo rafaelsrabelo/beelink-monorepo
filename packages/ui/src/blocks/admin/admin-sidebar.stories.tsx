@@ -7,10 +7,11 @@ import { en } from "../../locales/en"
 
 // Block
 import { AdminSidebar } from "./admin-sidebar"
-import { sampleAdminFooterNav, sampleAdminNav } from "./admin.fixtures"
+import { sampleAdminFooterNav, sampleAdminNav, sampleAdminNavWithCounts } from "./admin.fixtures"
 
 const icons = [<HomeIcon />, <ShoppingBagIcon />, <PackageIcon />, <UsersIcon />]
 const items = sampleAdminNav.map((item, index) => ({ ...item, icon: icons[index] }))
+const itemsWithCounts = sampleAdminNavWithCounts.map((item, index) => ({ ...item, icon: icons[index] }))
 const footerItems = sampleAdminFooterNav.map((item) => ({ ...item, icon: <SettingsIcon /> }))
 
 const meta = {
@@ -58,3 +59,13 @@ export const EmIngles: Story = { args: { messages: en } }
  * gaveta que abre numa tira de ícones responde uma pergunta que ninguém fez.
  */
 export const Recolhido: Story = { args: { collapsed: true } }
+
+/**
+ * Com contagens (BEELINK-309): cada item diz o número da sua área — "Pedidos" os em aberto. O selo
+ * não muda a altura da linha, vai até 99 e depois escreve "99+"; o nome acessível do item diz o
+ * número em palavras ("Pedidos, 3 em aberto"), e nada é anunciado sozinho quando ele muda.
+ */
+export const ComContagens: Story = { args: { items: itemsWithCounts, activeHref: "/admin/lessari/orders" } }
+
+/** Recolhido, o selo não some: vai para o canto do ícone, e o nome acessível continua o mesmo. */
+export const ContagensRecolhido: Story = { args: { items: itemsWithCounts, collapsed: true } }

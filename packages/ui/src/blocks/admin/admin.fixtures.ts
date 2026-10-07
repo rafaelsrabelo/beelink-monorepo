@@ -13,6 +13,18 @@ export const sampleAdminNav: DashboardNavItem[] = [
   { title: "Clientes", href: "/admin/lessari/customers", match: "prefix" },
 ]
 
+/**
+ * The same menu with what waits in two of its areas (BEELINK-309): the number, and the words a
+ * screen reader hears for it — both built by the screen, which is where the counts and the copy are.
+ */
+export const sampleAdminNavWithCounts: DashboardNavItem[] = sampleAdminNav.map((item) =>
+  item.title === "Pedidos"
+    ? { ...item, badge: 3, badgeLabel: "3 em aberto" }
+    : item.title === "Clientes"
+      ? { ...item, badge: 128, badgeLabel: "128 novos" }
+      : item,
+)
+
 export const sampleAdminFooterNav: DashboardNavItem[] = [
   { title: "Configurações da loja", href: "/admin/lessari/store" },
 ]
