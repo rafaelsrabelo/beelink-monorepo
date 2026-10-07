@@ -1,0 +1,61 @@
+// Libs
+import type { Meta, StoryObj } from "@storybook/react-vite"
+
+// UI
+import { shopPaletteVariables } from "@harness-monorepo/ui/lib/shop-palette"
+
+// Block
+import { sampleColorPresets, sampleDarkShopColors } from "../store/store.fixtures"
+import { popupPicture } from "./popup.fixtures"
+import { StorefrontPopup } from "./storefront-popup"
+
+const meta = {
+  title: "Blocos/Vitrine/Pop-up de primeira compra",
+  component: StorefrontPopup,
+  parameters: { layout: "fullscreen" },
+  args: {
+    open: true,
+    onOpenChange: () => {},
+    title: "Ganhe 5% de desconto na primeira compra",
+    text: "Crie sua conta e o desconto é seu.",
+    action: { label: "Ganhar cupom", href: "#criar" },
+    imageUrl: popupPicture,
+    style: shopPaletteVariables(sampleColorPresets[2]!.colors),
+  },
+} satisfies Meta<typeof StorefrontPopup>
+
+export default meta
+type Story = StoryObj<typeof meta>
+
+/** Com imagem, no computador: a foto na metade esquerda, a chamada na direita. */
+export const ComImagem: Story = {}
+
+/** Sem imagem: o painel colorido sozinho, mais estreito. */
+export const SemImagem: Story = { args: { imageUrl: null } }
+
+/** Benefício com condição: o mínimo do cupom vem escrito embaixo, com os números da API. */
+export const ComCondicao: Story = { args: { title: "Ganhe R$ 15,00 de desconto na primeira compra", detail: "Em compras a partir de R$ 50,00." } }
+
+/** Loja sem benefício de primeira compra: o convite simples, sem prometer nada. */
+export const ConviteSimples: Story = {
+  args: { imageUrl: null, title: "Crie sua conta na loja", text: "Acompanhe seus pedidos, salve favoritos e compre mais rápido.", action: { label: "Criar minha conta", href: "#criar" } },
+}
+
+/** Os textos nos limites: 80 no título, 200 no texto, 30 no botão. O diálogo rola por dentro se não couber. */
+export const TextosNoLimite: Story = {
+  args: {
+    title: "Antes de ir embora: ganhe 5% de desconto na sua primeira compra aqui na loja!!",
+    text: "Crie sua conta em menos de um minuto, confirme o seu e-mail e o cupom aparece para você na hora, pronto para usar no carrinho. Vale para a loja toda, uma vez por cliente, só no primeiro pedido.",
+    detail: "Em compras a partir de R$ 50,00.",
+    action: { label: "Quero ganhar o meu cupom já!!", href: "#criar" },
+  },
+}
+
+/** Numa loja de página escura. */
+export const LojaEscura: Story = { args: { style: shopPaletteVariables(sampleDarkShopColors) } }
+
+/** Num celular: a foto vira uma faixa no alto e a chamada vem embaixo. */
+export const NoCelular: Story = { globals: { viewport: { value: "mobile1" } } }
+
+/** Fechado: nada na página. */
+export const Fechado: Story = { args: { open: false } }
