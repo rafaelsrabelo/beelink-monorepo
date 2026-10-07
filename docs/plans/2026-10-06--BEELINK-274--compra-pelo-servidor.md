@@ -129,3 +129,53 @@ A compra só chega à Meta se o navegador do cliente estiver na página do pedid
 - Meta, "Handling Errors" (Graph API): https://developers.facebook.com/docs/graph-api/guides/error-handling
 - Meta, "Error Reference" (API de Marketing): https://developers.facebook.com/docs/marketing-api/error-reference
 - Meta, changelog da Graph API (versões): https://developers.facebook.com/docs/graph-api/changelog
+
+## 06/10, depois do código — o que mudou ao escrever
+
+- **O texto do cartão novo mora em `integrations.metaConversions`, fora de `integrations.metaPixel`.** O teste do X3/X5 que vigia a tela exige que, sob `metaPixel`, **uma só** frase fale de envio (a de "Bom saber"). Em vez de afrouxá-lo, as frases do token ganharam chave e regra próprias (`meta-pixel-screen.test.tsx`): toda frase inteira que fale de compras chegando à Meta diz de quem — de quem aceita os cookies —, e o texto do teste diz que ele não é uma compra nem leva dados de ninguém. O teste antigo não foi tocado.
+- **O formulário de troca do token fica aberto numa recusa.** O cartão nunca vê o token e não tem como distinguir um salvo do seguinte; a tela lhe dá uma `key` nova a cada token salvo (`savedCount` do hook), e é isso que fecha a troca.
+- **A mutação que leva o token é descartada na hora** (`gcTime: 0` + `reset`), como a da chave do Asaas; o campo é não controlado, para o token não ir para nenhum atributo da página.
+- **`purchaseCountsWhen` na API devolve só `PLACED` ou `PAID`** (o `NEVER` do navegador é a linha de inversão da decisão, e não um caso que exista hoje).
+- **Um evento sem ninguém para identificar** (sem e-mail nem telefone) fecha como `SKIPPED` em vez de ir e ser recusado. Na prática é a conta apagada, que já fecha antes por falta de consentimento.
+- **Uma falha que não é da Meta** (um erro nosso antes do envio) é tratada como passageira, não como desistência.
+- **A política ganhou mais do que a seção do pixel.** Três frases tinham deixado de ser verdade e foram corrigidas: a resposta ao aviso "não fica no banco de dados" (fica, junto de um pedido feito depois do aceite); "o bee-link guarda a sua resposta só no seu navegador"; e "se você retira o aceite, aquela loja deixa de enviar dados à Meta" (o servidor ainda informa um pedido cobrado no site feito **antes** da retirada e pago depois — vale o aceite da hora do pedido, como o X6 e o X8 escreveram). A lista de dados do cliente passou a dizer que o pedido guarda a campanha de chegada e, com aceite, os identificadores do navegador (a pendência que o X8 deixou). **Para o dono e um advogado:** o caso do aceite retirado entre o pedido e o pagamento é o ponto mais delicado; se a resposta for "não pode", a saída é o servidor não enviar pedidos `ONLINE` cujo pagamento chega depois de N horas, ou a loja perguntar de novo — não há como o servidor saber da retirada, que mora no navegador.
+- **`docs/product/README.md`** dizia "a loja não envia nome, e-mail ou telefone com um evento": passou a separar o navegador (nada disso) do servidor (e-mail e telefone em código).
+- **Nenhuma variável de ambiente nova**, e nenhum ponto de troca do endereço da Meta em produção: o único jeito de pôr outra coisa no lugar do cliente HTTP é a injeção de dependência dos testes.
+- **Sem redação nova nos logs.** O token só viaja em corpo de requisição (do navegador ao BFF, do BFF à API, da API à Meta), e nem a API nem a web registram corpos; não há cabeçalho novo para esconder, como o `asaas-access-token`.
+
+## Cobertura da Definição de Pronto
+
+| # | Onde está provado |
+|---|---|
+| 1 | `meta-pixel.service.spec.ts` "seals the token in the row, answers only that one is set, and never the token"; `test/meta-conversions.e2e-spec.ts` "is sealed, said only as set, and never answered back" |
+| 2 | `test/meta-pixel-without-vault-key.e2e-spec.ts`; `meta-conversions-card.test.tsx` "offers no field where the deployment cannot keep a token" |
+| 3 | e2e "goes when another pixel ID is saved, stays when the same one is, and goes alone when removed" |
+| 4 | `meta-purchase-outbox.spec.ts` (owePurchase); e2e "owes an order settled with the shop at its placement…", "owes an order charged online only when its charge is paid…" |
+| 5 | e2e "owes nothing with no consent kept", "…for a sale the shopkeeper registered", "owes nothing on a cancellation…" |
+| 6 | `packages/contracts/fixtures/meta-purchase.json`, lido por `meta-purchase-event.spec.ts` (API) e `purchase.fixtures.test.ts` (web) |
+| 7 | `meta-purchase-event.spec.ts` (vetores da Meta, o evento completo e o mínimo, "names nothing else of the person"); e2e, o corpo inteiro da requisição |
+| 8 | e2e: `meta.requests` vazio logo depois do pedido e do webhook; "tells it once"; "is tried again, later each time" |
+| 9 | e2e "is given up once the event is past the seven days…", "is given up when Meta refuses the event itself…"; `meta-purchase-outbox.spec.ts` (prazos) |
+| 10 | e2e "stops the shop when Meta refuses the token / the pixel under it, says so on the panel, and resumes with another token" |
+| 11 | e2e "sends nothing once the buyer deleted their account" |
+| 12 | `meta-conversions-card.test.tsx`, `meta-pixel-screen.test.tsx` (bloco "BEELINK-274"), e2e "the test event" |
+| 13 | `meta-conversions-http.client.spec.ts` (token no corpo, nunca no endereço; cortado das palavras da Meta; falha de rede só por nome e código); e2e (`payload` nunca contém o token) |
+| 14 | `token/route.test.ts`, `test-event/route.test.ts`, `meta-pixel-hooks.test.tsx`, `meta-pixel-form.test.ts` |
+| 15 | `locales/legal/pt-BR.test.ts`, "on the purchase told from the server" |
+| 16 | `docs/repo/deploy.md` § Meta Pixel; `docs/product/README.md`; os três mapas de superfície |
+
+O limite de taxa do evento de teste está na rota (`@RouteConfig({ rateLimit })`, como as do Asaas) e **não tem teste próprio**: a suíte roda com `AUTH_RATE_LIMIT_MAX=1000`.
+
+## 06/10 — o que foi visto na tela
+
+A tela do painel foi aberta uma vez, de verdade: `next dev` na 3800 e a API na 3801 sobre o banco `harness_meta_pixel`, **com a Meta de mentira dos testes no lugar do cliente HTTP** (a API foi subida pelo arranjo da suíte e2e, que troca o provedor; nenhum ponto de troca existe em produção) e toda requisição a `facebook.com`/`connect.facebook.net` abortada no navegador. Nada chegou à Meta. Uma conta e uma loja novas (`loja-x7-…`, pixel `123456789012345`, que não é de ninguém) foram criadas pela API; um Chromium sem janela percorreu a página, e as capturas foram olhadas. Os servidores foram parados depois.
+
+- **Sem token:** o cartão "Compras pelo servidor" sob o do pixel, selo "Sem token", o campo do tipo senha e vazio, o passo a passo, e nenhum evento de teste.
+- **Uma frase colada no campo:** "Isso não parece um token de acesso…" sob o campo, nada enviado.
+- **Um token colado e salvo:** o aviso "Token salvo. Faça um evento de teste para conferir." no topo, selo verde "Token salvo", "Trocar o token" e "Remover o token"; **o token não aparece em nenhum lugar do HTML da página**.
+- **Evento de teste**, com `TEST12345`: aceito → "A Meta aceitou o evento…"; recusado → a frase e, embaixo, "Resposta da Meta: Meta refused (400, code 100): Invalid parameter"; Meta fora do ar → "Não foi possível falar com a Meta agora…"; token recusado → o selo vira "Precisa de atenção", a faixa vermelha diz o que parou, "Trocar o token" fica em destaque, e o cartão do pixel continua "Conectado".
+- **Trocar o token** abre o campo vazio; salvar volta ao selo verde. **Remover**, depois da confirmação, volta a "Sem token" com o pixel conectado.
+- Em 390 px de largura nada transborda.
+- A Meta de mentira recebeu os quatro eventos de teste, todos `BeeLinkTestEvent` com o código, nenhum `Purchase`.
+
+Não visto: o tema escuro; o cartão "Indisponível" numa implantação sem cofre (só em teste de componente e no e2e sem chave); uma compra de verdade percorrendo a vitrine até a rotina (só no e2e); um token, um pixel e o Gerenciador de Eventos reais. O console acusou só o soquete de tempo real, recusado por CORS neste arranjo (a API de teste aceita a origem `:3000`).
