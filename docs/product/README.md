@@ -182,6 +182,17 @@ A store may connect **its own Meta Pixel**, by its ID alone, so that Meta can me
 - Nothing is told from the panel, from a page being designed, or from a page opened by a single-use link — confirming an e-mail, setting a password.
 - From the browser, the shop sends no name, e-mail or phone with an event: what reaches Meta beside it is what any request carries — the address it came from and the browser — and Meta's own identifier. From the server, a purchase carries the e-mail and the phone as codes and never the name, the address, the CPF or the address of the buyer's network. What the shopkeeper switches on in their own Meta account is theirs to answer for.
 
+## The shop's funnel
+
+Every shop that sells reads, in its panel, **where its customers give up**: "Funil da loja" shows a period's visits, products seen, additions to the cart, checkouts begun and purchases, each step with how many that is for every hundred of the step before and how many were lost on the way. It needs no pixel and no ad campaign.
+
+- **It counts events, never people — and that is why it asks nobody's consent.** What bee-link keeps of a visit is a number: per shop, per day, per step. There is no row for a visitor or a session, no cookie written or read to count, no identifier, no address, no browser. A visitor who opens five products counts five; the rates are "N for every hundred", not the share of visitors who bought. Because nothing follows anyone, it is counted at every shop and for every visitor, whatever they answered about cookies — the consent strip is about Meta, and this tells Meta nothing.
+- **The steps are the moments the shop's pixel is told of**: a page opened, once per page; a product's page opened; a product put in the cart, from any button; the cart reached with something that can be ordered. Nothing is counted in the panel, in a page being designed, on a page opened by a single-use link, or in a browser where a panel is signed in — a shopkeeper looking at a shop is not a visit.
+- **The purchase is not a count: it is the shop's own orders.** The last step is the sales "Vendas por origem" reads, by the same rule, that customers placed on the shop window. A sale the shopkeeper registered in the panel never walked the funnel and is said apart. Purchases are counted from the first day the shop's visits were, so no rate is drawn over days nothing was counted on.
+- **A step can be larger than the one before**, since a product goes into the cart from a card without its page being opened; the page says so rather than hide it.
+- **A day's numbers are kept for thirteen months and then deleted** — long enough to set a month beside the same month a year before. Days from before the funnel existed read as zero.
+- A site that sells nothing has no funnel.
+
 ## What the product does not do
 
 - It does not receive, hold or move money: an online payment happens in the shopkeeper's own Asaas account, and what is settled with the shop is between the two of them.

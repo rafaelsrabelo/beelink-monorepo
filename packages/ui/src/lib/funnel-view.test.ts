@@ -1,9 +1,9 @@
 // Libs
 import { describe, expect, it } from "vitest"
 
-// Block
+// App
+import { cardHeavyFunnel, emptyFunnel, sampleFunnel } from "../blocks/reports/reports.fixtures"
 import { funnelIsEmpty, funnelRowsOf, per100Text } from "./funnel-view"
-import { cardHeavyFunnel, emptyFunnel, sampleFunnel } from "./reports.fixtures"
 
 describe("the funnel's rows", () => {
   it("sets each step against the one before: how many per hundred, and how many fewer", () => {

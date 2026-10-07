@@ -27,6 +27,12 @@ export function salesByOriginHref(slug: string, days: ReportPeriodDays): string 
   return days === REPORT_DEFAULT_PERIOD ? origins : `${origins}?period=${days}`
 }
 
+/** The shop's funnel (BEELINK-276) with a period on its address; the default stays out of it, as on every report. */
+export function storeFunnelHref(slug: string, days: ReportPeriodDays = REPORT_DEFAULT_PERIOD): string {
+  const page = `${reportPagesOf(slug).home}/funnel`
+  return days === REPORT_DEFAULT_PERIOD ? page : `${page}?period=${days}`
+}
+
 /** That many days ending today, as the two days the API takes: on the shop's clock, both counted. */
 export function reportDaysOf(days: ReportPeriodDays, now: Date): Required<SalesByOriginQuery> {
   const today = now.getTime() - SHOP_OFFSET_MS

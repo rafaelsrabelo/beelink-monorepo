@@ -1,5 +1,12 @@
-// Block
-import type { FunnelStepView } from "./report-types"
+// Locales
+import type { FunnelStepKey } from "@harness-monorepo/ui/locales/messages"
+
+/** A step of the shop's funnel as the blocks draw it. Mirrors the wire's `FunnelStepCount`. */
+export interface FunnelStepView {
+  step: FunnelStepKey
+  /** Events for the four counted steps, orders for the purchase. */
+  count: number
+}
 
 export interface FunnelRow extends FunnelStepView {
   /** How many of this step for every hundred of the one before; null on the first step, and where the one before counted nothing. */

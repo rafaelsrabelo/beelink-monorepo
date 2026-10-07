@@ -1,5 +1,6 @@
 // Block
-import type { FunnelStepView, SalesByOriginRowView, SalesTotalsView } from "./report-types"
+import type { FunnelStepView } from "@harness-monorepo/ui/lib/funnel-view"
+import type { SalesByOriginRowView, SalesTotalsView } from "./report-types"
 
 /** A shop's own address with the three labels on it, as the screen builds it. */
 export const EXAMPLE_URL = "https://beelink.biz/doces-da-ana?utm_source=instagram&utm_medium=social&utm_campaign=minha-campanha"

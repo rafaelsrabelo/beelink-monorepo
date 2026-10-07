@@ -1,5 +1,5 @@
 // Types
-import type { SalesByOriginQuery, SalesByOriginReport } from "@harness-monorepo/contracts"
+import type { SalesByOriginQuery, SalesByOriginReport, StoreFunnelQuery, StoreFunnelReport } from "@harness-monorepo/contracts"
 
 /** What a failed call carries: the API's stable code, never a sentence (apps/web/AGENTS.md, rule 9). */
 export class ReportRequestError extends Error {
@@ -24,4 +24,14 @@ export async function fetchSalesByOrigin(slug: string, query: Required<SalesByOr
   if (!response.ok) throw new ReportRequestError(errorCodeOf(payload))
 
   return payload as SalesByOriginReport
+}
+
+/** The shop's funnel in a period (BEELINK-276), through this app's own route handler. */
+export async function fetchStoreFunnel(slug: string, query: Required<StoreFunnelQuery>): Promise<StoreFunnelReport> {
+  const search = new URLSearchParams({ from: query.from, to: query.to })
+  const response = await fetch(`/api/stores/${encodeURIComponent(slug)}/reports/funnel?${search.toString()}`, { method: "GET", headers: JSON_HEADERS })
+  const payload: unknown = await response.json().catch(() => null)
+  if (!response.ok) throw new ReportRequestError(errorCodeOf(payload))
+
+  return payload as StoreFunnelReport
 }

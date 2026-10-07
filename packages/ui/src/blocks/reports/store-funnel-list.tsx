@@ -1,10 +1,10 @@
+// Libs
+import { funnelRowsOf, per100Text } from "@harness-monorepo/ui/lib/funnel-view"
+import type { FunnelStepView } from "@harness-monorepo/ui/lib/funnel-view"
+
 // Locales
 import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
-
-// Block
-import { funnelRowsOf, per100Text } from "./funnel-view"
-import type { FunnelStepView } from "./report-types"
 
 export interface StoreFunnelListProps {
   /** The five steps, in the funnel's order. */
