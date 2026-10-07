@@ -63,7 +63,7 @@ export interface PaymentSettingsFormValues {
 }
 
 /** The third parties the panel can offer, by the wire's name. Mirrors `IntegrationProvider`. */
-export type IntegrationProviderValue = "MELHOR_ENVIO" | "ASAAS" | "META_PIXEL"
+export type IntegrationProviderValue = "MELHOR_ENVIO" | "ASAAS" | "META_PIXEL" | "GOOGLE_ANALYTICS"
 
 /** The Meta Pixel card (BEELINK-270). Mirrors `MetaPixelConnection`: connected is an ID saved, and nothing else. */
 export interface MetaPixelCardView {

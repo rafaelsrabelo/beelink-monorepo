@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest"
 
 // Types
-import type { AsaasConnection, MelhorEnvioConnection, MetaPixelConnection } from "@harness-monorepo/contracts"
+import type { AsaasConnection, GoogleAnalyticsConnection, MelhorEnvioConnection, MetaPixelConnection } from "@harness-monorepo/contracts"
 
 // App
 import { INTEGRATION_LOGOS, connectionReadOf, integrationCardsOf, integrationPagesOf } from "./integration-pages"
@@ -17,9 +17,13 @@ const asaasNever: AsaasConnection = { ...asaas, status: "DISCONNECTED", account:
 const pixelNever: MetaPixelConnection = { status: "DISCONNECTED", pixelId: null, connectedAt: null, conversions: { available: true, token: "NONE", refusal: null, refusedAt: null } }
 const pixel: MetaPixelConnection = { status: "CONNECTED", pixelId: "123456789012345", connectedAt: "2026-10-06T12:00:00.000Z", conversions: { available: true, token: "NONE", refusal: null, refusedAt: null } }
 
+const analyticsNever: GoogleAnalyticsConnection = { status: "DISCONNECTED", measurementId: null, connectedAt: null }
+const analytics: GoogleAnalyticsConnection = { status: "CONNECTED", measurementId: "G-AB12CD34EF", connectedAt: "2026-10-07T12:00:00.000Z" }
+
 type Reads = Parameters<typeof integrationCardsOf>[0]
-/** The cards' connections, in the page's order. A shop's pixel is not given unless a test is about it. */
-const connectionsOf = (reads: Omit<Reads, "metaPixel"> & Partial<Pick<Reads, "metaPixel">>) => integrationCardsOf({ metaPixel: pixelNever, ...reads }, pages, CONNECT).map((card) => card.connection)
+/** The cards' connections, in the page's order. A shop's pixel and its Google Analytics are not given unless a test is about them. */
+const connectionsOf = (reads: Omit<Reads, "metaPixel" | "googleAnalytics"> & Partial<Pick<Reads, "metaPixel" | "googleAnalytics">>) =>
+  integrationCardsOf({ metaPixel: pixelNever, googleAnalytics: analyticsNever, ...reads }, pages, CONNECT).map((card) => card.connection)
 const PIXEL_NEVER = { state: "disconnected", account: null, sandbox: false }
 
 describe("integrationPagesOf", () => {
@@ -29,6 +33,7 @@ describe("integrationPagesOf", () => {
       melhorEnvio: "/admin/lessari/integrations/melhor-envio",
       asaas: "/admin/lessari/integrations/asaas",
       metaPixel: "/admin/lessari/integrations/meta-pixel",
+      googleAnalytics: "/admin/lessari/integrations/google-analytics",
     })
     expect(integrationPagesOf("a b").asaas).toBe("/admin/a%20b/integrations/asaas")
   })
@@ -49,33 +54,34 @@ describe("connectionReadOf", () => {
 
 describe("integrationCardsOf", () => {
   /**
-   * Fetching Melhor Envio's way in begins an authorization there; Asaas's and the Meta Pixel's are
-   * their own pages, where the key or the ID is typed. The card draws the first as a plain anchor and
+   * Fetching Melhor Envio's way in begins an authorization there; Asaas's, the Meta Pixel's and Google
+   * Analytics' are their own pages, where the key or the ID is typed. The card draws the first as a plain anchor and
    * the others as the app's link.
    */
   it("is every third party there is, connected or not, each with its mark, its page and its own way in", () => {
-    expect(integrationCardsOf({ melhorEnvio, asaas: asaasNever, metaPixel: pixelNever }, pages, CONNECT)).toEqual([
+    expect(integrationCardsOf({ melhorEnvio, asaas: asaasNever, metaPixel: pixelNever, googleAnalytics: analyticsNever }, pages, CONNECT)).toEqual([
       { provider: "MELHOR_ENVIO", logoSrc: INTEGRATION_LOGOS.MELHOR_ENVIO, href: pages.melhorEnvio, connectHref: CONNECT, connectBy: "authorization", connection: { state: "connected", account: "Loja Lessari", sandbox: true } },
       { provider: "ASAAS", logoSrc: INTEGRATION_LOGOS.ASAAS, href: pages.asaas, connectHref: pages.asaas, connectBy: "page", connection: { state: "disconnected", account: null, sandbox: false } },
       { provider: "META_PIXEL", logoSrc: INTEGRATION_LOGOS.META_PIXEL, href: pages.metaPixel, connectHref: pages.metaPixel, connectBy: "page", connection: { state: "disconnected", account: null, sandbox: false } },
+      { provider: "GOOGLE_ANALYTICS", logoSrc: INTEGRATION_LOGOS.GOOGLE_ANALYTICS, href: pages.googleAnalytics, connectHref: pages.googleAnalytics, connectBy: "page", connection: { state: "disconnected", account: null, sandbox: false } },
     ])
   })
 
   it("serves each mark from the app's own files", () => {
-    expect(INTEGRATION_LOGOS).toEqual({ MELHOR_ENVIO: "/brand/integrations/melhor-envio-icon.png", ASAAS: "/brand/integrations/asaas-icon.png", META_PIXEL: "/brand/integrations/meta-icon.svg" })
+    expect(INTEGRATION_LOGOS).toEqual({ MELHOR_ENVIO: "/brand/integrations/melhor-envio-icon.png", ASAAS: "/brand/integrations/asaas-icon.png", META_PIXEL: "/brand/integrations/meta-icon.svg", GOOGLE_ANALYTICS: "/brand/integrations/google-analytics-icon.svg" })
     // A mark that came from another site would tell that site of every shopkeeper who opened the page.
     for (const logo of Object.values(INTEGRATION_LOGOS)) expect(logo).toMatch(/^\/brand\/integrations\//)
   })
 
   it("says how far the shop is with each: to mend, or not set up on this installation whatever its status", () => {
-    expect(connectionsOf({ melhorEnvio: { ...melhorEnvio, status: "NEEDS_RECONNECT" }, asaas: { ...asaas, status: "NEEDS_RECONNECT" } }).map((connection) => (typeof connection === "object" ? connection.state : connection))).toEqual(["needsReconnect", "needsReconnect", "disconnected"])
-    expect(connectionsOf({ melhorEnvio: { ...melhorEnvio, available: false }, asaas: { ...asaasNever, available: false } }).map((connection) => (typeof connection === "object" ? connection.state : connection))).toEqual(["unavailable", "unavailable", "disconnected"])
+    expect(connectionsOf({ melhorEnvio: { ...melhorEnvio, status: "NEEDS_RECONNECT" }, asaas: { ...asaas, status: "NEEDS_RECONNECT" } }).map((connection) => (typeof connection === "object" ? connection.state : connection))).toEqual(["needsReconnect", "needsReconnect", "disconnected", "disconnected"])
+    expect(connectionsOf({ melhorEnvio: { ...melhorEnvio, available: false }, asaas: { ...asaasNever, available: false } }).map((connection) => (typeof connection === "object" ? connection.state : connection))).toEqual(["unavailable", "unavailable", "disconnected", "disconnected"])
   })
 
   /** A connection that was not read is not one the shop never made: its card stays, saying so. */
   it("keeps the card of a connection still being read, or whose read failed, beside the one that was read", () => {
-    expect(connectionsOf({ melhorEnvio: "loading", asaas })).toEqual(["loading", { state: "connected", account: "Lessari Moda LTDA", sandbox: false }, PIXEL_NEVER])
-    expect(connectionsOf({ melhorEnvio: "failed", asaas: "loading", metaPixel: "failed" })).toEqual(["failed", "loading", "failed"])
+    expect(connectionsOf({ melhorEnvio: "loading", asaas })).toEqual(["loading", { state: "connected", account: "Lessari Moda LTDA", sandbox: false }, PIXEL_NEVER, PIXEL_NEVER])
+    expect(connectionsOf({ melhorEnvio: "failed", asaas: "loading", metaPixel: "failed", googleAnalytics: "loading" })).toEqual(["failed", "loading", "failed", "loading"])
     expect(connectionsOf({ melhorEnvio, asaas, metaPixel: "loading" })[2]).toBe("loading")
   })
 })
@@ -109,5 +115,27 @@ describe("integrationCardsOf, of the shop's Meta Pixel (BEELINK-270)", () => {
   /** Nothing is asked of Meta, so nothing of Meta's can go stale: the only thing to do is give an ID. */
   it("is never one to mend, whatever status the wire could carry", () => {
     expect(pixelCard({ ...pixelNever, status: "NEEDS_RECONNECT" })).toMatchObject({ state: "disconnected" })
+  })
+})
+
+describe("integrationCardsOf, of the shop's Google Analytics (BEELINK-302)", () => {
+  const analyticsCard = (read: Reads["googleAnalytics"], metaPixel: Reads["metaPixel"] = pixelNever) => connectionsOf({ melhorEnvio, asaas, metaPixel, googleAnalytics: read })[3]
+
+  it("is connected while an ID is saved, and has no account and no sandbox to name", () => {
+    expect(analyticsCard(analytics)).toEqual({ state: "connected", account: null, sandbox: false })
+    expect(analyticsCard(analyticsNever)).toEqual({ state: "disconnected", account: null, sandbox: false })
+  })
+
+  /** Nothing is asked of Google, so nothing of Google's can go stale: the only thing to do is give an ID. */
+  it("is never one to mend, whatever status the wire could carry", () => {
+    expect(analyticsCard({ ...analyticsNever, status: "NEEDS_RECONNECT" })).toMatchObject({ state: "disconnected" })
+  })
+
+  /** A shop may have one, the other, both or neither: each card reads its own connection. */
+  it("stands apart from the pixel's: either is connected without the other, and each waits or fails alone", () => {
+    expect(connectionsOf({ melhorEnvio, asaas, metaPixel: pixel, googleAnalytics: analyticsNever }).slice(2)).toMatchObject([{ state: "connected" }, { state: "disconnected" }])
+    expect(connectionsOf({ melhorEnvio, asaas, metaPixel: pixelNever, googleAnalytics: analytics }).slice(2)).toMatchObject([{ state: "disconnected" }, { state: "connected" }])
+    expect(analyticsCard("loading", pixel)).toBe("loading")
+    expect(analyticsCard("failed", pixel)).toBe("failed")
   })
 })

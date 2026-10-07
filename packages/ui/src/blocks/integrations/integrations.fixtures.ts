@@ -84,6 +84,16 @@ export const META_EVENTS_MANAGER = "https://business.facebook.com/events_manager
 
 export const GOOGLE_ANALYTICS_LOGO = "/brand/integrations/google-analytics-icon.svg"
 
+/** Connecting Google Analytics is typing its measurement ID on its own page, as the pixel's is. */
+export const googleAnalyticsCard: IntegrationCardView = {
+  provider: "GOOGLE_ANALYTICS",
+  logoSrc: GOOGLE_ANALYTICS_LOGO,
+  href: "/admin/lessari/integrations/google-analytics",
+  connectHref: "/admin/lessari/integrations/google-analytics",
+  connectBy: "page",
+  connection: { state: "disconnected", account: null, sandbox: false },
+}
+
 /** An ID of the right shape, and nobody's property. */
 export const googleAnalyticsConnected: GoogleAnalyticsCardView = { measurementId: "G-AB12CD34EF", connectedAt: "2026-10-07T12:00:00.000Z", savedAt: "07/10/2026" }
 
