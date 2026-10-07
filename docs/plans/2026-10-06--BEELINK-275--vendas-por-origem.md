@@ -145,3 +145,5 @@ A página foi aberta de verdade (`next dev` na 3800, a API compilada na 3801, ba
 - Console sem erros no percurso.
 
 **Não visto / não rodado:** o build de produção e o site atrás do Traefik (o endereço do exemplo vem de `siteOrigin()`, que lá lê `x-forwarded-host`); um pedido cobrado no site, pago ou não, na tela (só no e2e da API, com o Asaas de mentira); o plano da consulta com volume — nos bancos desta árvore as tabelas são pequenas e o Postgres escolhe leitura sequencial, então "a consulta entra por `(storeId, placedAt)`" é o esperado, não o medido; o tema escuro; um leitor de tela real (só axe nos testes).
+
+**Correção de nomes (06/10):** o controller e o service do módulo chamam `reports.controller.ts` (`ReportsController`) e `reports.service.ts` (`ReportsService`), como a regra 5 do `apps/api/AGENTS.md` pede (`<name>.controller.ts`), e não `sales-reports.*` como a decisão 13, a seção do Épico P e a tabela de cobertura acima escrevem. É nesses dois arquivos que o P1 acrescenta as rotas dele.

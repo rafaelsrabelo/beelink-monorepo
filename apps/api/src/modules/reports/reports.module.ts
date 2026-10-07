@@ -3,8 +3,8 @@ import { Module } from '@nestjs/common';
 
 // App
 import { StoresModule } from '../stores/stores.module.js';
-import { SalesReportsController } from './sales-reports.controller.js';
-import { SalesReportsService } from './sales-reports.service.js';
+import { ReportsController } from './reports.controller.js';
+import { ReportsService } from './reports.service.js';
 
 /**
  * What a shop sold, read back for its owner. One read today — sales by origin (BEELINK-275) — and
@@ -14,7 +14,7 @@ import { SalesReportsService } from './sales-reports.service.js';
  */
 @Module({
   imports: [StoresModule],
-  controllers: [SalesReportsController],
-  providers: [SalesReportsService],
+  controllers: [ReportsController],
+  providers: [ReportsService],
 })
 export class ReportsModule {}

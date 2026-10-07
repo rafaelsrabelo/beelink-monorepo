@@ -8,7 +8,7 @@ import type { AuthenticatedUser } from '../auth/auth.decorators.js';
 // App
 import { CurrentUser } from '../auth/auth.decorators.js';
 import { SalesByOriginDto, SalesByOriginResponse } from './dto/sales-by-origin.dto.js';
-import { SalesReportsService } from './sales-reports.service.js';
+import { ReportsService } from './reports.service.js';
 
 /** What a shop sold, for its owner. Closed, like every panel route; a shopper's token is refused. */
 @ApiTags('reports')
@@ -17,8 +17,8 @@ import { SalesReportsService } from './sales-reports.service.js';
 @ApiNotFoundResponse({ description: 'STORE_NOT_FOUND' })
 @ApiForbiddenResponse({ description: 'STORE_FORBIDDEN' })
 @Controller('stores/:storeSlug/reports')
-export class SalesReportsController {
-  constructor(private readonly reports: SalesReportsService) {}
+export class ReportsController {
+  constructor(private readonly reports: ReportsService) {}
 
   @Get('sales-by-origin')
   @ApiOperation({

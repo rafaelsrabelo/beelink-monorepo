@@ -26,7 +26,7 @@ interface OriginRow {
  * orders are summed where they are, never brought into memory.
  */
 @Injectable()
-export class SalesReportsService {
+export class ReportsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly stores: StoresService,
