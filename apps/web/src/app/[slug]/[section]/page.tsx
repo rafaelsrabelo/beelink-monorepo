@@ -34,9 +34,9 @@ import { OVERVIEW_FAVORITES } from "@/lib/overview-parts"
 import { customerOrdersAt, customerReorderAt } from "@/lib/customer-orders"
 import { reorderNoticeOf } from "@/lib/reorder-view"
 import { ADDRESS_KEY, checkoutAddressesOf, checkoutAddressIdOf, DELIVER_TO_KEY, NEW_ADDRESS } from "@/lib/saved-address"
-import { pathWithQuery } from "@/lib/offer-strip"
+import { cartInvitationOf, pathWithQuery } from "@/lib/offer-strip"
 import { shopperAt } from "@/lib/shopper"
-import { catalogueAt, paymentOptionsAt } from "@/lib/storefront-data"
+import { catalogueAt, offersAt, paymentOptionsAt } from "@/lib/storefront-data"
 import { BACK_KEY, orderNumberOf, paramOf, REORDER_FAILED_KEY, REORDER_TRIMMED_KEY, REORDERED_KEY, storefrontRoutes } from "@/lib/storefront-routes"
 import { canonicalOf, headingOf, isShelf, listingAskOf, placeOf } from "@/lib/storefront-section"
 import { filterCountOf } from "@/lib/storefront-filters"
@@ -100,7 +100,12 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
   const deliverTo = paramOf(query[DELIVER_TO_KEY]) ?? null
   const asked = cart ? cartQuoteOf(cartViewOf(cart.lines, cart.products).rows, firstFulfillmentOf(shopper), null, { addressId: shopper ? checkoutAddressIdOf(checkoutAddressesOf(shopper), deliverTo) : null }) : null
   // With it, for a shopper: the shop's shown coupons that same cart may take, so the list is in the HTML as well.
-  const [served, servedOffers] = await Promise.all([asked ? cartQuoteAt(store.slug, asked, shopper?.id ?? null) : null, asked?.items.length && shopper ? servedOffersAt(store.slug, shopper.id, asked) : null])
+  // And for a visitor, what the shop's first-purchase coupon gives (BEELINK-311): the kept public read, never a code.
+  const [served, servedOffers, publicOffers] = await Promise.all([
+    asked ? cartQuoteAt(store.slug, asked, shopper?.id ?? null) : null,
+    asked?.items.length && shopper ? servedOffersAt(store.slug, shopper.id, asked) : null,
+    cart && !shopper ? offersAt(store.slug) : null,
+  ])
   // The menu's counts, read together on the area's own front: each is its own call to the API. The
   // favourites' page is the rail's too, so the front reads it once.
   const [inProgress, liked, toRate] =
@@ -191,6 +196,7 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
           arrival={reorderNotice ? <StorefrontReorderNotice {...reorderNotice} messages={ui} /> : undefined}
           served={served}
           servedOffers={servedOffers}
+          signedOutBenefit={publicOffers ? cartInvitationOf(publicOffers.firstPurchase, locale, ui) : null}
           coupon={couponIn(paramOf(query[COUPON_KEY]))}
           locale={locale}
           messages={ui}

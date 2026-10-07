@@ -332,6 +332,10 @@ export interface UiMessages {
       /** `{code}` — the button's name: several rows share the page. */
       cartApplyNamed: string
       cartApplied: string
+      /** The cart's call to a coupon not yet applied (BEELINK-311); the code follows the sentence. */
+      cartCall: string
+      cartCallFirstOrder: string
+      cartCallApply: string
     }
     /** `{amount}`: the checkout's box, with what the shopper can spend now (BEELINK-244). */
     cashbackUse: string

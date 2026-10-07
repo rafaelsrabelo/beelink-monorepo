@@ -62,6 +62,31 @@ export interface OfferedCouponValue extends OfferBenefitValue {
   missingCents: number
 }
 
+/**
+ * The one coupon the cart calls its customer to (BEELINK-311), among those the API listed for this
+ * cart: only one that applying now is taken — never one short of its minimum — and, of those, the
+ * first-order coupon when there is one, else the first of the list, which is the newest. Not "the
+ * one that takes the most off": the list says what a coupon is, not what it is worth on this cart.
+ */
+export function highlightedCouponOf<Coupon extends OfferedCouponValue>(coupons: readonly Coupon[]): Coupon | null {
+  const usable = coupons.filter((coupon) => coupon.missingCents === 0)
+  return usable.find((coupon) => coupon.audience === "FIRST_PURCHASE") ?? usable[0] ?? null
+}
+
+/** The cart's call, as its block draws it: a sentence that ends where the code goes, and the code. */
+export interface CartCouponCall {
+  /** "Você tem 15% de desconto no primeiro pedido com o cupom". */
+  message: string
+  code: string
+}
+
+/** The call to the highlighted coupon, in words built from the API's numbers; null with none to call to. */
+export function cartCouponCallOf(coupons: readonly OfferedCouponValue[], locale: string, text: Text): CartCouponCall | null {
+  const coupon = highlightedCouponOf(coupons)
+  if (!coupon) return null
+  return { message: format(coupon.audience === "FIRST_PURCHASE" ? text.cartCallFirstOrder : text.cartCall, { benefit: offerBenefitWords(coupon, locale, text) }), code: coupon.code }
+}
+
 /** The cart's coupons as rows, in the API's order: every amount in them is one it sent. */
 export function cartCouponRowsOf(coupons: readonly OfferedCouponValue[], locale: string, text: Text): CartCouponRow[] {
   return coupons.map((coupon) => ({

@@ -1,5 +1,6 @@
 // Libs
 import { fireEvent, render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 
 // Block
@@ -123,6 +124,81 @@ describe("StorefrontCoupon", () => {
 
     expect(screen.getByText("Tem um cupom de desconto? Você aplica depois de entrar na sua conta.")).toBeInTheDocument()
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument()
+  })
+
+  // BEELINK-311.
+  describe("for a visitor at a shop with a first-purchase coupon", () => {
+    it("says the benefit it was handed over the sentence that says where the code goes — and still no field, and no code", () => {
+      render(<StorefrontCoupon applied={null} signedOut signedOutBenefit="Crie sua conta e ganhe 15% de desconto no primeiro pedido." />)
+
+      const benefit = screen.getByText("Crie sua conta e ganhe 15% de desconto no primeiro pedido.")
+      const where = screen.getByText("Tem um cupom de desconto? Você aplica depois de entrar na sua conta.")
+      expect(benefit.compareDocumentPosition(where) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      expect(screen.queryByRole("textbox")).not.toBeInTheDocument()
+      expect(screen.queryByRole("button")).not.toBeInTheDocument()
+    })
+
+    it("has no accessibility violations", async () => {
+      const { container } = render(<StorefrontCoupon applied={null} signedOut signedOutBenefit="Crie sua conta e ganhe 15% de desconto no primeiro pedido." />)
+
+      await expectNoA11yViolations(container)
+    })
+  })
+
+  // BEELINK-311: the cart's call to a coupon not yet applied is this block's own press.
+  describe("with a coupon to call the customer to", () => {
+    const call = { message: "Você tem 15% de desconto no primeiro pedido com o cupom", code: "SEJAMUTANTE" }
+
+    it("draws the call over the field, and applies its code in one press", () => {
+      const onApply = vi.fn()
+      render(<StorefrontCoupon applied={null} call={call} onApply={onApply} />)
+
+      const apply = screen.getByRole("button", { name: "Aplicar cupom" })
+      expect(apply.compareDocumentPosition(screen.getByLabelText("Cupom de desconto")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      fireEvent.click(apply)
+
+      expect(onApply.mock.calls).toEqual([["SEJAMUTANTE"]])
+      // The field is still there for another code.
+      expect(screen.getByRole("button", { name: "Aplicar" })).toBeDisabled()
+    })
+
+    it("is reached by the keyboard before the field, and pressed with Enter without sending the field's form", async () => {
+      const onApply = vi.fn()
+      render(<StorefrontCoupon applied={null} call={call} onApply={onApply} />)
+
+      await userEvent.tab()
+      expect(screen.getByRole("button", { name: "Aplicar cupom" })).toHaveFocus()
+      await userEvent.keyboard("{Enter}")
+      expect(onApply.mock.calls).toEqual([["SEJAMUTANTE"]])
+
+      await userEvent.tab()
+      expect(screen.getByLabelText("Cupom de desconto")).toHaveFocus()
+    })
+
+    it("draws none once a coupon is in force, and moves the focus to that coupon's button after its own press", () => {
+      const { rerender } = render(<StorefrontCoupon applied={null} call={call} onApply={() => {}} />)
+      fireEvent.click(screen.getByRole("button", { name: "Aplicar cupom" }))
+
+      rerender(<StorefrontCoupon applied={null} call={call} pending />)
+      expect(screen.getByRole("button", { name: "Conferindo…", description: /SEJAMUTANTE/ })).toBeDisabled()
+
+      rerender(<StorefrontCoupon applied="SEJAMUTANTE" holding call={call} />)
+      expect(screen.queryByRole("button", { name: "Aplicar cupom" })).toBeNull()
+      expect(screen.getByRole("button", { name: "Remover o cupom SEJAMUTANTE" })).toHaveFocus()
+    })
+
+    it("never draws it for a visitor", () => {
+      render(<StorefrontCoupon applied={null} signedOut call={call} />)
+
+      expect(screen.queryByRole("button", { name: "Aplicar cupom" })).toBeNull()
+      expect(screen.queryByText("SEJAMUTANTE")).toBeNull()
+    })
+
+    it("has no accessibility violations", async () => {
+      const { container } = render(<StorefrontCoupon applied={null} call={call} />)
+
+      await expectNoA11yViolations(container)
+    })
   })
 
   it("has no accessibility violations, with the field and with a coupon in force", async () => {

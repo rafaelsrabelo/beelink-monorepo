@@ -77,6 +77,18 @@ export function offerStripOf({ headline, viewer, signUpHref, cartHref, locale, m
   return { message: format(offer.wholeCart ? text.firstOrderPromotion : text.firstOrderPromotionSelected, { benefit }), detail: null, code: null, action: null }
 }
 
+/**
+ * What a visitor's cart says of the shop's first-purchase coupon (BEELINK-311): the strip's own
+ * invitation, with the API's numbers and never a code. Null with no benefit — and for a promotion,
+ * which the cart announces by itself over its totals (BEELINK-245): it is not said twice.
+ */
+export function cartInvitationOf(headline: FirstPurchaseHeadline | null, locale: string, messages: UiMessages): string | null {
+  if (headline?.source !== "COUPON") return null
+  const text = messages.storefront.offers
+  const minimum = offerMinimumSentence(headline, locale, text)
+  return `${format(text.signUpBenefit, { benefit: offerBenefitWords(headline, locale, text) })}${minimum ? ` ${minimum}` : ""}`
+}
+
 /** A page's own address with the query it was asked with — the way back a sign-up returns by. */
 export function pathWithQuery(path: string, query: Readonly<Record<string, string | string[] | undefined>>): string {
   const search = new URLSearchParams()

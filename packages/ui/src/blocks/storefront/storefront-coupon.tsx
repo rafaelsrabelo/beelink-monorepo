@@ -10,6 +10,10 @@ import { TicketCheckIcon } from "lucide-react"
 import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
+// Block
+import type { CartCouponCall } from "@harness-monorepo/ui/lib/shop-offers"
+import { StorefrontCartCouponCall } from "./storefront-cart-coupon-call"
+
 /** The same ceiling the API holds a code to; past it nothing could match. */
 const CODE_MAX_LENGTH = 30
 
@@ -30,6 +34,10 @@ export interface StorefrontCouponProps {
   disabled?: boolean
   /** Nobody is signed in: a sentence says where the code goes, and no field is offered. */
   signedOut?: boolean
+  /** What the shop gives a first order, said to a visitor over that sentence — never a code; null or absent says nothing. */
+  signedOutBenefit?: string | null
+  /** A coupon this customer may take on this cart, called to over the field while none is in force (BEELINK-311); null with none. */
+  call?: CartCouponCall | null
   messages?: UiMessages
 }
 
@@ -43,7 +51,8 @@ const BUTTON =
  *
  * The typed text is the block's own; whether a code holds is the screen's, which asked the API.
  * Focus follows what the press did: to "Remover" once a code is in, back to the field once it is out
- * — the control that was pressed is gone by then.
+ * — the control that was pressed is gone by then. The call to a coupon not yet applied is drawn
+ * here for that reason: its press is one of this block's, and the focus lands the same way.
  */
 export function StorefrontCoupon({
   applied,
@@ -55,6 +64,8 @@ export function StorefrontCoupon({
   onEdit,
   disabled = false,
   signedOut = false,
+  signedOutBenefit = null,
+  call = null,
   messages = defaultMessages,
 }: StorefrontCouponProps) {
   const text = messages.storefront
@@ -72,7 +83,16 @@ export function StorefrontCoupon({
     ;(applied ? remove.current : input.current)?.focus()
   }, [applied, pending])
 
-  if (signedOut) return <p className="text-sm text-shop-muted">{text.couponSignedOut}</p>
+  if (signedOut) {
+    const where = <p className="text-sm text-shop-muted">{text.couponSignedOut}</p>
+    if (!signedOutBenefit) return where
+    return (
+      <div className="flex flex-col gap-1">
+        <p className="text-sm font-medium">{signedOutBenefit}</p>
+        {where}
+      </div>
+    )
+  }
 
   const code = typed.trim()
 
@@ -109,6 +129,18 @@ export function StorefrontCoupon({
         </div>
       ) : (
         <form noValidate onSubmit={submit} className="flex flex-col gap-2">
+          {call ? (
+            <StorefrontCartCouponCall
+              call={call}
+              pending={pending}
+              disabled={disabled}
+              onApply={(offered) => {
+                acted.current = true
+                onApply?.(offered)
+              }}
+              messages={messages}
+            />
+          ) : null}
           <label htmlFor={`${id}-code`} className="text-sm font-semibold">
             {text.couponLabel}
           </label>

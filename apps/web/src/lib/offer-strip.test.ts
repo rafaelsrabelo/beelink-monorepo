@@ -8,7 +8,7 @@ import type { CustomerOffers, FirstPurchaseHeadline } from "@harness-monorepo/co
 import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 
 // App
-import { firstOrderOfferOf, offerStripOf, pathWithQuery, type OfferStripAsk } from "./offer-strip"
+import { cartInvitationOf, firstOrderOfferOf, offerStripOf, pathWithQuery, type OfferStripAsk } from "./offer-strip"
 
 const benefit = { kind: "PERCENT", percentBps: 1000, amountCents: null, minSubtotalCents: 0, endsAt: null } as const
 const promotion: FirstPurchaseHeadline = { ...benefit, source: "PROMOTION", wholeCart: true }
@@ -107,6 +107,21 @@ describe("firstOrderOfferOf", () => {
     for (const offers of [{ hasOrder: false, firstPurchase: theirs, coupons: [] }, { hasOrder: true, firstPurchase: theirs, coupons: [] }, { hasOrder: false, firstPurchase: null, coupons: [] }, null]) {
       expect(firstOrderOfferOf(offers) !== null).toBe(offerStripOf({ ...ask, viewer: { offers } }) !== null)
     }
+  })
+})
+
+/** BEELINK-311: what a visitor's cart says of the shop's first-purchase coupon. */
+describe("cartInvitationOf", () => {
+  it("is the strip's own invitation for a first-purchase coupon — the API's numbers, its minimum, and never a code", () => {
+    expect(cartInvitationOf({ ...couponHeadline, minSubtotalCents: 0 }, "pt-BR", ptBR)).toBe("Crie sua conta e ganhe 10% de desconto no primeiro pedido.")
+    expect(plain(cartInvitationOf(couponHeadline, "pt-BR", ptBR))).toBe("Crie sua conta e ganhe 10% de desconto no primeiro pedido. Em compras a partir de R$ 50,00.")
+    expect(cartInvitationOf({ ...couponHeadline, minSubtotalCents: 0 }, "pt-BR", ptBR)).toBe(stripOf({ headline: { ...couponHeadline, minSubtotalCents: 0 } })?.message)
+  })
+
+  // The cart announces a first-purchase promotion by itself, over its totals (BEELINK-245).
+  it("is nothing for a promotion, which the cart already announces, and nothing at a shop with no benefit", () => {
+    expect(cartInvitationOf(promotion, "pt-BR", ptBR)).toBeNull()
+    expect(cartInvitationOf(null, "pt-BR", ptBR)).toBeNull()
   })
 })
 
