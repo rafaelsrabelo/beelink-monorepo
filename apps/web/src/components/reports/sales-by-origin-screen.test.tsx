@@ -144,7 +144,8 @@ describe("SalesByOriginScreen", () => {
     const { container } = renderScreen()
 
     expect(container.querySelector("img")).toBeNull()
-    expect(screen.getByText("x · campanha <img src=x onerror=alert(1)>")).toBeInTheDocument()
+    // Once in the table and once on its card: CSS shows one of the two.
+    expect(screen.getAllByText("x · campanha <img src=x onerror=alert(1)>")).toHaveLength(2)
   })
 
   it("speaks English when handed English", () => {

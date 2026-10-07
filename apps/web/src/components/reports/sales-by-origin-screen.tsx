@@ -6,9 +6,9 @@ import { useSearchParams } from "next/navigation"
 // UI
 import { ReportPeriodPicker } from "@harness-monorepo/ui/blocks/reports/report-period-picker"
 import { SalesByOriginEmpty } from "@harness-monorepo/ui/blocks/reports/sales-by-origin-empty"
+import { SalesByOriginList } from "@harness-monorepo/ui/blocks/reports/sales-by-origin-list"
 import { SalesByOriginNotes } from "@harness-monorepo/ui/blocks/reports/sales-by-origin-notes"
 import { SalesByOriginSkeleton } from "@harness-monorepo/ui/blocks/reports/sales-by-origin-skeleton"
-import { SalesByOriginTable } from "@harness-monorepo/ui/blocks/reports/sales-by-origin-table"
 import { Button } from "@harness-monorepo/ui/components/button"
 import { format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
@@ -68,7 +68,7 @@ export function SalesByOriginScreen({ slug, locale, exampleUrl, messages }: Sale
       ) : empty ? (
         <SalesByOriginEmpty exampleUrl={exampleUrl} messages={messages} />
       ) : (
-        <SalesByOriginTable rows={report.data.rows} totals={report.data.totals} caption={format(text.caption, days)} locale={locale} messages={messages} />
+        <SalesByOriginList rows={report.data.rows} totals={report.data.totals} caption={format(text.caption, days)} locale={locale} messages={messages} />
       )}
 
       <SalesByOriginNotes {...(empty ? {} : { exampleUrl })} messages={messages} />

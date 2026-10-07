@@ -3,35 +3,24 @@ import { Table, TableBody, TableCaption, TableCell, TableFooter, TableHead, Tabl
 
 // Locales
 import { defaultLocale, defaultMessages } from "@harness-monorepo/ui/locales/index"
-import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
-import type { SalesByOriginRowView, SalesTotalsView } from "./report-types"
+import type { SalesByOriginRowsProps } from "./report-types"
 import { revenueShareOf, salesOriginLabelOf } from "./sales-origin-label"
 
-export interface SalesByOriginTableProps {
-  /** In the order they are drawn: the API sends the highest revenue first. */
-  rows: readonly SalesByOriginRowView[]
-  totals: SalesTotalsView
-  /** The table's caption, read to a screen reader: which period these numbers are of. */
-  caption: string
-  locale?: string
-  messages?: UiMessages
-}
-
 /**
- * A period's sales by where their buyers came from (BEELINK-275): one line per origin, and the
- * period's total under them.
+ * A period's sales by where their buyers came from (BEELINK-275), where there is room for a table:
+ * one line per origin, and the period's total under them.
  *
- * One table at every width, with no sideways scroll: the origin's cell is the one that gives, its
- * text wrapping inside it, and the three numbers keep their line. A campaign's name came from a link
- * anyone may write — it is drawn as text, held to two lines, with the whole of it in `title`.
+ * The origin's cell is the one that gives, its text wrapping inside it; the three numbers keep their
+ * line. A campaign's name came from a link anyone may write — it is drawn as text, held to two
+ * lines, with the whole of it in `title`.
  */
-export function SalesByOriginTable({ rows, totals, caption, locale = defaultLocale, messages = defaultMessages }: SalesByOriginTableProps) {
+export function SalesByOriginTable({ rows, totals, caption, locale = defaultLocale, messages = defaultMessages }: SalesByOriginRowsProps) {
   const text = messages.reports.salesByOrigin
   const money = new Intl.NumberFormat(locale, { style: "currency", currency: "BRL" })
   const count = new Intl.NumberFormat(locale)
-  const numeric = "w-px px-2 text-right tabular-nums sm:px-4"
+  const numeric = "w-px px-4 text-right tabular-nums"
 
   return (
     <div className="bg-shell-surface border-shell-border rounded-xl border shadow-xs">
@@ -39,10 +28,10 @@ export function SalesByOriginTable({ rows, totals, caption, locale = defaultLoca
         <TableCaption className="sr-only">{caption}</TableCaption>
         <TableHeader className="bg-muted/40">
           <TableRow>
-            <TableHead className="px-3 sm:px-4">{text.columns.origin}</TableHead>
+            <TableHead className="px-4">{text.columns.origin}</TableHead>
             <TableHead className={numeric}>{text.columns.orders}</TableHead>
             <TableHead className={numeric}>{text.columns.revenue}</TableHead>
-            <TableHead className={`${numeric} whitespace-normal sm:whitespace-nowrap`}>{text.columns.share}</TableHead>
+            <TableHead className={numeric}>{text.columns.share}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -51,7 +40,7 @@ export function SalesByOriginTable({ rows, totals, caption, locale = defaultLoca
 
             return (
               <TableRow key={`${row.kind}|${row.source ?? ""}|${row.medium ?? ""}|${row.campaign ?? ""}`}>
-                <TableHead scope="row" className="h-auto max-w-0 px-3 py-2 font-normal whitespace-normal sm:px-4">
+                <TableHead scope="row" className="h-auto max-w-0 px-4 py-2 font-normal whitespace-normal">
                   <span className="line-clamp-2 font-medium break-words" title={label.line}>
                     {label.line}
                   </span>
@@ -66,7 +55,7 @@ export function SalesByOriginTable({ rows, totals, caption, locale = defaultLoca
         </TableBody>
         <TableFooter>
           <TableRow>
-            <TableHead scope="row" className="px-3 sm:px-4">
+            <TableHead scope="row" className="px-4">
               {text.total}
             </TableHead>
             <TableCell className={numeric}>{count.format(totals.orders)}</TableCell>

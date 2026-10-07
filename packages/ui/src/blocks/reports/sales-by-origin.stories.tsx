@@ -7,6 +7,7 @@ import { awkwardSalesByOrigin, EXAMPLE_URL, sampleSalesByOrigin, sampleSalesTota
 import { SalesByOriginEmpty } from "./sales-by-origin-empty"
 import { SalesByOriginNotes } from "./sales-by-origin-notes"
 import { SalesByOriginSkeleton } from "./sales-by-origin-skeleton"
+import { SalesByOriginCards } from "./sales-by-origin-cards"
 import { SalesByOriginTable } from "./sales-by-origin-table"
 
 const meta = {
@@ -21,8 +22,15 @@ type Story = StoryObj<typeof meta>
 /** Uma linha por origem, da que mais vendeu à que menos vendeu, e o total do período embaixo. */
 export const Padrao: Story = {}
 
-/** Num celular a tabela é a mesma: a origem quebra em linhas e os números ficam na linha deles. */
-export const NoCelular: Story = { globals: { viewport: { value: "mobile1", isRotated: false } } }
+/** Onde não cabe a tabela, um cartão por origem: o nome na largura toda e os três números embaixo. */
+export const NoCelular: Story = { render: (args) => <SalesByOriginCards {...args} />, globals: { viewport: { value: "mobile1", isRotated: false } } }
+
+/** Os cartões com nomes difíceis: texto, inteiro, quebrando em qualquer ponto — no toque não há `title`. */
+export const NoCelularNomesDificeis: Story = {
+  args: { rows: awkwardSalesByOrigin, totals: { orders: 2, revenueCents: 11980 } },
+  render: (args) => <SalesByOriginCards {...args} />,
+  globals: { viewport: { value: "mobile1", isRotated: false } },
+}
 
 /** O nome da campanha veio de um link: é desenhado como texto, em até duas linhas, com o valor inteiro no `title`. */
 export const NomesDificeis: Story = { args: { rows: awkwardSalesByOrigin, totals: { orders: 2, revenueCents: 11980 } } }
