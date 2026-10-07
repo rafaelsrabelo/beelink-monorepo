@@ -15,7 +15,7 @@ export interface MetaPixelGuideProps {
 }
 
 const STEPS = ["open", "sources", "pick", "copy"] as const
-const NOTES = ["domain", "reports", "unchecked", "consent"] as const
+const NOTES = ["domain", "reports", "unchecked", "consent", "events"] as const
 
 /**
  * Where a shopkeeper finds their pixel's ID at Meta (BEELINK-270), step by step, and what is good to

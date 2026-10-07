@@ -12,6 +12,7 @@ import { META_EVENTS_MANAGER, META_LOGO, metaPixelConnected, metaPixelDisconnect
 import { IntegrationsResult } from "./integrations-result"
 import { MetaPixelCard } from "./meta-pixel-card"
 import { MetaPixelGuide } from "./meta-pixel-guide"
+import { MetaPixelReportLink } from "./meta-pixel-report-link"
 
 const noop = () => {}
 
@@ -44,6 +45,9 @@ export const DesconectarFalhou: Story = { args: { disconnectError: "Não foi pos
 
 /** O passo a passo de onde copiar o ID e o que é bom saber: o domínio não precisa ser verificado, e os relatórios ficam na Meta. */
 export const PassoAPasso: Story = { render: () => <MetaPixelGuide eventsManagerHref={META_EVENTS_MANAGER} /> }
+
+/** O caminho até o relatório de vendas por origem, que funciona com ou sem pixel (BEELINK-275). */
+export const VendasPorOrigem: Story = { render: () => <MetaPixelReportLink href="#relatorio" /> }
 
 /**
  * A página como a tela a liga: salvar leva um instante e troca o cartão; desconectar volta ao começo.

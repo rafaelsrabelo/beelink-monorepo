@@ -4,10 +4,13 @@ import { FavoritesProvider } from "@/components/storefront/favorites/favorites-p
 import { figtree, shopFontStyle } from "@/components/storefront/shop-font"
 import { ShopperRealtime } from "@/components/storefront/shopper-realtime"
 import { StorefrontConsentGate } from "@/components/storefront/storefront-consent-gate"
+import { StorefrontOrigin } from "@/components/storefront/storefront-origin"
+import { StorefrontTracking } from "@/components/storefront/tracking/storefront-tracking"
 import { cartLinesAt } from "@/lib/cart"
 import { consentAt } from "@/lib/consent"
 import { getMessages } from "@/lib/locale"
 import { shopperAt } from "@/lib/shopper"
+import { quietPathsOf } from "@/lib/storefront-event"
 import { shopAt } from "@/lib/storefront-data"
 import { storefrontRoutes } from "@/lib/storefront-routes"
 
@@ -28,6 +31,15 @@ import { storefrontRoutes } from "@/lib/storefront-routes"
  * shop's frame: the panel's design preview draws the frame and never passes through this layout, so
  * a strip can never be drawn there. The answer is read from its cookie per request, like the cart,
  * and no kept read is keyed by it.
+ *
+ * What the shop tells Meta of a visitor who said yes is decided here as well (BEELINK-272), around
+ * the same pages and inside the answer: the pixel loads, and every event of the shop window passes
+ * through `StorefrontTracking`. A shop with no pixel gets it too, and it tells nothing — it is what
+ * shuts a library left in the tab by the shop the visitor came from.
+ *
+ * Where the visitor came from is kept here too (BEELINK-275), for every shop, pixel or not: the
+ * layout is what a landing mounts, and it sits inside the answer because Meta's click identifier
+ * is kept only on a yes.
  */
 export default async function StorefrontLayout({ children, params }: LayoutProps<"/[slug]">) {
   const { slug } = await params
@@ -47,7 +59,10 @@ export default async function StorefrontLayout({ children, params }: LayoutProps
       <CartProvider slug={slug} lines={lines}>
         {shopper ? <ShopperRealtime slug={slug} /> : null}
         <StorefrontConsentGate slug={slug} store={store} choice={choice} messages={ui}>
-          {pages}
+          {store ? <StorefrontOrigin slug={slug} pixelId={store.metaPixelId ?? null} /> : null}
+          <StorefrontTracking pixelId={store?.metaPixelId ?? null} quietPaths={store ? quietPathsOf(store) : []}>
+            {pages}
+          </StorefrontTracking>
         </StorefrontConsentGate>
       </CartProvider>
     </div>

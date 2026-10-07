@@ -1,6 +1,7 @@
 // Libs
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react"
+import type { ReactNode } from "react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 // Types
@@ -13,8 +14,9 @@ import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 import { CART_COOKIE, decodeCart } from "@/lib/cart-cookie"
 import { CartProvider } from "./cart-provider"
 import { StorefrontCartLive, type StorefrontCartLiveProps } from "./storefront-cart-live"
+import { TrackingContext } from "./tracking/use-track"
 
-const mocks = vi.hoisted(() => ({ refresh: vi.fn(), push: vi.fn() }))
+const mocks = vi.hoisted(() => ({ refresh: vi.fn(), push: vi.fn(), track: vi.fn() }))
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: mocks.refresh, push: mocks.push }) }))
 
@@ -71,6 +73,11 @@ function network({ order = () => Response.json(placedOnline, { status: 201 }), q
 
 const ordersSent = (fetched: Fetched) => fetched.mock.calls.filter(([url]) => url === "/loja/api/orders").map(([, init]) => JSON.parse(String(init?.body)) as Record<string, unknown>)
 
+/** A shop's pages, where what happens is told: the events land in `mocks.track`. */
+function Told({ children }: { children: ReactNode }) {
+  return <TrackingContext value={{ allowed: true, track: mocks.track }}>{children}</TrackingContext>
+}
+
 function renderCart(shopper: CustomerProfile, props: Partial<StorefrontCartLiveProps> = {}, qty = 3) {
   return render(
     <QueryClientProvider client={new QueryClient()}>
@@ -94,6 +101,7 @@ function renderCart(shopper: CustomerProfile, props: Partial<StorefrontCartLiveP
         />
       </CartProvider>
     </QueryClientProvider>,
+    { wrapper: Told },
   )
 }
 
@@ -114,6 +122,39 @@ afterEach(() => {
   vi.restoreAllMocks()
   mocks.refresh.mockReset()
   mocks.push.mockReset()
+  mocks.track.mockReset()
+})
+
+describe("the checkout, as it is told (BEELINK-272)", () => {
+  const cart = { items: [{ productId: blusa.id, unitPriceCents: 4000, qty: 3 }], valueCents: 12000 }
+  const told = (name: string) => mocks.track.mock.calls.map(([event]) => event as { name: string }).filter((event) => event.name === name)
+
+  it("is begun by arriving with something to order — once, whatever the quantity becomes afterwards", () => {
+    renderCart(ana)
+    expect(told("InitiateCheckout")).toEqual([{ name: "InitiateCheckout", ...cart }])
+
+    fireEvent.click(screen.getByRole("button", { name: /Aumentar|Adicionar mais|mais/i }))
+
+    expect(told("InitiateCheckout")).toHaveLength(1)
+    expect(told("AddToCart")).toEqual([])
+  })
+
+  it("is not begun by an empty cart", () => {
+    renderCart(ana, {}, 0)
+
+    expect(told("InitiateCheckout")).toEqual([])
+  })
+
+  it("tells the first way of paying the visitor picks, with the cart and not the way — and not a change of mind", () => {
+    renderCart(ana)
+    expect(told("AddPaymentInfo")).toEqual([])
+
+    fireEvent.click(payNow().getByRole("radio", { name: /^Cartão de crédito/ }))
+    expect(told("AddPaymentInfo")).toEqual([{ name: "AddPaymentInfo", ...cart }])
+
+    fireEvent.click(payNow().getByRole("radio", { name: /^Pix/ }))
+    expect(told("AddPaymentInfo")).toHaveLength(1)
+  })
 })
 
 describe("the checkout of a shop that charges online (BEELINK-205)", () => {

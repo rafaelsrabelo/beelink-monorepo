@@ -2,7 +2,7 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 
 // Types
-import type { AsaasConnection, AuthSession, MetaPixelConnection, PublicStore } from '@harness-monorepo/contracts';
+import type { ApiErrorBody, AsaasConnection, AuthSession, MetaPixelConnection, PublicStore } from '@harness-monorepo/contracts';
 
 // App
 import { env } from '../src/shared/config/env.js';
@@ -47,9 +47,16 @@ describe("a shop's Meta Pixel on a deployment with no INTEGRATIONS_SECRET_KEY (B
     expect((await call('GET', '/api/stores/lessari/integrations/asaas')).json<AsaasConnection>().available).toBe(false);
 
     const saved = await call('POST', PATH, { pixelId: PIXEL });
-    expect([saved.statusCode, saved.json<MetaPixelConnection>()]).toEqual([200, { status: 'CONNECTED', pixelId: PIXEL, connectedAt: expect.any(String) }]);
+    expect([saved.statusCode, saved.json<MetaPixelConnection>()]).toEqual([200, { status: 'CONNECTED', pixelId: PIXEL, connectedAt: expect.any(String), conversions: { available: false, token: 'NONE', refusal: null, refusedAt: null } }]);
     expect((await call('GET', PATH)).json<MetaPixelConnection>().pixelId).toBe(PIXEL);
     expect((await app.inject({ method: 'GET', url: '/api/stores/lessari/public' })).json<PublicStore>().metaPixelId).toBe(PIXEL);
+
+    // The token is a secret (BEELINK-274): with nowhere to seal it, none is kept and none is tried.
+    const token = await call('POST', `${PATH}/token`, { accessToken: 'EAABe2e0conversions0token0000000000000000' });
+    expect([token.statusCode, token.json<ApiErrorBody>().errorCode]).toEqual([503, 'INTEGRATION_UNAVAILABLE']);
+    const tried = await call('POST', `${PATH}/test-event`, { testEventCode: 'TEST123' });
+    expect([tried.statusCode, tried.json<ApiErrorBody>().errorCode]).toEqual([503, 'INTEGRATION_UNAVAILABLE']);
+    expect((await prisma.storeIntegration.findFirstOrThrow({ where: { provider: 'META_PIXEL' } })).secretSealed).toBe('');
 
     expect((await call('DELETE', PATH)).statusCode).toBe(204);
     expect((await app.inject({ method: 'GET', url: '/api/stores/lessari/public' })).json<PublicStore>().metaPixelId).toBeNull();

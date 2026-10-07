@@ -13,6 +13,8 @@ import { resetDatabase } from './support/reset-database.js';
 const PIXEL = '1234567890123456';
 const OTHER_PIXEL = '987654321098765';
 const PATH = '/api/stores/lessari/integrations/meta-pixel';
+/** No Conversions API token saved (BEELINK-274), on a deployment that could keep one. */
+const NO_TOKEN = { available: true, token: 'NONE', refusal: null, refusedAt: null };
 
 function shopBody(slug: string) {
   return { name: slug, slug, type: 'ECOMMERCE', socialNetworks: { whatsapp: '(11) 99999-8888' }, address: { city: 'São Paulo', state: 'sp', zipCode: '01310-930' } };
@@ -53,7 +55,7 @@ describe("a shop's Meta Pixel (BEELINK-269)", () => {
     const response = await read();
 
     expect(response.statusCode).toBe(200);
-    expect(response.json<MetaPixelConnection>()).toEqual({ status: 'DISCONNECTED', pixelId: null, connectedAt: null });
+    expect(response.json<MetaPixelConnection>()).toEqual({ status: 'DISCONNECTED', pixelId: null, connectedAt: null, conversions: NO_TOKEN });
     expect((await publicShop()).metaPixelId).toBeNull();
   });
 
@@ -61,7 +63,7 @@ describe("a shop's Meta Pixel (BEELINK-269)", () => {
     const response = await save(`  ${PIXEL}\n`);
 
     expect(response.statusCode).toBe(200);
-    expect(response.json<MetaPixelConnection>()).toEqual({ status: 'CONNECTED', pixelId: PIXEL, connectedAt: expect.any(String) });
+    expect(response.json<MetaPixelConnection>()).toEqual({ status: 'CONNECTED', pixelId: PIXEL, connectedAt: expect.any(String), conversions: NO_TOKEN });
     expect((await read()).json<MetaPixelConnection>()).toMatchObject({ status: 'CONNECTED', pixelId: PIXEL });
     expect((await publicShop()).metaPixelId).toBe(PIXEL);
     expect((await publicShop('vizinha')).metaPixelId).toBeNull();
@@ -88,7 +90,7 @@ describe("a shop's Meta Pixel (BEELINK-269)", () => {
 
     expect((await call('DELETE', PATH, owner)).statusCode).toBe(204);
     expect(await rows()).toEqual([]);
-    expect((await read()).json<MetaPixelConnection>()).toEqual({ status: 'DISCONNECTED', pixelId: null, connectedAt: null });
+    expect((await read()).json<MetaPixelConnection>()).toEqual({ status: 'DISCONNECTED', pixelId: null, connectedAt: null, conversions: NO_TOKEN });
     expect((await publicShop()).metaPixelId).toBeNull();
     // Removing what is not there is not an error: the panel's button may be pressed twice.
     expect((await call('DELETE', PATH, owner)).statusCode).toBe(204);

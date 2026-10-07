@@ -2,7 +2,7 @@
 import { BadRequestException, ValidationPipe } from '@nestjs/common';
 
 // App
-import { META_PIXEL_ID, MetaPixelConnectDto } from './meta-pixel.dto.js';
+import { META_PIXEL_ID, MetaPixelConnectDto, MetaPixelTestEventDto, MetaPixelTokenDto } from './meta-pixel.dto.js';
 
 /** Mirrors the global pipe in src/app.setup.ts; the e2e proves the real pipeline and its error code. */
 const pipe = new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true, transformOptions: { exposeUnsetFields: false } });
@@ -50,5 +50,32 @@ describe('MetaPixelConnectDto', () => {
   it('keeps one bound for the pipe and for the column, anchored at both ends', () => {
     expect(META_PIXEL_ID.source).toBe('^[0-9]{10,20}$');
     expect(META_PIXEL_ID.flags).toBe('');
+  });
+});
+
+describe('MetaPixelTokenDto and MetaPixelTestEventDto (BEELINK-274)', () => {
+  const token = (body: object) => pipe.transform(body, { type: 'body', metatype: MetaPixelTokenDto }) as Promise<MetaPixelTokenDto>;
+  const code = (body: object) => pipe.transform(body, { type: 'body', metatype: MetaPixelTestEventDto }) as Promise<MetaPixelTestEventDto>;
+
+  it('takes a token as it was pasted, the spaces and the line break around it dropped', async () => {
+    expect((await token({ accessToken: `  EAAB${'x'.repeat(180)}|-_\n` })).accessToken).toBe(`EAAB${'x'.repeat(180)}|-_`);
+    expect((await token({ accessToken: 'a'.repeat(20) })).accessToken).toHaveLength(20);
+    expect((await token({ accessToken: 'a'.repeat(1000) })).accessToken).toHaveLength(1000);
+  });
+
+  it('refuses what is plainly no token, and anything beside it', async () => {
+    for (const accessToken of ['', 'a'.repeat(19), 'a'.repeat(1001), 'a token with spaces in the middle', `EAAB${'x'.repeat(30)}​`, `EAAB${'x'.repeat(30)}é`, null, 1234567890, ['a'.repeat(30)]]) {
+      await expect(token({ accessToken }), JSON.stringify(accessToken)).rejects.toBeInstanceOf(BadRequestException);
+    }
+    await expect(token({})).rejects.toBeInstanceOf(BadRequestException);
+    await expect(token({ accessToken: 'a'.repeat(30), pixelId: '1234567890123456' })).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('takes a test code of letters, digits, dashes and underscores, 3 to 40, trimmed', async () => {
+    expect((await code({ testEventCode: ' TEST12345 ' })).testEventCode).toBe('TEST12345');
+    expect((await code({ testEventCode: 'a_b-C' })).testEventCode).toBe('a_b-C');
+    for (const testEventCode of ['', 'ab', 'x'.repeat(41), 'TEST 123', 'TEST&x=1', '<b>', null, 123]) {
+      await expect(code({ testEventCode }), JSON.stringify(testEventCode)).rejects.toBeInstanceOf(BadRequestException);
+    }
   });
 });

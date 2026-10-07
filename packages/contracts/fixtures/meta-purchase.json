@@ -1,0 +1,151 @@
+{
+  "about": "The same purchase told to Meta from the browser (apps/web/src/lib/purchase.ts + meta-pixel-event.ts, BEELINK-273) and from the server (apps/api/src/modules/integrations/meta-pixel/meta-purchase-event.ts, BEELINK-274). Both sides' tests read these cases: an order, when it counts as a purchase, the event's id and its custom data. A change to either side's rule fails that side's test; a change here fails both. Data for tests only — nothing imports it at runtime.",
+  "now": "2026-10-06T15:00:00.000Z",
+  "cases": [
+    {
+      "name": "an order settled with the shop, one line, delivery in the total",
+      "order": {
+        "id": "0199b001-0000-7000-8000-000000000001",
+        "status": "RECEIVED",
+        "placedBy": "CUSTOMER",
+        "paymentChannel": "OFFLINE",
+        "totalCents": 10450,
+        "deliveryFeeCents": 1500,
+        "placedAt": "2026-10-06T14:00:00.000Z",
+        "items": [{ "productId": "0199a111-0000-7000-8000-000000000001", "quantity": 1, "lineTotalCents": 8950, "discountCents": 0 }],
+        "payment": null
+      },
+      "expected": {
+        "moment": "PLACED",
+        "countedAt": "2026-10-06T14:00:00.000Z",
+        "eventId": "purchase-0199b001-0000-7000-8000-000000000001",
+        "customData": {
+          "value": 104.5,
+          "currency": "BRL",
+          "content_ids": ["0199a111-0000-7000-8000-000000000001"],
+          "content_type": "product",
+          "contents": [{ "id": "0199a111-0000-7000-8000-000000000001", "quantity": 1, "item_price": 89.5 }],
+          "num_items": 1
+        }
+      }
+    },
+    {
+      "name": "two combinations of one product, a promotion on one, a coupon on the order: one entry, the mean price to the cent",
+      "order": {
+        "id": "0199b001-0000-7000-8000-000000000002",
+        "status": "RECEIVED",
+        "placedBy": "CUSTOMER",
+        "paymentChannel": "OFFLINE",
+        "totalCents": 9499,
+        "deliveryFeeCents": null,
+        "placedAt": "2026-10-06T14:00:00.000Z",
+        "items": [
+          { "productId": "0199a111-0000-7000-8000-000000000001", "quantity": 2, "lineTotalCents": 3000, "discountCents": 500 },
+          { "productId": "0199a111-0000-7000-8000-000000000002", "quantity": 4, "lineTotalCents": 6000, "discountCents": 0 },
+          { "productId": "0199a111-0000-7000-8000-000000000001", "quantity": 1, "lineTotalCents": 1999, "discountCents": 0 }
+        ],
+        "payment": null
+      },
+      "expected": {
+        "moment": "PLACED",
+        "countedAt": "2026-10-06T14:00:00.000Z",
+        "eventId": "purchase-0199b001-0000-7000-8000-000000000002",
+        "customData": {
+          "value": 94.99,
+          "currency": "BRL",
+          "content_ids": ["0199a111-0000-7000-8000-000000000001", "0199a111-0000-7000-8000-000000000002"],
+          "content_type": "product",
+          "contents": [
+            { "id": "0199a111-0000-7000-8000-000000000001", "quantity": 3, "item_price": 15 },
+            { "id": "0199a111-0000-7000-8000-000000000002", "quantity": 4, "item_price": 15 }
+          ],
+          "num_items": 7
+        }
+      }
+    },
+    {
+      "name": "a line whose product is gone is left out, and the value keeps it; half a cent rounds up",
+      "order": {
+        "id": "0199b001-0000-7000-8000-000000000003",
+        "status": "ACCEPTED",
+        "placedBy": "CUSTOMER",
+        "paymentChannel": "OFFLINE",
+        "totalCents": 3001,
+        "deliveryFeeCents": 0,
+        "placedAt": "2026-10-06T14:00:00.000Z",
+        "items": [
+          { "productId": null, "quantity": 1, "lineTotalCents": 2000, "discountCents": 0 },
+          { "productId": "0199a111-0000-7000-8000-000000000003", "quantity": 2, "lineTotalCents": 1201, "discountCents": 200 }
+        ],
+        "payment": null
+      },
+      "expected": {
+        "moment": "PLACED",
+        "countedAt": "2026-10-06T14:00:00.000Z",
+        "eventId": "purchase-0199b001-0000-7000-8000-000000000003",
+        "customData": {
+          "value": 30.01,
+          "currency": "BRL",
+          "content_ids": ["0199a111-0000-7000-8000-000000000003"],
+          "content_type": "product",
+          "contents": [{ "id": "0199a111-0000-7000-8000-000000000003", "quantity": 2, "item_price": 5.01 }],
+          "num_items": 2
+        }
+      }
+    },
+    {
+      "name": "an order charged online counts when its charge is paid, at the charge's own moment",
+      "order": {
+        "id": "0199b001-0000-7000-8000-000000000004",
+        "status": "RECEIVED",
+        "placedBy": "CUSTOMER",
+        "paymentChannel": "ONLINE",
+        "totalCents": 25980,
+        "deliveryFeeCents": 0,
+        "placedAt": "2026-10-06T09:00:00.000Z",
+        "items": [{ "productId": "0199a111-0000-7000-8000-000000000001", "quantity": 2, "lineTotalCents": 25980, "discountCents": 0 }],
+        "payment": { "status": "RECEIVED", "paidAt": "2026-10-06T14:30:00.000Z" }
+      },
+      "expected": {
+        "moment": "PAID",
+        "countedAt": "2026-10-06T14:30:00.000Z",
+        "eventId": "purchase-0199b001-0000-7000-8000-000000000004",
+        "customData": {
+          "value": 259.8,
+          "currency": "BRL",
+          "content_ids": ["0199a111-0000-7000-8000-000000000001"],
+          "content_type": "product",
+          "contents": [{ "id": "0199a111-0000-7000-8000-000000000001", "quantity": 2, "item_price": 129.9 }],
+          "num_items": 2
+        }
+      }
+    },
+    {
+      "name": "an order charged online with a closed total of nothing has no charge to wait for: it counts when placed",
+      "order": {
+        "id": "0199b001-0000-7000-8000-000000000005",
+        "status": "RECEIVED",
+        "placedBy": "CUSTOMER",
+        "paymentChannel": "ONLINE",
+        "totalCents": 0,
+        "deliveryFeeCents": 0,
+        "placedAt": "2026-10-06T14:00:00.000Z",
+        "items": [{ "productId": "0199a111-0000-7000-8000-000000000001", "quantity": 1, "lineTotalCents": 8950, "discountCents": 0 }],
+        "payment": null
+      },
+      "expected": {
+        "moment": "PLACED",
+        "countedAt": "2026-10-06T14:00:00.000Z",
+        "eventId": "purchase-0199b001-0000-7000-8000-000000000005",
+        "customData": {
+          "value": 0,
+          "currency": "BRL",
+          "content_ids": ["0199a111-0000-7000-8000-000000000001"],
+          "content_type": "product",
+          "contents": [{ "id": "0199a111-0000-7000-8000-000000000001", "quantity": 1, "item_price": 89.5 }],
+          "num_items": 1
+        }
+      }
+    }
+  ]
+}

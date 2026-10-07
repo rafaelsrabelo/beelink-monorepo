@@ -1,7 +1,7 @@
 "use client"
 
 // React
-import { useEffect } from "react"
+import { useEffect, useMemo } from "react"
 
 // Next
 import { useRouter } from "next/navigation"
@@ -20,7 +20,9 @@ import { formatCents } from "@harness-monorepo/ui/blocks/storefront/storefront-p
 
 // App
 import { AppLink } from "@/components/app-link"
+import { usePurchaseTold } from "@/components/storefront/tracking/use-purchase-told"
 import { IN_PROGRESS_REREAD_MS, orderPaymentRefusalOf, rereadsThePayment } from "@/lib/order-payment-refusal"
+import { purchaseOf, type PurchaseOrder } from "@/lib/purchase"
 import { paymentDeadlineOf, paymentInstallmentsText, paymentPollMsOf, paymentScreenOf, type PaymentOrderFacts } from "@/lib/order-payment-view"
 import { useMakeOrderPayment, useOrderPayment } from "@/services/storefront/order-payment-hooks"
 import { ShopperOrderError } from "@/services/storefront/storefront-requests"
@@ -37,6 +39,8 @@ export interface OrderPaymentLiveProps {
   profileHref: string
   /** What the page read of the order: cancelled, or waiting on the shop for its delivery fee. */
   order: PaymentOrderFacts
+  /** What the page read of the order as a sale: with the charge read here, whether it is a purchase to tell. */
+  sale: PurchaseOrder
   locale: string
   messages: UiMessages
 }
@@ -46,8 +50,11 @@ export interface OrderPaymentLiveProps {
  * from the bee-link API — never from Asaas — and keeps reading while it waits for money and the tab
  * is in sight; the moment the API says paid, it says "Pagamento aprovado" and goes on to the order.
  * Nothing the browser saw at Asaas, and no page Asaas sends the shopper back to, marks it paid.
+ *
+ * That same moment is the order's purchase (BEELINK-273): told here on the API's word, once, and
+ * never of a charge still to be paid.
  */
-export function OrderPaymentLive({ slug, number, orderHref, profileHref, order, locale, messages }: OrderPaymentLiveProps) {
+export function OrderPaymentLive({ slug, number, orderHref, profileHref, order, sale, locale, messages }: OrderPaymentLiveProps) {
   const text = messages.storefront
   const router = useRouter()
   const screenOf = (answer: CustomerOrderPaymentAnswer) => paymentScreenOf(answer.payment, order, new Date())
@@ -59,6 +66,10 @@ export function OrderPaymentLive({ slug, number, orderHref, profileHref, order, 
   // Only what was read since this screen opened: an answer kept from an earlier visit may show a QR already paid.
   const screen = read.data && read.isFetchedAfterMount ? screenOf(read.data) : null
   const paid = screen?.kind === "notice" && screen.variant === "paid"
+  // The charge as read since this screen opened, on the order the page read: a kept answer tells nothing.
+  const heard = read.data && read.isFetchedAfterMount ? read.data.payment : undefined
+  const purchase = useMemo(() => (heard === undefined ? null : purchaseOf({ ...sale, payment: heard }, new Date())), [heard, sale])
+  usePurchaseTold(slug, purchase)
   const refused = make.error ? (make.error instanceof ShopperOrderError ? make.error.errorCode : "UNKNOWN") : null
   // A refusal is of a try to make a charge: once the screen shows one to pay, or a state with none to make — paid, cancelled — it describes nothing here.
   const stale = refused === null || (screen !== null && !(screen.kind === "notice" && screen.acts))

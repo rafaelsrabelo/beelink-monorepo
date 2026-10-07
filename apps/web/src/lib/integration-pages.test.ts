@@ -14,8 +14,8 @@ const melhorEnvio: MelhorEnvioConnection = { available: true, environment: "SAND
 const asaas: AsaasConnection = { available: true, environment: "PRODUCTION", status: "CONNECTED", account: { name: "Lessari Moda LTDA", document: "**.222.333/0001-**" }, webhook: "REGISTERED", approval: "APPROVED", approvalCheckedAt: "2026-10-05T12:00:00.000Z", connectedAt: "2026-10-05T12:00:00.000Z" }
 const asaasNever: AsaasConnection = { ...asaas, status: "DISCONNECTED", account: null, webhook: null, approval: null, approvalCheckedAt: null, connectedAt: null }
 
-const pixelNever: MetaPixelConnection = { status: "DISCONNECTED", pixelId: null, connectedAt: null }
-const pixel: MetaPixelConnection = { status: "CONNECTED", pixelId: "123456789012345", connectedAt: "2026-10-06T12:00:00.000Z" }
+const pixelNever: MetaPixelConnection = { status: "DISCONNECTED", pixelId: null, connectedAt: null, conversions: { available: true, token: "NONE", refusal: null, refusedAt: null } }
+const pixel: MetaPixelConnection = { status: "CONNECTED", pixelId: "123456789012345", connectedAt: "2026-10-06T12:00:00.000Z", conversions: { available: true, token: "NONE", refusal: null, refusedAt: null } }
 
 type Reads = Parameters<typeof integrationCardsOf>[0]
 /** The cards' connections, in the page's order. A shop's pixel is not given unless a test is about it. */

@@ -7,6 +7,7 @@ import type { OrderPaymentModel } from '../../generated/prisma/models.js';
 import { methodOfPlan, type ChargePlan } from './charge-plan.js';
 import { nextCheckAfter } from './payment-checks.js';
 import { notePaymentApproved } from '../conversations/order-status-notice.js';
+import { owePurchase } from '../integrations/meta-pixel/meta-purchase-outbox.js';
 import { DEAD_STATUSES, holdsMoney, isLive, statusAfter, statusSaidBy, wasPaid } from './payment-status.js';
 import { reconcileRefunds, settleRefundMoney, unrefundedOf } from './payment-refunds.js';
 import { endOfBrasiliaDay } from './payment-terms.js';
@@ -30,7 +31,8 @@ type Tx = Prisma.TransactionClient;
  * its amount, its due day — is followed, and a Pix's code dropped with it: Asaas makes another. It
  * talks to nobody: whatever must be removed at Asaas for the row to stand alone is `OrderPayments`'
  * to do first. This is also the one place a charge is known to have just been paid, whoever heard
- * it: what that owes the customer is written here (`tellPaid`), in the same transaction.
+ * it: what that owes the customer is written here (`tellPaid`), in the same transaction — and what
+ * it owes the shop's Meta Pixel (`owePurchase`, BEELINK-274).
  *
  * Money given back comes in here too (BEELINK-208): the charge's refunds as Asaas adds them up are
  * written on `order_refunds` (`reconcileRefunds`), and what the row says of them — how much went
@@ -73,7 +75,12 @@ export async function applyCharge(tx: Tx, order: { id: string; storeId: string; 
           ...told,
         },
       });
-  if (holdsMoney(status) && !(known && wasPaid(known.status))) await tellPaid(tx, order, now);
+  if (holdsMoney(status) && !(known && wasPaid(known.status))) {
+    await tellPaid(tx, order, now);
+    // The same moment is when an order charged online becomes a purchase (BEELINK-274): what that
+    // owes Meta is written here too, once an order, and sent by nobody in this transaction.
+    await owePurchase(tx, order.id, 'PAID', row.paidAt ?? now);
+  }
   if (!paid || !row.providerId) return row;
 
   if (plan.refunds) await reconcileRefunds(tx, { orderId: order.id, storeId: order.storeId, providerId: row.providerId, amountCents: row.amountCents }, plan.refunds, now);

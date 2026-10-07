@@ -4,6 +4,7 @@ import type { ShippingWindowValue } from "@harness-monorepo/ui/lib/shipping"
 
 // Block
 import type { OrderCashbackView } from "@harness-monorepo/ui/lib/cashback"
+import type { OrderOriginView } from "@harness-monorepo/ui/lib/order-origin"
 import type { OrderPaymentStatusValue, OrderPaymentView } from "@harness-monorepo/ui/lib/order-payment"
 
 /** Mirrors the wire's `OrderStatus`; this package imports no contracts. */
@@ -102,6 +103,11 @@ export interface OrderDetailView {
   placedAt: string
   /** Oldest first. */
   events: readonly { status: OrderStatusValue; actor: OrderActorValue; at: string }[]
+  /**
+   * Where its buyer came from (BEELINK-275): null is a direct visit. Absent, the page says nothing
+   * of it — as it says nothing on a sale the shop registered, which came by no link.
+   */
+  origin?: OrderOriginView | null
 }
 
 /** Who brings a delivery. Mirrors the wire's `OrderDeliveryKind`. */

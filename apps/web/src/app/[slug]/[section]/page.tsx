@@ -19,6 +19,7 @@ import { StorefrontSectionBand } from "@/components/storefront/storefront-sectio
 import { StorefrontResetPasswordSection } from "@/components/storefront/storefront-reset-password-section"
 import { StorefrontSignInSection } from "@/components/storefront/storefront-sign-in-section"
 import { StorefrontVerifyEmailSection } from "@/components/storefront/storefront-verify-email-section"
+import { TrackView } from "@/components/storefront/tracking/track-view"
 import { getMessages } from "@/lib/locale"
 import { cartAt } from "@/lib/cart"
 import { COUPON_KEY, couponIn } from "@/lib/cart-coupon"
@@ -136,9 +137,13 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
       {catalogue ? (
         // Not keyed by the address: a filter followed inside the page keeps the last shelf on screen,
         // dimmed and busy, rather than dropping the column into grey. A full load still streams this.
-        <Suspense fallback={<StorefrontListingSkeleton productsPerRow={productsPerRow} withColumn className="pt-5 pb-10" messages={ui} />}>
-          <StorefrontListing place={place} routes={routes} catalogue={catalogue} locale={locale} />
-        </Suspense>
+        <>
+          {/* A search made, told once per term (BEELINK-272): the header's suggestions ask at every key and are not one. */}
+          {place.section.kind === "search" && place.term ? <TrackView event={{ name: "Search", term: place.term }} viewKey={place.term} /> : null}
+          <Suspense fallback={<StorefrontListingSkeleton productsPerRow={productsPerRow} withColumn className="pt-5 pb-10" messages={ui} />}>
+            <StorefrontListing place={place} routes={routes} catalogue={catalogue} locale={locale} />
+          </Suspense>
+        </>
       ) : place.section.kind === "account" && shopper ? (
         <StorefrontAccountArea
           slug={store.slug}

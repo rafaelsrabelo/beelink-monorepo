@@ -155,6 +155,50 @@ describe("a shopper's data at a shop: the copy, and the end of the account", () 
     expect((await call('POST', '/api/stores/lessari/customer/register', undefined, { name: 'Bia', email, password: PASSWORD })).statusCode).toBe(202);
   });
 
+  describe('what an order kept of the visit it came from (BEELINK-275)', () => {
+    const arrivedAt = new Date(Date.now() - 86_400_000).toISOString();
+    const origin = { source: 'facebook', medium: 'cpc', campaign: 'teste', arrivedAt };
+    const marketingConsent = { fbclid: 'IwAR0abc', clickedAt: arrivedAt, fbp: 'fb.1.1759795200000.1234567890', userAgent: 'Mozilla/5.0 (e2e)', pageUrl: 'https://beelink.biz/lessari/carrinho' };
+
+    function placed(extra: object) {
+      return call('POST', '/api/stores/lessari/customer/orders', shopper, { items: [{ variantId: whey.variants[0]!.id, quantity: 1 }], fulfillment: 'PICKUP', paymentMethod: 'PIX', ...extra });
+    }
+
+    it("is in the shopper's copy as it is stored, one entry per order that kept something", async () => {
+      expect((await placed({ origin, marketingConsent })).statusCode).toBe(201);
+      expect((await placed({ origin })).statusCode).toBe(201);
+      expect((await placed({})).statusCode).toBe(201);
+
+      const data = (await call('GET', '/api/stores/lessari/customer/me/data', shopper)).json<CustomerDataExport>();
+
+      expect(data.orders).toHaveLength(3);
+      expect(data.orderOrigins).toEqual([
+        { orderNumber: 2, source: 'facebook', medium: 'cpc', campaign: 'teste', content: null, term: null, arrivedAt, marketingConsent: null },
+        {
+          orderNumber: 1,
+          source: 'facebook',
+          medium: 'cpc',
+          campaign: 'teste',
+          content: null,
+          term: null,
+          arrivedAt,
+          marketingConsent: { ...marketingConsent, recordedAt: expect.any(String) },
+        },
+      ]);
+    });
+
+    it("goes with the account where it names their browser: the order and its campaign stay the shop's", async () => {
+      expect((await placed({ origin, marketingConsent })).statusCode).toBe(201);
+      expect(await prisma.orderMarketingConsent.count()).toBe(1);
+
+      expect((await remove({ password: PASSWORD })).statusCode).toBe(204);
+
+      expect(await prisma.orderMarketingConsent.count()).toBe(0);
+      const kept = (await call('GET', '/api/stores/lessari/orders/1', owner)).json<Order>();
+      expect(kept.origin).toEqual({ source: 'facebook', medium: 'cpc', campaign: 'teste', content: null, term: null, metaAd: true });
+    });
+  });
+
   it('deletes a record the shop never sold to, with its addresses and favourites', async () => {
     await call('POST', '/api/stores/lessari/customer/addresses', shopper, ADDRESS);
     await call('PUT', `/api/stores/lessari/customer/favorites/${whey.id}`, shopper, {});
