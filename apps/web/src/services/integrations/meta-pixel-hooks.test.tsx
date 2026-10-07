@@ -19,8 +19,8 @@ const ID = "123456789012345"
 const OTHER = "987654321098765"
 const PIXEL = "/api/stores/loja/integrations/meta-pixel"
 
-const disconnected: MetaPixelConnection = { status: "DISCONNECTED", pixelId: null, connectedAt: null }
-const connected: MetaPixelConnection = { status: "CONNECTED", pixelId: ID, connectedAt: "2026-10-06T12:00:00.000Z" }
+const disconnected: MetaPixelConnection = { status: "DISCONNECTED", pixelId: null, connectedAt: null, conversions: { available: true, token: "NONE", refusal: null, refusedAt: null } }
+const connected: MetaPixelConnection = { status: "CONNECTED", pixelId: ID, connectedAt: "2026-10-06T12:00:00.000Z", conversions: { available: true, token: "NONE", refusal: null, refusedAt: null } }
 
 /** A client of the test's own, so what it keeps can be looked into; nothing is retried, as nothing here fails by chance. */
 function mount() {
@@ -66,7 +66,7 @@ describe("the shop's Meta Pixel (BEELINK-270)", () => {
   })
 
   it("replaces the ID saved with another, by the same call", async () => {
-    const replaced: MetaPixelConnection = { status: "CONNECTED", pixelId: OTHER, connectedAt: "2026-10-07T09:00:00.000Z" }
+    const replaced: MetaPixelConnection = { status: "CONNECTED", pixelId: OTHER, connectedAt: "2026-10-07T09:00:00.000Z", conversions: { available: true, token: "NONE", refusal: null, refusedAt: null } }
     vi.stubGlobal("fetch", vi.fn<Fetched>(async (_url, init) => Response.json(init?.method === "POST" ? replaced : connected)))
     const { wrapper } = mount()
     const { result } = renderHook(() => ({ connection: useMetaPixelConnection("loja"), save: useSaveMetaPixel("loja") }), { wrapper })

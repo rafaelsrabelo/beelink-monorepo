@@ -11,7 +11,7 @@ import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 // App
 import { META_EVENTS_MANAGER, metaPixelCardOf, metaPixelErrorOf } from "./meta-pixel-form"
 
-const connected: MetaPixelConnection = { status: "CONNECTED", pixelId: "123456789012345", connectedAt: "2026-10-06T12:00:00.000Z" }
+const connected: MetaPixelConnection = { status: "CONNECTED", pixelId: "123456789012345", connectedAt: "2026-10-06T12:00:00.000Z", conversions: { available: true, token: "NONE", refusal: null, refusedAt: null } }
 const errors = ptBR.integrations.metaPixel.errors
 
 describe("metaPixelCardOf (BEELINK-270)", () => {
@@ -26,7 +26,7 @@ describe("metaPixelCardOf (BEELINK-270)", () => {
 
   it("is a shop with no pixel while nothing is saved, whatever else the wire carries", () => {
     const none = { pixelId: null, connectedAt: null, savedAt: null }
-    expect(metaPixelCardOf({ status: "DISCONNECTED", pixelId: null, connectedAt: null })).toEqual(none)
+    expect(metaPixelCardOf({ ...connected, status: "DISCONNECTED", pixelId: null, connectedAt: null })).toEqual(none)
     expect(metaPixelCardOf({ ...connected, status: "NEEDS_RECONNECT" })).toEqual(none)
     expect(metaPixelCardOf({ ...connected, pixelId: null })).toEqual(none)
   })

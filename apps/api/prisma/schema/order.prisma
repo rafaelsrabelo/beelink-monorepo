@@ -169,6 +169,8 @@ model Order {
   refunds OrderRefund[]
   /// What stood in the buyer's browser with their yes to the shop's pixel (BEELINK-275), when there was one.
   marketingConsent OrderMarketingConsent?
+  /// The purchase owed to Meta from the server, and what came of it (BEELINK-274).
+  metaPurchase     OrderMetaPurchase?
 
   @@unique([storeId, number])
   @@index([storeId, placedAt])

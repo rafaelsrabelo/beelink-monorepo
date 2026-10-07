@@ -25,8 +25,8 @@ vi.mock("@/services/integrations/meta-pixel-hooks", () => ({
 const ID = "123456789012345"
 const OTHER = "987654321098765"
 
-const never: MetaPixelConnection = { status: "DISCONNECTED", pixelId: null, connectedAt: null }
-const connected: MetaPixelConnection = { status: "CONNECTED", pixelId: ID, connectedAt: "2026-10-06T12:00:00.000Z" }
+const never: MetaPixelConnection = { status: "DISCONNECTED", pixelId: null, connectedAt: null, conversions: { available: true, token: "NONE", refusal: null, refusedAt: null } }
+const connected: MetaPixelConnection = { status: "CONNECTED", pixelId: ID, connectedAt: "2026-10-06T12:00:00.000Z", conversions: { available: true, token: "NONE", refusal: null, refusedAt: null } }
 
 const save = vi.fn()
 const resetSave = vi.fn()
