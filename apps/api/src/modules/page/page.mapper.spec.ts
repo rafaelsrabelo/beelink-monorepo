@@ -25,6 +25,7 @@ function componentRow(over: Partial<StoreComponentModel> = {}): StoreComponentMo
     columns: null,
     align: null,
     visibleOn: 'ALL',
+    cardStyle: null,
     items: [],
     position: 0,
     isActive: true,
@@ -70,6 +71,18 @@ describe('where a component shows', () => {
 
     expect(toComponent(row).visibleOn).toBe('PHONE');
     expect(toPublicSection(sectionOf(row), 'loja', ROUTE_WORDS.PT_BR).components[0]?.visibleOn).toBe('PHONE');
+  });
+});
+
+describe('a categories block\'s card', () => {
+  it('carries cardStyle to the owner and to the shop window alike, and null where none was chosen', () => {
+    const art = componentRow({ kind: 'CATEGORIES', display: 'RAIL', cardStyle: 'ART_ONLY' });
+    const before = componentRow({ kind: 'CATEGORIES', display: 'GRID' });
+
+    expect(toComponent(art).cardStyle).toBe('ART_ONLY');
+    expect(toPublicSection(sectionOf(art), 'loja', ROUTE_WORDS.PT_BR).components[0]?.cardStyle).toBe('ART_ONLY');
+    expect(toComponent(before).cardStyle).toBeNull();
+    expect(toPublicSection(sectionOf(before), 'loja', ROUTE_WORDS.PT_BR).components[0]?.cardStyle).toBeNull();
   });
 });
 

@@ -22,6 +22,7 @@ import { Type } from 'class-transformer';
 // Types
 import type {
   AddComponentPayload,
+  CategoryCardStyle,
   ComponentDisplay,
   ComponentItem,
   ComponentKind,
@@ -40,6 +41,7 @@ import type {
 // App
 import { MaxCodePoints } from '../../../shared/http/max-code-points.js';
 import {
+  CATEGORY_CARD_STYLES,
   COMPONENT_BODY_MAX_LENGTH,
   COMPONENT_DISPLAYS,
   DEVICE_VISIBILITIES,
@@ -132,6 +134,11 @@ export class ComponentDto implements CreateComponentPayload {
   @IsOptional()
   @IsIn(TEXT_ALIGNS)
   align?: TextAlign | null;
+
+  @ApiPropertyOptional({ enum: CATEGORY_CARD_STYLES, nullable: true, description: 'A CATEGORIES block’s card. Null is the photo with its name. Refused, when not null, on every other kind.' })
+  @IsOptional()
+  @IsIn(CATEGORY_CARD_STYLES, { context: { errorCode: 'COMPONENT_CARD_STYLE_INVALID' satisfies PageErrorCode } })
+  cardStyle?: CategoryCardStyle | null;
 
   // Not `IsOptional`: that would let a null through, and a component always shows somewhere.
   @ApiPropertyOptional({ enum: DEVICE_VISIBILITIES, description: 'Where it shows. The strip shows everywhere.' })

@@ -16,6 +16,7 @@ function block(id: string, over: Record<string, unknown> = {}) {
     columns: null,
     align: null,
     visibleOn: 'ALL' as const,
+    cardStyle: null,
     items: [],
     isActive: true,
     // What a row carries and a document does not.
@@ -47,6 +48,21 @@ describe('readPageDocument', () => {
     const raw = { format: 1, sections: [{ ...band('b1', [block('c1')]), components: [block('c1'), block('c2', { kind: 'TESTIMONIALS' as never })] }] };
 
     expect(readPageDocument(raw).sections[0]!.components.map((component) => component.id)).toEqual(['c1']);
+  });
+
+  it('reads a block frozen before the card style existed, as the photo with its name', () => {
+    const { cardStyle: _absent, ...frozenBefore } = block('c1', { kind: 'CATEGORIES', display: 'RAIL' });
+    const raw = { format: 1, sections: [{ ...band('b1', []), components: [frozenBefore] }] };
+
+    expect(readPageDocument(raw).sections[0]!.components).toMatchObject([{ id: 'c1', cardStyle: null }]);
+    // Publicar asks whether the draft differs from what is served: an old document and the same rows frozen today must not.
+    expect(sameDocument(raw, documentOf([band('b1', [block('c1', { kind: 'CATEGORIES', display: 'RAIL' })])]))).toBe(true);
+  });
+
+  it('keeps the card style a categories block was frozen with', () => {
+    const doc = documentOf([band('b1', [block('c1', { kind: 'CATEGORIES', display: 'GRID', cardStyle: 'ART_ONLY' })])]);
+
+    expect(readPageDocument(JSON.parse(JSON.stringify(doc))).sections[0]!.components[0]!.cardStyle).toBe('ART_ONLY');
   });
 
   it('never throws: anything that is not a document reads as an empty page', () => {

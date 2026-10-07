@@ -3,6 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 // Types
 import type {
+  CategoryCardStyle,
   ComponentDisplay,
   ComponentItem,
   ComponentKind,
@@ -20,6 +21,7 @@ import type {
 
 // App
 import {
+  CATEGORY_CARD_STYLES,
   COMPONENT_DISPLAYS,
   DEVICE_VISIBILITIES,
   COMPONENT_KINDS,
@@ -61,6 +63,8 @@ export class PublicComponentResponse implements PublicComponent {
   // Always sent; optional on the contract only for a page cached before it existed.
   @ApiProperty({ enum: DEVICE_VISIBILITIES, description: 'Where it shows. A band shows wherever one of its components does.' })
   visibleOn?: DeviceVisibility;
+  @ApiProperty({ enum: CATEGORY_CARD_STYLES, nullable: true, required: false, description: 'A CATEGORIES block’s card. Null is the photo with its name.' })
+  cardStyle?: CategoryCardStyle | null;
 }
 
 export class PublicSectionResponse implements PublicSection {
@@ -95,6 +99,8 @@ export class ComponentResponse implements StoreComponent {
   @ApiProperty({ nullable: true, type: Number }) columns!: number | null;
   @ApiProperty({ enum: TEXT_ALIGNS, nullable: true }) align!: TextAlign | null;
   @ApiProperty({ enum: DEVICE_VISIBILITIES }) visibleOn!: DeviceVisibility;
+  @ApiProperty({ enum: CATEGORY_CARD_STYLES, nullable: true, description: 'A CATEGORIES block’s card. Null is the photo with its name, and every other kind’s.' })
+  cardStyle!: CategoryCardStyle | null;
   @ApiProperty({ description: 'Its place inside its band.' }) position!: number;
   @ApiProperty() isActive!: boolean;
   @ApiProperty({ format: 'date-time' }) createdAt!: string;

@@ -41,6 +41,7 @@ function block(id: string, over: Partial<StoreComponent> = {}): StoreComponent {
     columns: null,
     align: null,
     visibleOn: "ALL",
+    cardStyle: null,
     position: 0,
     isActive: true,
     createdAt: "2026-09-24T00:00:00.000Z",

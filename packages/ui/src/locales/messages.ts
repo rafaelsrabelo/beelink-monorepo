@@ -1486,6 +1486,15 @@ export interface UiMessages {
     displays: Record<ComponentDisplay, string>
     /** A block with no layout chosen whose look no layout repeats: a strip saved before it had a choice. */
     displayAuto: string
+    /** A categories block's card: the photo with the name, or the artwork alone. */
+    cardStyle: {
+      label: string
+      photoWithName: string
+      photoWithNameHint: string
+      artOnly: string
+      /** Says the file to make and what a category with no picture does. */
+      artOnlyHint: string
+    }
     categoriesRailHint: string
     categoriesGridHint: string
     show: string

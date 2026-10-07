@@ -55,6 +55,7 @@ export class PageService {
     await this.rules.refuseSecond(storeId, dto.component.kind);
     this.rules.refuseDisplayFor(dto.component.kind, dto.component.display);
     this.rules.refuseVisibilityFor(dto.component.kind, dto.component.visibleOn);
+    this.rules.refuseCardStyleFor(dto.component.kind, dto.component.cardStyle);
     this.showcases.refuseOn(dto.component.kind, dto.component);
     // A kind created bare opens with what it cannot be without — a form's first fields.
     const checked = this.rules.checkedItems(dto.component.kind, dto.component.items ?? openingItemsOf(dto.component.kind));

@@ -22,6 +22,7 @@ export function component(id: string, over: Partial<StoreComponent> = {}): Store
     columns: null,
     align: null,
     visibleOn: "ALL",
+    cardStyle: null,
     position: 0,
     isActive: true,
     createdAt: "2026-09-23T00:00:00.000Z",

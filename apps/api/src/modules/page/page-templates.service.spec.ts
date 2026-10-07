@@ -26,6 +26,7 @@ function component(id: string, kind: string, title: string) {
     columns: null,
     align: null,
     visibleOn: 'ALL',
+    cardStyle: null,
     items: [],
     position: 0,
     isActive: true,

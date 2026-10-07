@@ -1259,6 +1259,13 @@ export const ptBR: UiMessages = {
       BLOCK: "Bloco",
     },
     displayAuto: "Automática: parada onde cabe, rolando no celular",
+    cardStyle: {
+      label: "Estilo do cartão",
+      photoWithName: "Foto com nome",
+      photoWithNameHint: "A foto da categoria, com o nome embaixo.",
+      artOnly: "Só a arte",
+      artOnlyHint: "Só a imagem, sem o nome por cima. Use uma arte quadrada, de 600 × 600 px. Categoria sem imagem aparece com o nome.",
+    },
     categoriesRailHint: "Uma linha só, que rola para o lado — no celular e no computador.",
     categoriesGridHint: "Todas as categorias à vista, em linhas.",
     show: "Mostrar na loja",

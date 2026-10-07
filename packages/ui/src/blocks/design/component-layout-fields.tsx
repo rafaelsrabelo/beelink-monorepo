@@ -14,9 +14,10 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import { AlignField } from "./align-field"
+import { CardStyleField } from "./card-style-field"
 import { hasSpan, type ArrangementSpan } from "./arrangement-row"
 import { ColumnsField } from "./columns-field"
-import type { ComponentDisplay, ComponentKind, DeviceVisibility, SectionWidth } from "./design-types"
+import type { CategoryCardStyle, ComponentDisplay, ComponentKind, DeviceVisibility, SectionWidth } from "./design-types"
 import { LayoutPicker } from "./layout-picker"
 import { LayoutThumbnail } from "./layout-thumbnail"
 import { SpanField } from "./span-field"
@@ -32,6 +33,8 @@ export interface ComponentLayoutValues {
   columns: number
   align: TextAlign
   visibleOn: DeviceVisibility
+  /** A categories block's card. Null on the wire is the photo with its name, resolved here. */
+  cardStyle: CategoryCardStyle
 }
 
 export interface ComponentLayoutFieldsProps {
@@ -116,6 +119,11 @@ export function ComponentLayoutFields({
             <FieldDescription>{value.display === "RAIL" ? text.categoriesRailHint : text.categoriesGridHint}</FieldDescription>
           ) : null}
         </FieldSet>
+      ) : null}
+
+      {/* Asked only where a card has a picture: the pills are names and nothing else. */}
+      {kind === "CATEGORIES" && value.display !== "CHIPS" ? (
+        <CardStyleField value={value.cardStyle} onChange={(cardStyle) => onChange({ cardStyle })} messages={messages} />
       ) : null}
 
       {/* Asked only of a grid: a rail's cards have a width of their own at every screen. */}

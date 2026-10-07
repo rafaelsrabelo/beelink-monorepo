@@ -8,7 +8,7 @@ import { expectNoA11yViolations } from "../../test/a11y"
 import { ComponentLayoutFields, hasLayout, type ComponentLayoutValues } from "./component-layout-fields"
 import type { ComponentKind } from "./design-types"
 
-const base: ComponentLayoutValues = { span: "HALF", display: null, columns: 0, align: "LEFT", visibleOn: "ALL" }
+const base: ComponentLayoutValues = { span: "HALF", display: null, columns: 0, align: "LEFT", visibleOn: "ALL", cardStyle: "PHOTO_WITH_NAME" }
 
 function renderFields(kind: ComponentKind, over: Partial<ComponentLayoutValues> = {}) {
   const onChange = vi.fn()
@@ -77,6 +77,43 @@ describe("ComponentLayoutFields", () => {
     rerender(<ComponentLayoutFields kind="CATEGORIES" value={{ ...base, display: "GRID" }} onChange={vi.fn()} bandWidth="FULL" />)
     expect(screen.getByText("Todas as categorias à vista, em linhas.")).toBeInTheDocument()
     expect(screen.getByRole("combobox", { name: "Colunas" })).toHaveTextContent("Automático")
+  })
+
+  // BEELINK-308: the photo with its name stays the default, and the artwork alone is one press away.
+  it("offers the categories a card of photo and name, or of the artwork alone", async () => {
+    const user = userEvent.setup()
+    const { onChange } = renderFields("CATEGORIES", { display: "RAIL" })
+
+    const style = screen.getByRole("group", { name: "Estilo do cartão" })
+    expect(within(style).getByRole("button", { name: "Foto com nome", pressed: true })).toBeInTheDocument()
+    expect(screen.queryByText(/600 × 600 px/)).not.toBeInTheDocument()
+
+    await user.click(within(style).getByRole("button", { name: "Só a arte" }))
+    expect(onChange).toHaveBeenCalledWith({ cardStyle: "ART_ONLY" })
+  })
+
+  it("says, under the artwork alone, the file to make and what a category with no picture does", () => {
+    renderFields("CATEGORIES", { display: "GRID", cardStyle: "ART_ONLY" })
+
+    expect(screen.getByRole("button", { name: "Só a arte", pressed: true })).toBeInTheDocument()
+    expect(
+      screen.getByText("Só a imagem, sem o nome por cima. Use uma arte quadrada, de 600 × 600 px. Categoria sem imagem aparece com o nome."),
+    ).toBeInTheDocument()
+  })
+
+  it("asks no card style of the pills, which draw no picture, nor of any other kind", () => {
+    const { unmount } = renderFields("CATEGORIES", { display: "CHIPS" })
+    expect(screen.queryByRole("group", { name: "Estilo do cartão" })).not.toBeInTheDocument()
+    unmount()
+
+    renderFields("PRODUCTS", { display: "GRID" })
+    expect(screen.queryByRole("group", { name: "Estilo do cartão" })).not.toBeInTheDocument()
+  })
+
+  it("has no accessibility violations with the card style in view", async () => {
+    const { container } = renderFields("CATEGORIES", { display: "RAIL", cardStyle: "ART_ONLY" })
+
+    await expectNoA11yViolations(container)
   })
 
   it("offers alignment to a heading and a paragraph", async () => {

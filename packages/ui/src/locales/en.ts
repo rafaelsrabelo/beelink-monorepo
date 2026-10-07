@@ -1258,6 +1258,13 @@ export const en: UiMessages = {
       BLOCK: "Block",
     },
     displayAuto: "Automatic: still where it fits, scrolling on a phone",
+    cardStyle: {
+      label: "Card style",
+      photoWithName: "Photo with name",
+      photoWithNameHint: "The category's photo, with its name under it.",
+      artOnly: "Artwork only",
+      artOnlyHint: "The picture alone, with no name over it. Use square artwork, 600 × 600 px. A category with no picture shows with its name.",
+    },
     categoriesRailHint: "One row that scrolls sideways — on a phone and on a computer.",
     categoriesGridHint: "Every category in view, in rows.",
     show: "Show in the shop",

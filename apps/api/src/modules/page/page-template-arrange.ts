@@ -30,6 +30,8 @@ function componentOf(id: string, component: SeededComponent): ComponentShape {
     columns: component.columns ?? null,
     align: component.align ?? null,
     visibleOn: 'ALL',
+    // No model opens with artwork alone: a shop that has just opened has no artwork.
+    cardStyle: null,
     items: component.items,
     isActive: component.isActive,
   };

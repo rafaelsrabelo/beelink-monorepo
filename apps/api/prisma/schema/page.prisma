@@ -107,6 +107,14 @@ enum DeviceVisibility {
   PHONE
 }
 
+/// How a categories block draws each card. Null on the row is PHOTO_WITH_NAME.
+enum CategoryCardStyle {
+  /// The photo, and the category's name and line under it.
+  PHOTO_WITH_NAME
+  /// The picture alone: artwork that already carries its words.
+  ART_ONLY
+}
+
 /// Which products a showcase draws.
 ///
 /// There is no best sellers: nothing records a sale yet, and a source named for sales would draw
@@ -280,6 +288,9 @@ model StoreComponent {
 
   /// Where it shows. A band shows wherever one of its components does, so it has no column of its own.
   visibleOn DeviceVisibility @default(ALL)
+
+  /// Read on CATEGORIES. Null is the photo with its name — what every row drew before the choice.
+  cardStyle CategoryCardStyle?
 
   /// A banner's slides, or a benefits band's rows. Empty on every other kind.
   ///

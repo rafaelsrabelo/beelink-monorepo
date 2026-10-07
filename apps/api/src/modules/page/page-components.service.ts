@@ -47,6 +47,7 @@ export class PageComponentsService {
     await this.rules.refuseSecond(storeId, dto.kind);
     this.rules.refuseDisplayFor(dto.kind, dto.display);
     this.rules.refuseVisibilityFor(dto.kind, dto.visibleOn);
+    this.rules.refuseCardStyleFor(dto.kind, dto.cardStyle);
     this.showcases.refuseOn(dto.kind, dto);
 
     const checked = this.rules.checkedItems(dto.kind, dto.items ?? openingItemsOf(dto.kind));
@@ -102,6 +103,7 @@ export class PageComponentsService {
 
     this.rules.refuseDisplayFor(current.kind, dto.display);
     this.rules.refuseVisibilityFor(current.kind, dto.visibleOn);
+    this.rules.refuseCardStyleFor(current.kind, dto.cardStyle);
     this.showcases.refuseOn(current.kind, dto);
 
     const items =

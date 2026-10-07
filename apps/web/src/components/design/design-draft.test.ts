@@ -123,6 +123,16 @@ describe("changesOf — only what moved is written", () => {
     expect(publishedOf(banner!)).not.toHaveProperty("display")
   })
 
+  // BEELINK-308: the API refuses a card style on any other kind, so only the categories send one.
+  it("publishes the card style of a categories block, and none for any other kind", () => {
+    const [banner] = draft[0]!.components
+    const categories = { ...banner!, kind: "CATEGORIES" as const, display: "RAIL" as const }
+
+    expect(publishedOf({ ...categories, cardStyle: "ART_ONLY" })).toMatchObject({ cardStyle: "ART_ONLY" })
+    expect(publishedOf({ ...categories, cardStyle: null })).toMatchObject({ cardStyle: null })
+    expect(publishedOf(banner!)).not.toHaveProperty("cardStyle")
+  })
+
   it("reports the inner order only for the band whose order changed", () => {
     const changes = changesOf(applyComponentOrder(draft, "b", ["b2", "b1"]), saved)
 
@@ -141,6 +151,16 @@ describe("previewOf — what the shop window would be served", () => {
     const [band] = previewOf(next, saved, NO_SHELVES)
 
     expect(band!.components[0]).toMatchObject({ id: "a1", span: "THIRD" })
+  })
+
+  // BEELINK-308: the card style waits for Publicar like the rest of the layout, and is seen before it.
+  it("draws the card style the draft holds, not the one saved", () => {
+    const next = draft.map((row) =>
+      row.id === "a" ? { ...row, components: row.components.map((c) => ({ ...c, cardStyle: "ART_ONLY" as const })) } : row,
+    )
+
+    expect(previewOf(next, saved, NO_SHELVES)[0]!.components[0]).toMatchObject({ id: "a1", cardStyle: "ART_ONLY" })
+    expect(previewOf(draft, saved, NO_SHELVES)[0]!.components[0]).toMatchObject({ id: "a1", cardStyle: null })
   })
 
   it("drops hidden bands and hidden components, keeping the rest in order", () => {

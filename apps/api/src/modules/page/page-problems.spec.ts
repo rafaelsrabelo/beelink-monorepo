@@ -11,7 +11,7 @@ const CATEGORY = '0199d000-0000-7000-8000-000000000001';
 function block(id: string, kind: ComponentShape['kind'], items: unknown[] = [], isActive = true): ComponentShape {
   return {
     id, kind, title: null, subtitle: null, body: null, span: 'FULL', display: null, source: kind === 'PRODUCTS' ? 'ALL' : null,
-    sourceCategoryId: null, limit: null, columns: null, align: null, visibleOn: 'ALL', items, isActive,
+    sourceCategoryId: null, limit: null, columns: null, align: null, visibleOn: 'ALL', cardStyle: null, items, isActive,
   };
 }
 

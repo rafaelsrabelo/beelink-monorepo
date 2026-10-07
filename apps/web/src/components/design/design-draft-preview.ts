@@ -70,6 +70,7 @@ export function previewOf(rows: readonly SectionDraft[], saved: readonly Section
             columns: component.columns,
             align: component.align,
             visibleOn: component.visibleOn,
+            cardStyle: component.cardStyle,
             items: previewItemsOf(component, was, shelves),
           } satisfies PublicComponent
         }),

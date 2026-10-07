@@ -47,7 +47,7 @@ const pageOf = (templateId: string, product: string | null) => ({
       name: null,
       width: "CONTAINED",
       background: null,
-      components: [{ id: `c-${templateId}`, kind: "HEADING", title: `Modelo ${templateId}${product ? ` com ${product}` : ""}`, subtitle: null, body: null, span: "FULL", display: null, source: null, sourceCategory: null, items: [], columns: null, align: null, visibleOn: "ALL" }],
+      components: [{ id: `c-${templateId}`, kind: "HEADING", title: `Modelo ${templateId}${product ? ` com ${product}` : ""}`, subtitle: null, body: null, span: "FULL", display: null, source: null, sourceCategory: null, items: [], columns: null, align: null, visibleOn: "ALL", cardStyle: null }],
     },
   ],
 })
