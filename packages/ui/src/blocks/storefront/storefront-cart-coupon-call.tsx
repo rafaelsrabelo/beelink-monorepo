@@ -41,7 +41,8 @@ export function StorefrontCartCouponCall({ call, onApply, pending = false, disab
         <TicketPercentIcon aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-shop-primary-ink" />
         <span className="min-w-0 break-words">
           <span className="font-medium">{call.message}</span>{" "}
-          <strong className="font-mono font-bold tracking-wide break-all">{call.code}</strong>
+          {/* Whole on its own line when it does not fit beside the sentence; broken only when longer than the line. */}
+          <strong className="font-mono font-bold tracking-wide break-words">{call.code}</strong>
         </span>
       </p>
       <button

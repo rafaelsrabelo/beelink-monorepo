@@ -63,10 +63,13 @@ describe("StorefrontCartCouponCall", () => {
     expect(screen.getByRole("button", { name: "Aplicar cupom" })).toBeDisabled()
   })
 
-  it("keeps a long code inside its box", () => {
+  // Never cut in the middle while it fits a line of its own: "SEJ / AMUTANTE" is not a code anyone can read.
+  it("keeps a long code inside its box, and a short one whole", () => {
     render(<StorefrontCartCouponCall call={{ ...call, code: "UMCODIGOBEMCOMPRIDODETRINTACAR" }} />)
 
-    expect(screen.getByText("UMCODIGOBEMCOMPRIDODETRINTACAR")).toHaveClass("break-all")
+    const code = screen.getByText("UMCODIGOBEMCOMPRIDODETRINTACAR")
+    expect(code).toHaveClass("break-words")
+    expect(code).not.toHaveClass("break-all")
   })
 
   it("renders in English when the screen hands it the English dictionary", () => {
