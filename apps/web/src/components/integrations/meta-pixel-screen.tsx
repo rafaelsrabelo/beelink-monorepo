@@ -6,12 +6,15 @@ import { IntegrationsSkeleton } from "@harness-monorepo/ui/blocks/integrations/i
 import { MetaConversionsCard } from "@harness-monorepo/ui/blocks/integrations/meta-conversions-card"
 import { MetaPixelCard } from "@harness-monorepo/ui/blocks/integrations/meta-pixel-card"
 import { MetaPixelGuide } from "@harness-monorepo/ui/blocks/integrations/meta-pixel-guide"
+import { MetaPixelReportLink } from "@harness-monorepo/ui/blocks/integrations/meta-pixel-report-link"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
+import { AppLink } from "@/components/app-link"
 import { IntegrationFrame } from "@/components/integrations/integration-frame"
 import { INTEGRATION_LOGOS, integrationPagesOf } from "@/lib/integration-pages"
 import { META_EVENTS_MANAGER, metaConversionsOf, metaPixelCardOf, metaPixelErrorOf, metaTestErrorOf, metaTestResultOf, metaTokenErrorOf } from "@/lib/meta-pixel-form"
+import { reportPagesOf } from "@/lib/report-period"
 import { IntegrationError } from "@/services/integrations/integration-requests"
 import { useMetaPixelConnection, useRemoveMetaPixel, useRemoveMetaPixelToken, useSaveMetaPixel, useSaveMetaPixelToken, useSendMetaPixelTestEvent } from "@/services/integrations/meta-pixel-hooks"
 
@@ -29,6 +32,9 @@ export interface MetaPixelScreenProps {
  * Under it, for a shop with an ID saved, the purchases told from the server (BEELINK-274): the
  * Conversions API token — pasted, sealed by the API and never read back — and the test event, the
  * one thing here that does ask Meta, through the API.
+ *
+ * Last, the way to the sales by origin (BEELINK-275): what the campaigns brought is read there, with
+ * or without a pixel.
  */
 export function MetaPixelScreen({ slug, messages }: MetaPixelScreenProps) {
   const text = messages.integrations
@@ -103,6 +109,7 @@ export function MetaPixelScreen({ slug, messages }: MetaPixelScreenProps) {
         />
       ) : null}
       <MetaPixelGuide eventsManagerHref={META_EVENTS_MANAGER} messages={messages} />
+      <MetaPixelReportLink href={reportPagesOf(slug).origins} linkComponent={AppLink} messages={messages} />
     </IntegrationFrame>
   )
 }
