@@ -9,6 +9,7 @@ import { LoggerModule } from 'nestjs-pino';
 import { HealthController } from './health.controller.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { JwtAuthGuard } from './modules/auth/jwt-auth.guard.js';
+import { BackofficeModule } from './modules/backoffice/backoffice.module.js';
 import { AddressesModule } from './modules/addresses/addresses.module.js';
 import { PaymentEventsModule } from './modules/payment-events/payment-events.module.js';
 import { PageModule } from './modules/page/page.module.js';
@@ -70,6 +71,7 @@ import { PrismaModule } from './shared/prisma/prisma.module.js';
     IntegrationsModule,
     ReportsModule,
     UploadsModule,
+    BackofficeModule,
   ],
   controllers: [HealthController],
   providers: [

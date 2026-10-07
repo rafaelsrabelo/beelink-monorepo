@@ -12,7 +12,9 @@ import type { Lead } from '@harness-monorepo/contracts';
 // App
 import type { AccountShop } from '../../modules/auth/account-scope.js';
 import { EMAIL_VERIFICATION_TTL_HOURS, PASSWORD_RESET_TTL_MINUTES } from '../../modules/auth/auth.constants.js';
+import { BACKOFFICE_CODE_TTL_MINUTES } from '../../modules/backoffice/backoffice.constants.js';
 import { env } from '../config/env.js';
+import { backofficeSignInCode } from './backoffice-code.template.js';
 import { cashbackExpiring, type CashbackExpiringContent } from './cashback-expiring.template.js';
 import { paymentApproved, type PaymentApprovedContent } from './payment-approved.template.js';
 import { paymentRefunded, type PaymentRefundedContent } from './payment-refunded.template.js';
@@ -71,6 +73,11 @@ export class MailService implements OnApplicationBootstrap {
   async sendPasswordReset(to: string, name: string, token: string, shop?: AccountShop): Promise<void> {
     const url = shop ? shopLinkOf(shop.resetPath, token, shop.returnTo) : `${env.WEB_URL}/reset-password?token=${encodeURIComponent(token)}`;
     await this.send(to, passwordReset(name, url, PASSWORD_RESET_TTL_MINUTES, shop?.name), shop?.name);
+  }
+
+  /** The second step of a backoffice sign-in (BEELINK-227). The code is in the body alone: `send` logs a subject, never a body. */
+  async sendBackofficeSignInCode(to: string, name: string, code: string): Promise<void> {
+    await this.send(to, backofficeSignInCode(name, code, BACKOFFICE_CODE_TTL_MINUTES));
   }
 
   /**
