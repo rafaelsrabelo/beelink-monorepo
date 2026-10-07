@@ -42,3 +42,20 @@ As do épico vêm do briefing do orquestrador (só o ID, nunca um script nem Goo
 - Carregar o `gtag`, o aviso de cookies e os eventos (Z3).
 - Envio pelo servidor (Z4) e Google Ads (Z5).
 - Consertar `apps/api/test/meta-pixel-without-vault-key.e2e-spec.ts` (achado do Z1, ticket próprio).
+
+## 07/10, depois do código — o que foi visto na tela
+
+A tela foi usada de verdade (`next dev` na 3700, API na 3701, banco `harness_ga`), com uma conta criada pelo cadastro (`ga-z2-painel@teste.dev`, confirmada pelo link do Mailpit) e a loja `loja-do-ga` criada pelo assistente de criação, percorrida pelo Playwright:
+
+- **a lista:** cinco cards, na ordem Melhor Envio, Asaas, Pixel da Meta, Google Analytics, BeeFlow; o do Google Analytics com o logo (`/brand/integrations/google-analytics-icon.svg`, carregado), "Não conectado" e "Conectar" para a página própria; depois de salvar, o selo "Conectado" com `data-variant="success"` (verde) e "Configurar". O card do pixel continuou "Não conectado".
+- **o carregamento:** com a leitura da conexão segurada na rede e a página aberta direto pelo endereço, o `h1` "Google Analytics" e 7 esqueletos, sem campo, sem selo, sem spinner e sem a palavra "carregando". Vindo da lista não há esqueleto: a conexão já está no cache do TanStack Query, e a página abre pronta.
+- **ID inválido:** `UA-12345678-1`, `GTM-AB12CD3`, `AW-1234567890`, `g-ab12cd34ef` e `gtag('config', 'G-AB12CD34EF');` mostram a frase de recusa sob o campo e **nenhuma requisição sai**. A recusa da própria API também foi vista: com o corpo trocado na rede por `UA-12345678-1`, a API respondeu `400 GOOGLE_ANALYTICS_ID_INVALID` e a tela mostrou a mesma frase, mantendo o ID que estava salvo.
+- **conectar:** `  G-AB12 CD34EF ` (com espaços) salvou `G-AB12CD34EF` (`POST` 200), com o aviso "Google Analytics conectado: o ID foi salvo." e a data; a linha em `store_integrations` foi conferida por `psql`.
+- **trocar:** "Trocar o ID" abre o campo já com o foco; salvar `G-ZY98XW76VU` trocou o ID mostrado.
+- **desconectar:** o diálogo pede confirmação; "Manter conectado" não remove nada; "Desconectar" faz `DELETE` (200), a conexão é lida de novo (`DISCONNECTED`), o campo volta e o aviso de salvo some.
+- **inglês:** com `bl_locale=en` a página inteira sai em inglês.
+- em 390 px de largura nada transborda; nenhuma requisição saiu para o Google (as únicas para fora da 3700 são as do socket de tempo real, na 3701).
+
+Não visto: o tema escuro; o Storybook aberto no navegador; os dois links para `analytics.google.com` clicados (só o `href`, o `target` e o `rel`); e o efeito do `revalidateStore` numa vitrine de verdade — a vitrine ainda não lê `googleAnalyticsId` (Z3), então o que prova a chamada é o teste do handler. O console mostrou um erro do React que não é desta tela ("Encountered a script tag while rendering React component"), vindo de uma página visitada antes da de integrações; não foi investigado.
+
+Decisão acrescentada ao escrever: o exemplo de ID nas frases e no campo é `G-AB12CD34EF`, de formato certo e de ninguém (não foi conferido que não exista como propriedade de alguém; nada é enviado a ele).
