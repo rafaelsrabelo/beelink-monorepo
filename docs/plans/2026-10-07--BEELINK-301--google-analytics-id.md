@@ -55,3 +55,27 @@ As do épico vêm do briefing do orquestrador (só o ID, nunca um script nem Goo
 - **Z3 (vitrine):**
   - `store.googleAnalyticsId` já está em toda leitura pública da loja (`PublicStore`), `null` sem ID salvo. É `G-` mais maiúsculas e dígitos por construção (DTO e `CHECK`), mas continua sendo dado: vai como argumento de `gtag('config', id, …)` e como parâmetro de URL codificado no `src` do script do Google, nunca interpolado num script.
   - Ele é independente de `store.metaPixelId`: uma loja pode ter um, o outro, os dois ou nenhum.
+
+## Notas da entrega (acréscimo, 07/10)
+
+**Correção ao "Para o Z2 e o Z3".** A linha que diz que `IntegrationProviderValue` em `packages/ui` "já tem `GOOGLE_ANALYTICS`" está errada: este ticket **não** tocou o `packages/ui`. O `ui` espelha a união do contrato num tipo próprio, então o web e o `ui` compilaram sem mudança com o provedor novo. Acrescentar `GOOGLE_ANALYTICS` ali obriga a preencher os mapas exaustivos de texto e de logo dos cards (`integration-providers.ts`, `integration-pages.ts`, `integrations-screen.tsx`), que é o trabalho do Z2. O único arquivo do web tocado foi um fixture de teste, `apps/web/src/components/store/store-payloads.test.ts`, que passou a dizer `googleAnalyticsId: null`.
+
+**Onde ficou cada coisa.**
+
+- Contratos: `packages/contracts/src/google-analytics.ts`; `IntegrationProvider` e `IntegrationErrorCode` em `integration.ts`; `PublicStore.googleAnalyticsId` em `store.ts`.
+- Migration `20261007152413_google_analytics_integration`: valor `GOOGLE_ANALYTICS` no enum, coluna `store_integrations."measurementId" VARCHAR(18)` anulável e a `CHECK` `store_integrations_measurement_id_check`.
+- API: `apps/api/src/modules/integrations/google-analytics/` (controller, service, `dto/`), registrado em `integrations.module.ts`; `storeInclude` e `toPublicStore` em `modules/stores/store.mapper.ts`.
+- Testes: `dto/google-analytics.dto.spec.ts`, `google-analytics.service.spec.ts`, `store.mapper.spec.ts`, e os e2e `test/google-analytics.e2e-spec.ts` e `test/google-analytics-without-vault-key.e2e-spec.ts`.
+
+**Decisões acrescentadas durante o trabalho.**
+
+13. **A mensagem de formato fica só no `@Matches`.** Um corpo sem o campo, ou com um número, responde também a mensagem padrão do `@IsString`; o `errorCode` é o mesmo.
+14. **O e2e "sem chave do cofre" troca o `dotenv` por um vazio** (`vi.mock('dotenv')`). O `dotenv-expand` escreve o valor do arquivo por cima de uma variável deixada em branco, então com um `apps/api/.env` que tenha `INTEGRATIONS_SECRET_KEY` a chave voltava e o teste falhava. O teste equivalente do pixel (`meta-pixel-without-vault-key.e2e-spec.ts`) tem o mesmo defeito, já na `main`, e **não foi alterado**: fica anotado como achado para um ticket próprio.
+15. **Um teste do pixel foi ajustado fora do escopo, num commit à parte** (`test(api): the Meta test event's page…`): `meta-pixel.service.spec.ts` afirmava `http://localhost:3000`, e falhava em qualquer worktree cujo `.env` tenha outro `WEB_URL` (este usa a 3700), deixando o `pnpm ci-check` vermelho aqui. Passou a afirmar `env.WEB_URL`. O commit pode ser retirado sem afetar o resto.
+
+**O que foi e o que não foi conferido.**
+
+- Conferido: os testes unitários novos; os dois e2e novos rodados sozinhos contra `harness_ga_test` (2 arquivos, 12 testes, verdes); a migration aplicada em `harness_ga` (`prisma migrate dev`) e em `harness_ga_test` (pelo `global-setup` do e2e); o Swagger servido pela API de pé na 3701 (as três operações da rota e o campo `googleAnalyticsId` em `PublicStoreResponse`); `pnpm ci-check` verde.
+- **Não conferido: a suíte e2e inteira da API.** A única rodada completa foi invalidada pelo ambiente: o disco da máquina encheu, o Postgres compartilhado passou a responder erro de E/S (`58030`) no meio da rodada e depois a porta 5432 deixou de aceitar conexão. 50 arquivos passaram antes da queda, entre eles `google-analytics.e2e-spec.ts`; os 30 restantes falharam todos no `resetDatabase`, sem chegar a rodar. Precisa ser rodada de novo com o banco de pé.
+- **Não conferido: as rotas à mão por HTTP** (salvar, recusar, remover com `curl` e uma conta real). A tentativa coincidiu com a suíte e2e, que limpa a caixa do Mailpit, e a seguinte já encontrou o banco fora do ar.
+- Nada foi conferido no Google: nenhum teste o chama, e não há propriedade de teste.
