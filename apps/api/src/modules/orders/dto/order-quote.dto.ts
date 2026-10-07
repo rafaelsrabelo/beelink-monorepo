@@ -12,6 +12,7 @@ import type {
   CouponKind,
   CouponRefusalReason,
   CustomerCartQuotePayload,
+  CustomerOffersPayload,
   CustomerOrderQuotePayload,
   OrderFulfillment,
   OrderQuote,
@@ -75,6 +76,33 @@ export class CustomerCartQuoteDto implements CustomerCartQuotePayload {
   @IsOptional()
   @IsBoolean()
   useCashback?: boolean;
+}
+
+/**
+ * The cart a shopper's offers are read against: their quote's own question, with no code and nothing
+ * of their credit. No cart at all asks only who they are to the shop.
+ */
+export class CustomerOffersDto implements CustomerOffersPayload {
+  @ApiPropertyOptional({ type: [OrderItemDto], maxItems: ORDER_ITEMS_MAX, description: 'Absent or empty asks about no cart: no coupon is listed.' })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(ORDER_ITEMS_MAX)
+  @ValidateNested({ each: true })
+  @Type(() => OrderItemDto)
+  items?: OrderItemDto[];
+
+  @ApiPropertyOptional({ enum: ORDER_FULFILLMENTS, description: 'Absent is a delivery.' })
+  @IsOptional()
+  @IsIn(ORDER_FULFILLMENTS)
+  fulfillment?: OrderFulfillment;
+
+  @ApiPropertyOptional({ format: 'uuid', description: "The saved address a delivery would go to; absent, the customer's default." })
+  @IsOptional()
+  @IsUUID('all')
+  addressId?: string;
+
+  @shippingChoice
+  shipping?: OrderShippingChoice;
 }
 
 /** The signed-in customer's cart, with the coupon they typed. */

@@ -18,6 +18,7 @@ export type * from "./leads.js";
 export type * from "./legal.js";
 export type * from "./meta-pixel.js";
 export type * from "./order.js";
+export type * from "./offers.js";
 export type * from "./order-quote.js";
 export type * from "./store.js";
 export type * from "./store-pages.js";

@@ -10,11 +10,11 @@ import { CustomersService } from '../customers/customers.service.js';
 import { pricedCartOf } from '../delivery/shipping-quote.service.js';
 import { StoresService } from '../stores/stores.service.js';
 import type { OrderCustomerDto } from './dto/order.dto.js';
-import type { CartQuoteDto, CustomerOrderQuoteDto, ShopOrderQuoteDto } from './dto/order-quote.dto.js';
-import { readOrderLines } from './order-lines.js';
+import type { CartQuoteDto, CustomerOffersDto, CustomerOrderQuoteDto, ShopOrderQuoteDto } from './dto/order-quote.dto.js';
+import { readOrderLines, type OrderLine } from './order-lines.js';
 import { placedAtOf } from './order-placed-at.js';
 import { earningBaseOf, quotedCashbackOf } from '../cashback/cashback-earning.js';
-import { earningPartsOf, priceOrder, type PricingCustomer, type PricingInput } from './order-pricing.js';
+import { earningPartsOf, priceOrder, type PricedOrder, type PricingCustomer, type PricingInput } from './order-pricing.js';
 import { deliveryTermsOf, OrderShipping } from './order-shipping.js';
 import { orderError } from './orders.constants.js';
 
@@ -88,7 +88,32 @@ export class OrderQuotes {
     });
   }
 
-  private async quote({ items, onSaleOnly, shippingTo, ...input }: QuoteInput): Promise<OrderQuote> {
+  /**
+   * What a coupon would be read against on the customer's cart: `forCustomer`'s own pricing with no
+   * code, down to the values its verdict takes (`PricedOrder.couponBase`). The shop window lists the
+   * shown coupons a cart may take from this, so it is the quote's answer and no second opinion.
+   *
+   * `withFee` quotes the delivery to their address, as the quote does: only a free delivery reads the
+   * fee, so a caller with none to ask about spares the carriers the question.
+   */
+  async couponBaseFor(storeId: string, customerId: string, dto: CustomerOffersDto & { items: readonly CreateOrderItemInput[] }, withFee: boolean): Promise<PricedOrder['couponBase']> {
+    const { priced } = await this.price({
+      storeId,
+      items: dto.items,
+      onSaleOnly: true,
+      fulfillment: dto.fulfillment ?? 'DELIVERY',
+      deliveryFeeCents: null,
+      manualDiscountCents: 0,
+      couponCode: null,
+      customer: { id: customerId },
+      at: new Date(),
+      ...(withFee ? { shippingTo: { customerId, addressId: dto.addressId?.toLowerCase() ?? null, choice: dto.shipping } } : {}),
+    });
+    return priced.couponBase;
+  }
+
+  /** The lines read and priced — again with the delivery's fee, once the shop's ways to deliver say one. */
+  private async price({ items, onSaleOnly, shippingTo, ...input }: QuoteInput): Promise<{ lines: OrderLine[]; priced: PricedOrder; shipping: ShippingQuote | null }> {
     const lines = await readOrderLines(this.prisma, input.storeId, items, onSaleOnly);
     const unshipped = await priceOrder(this.prisma, { ...input, lines, lock: false });
     // The shop's ways to deliver, quoted to the customer's address whichever way the cart leaves: the
@@ -97,6 +122,11 @@ export class OrderQuotes {
     const feeCents = shipping && input.fulfillment === 'DELIVERY' ? (deliveryTermsOf(shipping, shippingTo?.choice)?.deliveryFeeCents ?? null) : null;
     // Priced again with the fee: a free-delivery coupon takes it off, and the total carries it.
     const priced = feeCents === null ? unshipped : await priceOrder(this.prisma, { ...input, deliveryFeeCents: feeCents, lines, lock: false });
+    return { lines, priced, shipping };
+  }
+
+  private async quote(input: QuoteInput): Promise<OrderQuote> {
+    const { lines, priced, shipping } = await this.price(input);
     // What it would earn, worked out as the order would be when placed (BEELINK-243).
     const rules = await this.prisma.cashbackSettings.findUnique({ where: { storeId: input.storeId } });
     const base = earningBaseOf(earningPartsOf(priced, 0));
