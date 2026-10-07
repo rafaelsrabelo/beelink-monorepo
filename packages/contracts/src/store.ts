@@ -197,6 +197,12 @@ export interface PublicStore {
    */
   metaPixelId: string | null;
   /**
+   * The shop's GA4 measurement ID (BEELINK-301), `G-` and capital letters or digits; null with none
+   * saved. Public on purpose, like the pixel's, and the only thing of Google Analytics a shop
+   * gives: the storefront passes it to Google's tag as an argument, and never writes it into a script.
+   */
+  googleAnalyticsId: string | null;
+  /**
    * The bands the landing page is made of, in the shopkeeper's order, already resolved.
    *
    * They ride here and not on `StorefrontCatalog` because the home fetches the shop first and

@@ -15,6 +15,8 @@ import { AsaasWebhookDoor } from './asaas/asaas-webhook-door.js';
 import { AsaasWebhookKeeper } from './asaas/asaas-webhook-keeper.js';
 import { CarrierGapsService } from './carrier-gaps.service.js';
 import { StoresModule } from '../stores/stores.module.js';
+import { GoogleAnalyticsController } from './google-analytics/google-analytics.controller.js';
+import { GoogleAnalyticsService } from './google-analytics/google-analytics.service.js';
 import { CarrierQuotes } from './melhor-envio/carrier-quote.service.js';
 import { OrderLabelsController } from './melhor-envio/labels/order-labels.controller.js';
 import { OrderLabels } from './melhor-envio/labels/order-labels.service.js';
@@ -48,11 +50,12 @@ import { MetaPurchases } from './meta-pixel/meta-purchases.service.js';
  * A shop's Meta Pixel (BEELINK-269) is kept here as well: its ID, public and never sealed, and the
  * Conversions API token its purchases are told to Meta with from the server (BEELINK-274), sealed and
  * opened under `meta-pixel/` alone. `MetaConversionsClient` is a port, bound here to Meta over HTTP;
- * `MetaPurchases` pays what `owePurchase` wrote, on its own clock.
+ * `MetaPurchases` pays what `owePurchase` wrote, on its own clock. A shop's Google Analytics
+ * (BEELINK-301) is kept the same way, by its measurement ID alone: public, and never sealed.
  */
 @Module({
   imports: [StoresModule],
-  controllers: [MelhorEnvioController, MelhorEnvioCallbackController, MelhorEnvioSettingsController, OrderLabelsController, AsaasController, AsaasSettingsController, MetaPixelController],
+  controllers: [MelhorEnvioController, MelhorEnvioCallbackController, MelhorEnvioSettingsController, OrderLabelsController, AsaasController, AsaasSettingsController, MetaPixelController, GoogleAnalyticsController],
   providers: [
     MelhorEnvioClient,
     MelhorEnvioService,
@@ -72,6 +75,7 @@ import { MetaPurchases } from './meta-pixel/meta-purchases.service.js';
     { provide: MetaConversionsClient, useClass: MetaConversionsHttpClient },
     MetaPixelService,
     MetaPurchases,
+    GoogleAnalyticsService,
   ],
   exports: [MelhorEnvioService, MelhorEnvioSettingsService, CarrierGapsService, CarrierQuotes, MelhorEnvioClient, AsaasAcceptance, AsaasApproval, AsaasCharges, AsaasConnectionService, AsaasWebhookDoor, AsaasWebhookKeeper, MetaPurchases],
 })

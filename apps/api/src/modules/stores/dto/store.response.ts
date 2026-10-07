@@ -136,6 +136,9 @@ export class PublicStoreResponse implements PublicStore {
   @ApiProperty({ nullable: true, type: String, example: '1234567890123456', description: "The shop's Meta Pixel ID, digits only; null with none saved." })
   metaPixelId!: string | null;
 
+  @ApiProperty({ nullable: true, type: String, example: 'G-AB12CD34EF', description: "The shop's GA4 measurement ID, `G-` and capital letters or digits; null with none saved." })
+  googleAnalyticsId!: string | null;
+
   @ApiProperty({ type: [PublicSectionResponse], description: "The blocks the landing page is made of, in order." })
   sections!: PublicSectionResponse[];
 }
