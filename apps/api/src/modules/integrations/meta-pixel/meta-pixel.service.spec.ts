@@ -6,6 +6,7 @@ import type { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import type { StoresService } from '../../stores/stores.service.js';
 
 // App
+import { env } from '../../../shared/config/env.js';
 import { MetaConversionsClient, MetaEventRefused, MetaPixelNotFound, MetaTokenRejected, MetaUnreachable, type MetaServerEvent } from './meta-conversions.client.js';
 import { MetaPixelService } from './meta-pixel.service.js';
 import { metaVaultKey, openToken } from './meta-pixel-token.js';
@@ -221,7 +222,7 @@ describe('MetaPixelService', () => {
 
       expect(await service.sendTestEvent('lessari', 'owner', 'TEST123')).toEqual({ outcome: 'ACCEPTED', detail: null });
       expect(meta.sent).toHaveLength(1);
-      expect(meta.sent[0]).toMatchObject({ pixelId: '1111111111111111', accessToken: TOKEN, testEventCode: 'TEST123', event: { event_name: 'BeeLinkTestEvent', event_source_url: 'http://localhost:3000/lessari' } });
+      expect(meta.sent[0]).toMatchObject({ pixelId: '1111111111111111', accessToken: TOKEN, testEventCode: 'TEST123', event: { event_name: 'BeeLinkTestEvent', event_source_url: `${env.WEB_URL}/lessari` } });
       expect(meta.sent[0]!.event.custom_data).toBeUndefined();
     });
 
