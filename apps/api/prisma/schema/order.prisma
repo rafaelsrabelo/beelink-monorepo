@@ -115,6 +115,22 @@ model Order {
   deliveryCity         String?
   deliveryState        String?
 
+  /// Where its buyer came from (BEELINK-275): the campaign labels of the link they arrived by at this
+  /// shop, photographed when the order was placed — the shop's own sales attribution, kept whether or
+  /// not there is a pixel or a yes. Cleaned and cut by the API; source and medium in lower case. Here
+  /// and not in a table of their own: "sales by origin" sums `totalCents` by these, with no join.
+  /// All null on a direct visit, on an order from before they were kept and on a sale registered in the panel.
+  utmSource   String? @db.VarChar(80)
+  utmMedium   String? @db.VarChar(80)
+  utmCampaign String? @db.VarChar(80)
+  utmContent  String? @db.VarChar(80)
+  utmTerm     String? @db.VarChar(80)
+  /// When the visitor arrived by that link; null with none.
+  originAt    DateTime?
+  /// The visit came by a click on a Meta ad: true only when `marketingConsent` kept an `fbclid`. Here
+  /// so the report and the panel never read the table of identifiers to say so.
+  originMetaAd Boolean @default(false)
+
   /// The shopkeeper's note on the order.
   note     String?  @db.VarChar(500)
   /// When it was sold — which may be before it was registered, never after now.
@@ -151,13 +167,43 @@ model Order {
   paidNotice OrderPaidNotice?
   /// Money of its payment given back, or being given back (BEELINK-208).
   refunds OrderRefund[]
+  /// What stood in the buyer's browser with their yes to the shop's pixel (BEELINK-275), when there was one.
+  marketingConsent OrderMarketingConsent?
+  /// The purchase owed to Meta from the server, and what came of it (BEELINK-274).
+  metaPurchase     OrderMetaPurchase?
 
   @@unique([storeId, number])
   @@index([storeId, placedAt])
   @@index([storeId, status])
   @@index([customerId, placedAt])
   @@index([paymentDueAt])
+  /// "Sales by origin" with no period, and "which orders came by this campaign"; a period's report rides `[storeId, placedAt]`.
+  @@index([storeId, utmSource, utmMedium, utmCampaign])
   @@map("orders")
+}
+
+/// The buyer's yes to the shop's pixel, as it stood when the order was placed (BEELINK-275), and what
+/// of their browser a purchase told to Meta from the server needs and cannot ask for later. **The row
+/// existing is the fact**: no row, no consent, and nothing is ever sent to Meta of that order. Apart
+/// from `orders` because these are identifiers of a person's browser, not the shop's books: no read
+/// of an order carries them unasked, and deleting the buyer's account deletes the row and leaves the order.
+/// Never written for a sale registered in the panel.
+model OrderMarketingConsent {
+  orderId String @id @db.Uuid
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  /// Meta's click identifier as THIS shop received it in the link — never the domain-wide `_fbc`
+  /// cookie, which carries a click on any shop's ad. With `clickedAt`, or neither (a CHECK).
+  fbclid    String?   @db.VarChar(500)
+  /// When that click arrived: Meta's `fbc` is `fb.1.<these milliseconds>.<fbclid>`.
+  clickedAt DateTime?
+  /// Meta's `_fbp` cookie as the browser held it.
+  fbp       String?   @db.VarChar(100)
+  userAgent String?   @db.VarChar(512)
+  /// The page the order was placed from: origin and path, no query.
+  pageUrl   String?   @db.VarChar(500)
+  createdAt DateTime  @default(now())
+
+  @@map("order_marketing_consents")
 }
 
 /// One line: what was bought, how many, and the name and unit price as they were at that moment.

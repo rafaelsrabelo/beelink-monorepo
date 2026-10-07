@@ -5,10 +5,10 @@ import { StorefrontCardCartButton } from "@harness-monorepo/ui/blocks/storefront
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
-import { useCart } from "./cart-provider"
+import { useAddToCart } from "./use-add-to-cart"
 
 export interface StorefrontCardCartLiveProps {
-  product: { id: string; name: string; hasOptions?: boolean }
+  product: { id: string; name: string; priceCents: number; hasOptions?: boolean }
   messages: UiMessages
 }
 
@@ -18,13 +18,13 @@ export interface StorefrontCardCartLiveProps {
  * their page, which is where the block sends them.
  */
 export function StorefrontCardCartLive({ product, messages }: StorefrontCardCartLiveProps) {
-  const add = useCart((cart) => cart.add)
+  const add = useAddToCart()
 
   return (
     <StorefrontCardCartButton
       name={product.name}
       {...(product.hasOptions !== undefined ? { hasOptions: product.hasOptions } : {})}
-      onAdd={() => add({ productId: product.id, variantId: null, qty: 1 })}
+      onAdd={() => add({ productId: product.id, variantId: null, qty: 1 }, { name: product.name, unitPriceCents: product.priceCents })}
       messages={messages}
     />
   )

@@ -93,6 +93,7 @@ function customerCashbackOf(row: CustomerOrderRow): OrderCashback | null {
 
 export function toCustomerOrder(row: CustomerOrderRow): CustomerOrder {
   return {
+    id: row.id,
     number: row.number,
     status: row.status,
     ...sidesOf(row.status, row.events),

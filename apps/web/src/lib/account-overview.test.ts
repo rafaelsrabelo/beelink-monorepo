@@ -26,6 +26,7 @@ const routes = storefrontRoutes({
 const context = { routes, locale: "pt-BR", messages: ptBR }
 
 const order: CustomerOrder = {
+  id: "0b9f6c1e-5a44-4a8b-9d55-3f1f1c2a7e10",
   number: 1042,
   status: "PREPARING",
   placedBy: "CUSTOMER",
