@@ -74,10 +74,11 @@ const SEARCH_LINE_ON_A_PHONE = "flex-wrap gap-y-3 py-3 shop-md:h-[72px] shop-md:
  * The top of the shop window: logo, then either a shop's search and links or a site's menu and
  * button, and the categories row under them.
  *
- * Drawn as the 5a/5b designs draw it: a 72px row with 28px between its parts, the search taking
- * every pixel between the "Entregar em" block and the account link, and the account and the cart
- * as words beside their marks. The search used to be capped and centred at the owner's request;
- * the designs settled it the other way, and this follows them.
+ * Drawn as the 5a/5b designs draw it: a 72px row with 28px between its parts, and the account and
+ * the cart as words beside their marks. The search is the exception: the designs gave it every
+ * pixel between the "Entregar em" block and the account link, which at 1280 was a 646px bar — half
+ * the header — and the owner asked for it smaller, twice. It is capped at 30rem and centred in
+ * that space from `shop-md`; on a phone it keeps the line of its own, where it is the row.
  *
  * It sticks to the top of the page, and `MastheadHeight` measures it into `--shop-masthead-height`
  * on the window's root, for what sticks or scrolls below it — the product page's buy box — to read.
@@ -170,7 +171,8 @@ export function StorefrontMasthead({
           are. Without a search this is the empty flex-1 that pushes a site's menu to the right.
         */}
         <div className={cn("flex min-w-0 flex-1", search && "order-last basis-full shop-md:order-none shop-md:basis-0")}>
-          {search}
+          {/* Capped and centred in what the row leaves it; see the block's comment. */}
+          {search ? <div className="flex w-full min-w-0 shop-md:mx-auto shop-md:max-w-[30rem]">{search}</div> : null}
         </div>
 
         {/*

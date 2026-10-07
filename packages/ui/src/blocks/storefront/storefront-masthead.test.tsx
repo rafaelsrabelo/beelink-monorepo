@@ -53,7 +53,12 @@ describe("StorefrontMasthead", () => {
     expect(banner.lastElementChild).toHaveAttribute("hidden")
   })
 
-  it("puts the search between the delivery block and the account, taking the room between them", () => {
+  /**
+   * The search's slot takes the room between the delivery block and the account, so those stay at
+   * the row's two ends; the search itself is capped and centred inside it. Given all of that room it
+   * was a 646px bar at 1280 — half the header — which the owner asked to be made smaller.
+   */
+  it("puts the search between the delivery block and the account, capped and centred in the room between them", () => {
     render(
       <StorefrontMasthead name="Lessari" homeHref="/lessari" deliverTo={<span>Entregar em</span>} searchAction="/lessari/busca" accountHref="/c" />,
     )
@@ -61,8 +66,9 @@ describe("StorefrontMasthead", () => {
     const row = screen.getByRole("banner").firstElementChild!
     const order = [...row.children].map((child) => child.textContent?.slice(0, 12))
     expect(order).toEqual(["Lessari", "Entregar em", "Buscar nesta", "Olá, entreMi"])
-    expect(screen.getByRole("search").parentElement).toHaveClass("flex-1")
-    expect(row.querySelector(".max-w-md")).toBeNull()
+    const cap = screen.getByRole("search").parentElement!
+    expect(cap).toHaveClass("w-full", "min-w-0", "shop-md:mx-auto", "shop-md:max-w-[30rem]")
+    expect(cap.parentElement).toHaveClass("flex-1", "min-w-0")
   })
 
   /**
@@ -76,7 +82,9 @@ describe("StorefrontMasthead", () => {
     const row = screen.getByRole("banner").firstElementChild as HTMLElement
     expect(row).toHaveClass("flex-wrap", "shop-md:flex-nowrap", "shop-md:h-[72px]")
     expect(row.style.height).toBe("")
-    expect(screen.getByRole("search").parentElement).toHaveClass(
+    // The cap is `shop-md`'s alone: on its own line the search is the row.
+    expect(screen.getByRole("search").parentElement).not.toHaveClass("max-w-[30rem]", "mx-auto")
+    expect(screen.getByRole("search").parentElement!.parentElement).toHaveClass(
       "order-last",
       "basis-full",
       "shop-md:order-none",

@@ -110,11 +110,15 @@ describe("StorefrontSearch", () => {
       expect(screen.getByRole("combobox", { name: "Buscar em" })).toHaveValue("creatina")
     })
 
-    // A select is as wide as its longest option: a long category name squeezed the field to nothing.
-    it("never takes more than 40% of the bar, whatever the longest category is called", () => {
-      renderSearch({ scopes: [{ value: "a", label: "Acessórios para academia e treino funcional" }] })
+    // A select is as wide as its longest option: one long category name set the header's proportions.
+    it("keeps to a width of its own, with the chosen name cut and whole in its title", () => {
+      const label = "Acessórios para academia, treino funcional e corrida de rua"
+      renderSearch({ scopes: [{ value: "a", label }], scope: "a" })
 
-      expect(screen.getByRole("combobox", { name: "Buscar em" })).toHaveClass("max-w-[40%]")
+      const select = screen.getByRole("combobox", { name: "Buscar em" })
+      expect(select).toHaveClass("max-w-[7.5rem]", "shop-md:max-w-[10rem]", "truncate", "shrink-0")
+      expect(select).toHaveAttribute("title", label)
+      expect(screen.getByRole("option", { name: label })).toBeInTheDocument()
     })
 
     it("draws no select when there is nothing to narrow to", () => {

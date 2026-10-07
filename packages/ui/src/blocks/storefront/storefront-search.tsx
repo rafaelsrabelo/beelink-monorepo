@@ -53,14 +53,22 @@ export interface StorefrontSearchProps {
 
 /**
  * The bar's classes, shared with the live search so the two are one thing to look at. The field and
- * the scope are 16px on a phone: below that, iOS zooms the page into whatever is tapped. The scope
- * takes at most 40% of the bar: a native select is as wide as its longest option, and a long
- * category name would squeeze the field to nothing and push the button out of the clipped bar.
+ * the scope are 16px on a phone: below that, iOS zooms the page into whatever is tapped.
+ *
+ * The scope has a width of its own and not a share of the bar: a native select is as wide as its
+ * longest option, so a share let one long category name set the header's proportions — 248px of a
+ * 646px bar at the shop this was measured on. Past its width the chosen name ends in an ellipsis;
+ * the whole name is in the list the select opens, and in its `title`.
  */
 export const SEARCH_BAR = "flex h-11 w-full min-w-0 overflow-hidden rounded-[10px]"
-export const SEARCH_SCOPE = "max-w-[40%] shrink-0 border-r bg-shop-fill px-3 text-base text-shop-on-background outline-none focus-visible:bg-shop-line shop-md:text-[13px]"
+export const SEARCH_SCOPE = "max-w-[7.5rem] shrink-0 truncate border-r bg-shop-fill px-3 text-base text-shop-on-background outline-none focus-visible:bg-shop-line shop-md:max-w-[10rem] shop-md:text-[13px]"
 export const SEARCH_FIELD = "min-w-0 flex-1 border-0 bg-transparent px-3.5 text-base text-shop-on-background outline-none shop-md:text-[15px]"
 export const SEARCH_BUTTON = "flex w-14 shrink-0 items-center justify-center"
+
+/** The chosen scope's whole name, for the select's `title`: what the ellipsis cut is one hover away. */
+export function scopeTitleOf(scopes: readonly StorefrontSearchScope[], scope: string, all: string): string {
+  return scopes.find((entry) => entry.value === scope)?.label ?? all
+}
 
 /** The button's paint, by tone. */
 export function searchButtonStyle(tone: "inherit" | "panel") {
@@ -106,7 +114,14 @@ export function StorefrontSearch({
       style={{ backgroundColor: "var(--shop-background)", color: "var(--shop-on-background)", borderColor: "var(--shop-frame)" }}
     >
       {scopes?.length ? (
-        <select name={SEARCH_SCOPE_NAME} defaultValue={scope} aria-label={text.searchScope} className={SEARCH_SCOPE} style={{ borderColor: "var(--shop-frame)" }}>
+        <select
+          name={SEARCH_SCOPE_NAME}
+          defaultValue={scope}
+          aria-label={text.searchScope}
+          title={scopeTitleOf(scopes, scope, text.searchScopeAll)}
+          className={SEARCH_SCOPE}
+          style={{ borderColor: "var(--shop-frame)" }}
+        >
           <option value="">{text.searchScopeAll}</option>
           {scopes.map((entry) => (
             <option key={entry.value} value={entry.value}>
