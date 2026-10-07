@@ -191,7 +191,9 @@ describe("PopupPreview", () => {
   it("wears the shop's colours through the variables it is handed", () => {
     const { container } = preview({ style: { "--shop-primary": "var(--color-primary)" } as PopupPreviewProps["style"] })
 
-    expect((container.querySelector("[data-preview-width]")?.parentElement as HTMLElement).style.getPropertyValue("--shop-primary")).toBe("var(--color-primary)")
+    const painted = container.querySelector<HTMLElement>("[data-preview-width]")?.parentElement
+
+    expect(painted?.style.getPropertyValue("--shop-primary")).toBe("var(--color-primary)")
   })
 
   it("has no accessibility violations", async () => {
