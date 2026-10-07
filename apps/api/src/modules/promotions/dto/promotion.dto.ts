@@ -185,6 +185,11 @@ export class CouponDto implements CouponPayload {
   @unlessAbsent
   @IsIn(DISCOUNT_AUDIENCES)
   audience?: DiscountAudience;
+
+  @ApiPropertyOptional({ default: false, description: '"Mostrar este cupom na loja": the shop window may say this code to a customer it is for. Absent is false, on a replace too.' })
+  @unlessAbsent
+  @IsBoolean()
+  shownInStore?: boolean;
 }
 
 export class SetDiscountActiveDto implements SetDiscountActivePayload {

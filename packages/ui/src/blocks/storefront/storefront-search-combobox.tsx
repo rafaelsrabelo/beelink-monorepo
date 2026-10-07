@@ -7,9 +7,8 @@ import { useId, useState, type KeyboardEvent } from "react"
 import { SearchIcon } from "lucide-react"
 
 // Locales
-import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
+import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
-import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Block
 import {
@@ -18,18 +17,14 @@ import {
   SEARCH_FIELD,
   SEARCH_SCOPE,
   SEARCH_SCOPE_NAME,
+  scopeTitleOf,
   searchButtonStyle,
   type StorefrontSearchScope,
 } from "./storefront-search"
+import { StorefrontSearchSuggestions, type StorefrontSuggestion } from "./storefront-search-suggestions"
 
-export interface StorefrontSuggestion {
-  id: string
-  label: string
-  href: string
-  imageUrl?: string | null
-  /** Already formatted by the screen: a block does not decide what money looks like. */
-  price?: string | null
-}
+// Declared beside the list that draws them; re-exported because screens import it from here.
+export type { StorefrontSuggestion } from "./storefront-search-suggestions"
 
 export interface StorefrontSearchComboboxProps {
   /** Where Enter goes, and where the whole thing goes with JavaScript off. */
@@ -68,6 +63,16 @@ export interface StorefrontSearchComboboxProps {
  * options while the caret stays put, because a list that steals focus is a list you cannot keep
  * typing into. Enter opens the active option if there is one and submits the form if there is not,
  * which is the behaviour of every search box a visitor has already used.
+ *
+ * The list is an answer to typing, and nothing else opens it. It used to open whenever there were
+ * suggestions to show — so the results page, which hands the term back to this field, drew it over
+ * its own results before anyone touched a key, and there it stayed: nothing but Escape closed it.
+ * A visitor who pressed Enter landed on a page that looked like the one they had left. It now
+ * starts closed, closes when the search is sent and when the field is left, and only a key typed
+ * (or the arrow down) opens it again.
+ *
+ * The pointer highlights a row and does not choose it for the keyboard: with the two as one state,
+ * a pointer resting where the list opened turned Enter into "open this product".
  */
 export function StorefrontSearchCombobox({
   action,
@@ -90,7 +95,8 @@ export function StorefrontSearchCombobox({
   const optionId = (index: number) => `${listId}-option-${index}`
 
   const [active, setActive] = useState(-1)
-  const [dismissed, setDismissed] = useState(false)
+  // Closed until someone types: a term handed back by the page is not a question being asked.
+  const [dismissed, setDismissed] = useState(true)
 
   const open = !dismissed && (suggestions.length > 0 || pending)
 
@@ -98,6 +104,14 @@ export function StorefrontSearchCombobox({
     if (event.key === "Escape") {
       setDismissed(true)
       setActive(-1)
+      return
+    }
+
+    // The arrow down asks for the list back, as it does on every combobox: its first row, at once.
+    if (!open && event.key === "ArrowDown" && suggestions.length) {
+      event.preventDefault()
+      setDismissed(false)
+      setActive(0)
       return
     }
 
@@ -127,6 +141,11 @@ export function StorefrontSearchCombobox({
         method="get"
         action={action}
         role="search"
+        // Sent: the page is leaving, and the list must not sit over it while it does.
+        onSubmit={() => {
+          setDismissed(true)
+          setActive(-1)
+        }}
         className={SEARCH_BAR}
         style={{ backgroundColor: "var(--shop-background)", color: "var(--shop-on-background)" }}
       >
@@ -136,6 +155,7 @@ export function StorefrontSearchCombobox({
             value={scope}
             onChange={(event) => onScopeChange?.(event.target.value)}
             aria-label={text.searchScope}
+            title={scopeTitleOf(scopes, scope, text.searchScopeAll)}
             className={SEARCH_SCOPE}
             style={{ borderColor: "var(--shop-frame)" }}
           >
@@ -156,10 +176,18 @@ export function StorefrontSearchCombobox({
             value={value}
             onChange={(event) => {
               onValueChange(event.target.value)
-              setDismissed(false)
+              // An emptied field asks nothing: Escape clears a search field in Chrome, and the
+              // suggestions of the term just erased would otherwise open again until they settle.
+              setDismissed(event.target.value.trim() === "")
               setActive(-1)
             }}
             onKeyDown={onKeyDown}
+            // A press on a row or on "ver todos" keeps the focus here (their `mousedown`), so this
+            // is only ever the visitor leaving the search.
+            onBlur={() => {
+              setDismissed(true)
+              setActive(-1)
+            }}
             autoFocus={autoFocus}
             placeholder={text.searchPlaceholder}
             role="combobox"
@@ -178,71 +206,7 @@ export function StorefrontSearchCombobox({
       </form>
 
       {open ? (
-        <div
-          className="absolute inset-x-0 top-full z-40 mt-2 overflow-hidden rounded-2xl border border-current/10 shadow-lg"
-          style={{ backgroundColor: "var(--shop-background)", color: "var(--shop-text)" }}
-        >
-          <ul id={listId} role="listbox" aria-label={text.searchSuggestionsLabel}>
-            {pending && !suggestions.length ? (
-              <li className="px-4 py-3 text-sm opacity-70">{text.searchLoading}</li>
-            ) : null}
-
-            {/*
-              The options are not links, and that is the pattern rather than a shortcut: an option
-              containing an anchor is an interactive control inside an interactive control, which
-              axe fails as `nested-interactive` and a screen reader reads as two things where the
-              visitor sees one. Focus stays in the field and these are reached through
-              aria-activedescendant, so there is nothing here to tab to anyway.
-
-              What is given up is opening a suggestion in a new tab. The cost is bounded: this list
-              only ever exists once JavaScript has run and a request has answered, and the search
-              page underneath — a real address, with real links — is one Enter away.
-            */}
-            {suggestions.map((suggestion, index) => (
-              <li
-                key={suggestion.id}
-                id={optionId(index)}
-                role="option"
-                aria-selected={index === active}
-                // mousedown and not click: the field blurs first on a click, and a list that has
-                // closed by then never receives it.
-                onMouseDown={(event) => {
-                  event.preventDefault()
-                  window.location.assign(suggestion.href)
-                }}
-                onMouseEnter={() => setActive(index)}
-                className={cn(
-                  "flex cursor-pointer items-center gap-3 px-4 py-2.5 text-sm transition-colors",
-                  index === active ? "bg-black/5" : "",
-                )}
-              >
-                {suggestion.imageUrl ? (
-                  <img
-                    src={suggestion.imageUrl}
-                    alt=""
-                    aria-hidden="true"
-                    className="size-10 shrink-0 rounded-lg object-cover"
-                  />
-                ) : null}
-                <span className="min-w-0 flex-1 truncate">{suggestion.label}</span>
-                {suggestion.price ? (
-                  <span className="shrink-0 text-xs font-semibold opacity-80">{suggestion.price}</span>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-
-          {/* The way out of a list that only ever shows the first few. */}
-          {seeAllHref && total > suggestions.length ? (
-            <a
-              href={seeAllHref}
-              className="block border-t border-current/10 px-4 py-3 text-center text-xs font-semibold"
-              style={{ color: "var(--shop-primary-ink)" }}
-            >
-              {format(text.searchSeeAll, { count: String(total) })}
-            </a>
-          ) : null}
-        </div>
+        <StorefrontSearchSuggestions listId={listId} optionId={optionId} suggestions={suggestions} pending={pending} active={active} total={total} seeAllHref={seeAllHref} messages={messages} />
       ) : null}
     </div>
   )

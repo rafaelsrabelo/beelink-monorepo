@@ -133,6 +133,8 @@ function fieldsOf(dto: CouponDto) {
     maxUses: dto.maxUses ?? null,
     maxUsesPerCustomer: dto.maxUsesPerCustomer ?? null,
     audience: dto.audience ?? 'EVERYONE',
+    // Off unless the form says so, like every optional key: a coupon is shown only while it is asked to be.
+    shownInStore: dto.shownInStore ?? false,
   } satisfies Prisma.CouponUpdateInput;
 }
 

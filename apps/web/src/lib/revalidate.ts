@@ -21,7 +21,24 @@ export function catalogTag(slug: string): string {
 }
 
 /**
- * Drops what the storefront has cached for one store. The only caller of revalidateTag in this app:
+ * What the shop says of its offers to anyone — its first-purchase headline (`offersAt`). A tag of
+ * its own beside the store's, because a coupon is part of nothing else a visitor is served: saving
+ * one should not drop every paged catalogue of the shop with it.
+ */
+export function offersTag(slug: string): string {
+  return `offers:${slug}`
+}
+
+/**
+ * Drops the shop's kept headline alone: a coupon was saved, paused or switched to be shown, or an
+ * order took a use of one. A promotion's write drops it too, through the store's tag it also carries.
+ */
+export function revalidateOffers(slug: string): void {
+  revalidateTag(offersTag(slug), IMMEDIATE)
+}
+
+/**
+ * Drops what the storefront has cached for one store. With `revalidateOffers`, the only caller of revalidateTag in this app:
  * every admin BFF handler calls it on a 2xx, so an invalidation that escapes costs a catalogue that
  * is stale until its revalidate window closes — never one that is stale forever.
  */

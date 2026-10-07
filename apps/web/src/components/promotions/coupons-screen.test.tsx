@@ -34,8 +34,8 @@ vi.mock("@/services/promotions/promotion-hooks", () => ({
 const stamp = "2026-10-01T12:00:00.000Z"
 const page: CouponPage = {
   coupons: [
-    { id: "c1", code: "BEMVINDO10", kind: "PERCENT", percentBps: 1000, amountCents: null, minSubtotalCents: 5000, startsAt: stamp, endsAt: null, maxUses: 100, maxUsesPerCustomer: 1, usedCount: 3, active: true, status: "ACTIVE", audience: "FIRST_PURCHASE", createdAt: stamp, updatedAt: stamp },
-    { id: "c2", code: "FRETE", kind: "FREE_SHIPPING", percentBps: null, amountCents: null, minSubtotalCents: 0, startsAt: stamp, endsAt: null, maxUses: null, maxUsesPerCustomer: null, usedCount: 0, active: false, status: "PAUSED", audience: "EVERYONE", createdAt: stamp, updatedAt: stamp },
+    { id: "c1", code: "BEMVINDO10", kind: "PERCENT", percentBps: 1000, amountCents: null, minSubtotalCents: 5000, startsAt: stamp, endsAt: null, maxUses: 100, maxUsesPerCustomer: 1, usedCount: 3, active: true, status: "ACTIVE", audience: "FIRST_PURCHASE", shownInStore: true, createdAt: stamp, updatedAt: stamp },
+    { id: "c2", code: "FRETE", kind: "FREE_SHIPPING", percentBps: null, amountCents: null, minSubtotalCents: 0, startsAt: stamp, endsAt: null, maxUses: null, maxUsesPerCustomer: null, usedCount: 0, active: false, status: "PAUSED", audience: "EVERYONE", shownInStore: false, createdAt: stamp, updatedAt: stamp },
   ],
   total: 2,
   page: 1,

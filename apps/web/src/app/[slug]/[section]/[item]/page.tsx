@@ -21,6 +21,7 @@ import { ORDER_VARIANT_MARK } from "@harness-monorepo/ui/lib/variant-choice"
 // App
 import { AccountTabPage, accountTabMetadata, isAccountSegment } from "@/components/storefront/account/account-tab-page"
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
+import { StorefrontOffers } from "@/components/storefront/storefront-offers"
 import { ProductReviews } from "@/components/storefront/product-reviews"
 import { StorefrontProductLive } from "@/components/storefront/storefront-product-live"
 import { StorefrontRelated } from "@/components/storefront/storefront-related"
@@ -145,6 +146,8 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
       onSale={onSale}
       year={new Date().getFullYear()}
       shopper={await shopperAt(slug)}
+      // In the flow, at the top: it never reaches the buy bar a phone keeps at the bottom.
+      notice={<StorefrontOffers store={store} back={routes.product(product.slug)} messages={ui} />}
       // 5b draws its own rhythm: a 14px trail strip, then the three columns, then the lower sections.
       body={{ layout: "flush" }}
       messages={ui}
@@ -223,6 +226,7 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
             productId={product.id}
             productHref={(productSlug) => routes.product(productSlug)}
             showPrice={layout.showProductPrice ?? true}
+            quickAdd={layout.showQuickAdd ?? true}
             messages={ui}
           />
         </Suspense>

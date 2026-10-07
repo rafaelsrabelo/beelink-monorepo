@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 
 // App
-import { couponRefusalOf, storedCodeOf, type CouponContext, type VerdictCoupon } from './coupon-verdict.js';
+import { couponRefusalOf, couponStandingRefusalOf, storedCodeOf, type CouponContext, type VerdictCoupon } from './coupon-verdict.js';
 
 const NOW = new Date('2026-10-01T12:00:00.000Z');
 const at = (iso: string) => new Date(iso);
@@ -24,6 +24,41 @@ const context: CouponContext = { at: NOW, baseCents: 10000, fulfillment: 'DELIVE
 const FREE = { kind: 'FREE_SHIPPING', percentBps: null } as const;
 const WELCOME = { audience: 'FIRST_PURCHASE' } as const;
 const reasonOf = (row: Partial<VerdictCoupon> | null, given: Partial<CouponContext> = {}) => couponRefusalOf(row && { ...coupon, ...row }, { ...context, ...given })?.reason ?? null;
+
+/**
+ * The half of the verdict that reads no cart: what the shop window asks before it says a code to a
+ * customer. It is the full verdict's own first half, so the two cannot answer apart.
+ */
+describe('couponStandingRefusalOf', () => {
+  const standingOf = (row: Partial<VerdictCoupon> | null, given: Partial<CouponContext> = {}) => couponStandingRefusalOf(row && { ...coupon, ...row }, { ...context, ...given })?.reason ?? null;
+
+  it('answers for the coupon and its customer alone, whatever the cart', () => {
+    expect(standingOf({})).toBeNull();
+    expect(standingOf(null)).toBe('NOT_FOUND');
+    expect(standingOf({ endsAt: at('2026-09-30T00:00:00.000Z') })).toBe('EXPIRED');
+    expect(standingOf({ usedCount: 10 })).toBe('EXHAUSTED');
+    expect(standingOf({ isActive: false })).toBe('INACTIVE');
+    expect(standingOf({ startsAt: at('2026-10-02T00:00:00.000Z') })).toBe('INACTIVE');
+    expect(standingOf({}, { customerUses: 1 })).toBe('CUSTOMER_LIMIT');
+    expect(standingOf(WELCOME, { firstPurchase: false })).toBe('NOT_FIRST_PURCHASE');
+    // What only a cart can say is not its to say.
+    expect(standingOf({ minSubtotalCents: 50000 })).toBeNull();
+    expect(standingOf(FREE, { fulfillment: 'PICKUP', deliveryFeeCents: 0 })).toBeNull();
+  });
+
+  it('is what the full verdict answers first, for every state of the coupon and the customer', () => {
+    const rows: Partial<VerdictCoupon>[] = [{}, { endsAt: at('2026-09-30T00:00:00.000Z') }, { usedCount: 10 }, { isActive: false }, WELCOME, { minSubtotalCents: 50000 }, FREE];
+    const customers: Partial<CouponContext>[] = [{}, { customerUses: 1 }, { firstPurchase: false }, { customerUses: null, firstPurchase: null }];
+
+    for (const row of rows) {
+      for (const given of customers) {
+        const standing = standingOf(row, given);
+        if (standing) expect(reasonOf(row, given)).toBe(standing);
+        else expect([null, 'NOT_APPLICABLE', 'BELOW_MINIMUM']).toContain(reasonOf(row, given));
+      }
+    }
+  });
+});
 
 describe('couponRefusalOf', () => {
   it('takes a coupon that is running, has uses left and fits the cart', () => {

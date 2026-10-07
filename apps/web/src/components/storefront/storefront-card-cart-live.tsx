@@ -9,6 +9,8 @@ import { useAddToCart } from "./use-add-to-cart"
 
 export interface StorefrontCardCartLiveProps {
   product: { id: string; name: string; priceCents: number; hasOptions?: boolean }
+  /** `icon` on a compact card: the round "+" of the product page's related rail. */
+  size?: "pill" | "icon"
   messages: UiMessages
 }
 
@@ -17,7 +19,7 @@ export interface StorefrontCardCartLiveProps {
  * combinations goes in from the card — as itself, with no variant to name; the rest are chosen on
  * their page, which is where the block sends them.
  */
-export function StorefrontCardCartLive({ product, messages }: StorefrontCardCartLiveProps) {
+export function StorefrontCardCartLive({ product, size, messages }: StorefrontCardCartLiveProps) {
   const add = useAddToCart()
 
   return (
@@ -25,6 +27,7 @@ export function StorefrontCardCartLive({ product, messages }: StorefrontCardCart
       name={product.name}
       {...(product.hasOptions !== undefined ? { hasOptions: product.hasOptions } : {})}
       onAdd={() => add({ productId: product.id, variantId: null, qty: 1 }, { name: product.name, unitPriceCents: product.priceCents })}
+      {...(size ? { size } : {})}
       messages={messages}
     />
   )

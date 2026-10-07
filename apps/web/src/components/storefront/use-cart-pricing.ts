@@ -26,7 +26,7 @@ import { storefrontKeys, useAnsweredCartQuote, useCartQuote } from "@/services/s
 import { quoteCart, ShopperOrderError } from "@/services/storefront/storefront-requests"
 
 /** Long enough for a run of presses on "+" to be one question, short enough that the total does not feel late. */
-const QUANTITY_DEBOUNCE_MS = 300
+export const QUANTITY_DEBOUNCE_MS = 300
 
 export interface CartPricingInput {
   slug: string

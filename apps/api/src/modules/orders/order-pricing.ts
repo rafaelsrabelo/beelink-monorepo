@@ -9,7 +9,7 @@ import type { CouponModel } from '../../generated/prisma/models.js';
 // App
 import { earningBaseOf, type EarningParts } from '../cashback/cashback-earning.js';
 import { cashbackUseOf, type CashbackUse, type CashbackWant } from '../cashback/cashback-redemption.js';
-import { couponRefusalOf, storedCodeOf } from '../promotions/coupon-verdict.js';
+import { couponRefusalOf, storedCodeOf, type CouponContext } from '../promotions/coupon-verdict.js';
 import { couponDiscountOf, firstPurchaseOfferOf, forEveryone, promotionDiscountsOf, type LineDiscount, type PricingPromotion } from '../promotions/discount-pricing.js';
 import { couponByCode, customerUsesOf, firstPurchaseOf, runningPromotions } from '../promotions/order-discounts.js';
 import type { OrderLine } from './order-lines.js';
@@ -81,6 +81,13 @@ export interface PricedOrder {
   coupon: Pick<CouponModel, 'id' | 'code' | 'kind'> | null;
   /** The customer's credit against the order, and what it spends — already off `totals.totalCents`. Null with nobody identified. */
   cashbackUse: CashbackUse | null;
+  /**
+   * What a coupon is read against on this cart — the very values the code sent was, or would have
+   * been, taken or refused with. Whose uses and whose first purchase are not here: they are the
+   * customer's, read per coupon. The shop window lists a coupon as usable from these and no others
+   * (`CustomerOffers`), so it never offers one that applying would refuse.
+   */
+  couponBase: Pick<CouponContext, 'at' | 'baseCents' | 'fulfillment' | 'deliveryFeeCents'>;
 }
 
 /**
@@ -117,13 +124,14 @@ export async function priceOrder(db: Prisma.TransactionClient, input: PricingInp
   const promotionDiscountCents = lineDiscounts.reduce((sum, line) => sum + line.discountCents, 0);
   const subtotalCents = lines.reduce((sum, line) => sum + line.unitPriceCents * line.quantity, 0);
   const baseCents = subtotalCents - promotionDiscountCents;
+  const couponBase = { at, baseCents, fulfillment, deliveryFeeCents: fee };
 
   let verdict: QuotedCoupon | null = null;
   let refusal: OrderCouponRefusedDetails | null = null;
   let coupon: CouponModel | null = null;
   if (input.couponCode !== null) {
     const customerUses = found && found.maxUsesPerCustomer !== null && customer?.id ? await customerUsesOf(db, found.id, customer.id) : null;
-    refusal = couponRefusalOf(found, { at, baseCents, fulfillment, deliveryFeeCents: fee, customerUses, firstPurchase: onFirstPurchase });
+    refusal = couponRefusalOf(found, { ...couponBase, customerUses, firstPurchase: onFirstPurchase });
     coupon = refusal ? null : found;
     // Echoed in upper case either way, so the field shows what the shop would have stored.
     const code = found?.code ?? input.couponCode.trim().toUpperCase();
@@ -162,6 +170,7 @@ export async function priceOrder(db: Prisma.TransactionClient, input: PricingInp
     refusal,
     coupon,
     cashbackUse,
+    couponBase,
   };
 }
 

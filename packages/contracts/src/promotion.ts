@@ -130,6 +130,12 @@ export interface Coupon {
   active: boolean;
   status: CouponStatus;
   audience: DiscountAudience;
+  /**
+   * "Mostrar este cupom na loja": the shop window may say this code to a customer it is for — the
+   * first-order strip and the cart's "Cupons disponíveis" (`offers.ts`). False keeps it to whoever
+   * was given it, which is what a code is unless the shopkeeper says otherwise.
+   */
+  shownInStore: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -153,6 +159,8 @@ export interface CouponPayload {
   active?: boolean;
   /** Absent is `EVERYONE`. */
   audience?: DiscountAudience;
+  /** Absent is false, on a replace too: a coupon is shown only while its form says so. */
+  shownInStore?: boolean;
 }
 
 export interface CouponListQuery {

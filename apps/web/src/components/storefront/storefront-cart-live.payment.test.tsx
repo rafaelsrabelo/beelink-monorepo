@@ -66,7 +66,11 @@ const placedOnline = { number: 12, status: "RECEIVED", fulfillment: "PICKUP", pa
 type Fetched = ReturnType<typeof vi.fn<(url: string, init?: RequestInit) => Promise<Response>>>
 
 function network({ order = () => Response.json(placedOnline, { status: 201 }), quote = {} }: { order?: () => Response; quote?: Partial<OrderQuote> } = {}): Fetched {
-  const fetched = vi.fn(async (url: string, init?: RequestInit) => (url.endsWith("/api/orders/quote") ? Response.json(quoteOf(JSON.parse(String(init?.body)) as CustomerOrderQuotePayload, quote)) : order()))
+  const fetched = vi.fn(async (url: string, init?: RequestInit) => {
+    // The shop's shown coupons for the cart: none here, and never an order.
+    if (url.endsWith("/api/offers")) return Response.json({ hasOrder: false, firstPurchase: null, coupons: [] })
+    return url.endsWith("/api/orders/quote") ? Response.json(quoteOf(JSON.parse(String(init?.body)) as CustomerOrderQuotePayload, quote)) : order()
+  })
   vi.stubGlobal("fetch", fetched)
   return fetched
 }
@@ -163,7 +167,8 @@ describe("the checkout of a shop that charges online (BEELINK-205)", () => {
 
     expect(payNow().getAllByRole("radio").map((radio) => (radio as HTMLInputElement).checked)).toEqual([false, false])
     expect(within(screen.getByRole("group", { name: "Pagar na entrega ou na retirada" })).getAllByRole("radio")).toHaveLength(2)
-    expect(screen.getByRole("button", { name: "Fechar pedido pelo WhatsApp" })).toBeInTheDocument()
+    // Both kinds on offer and none picked: the button promises neither WhatsApp nor paying here.
+    expect(screen.getByRole("button", { name: "Fazer pedido" })).toBeInTheDocument()
   })
 
   it("splits a card up to the shop's most, each instalment at its amount, and places the order online with them — with no WhatsApp, on to the payment", async () => {
@@ -258,7 +263,8 @@ describe("the checkout of a shop that charges online (BEELINK-205)", () => {
 
     await waitFor(() => expect(screen.getByText(/Esta loja só recebe online, e o pagamento online vale a partir de R\$ 5,00/)).toBeInTheDocument())
     expect(screen.queryByRole("radio", { name: "Dinheiro" })).toBeNull()
-    fireEvent.click(screen.getByRole("button", { name: "Fechar pedido pelo WhatsApp" }))
+    // Paid online only: the button never says WhatsApp, even while the total is under the least charge.
+    fireEvent.click(screen.getByRole("button", { name: "Fechar pedido e pagar" }))
     expect(screen.getByRole("alert")).toHaveTextContent("Esta loja só recebe online")
     expect(ordersSent(fetched)).toEqual([])
   })

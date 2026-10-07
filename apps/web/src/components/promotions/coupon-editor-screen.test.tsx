@@ -28,7 +28,7 @@ vi.mock("@/services/promotions/promotion-hooks", () => ({
 }))
 
 const stamp = "2026-10-01T12:00:00.000Z"
-const bemVindo: Coupon = { id: "c1", code: "BEMVINDO10", kind: "PERCENT", percentBps: 1000, amountCents: null, minSubtotalCents: 5000, startsAt: stamp, endsAt: null, maxUses: 100, maxUsesPerCustomer: 1, usedCount: 3, active: true, status: "ACTIVE", audience: "FIRST_PURCHASE", createdAt: stamp, updatedAt: stamp }
+const bemVindo: Coupon = { id: "c1", code: "BEMVINDO10", kind: "PERCENT", percentBps: 1000, amountCents: null, minSubtotalCents: 5000, startsAt: stamp, endsAt: null, maxUses: 100, maxUsesPerCustomer: 1, usedCount: 3, active: true, status: "ACTIVE", audience: "FIRST_PURCHASE", shownInStore: true, createdAt: stamp, updatedAt: stamp }
 
 beforeEach(() => {
   mocks.search = new URLSearchParams()
@@ -78,6 +78,41 @@ describe("CouponEditorScreen", () => {
     await userEvent.click(screen.getByRole("button", { name: "Salvar" }))
 
     expect(mocks.save.mock.calls[0]?.[0]).toMatchObject({ id: null, payload: { code: "primeira10", percentBps: 1000, audience: "FIRST_PURCHASE" } })
+  })
+
+  describe("\"Mostrar este cupom na loja\"", () => {
+    it("is off on a new coupon, says what it does, and is sent as chosen", async () => {
+      view()
+      const shown = screen.getByRole("switch", { name: "Mostrar este cupom na loja" })
+      expect(shown).not.toBeChecked()
+      expect(shown).toHaveAccessibleDescription("Clientes com conta veem o código na vitrine e no carrinho quando podem usá-lo. Desligado, só usa quem recebeu o código.")
+
+      await userEvent.type(screen.getByLabelText("Código"), "bemvindo10")
+      await userEvent.type(screen.getByLabelText("Percentual (%)"), "10")
+      await userEvent.click(shown)
+      await userEvent.click(screen.getByRole("button", { name: "Salvar" }))
+
+      expect(mocks.save.mock.calls[0]?.[0]).toMatchObject({ id: null, payload: { code: "bemvindo10", shownInStore: true } })
+    })
+
+    // Sent as false, never left out: the API reads an absent switch as off, and the form says the same.
+    it("travels as off when it was left alone", async () => {
+      view()
+      await userEvent.type(screen.getByLabelText("Código"), "privado10")
+      await userEvent.type(screen.getByLabelText("Percentual (%)"), "10")
+      await userEvent.click(screen.getByRole("button", { name: "Salvar" }))
+
+      expect(mocks.save.mock.calls[0]?.[0].payload).toHaveProperty("shownInStore", false)
+    })
+
+    it("opens as the coupon holds it, and a save keeps it", async () => {
+      editing()
+      view("c1")
+      expect(screen.getByRole("switch", { name: "Mostrar este cupom na loja" })).toBeChecked()
+
+      await userEvent.click(screen.getByRole("button", { name: "Salvar" }))
+      expect(mocks.save.mock.calls[0]?.[0]).toMatchObject({ id: "c1", payload: { shownInStore: true } })
+    })
   })
 
   it("edits one with what it holds, and says the API's refusal as a sentence", async () => {

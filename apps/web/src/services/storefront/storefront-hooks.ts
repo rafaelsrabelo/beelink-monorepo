@@ -6,6 +6,8 @@ import { skipToken, useMutation, useQuery, type UseMutationResult, type UseQuery
 // Types
 import type {
   CreateRestockRequestPayload,
+  CustomerOffers,
+  CustomerOffersPayload,
   CustomerOrder,
   CustomerOrderQuotePayload,
   OrderQuote,
@@ -14,8 +16,9 @@ import type {
 } from "@harness-monorepo/contracts"
 
 // App
+import { sameOffersCart, type ServedOffers } from "@/lib/cart-offers"
 import { sameCart, type ServedQuote } from "@/lib/cart-pricing"
-import { cancelShopperOrder, placeShopperOrder, quoteCart, searchStorefront, sendRestockRequest } from "./storefront-requests"
+import { cancelShopperOrder, fetchCustomerOffers, placeShopperOrder, quoteCart, searchStorefront, sendRestockRequest } from "./storefront-requests"
 
 /** Below this a shop answers with most of itself, and every keystroke would be a request. */
 const MIN_QUERY_LENGTH = 2
@@ -35,6 +38,8 @@ export const storefrontKeys = {
   quotes: (slug: string) => [...storefrontKeys.all, slug, "quote"] as const,
   /** Who asks is part of the question (BEELINK-245): a first-purchase promotion prices one cart differently for each. */
   quote: (slug: string, shopperId: string | null, cart: CustomerOrderQuotePayload | null) => [...storefrontKeys.quotes(slug), shopperId, cart] as const,
+  /** A shopper's offers for one cart: theirs alone, so who asks is part of the key. */
+  offers: (slug: string, shopperId: string | null, cart: CustomerOffersPayload) => [...storefrontKeys.all, slug, "offers", shopperId, cart] as const,
 }
 
 export interface StorefrontSearchHandle {
@@ -113,6 +118,30 @@ export function useCartQuote(slug: string, shopperId: string | null, cart: Custo
     initialDataUpdatedAt: mine?.at,
     // The last price stays on screen while the next is asked only for whoever asked it: `queryKey[3]` is the asker.
     placeholderData: (previous: OrderQuote | undefined, last) => (last?.queryKey[3] === shopperId ? previous : undefined) ?? servedWithoutCoupon,
+    staleTime: QUOTE_STALE_MS,
+    retry: false,
+  })
+}
+
+/**
+ * The signed-in shopper's offers for the cart on screen: the shop's shown coupons it may take, as the
+ * API lists them. Asked only of a shopper with something in the cart — a visitor is told of no code.
+ *
+ * It starts from what the page was served with, when that answers this very cart for this very
+ * shopper, and keeps the last list on screen while the next is asked: a list that emptied and
+ * filled again at every press of "+" would be a summary that jumps.
+ */
+export function useCustomerOffers(slug: string, shopperId: string | null, cart: CustomerOffersPayload, served: ServedOffers | null): UseQueryResult<CustomerOffers, Error> {
+  const mine = served && served.shopperId === shopperId ? served : null
+
+  return useQuery({
+    queryKey: storefrontKeys.offers(slug, shopperId, cart),
+    queryFn: () => fetchCustomerOffers(slug, cart),
+    enabled: shopperId !== null && (cart.items?.length ?? 0) > 0,
+    initialData: () => (mine && sameOffersCart(mine.cart, cart) ? mine.offers : undefined),
+    initialDataUpdatedAt: mine?.at,
+    // Only for whoever asked it: `queryKey[3]` is the asker.
+    placeholderData: (previous: CustomerOffers | undefined, last) => (last?.queryKey[3] === shopperId ? previous : undefined) ?? mine?.offers,
     staleTime: QUOTE_STALE_MS,
     retry: false,
   })

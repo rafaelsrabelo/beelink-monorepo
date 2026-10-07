@@ -3,6 +3,7 @@ import type { ReactNode } from "react"
 
 // UI
 import { optionCountOf } from "@harness-monorepo/ui/lib/option-count"
+import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
@@ -31,6 +32,9 @@ export interface StorefrontProduct {
   rating?: { average: number; count: number } | null
 }
 
+/** The compact card's photo: the height its action's layer shares, so the "+" stands on the photo's own corner. */
+const COMPACT_PHOTO = "h-[180px]"
+
 export interface StorefrontProductCardProps {
   product: StorefrontProduct
   /** Built by the screen: a block never knows that a product lives under `/<shop>/<word>/<slug>`. */
@@ -40,14 +44,15 @@ export interface StorefrontProductCardProps {
   showBadge?: boolean
   /** The rating line under the name, when the product has reviews; the shop may hide it. */
   showRating?: boolean
-  /** Under the price, above the card's link: the web's "Adicionar ao carrinho". */
+  /** Under the price, above the card's link: the web's "Adicionar ao carrinho". On a compact card, over the photo's lower corner. */
   action?: ReactNode
   /** On the photo's top-right corner, above the card's link: the web's heart. */
   favorite?: ReactNode
   /**
    * `compact` is 5b's related card: the whole card one link with no frame, a 180px photo, the name in
-   * the link colour and the price as one string. No badge and no action: it is a suggestion, and
-   * the product's own page is where buying happens.
+   * the link colour and the price as one string. No badge. 5b drew it with no action either — "it is
+   * a suggestion" — and the owner asked for one: with `action`, it sits over the photo's lower corner,
+   * beside the link and never inside it, so the card is no taller for it.
    */
   density?: "default" | "compact"
   /** The card stands on a rail that scrolls sideways, which changes what a finger on its photo does. */
@@ -88,12 +93,12 @@ export function StorefrontProductCard({
   const options = optionCountOf(product.optionSummary, locale)
 
   if (density === "compact") {
-    return (
+    const card = (
       // Relative, so the price's screen-reader text is placed inside the card: positioned against
       // an ancestor outside the rail's scroller, it escapes the clip and widens the page.
       // The focus ring drawn inside: a rail's scroller clips whatever falls outside the card.
       <Link href={href} className="relative flex h-full flex-col gap-1.5 text-shop-on-background focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-shop-primary-ink">
-        <span className="block h-[180px] overflow-hidden rounded-[12px] bg-shop-placeholder">
+        <span className={cn("block overflow-hidden rounded-[12px] bg-shop-placeholder", COMPACT_PHOTO)}>
           {/* Decorative, as on the full card: the name right under it says what it is. */}
           {product.imageUrl ? <img src={product.imageUrl} alt="" loading="lazy" decoding="async" className="size-full object-cover" /> : null}
         </span>
@@ -102,6 +107,19 @@ export function StorefrontProductCard({
           <StorefrontPrice priceCents={product.priceCents} compareAtPriceCents={product.compareAtPriceCents} locale={locale} size="compact" className="leading-[1.2]" messages={messages} />
         ) : null}
       </Link>
+    )
+    if (!action) return card
+
+    return (
+      <div className="relative h-full">
+        {card}
+        {/*
+          A layer the height of the photo, over it, with the action in its lower corner. A sibling of
+          the link and not its child: a button inside an anchor is one control inside another. It
+          lets every press through but the action's own, as the full card's action row does.
+        */}
+        <div className={cn("pointer-events-none absolute inset-x-0 top-0 flex items-end justify-end p-2", COMPACT_PHOTO)}>{action}</div>
+      </div>
     )
   }
 

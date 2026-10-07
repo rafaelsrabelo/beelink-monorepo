@@ -6,6 +6,7 @@ import { shopPaletteStyle } from "@harness-monorepo/ui/lib/shop-palette"
 
 // Block
 import { sampleColorPresets } from "../store/store.fixtures"
+import { StorefrontCardCartButton } from "./storefront-card-cart-button"
 import { StorefrontRelatedRail } from "./storefront-related-rail"
 import { StorefrontRelatedSkeleton } from "./storefront-related-skeleton"
 
@@ -32,6 +33,16 @@ type Story = StoryObj<typeof meta>
 
 /** Dezoito produtos: seis por página numa tela larga, "Página 1 de 3" ao lado do título. */
 export const Padrao: Story = {}
+
+/**
+ * Com o "+" da loja em cada cartão, sobre o canto da foto: o cartão não fica mais alto. Um produto
+ * com opções (aqui, um a cada três) leva "Ver opções", e o toque nele abre a página do produto.
+ */
+export const ComAdicionar: Story = {
+  args: {
+    cardAction: (product) => <StorefrontCardCartButton name={product.name} hasOptions={Number(product.id) % 3 === 1} onAdd={() => {}} size="icon" />,
+  },
+}
 
 /** Quatro produtos: cabem numa página, sem o contador. */
 export const Poucos: Story = { args: { products: products(4) } }

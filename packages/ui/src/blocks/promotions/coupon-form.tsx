@@ -2,8 +2,9 @@
 
 // UI
 import { Button } from "@harness-monorepo/ui/components/button"
-import { Field, FieldDescription, FieldError, FieldLabel } from "@harness-monorepo/ui/components/field"
+import { Field, FieldContent, FieldDescription, FieldError, FieldLabel } from "@harness-monorepo/ui/components/field"
 import { Input } from "@harness-monorepo/ui/components/input"
+import { Switch } from "@harness-monorepo/ui/components/switch"
 
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
@@ -30,8 +31,9 @@ export interface CouponFormProps {
 
 /**
  * One coupon as its owner fills it in: the code a customer will type, what it gives — a share, an
- * amount or a free delivery — what it asks of the cart, who it is for, for how long, and how many
- * times it may be used in all and by one customer. Every limit left blank is no limit.
+ * amount or a free delivery — what it asks of the cart, who it is for, whether the shop window may
+ * show it, for how long, and how many times it may be used in all and by one customer. Every limit
+ * left blank is no limit.
  */
 export function CouponForm({ value, onChange, issues = {}, error, onSubmit, onCancel, pending = false, messages = defaultMessages }: CouponFormProps) {
   const shared = messages.discounts
@@ -97,6 +99,15 @@ export function CouponForm({ value, onChange, issues = {}, error, onSubmit, onCa
       </Field>
 
       <DiscountAudienceField audience={value.audience} onChange={set} disabled={pending} messages={messages} />
+
+      {/* Off by default, and said so in words: a code is private unless its owner chooses otherwise. */}
+      <Field orientation="horizontal">
+        <Switch id="coupon-shown" checked={value.shownInStore} disabled={pending} aria-describedby="coupon-shown-note" onCheckedChange={(shownInStore: boolean) => set({ shownInStore })} />
+        <FieldContent>
+          <FieldLabel htmlFor="coupon-shown">{text.shownInStoreLabel}</FieldLabel>
+          <FieldDescription id="coupon-shown-note">{text.shownInStoreHelp}</FieldDescription>
+        </FieldContent>
+      </Field>
 
       <DiscountPeriodFields startsAt={value.startsAt} endsAt={value.endsAt} onChange={set} issues={issues} disabled={pending} messages={messages} />
 

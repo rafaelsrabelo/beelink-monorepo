@@ -256,6 +256,51 @@ export interface UiMessages {
     couponTooMany: string
     /** A coupon in force whose check did not come back: the order waits for it, or for its removal. */
     couponUnchecked: string
+    /**
+     * What the shop window shows of its offers, unasked: the strip under the header — the invitation
+     * to open an account, or the first-order benefit — and the cart's "Cupons disponíveis". Every
+     * number in them (`{value}`, `{amount}`) is the API's, formatted by the screen.
+     */
+    offers: {
+      /** The strip's accessible name. */
+      region: string
+      /** `{value}` — "10%" or "R$ 15,00"; inside a sentence, so lower case. */
+      benefitDiscount: string
+      benefitFreeShipping: string
+      /** `{amount}` — a second sentence, when the benefit asks for a minimum. */
+      minimum: string
+      /** A visitor, at a shop with nothing for a first purchase: what an account gives here. */
+      signUp: string
+      /** `{benefit}` — a visitor, at a shop with a first-purchase benefit over the whole cart. */
+      signUpBenefit: string
+      /** `{benefit}` — the same, when the promotion is over named products or categories. */
+      signUpBenefitSelected: string
+      signUpAction: string
+      /** `{benefit}` — a customer with no order that stands; the code follows the sentence. */
+      firstOrderCoupon: string
+      /** `{benefit}` — the same customer, at a shop whose first-purchase benefit is a promotion. */
+      firstOrderPromotion: string
+      firstOrderPromotionSelected: string
+      useInCart: string
+      copy: string
+      copied: string
+      /** The clipboard refused: the code is selected, to be copied by hand. */
+      copySelected: string
+      dismiss: string
+      cartHeading: string
+      /** `{value}` — a row's own line, so capitalised. */
+      cartBenefitDiscount: string
+      cartBenefitFreeShipping: string
+      /** `{amount}` */
+      cartMinimum: string
+      cartFirstPurchase: string
+      /** `{amount}` — what the products are below the coupon's minimum by. */
+      cartMissing: string
+      cartApply: string
+      /** `{code}` — the button's name: several rows share the page. */
+      cartApplyNamed: string
+      cartApplied: string
+    }
     /** `{amount}`: the checkout's box, with what the shopper can spend now (BEELINK-244). */
     cashbackUse: string
     /** `{amount}`: the most this cart takes, when it is less than the balance. */
@@ -271,6 +316,8 @@ export interface UiMessages {
     addedToCartStatus: string
     /** A card whose product has options: the page is where one is chosen. */
     seeOptions: string
+    /** `{name}` — the name of a card's "+", which draws no word of its own. */
+    addNamedToCart: string
     buyNow: string
     /** "Entregar em" in the header: the visitor's CEP, kept for the shipping quote to come. */
     deliverTo: { label: string; ask: string; field: string; save: string; note: string }
@@ -2429,6 +2476,11 @@ export interface UiMessages {
       maxUsesHelp: string
       maxUsesPerCustomerLabel: string
       maxUsesPerCustomerHelp: string
+      /** The switch that lets the shop window say the code to a customer it is for. */
+      shownInStoreLabel: string
+      shownInStoreHelp: string
+      /** On the list, beside a coupon the shop window shows. */
+      shownBadge: string
       /** `{amount}`. */
       minimum: string
       usesNone: string

@@ -26,6 +26,8 @@ export interface CouponListRow {
   status: DiscountStatusValue
   active: boolean
   audience: DiscountAudienceValue
+  /** The shop window may say this code: marked, so the owner sees at a glance which ones are out. Absent is not. */
+  shownInStore?: boolean
 }
 
 export interface CouponListProps {
@@ -69,6 +71,7 @@ export function CouponList({ rows, empty, busyId = null, onEdit, onToggle, onUse
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-sm">{[row.discount, row.minimum].filter(Boolean).join(" · ")}</p>
               {row.audience === "FIRST_PURCHASE" ? <Badge variant="secondary">{shared.firstPurchaseBadge}</Badge> : null}
+              {row.shownInStore ? <Badge variant="outline">{text.shownBadge}</Badge> : null}
             </div>
             <p className="text-muted-foreground text-xs">
               {row.period} · {row.uses}

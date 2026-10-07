@@ -9,6 +9,7 @@ import { callApi } from "@/lib/api"
 import { clientIpOf, readJsonBody, refuseCrossOrigin } from "@/lib/bff"
 import { clearCustomerSessionCookies, setCustomerSessionCookies } from "@/lib/customer-session-cookies"
 import { marketingConsentAt, orderOriginOf } from "@/lib/order-origin"
+import { revalidateOffers } from "@/lib/revalidate"
 import { callAsShopper } from "@/lib/shopper-call"
 
 function isCart(body: unknown): body is Record<string, unknown> {
@@ -35,6 +36,10 @@ function refusal(statusCode: number, errorCode: string, message: string) {
  * (BEELINK-275): from the shop's own cookies on this request, which is why this handler is under
  * the shop's path. What the page's body says in those two fields is dropped — a script on the page
  * does not get to say which campaign sold, nor that its visitor consented.
+ *
+ * An order that took a coupon may have taken its last use, and a shown coupon may be what the shop
+ * window says of a first purchase: such an order drops the shop's kept offers (`revalidateOffers`),
+ * so the window does not go on promising a benefit that just ran out.
  */
 export async function POST(request: NextRequest, { params }: RouteContext<"/[slug]/api/orders">) {
   const refused = refuseCrossOrigin(request)
@@ -64,5 +69,11 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
     status: placed.response.status,
   })
   if (placed.renewed) setCustomerSessionCookies(answer.cookies, slug, placed.renewed)
+  if (placed.response.ok && tookACoupon(payload)) revalidateOffers(slug)
   return answer
+}
+
+/** Whether the order placed carries a coupon — the API's own answer, never what the page sent. */
+function tookACoupon(order: unknown): boolean {
+  return typeof order === "object" && order !== null && "coupon" in order && order.coupon !== null && order.coupon !== undefined
 }

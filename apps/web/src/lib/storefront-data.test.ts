@@ -5,8 +5,8 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import type { PublicProductCategory, StorefrontCatalog } from "@harness-monorepo/contracts"
 
 // App
-import { catalogTag, storeTag } from "./revalidate"
-import { catalogueAt, categoriesAt, landingAt, paymentOptionsAt, shopAt, signInOptionsAt } from "./storefront-data"
+import { catalogTag, offersTag, storeTag } from "./revalidate"
+import { catalogueAt, categoriesAt, landingAt, offersAt, paymentOptionsAt, shopAt, signInOptionsAt } from "./storefront-data"
 
 /**
  * The reads the landing is built from. The network is stubbed at `fetch` because `callPublicApi`
@@ -190,5 +190,26 @@ describe("paymentOptionsAt — how the shop's checkout is paid (BEELINK-205)", (
 
     vi.stubGlobal("fetch", () => Promise.resolve(new Response("{}", { status: 500 })))
     expect(await paymentOptionsAt("loja")).toEqual({ online: null, offline: true })
+  })
+})
+
+describe("offersAt — what the shop says of its offers to anyone", () => {
+  const HEADLINE = { firstPurchase: { source: "PROMOTION", kind: "PERCENT", percentBps: 1000, amountCents: null, minSubtotalCents: 0, endsAt: null, wholeCart: true } }
+
+  // A promotion's write drops the store's tag; a coupon's drops the offers' own, and nothing else with it.
+  it("reads the first-purchase headline under the store's tag and the offers' own", async () => {
+    const asked = stubApi(() => HEADLINE)
+
+    expect(await offersAt("loja")).toEqual(HEADLINE)
+    expect(asked[0]?.url.pathname).toMatch(/\/stores\/loja\/offers$/)
+    expect(asked[0]?.tags).toEqual([storeTag("loja"), offersTag("loja")])
+  })
+
+  it("is no offer when the read fails: the strip then promises nothing", async () => {
+    vi.stubGlobal("fetch", () => Promise.reject(new TypeError("Failed to fetch")))
+    expect(await offersAt("loja")).toEqual({ firstPurchase: null })
+
+    vi.stubGlobal("fetch", () => Promise.resolve(new Response("{}", { status: 500 })))
+    expect(await offersAt("loja")).toEqual({ firstPurchase: null })
   })
 })

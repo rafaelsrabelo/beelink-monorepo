@@ -36,18 +36,36 @@ export type VerdictCoupon = Pick<
   'kind' | 'percentBps' | 'amountCents' | 'minSubtotalCents' | 'startsAt' | 'endsAt' | 'isActive' | 'maxUses' | 'maxUsesPerCustomer' | 'usedCount' | 'audience'
 >;
 
-export function couponRefusalOf(coupon: VerdictCoupon | null, context: CouponContext): OrderCouponRefusedDetails | null {
+/** What is read of whoever asks, apart from any cart: the instant, their uses of the coupon and whether they are on a first purchase. */
+export type CouponStanding = Pick<CouponContext, 'at' | 'customerUses' | 'firstPurchase'>;
+
+/** The refusals that hold whatever the cart: the coupon's own state, and whose it may be. */
+type StandingRefusal = Exclude<OrderCouponRefusedDetails['reason'], 'NOT_APPLICABLE' | 'BELOW_MINIMUM'>;
+
+/**
+ * Whether a coupon stands for this customer before any cart is looked at — the first half of
+ * `couponRefusalOf`, and the same lines: what the shop window reads to say a code to a customer
+ * (`CustomerOffers`) is what a quote reads to take it.
+ */
+export function couponStandingRefusalOf(coupon: VerdictCoupon | null, standing: CouponStanding): { reason: StandingRefusal } | null {
   if (!coupon) return { reason: 'NOT_FOUND' };
 
-  const status = couponStatusOf(coupon, context.at);
+  const status = couponStatusOf(coupon, standing.at);
   if (status === 'ENDED') return { reason: 'EXPIRED' };
   if (status === 'EXHAUSTED') return { reason: 'EXHAUSTED' };
   if (status !== 'ACTIVE') return { reason: 'INACTIVE' };
 
-  if (coupon.maxUsesPerCustomer !== null && context.customerUses !== null && context.customerUses >= coupon.maxUsesPerCustomer) {
+  if (coupon.maxUsesPerCustomer !== null && standing.customerUses !== null && standing.customerUses >= coupon.maxUsesPerCustomer) {
     return { reason: 'CUSTOMER_LIMIT' };
   }
-  if (coupon.audience === 'FIRST_PURCHASE' && context.firstPurchase === false) return { reason: 'NOT_FIRST_PURCHASE' };
+  if (coupon.audience === 'FIRST_PURCHASE' && standing.firstPurchase === false) return { reason: 'NOT_FIRST_PURCHASE' };
+  return null;
+}
+
+export function couponRefusalOf(coupon: VerdictCoupon | null, context: CouponContext): OrderCouponRefusedDetails | null {
+  const standing = couponStandingRefusalOf(coupon, context);
+  if (standing || !coupon) return standing;
+
   if (takesNothing(coupon, context)) return { reason: 'NOT_APPLICABLE' };
   if (context.baseCents < coupon.minSubtotalCents) return { reason: 'BELOW_MINIMUM', minSubtotalCents: coupon.minSubtotalCents };
   return null;

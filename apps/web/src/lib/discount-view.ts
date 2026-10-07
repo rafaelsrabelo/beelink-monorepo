@@ -135,6 +135,7 @@ export function couponRowsOf(coupons: readonly Coupon[], text: Text): CouponList
     status: coupon.status,
     active: coupon.active,
     audience: coupon.audience,
+    shownInStore: coupon.shownInStore,
   }))
 }
 

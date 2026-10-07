@@ -43,11 +43,19 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
+/**
+ * Fechada ao chegar, mesmo com o termo que a página devolveu: a lista é resposta a quem digita.
+ * Digite no campo para abri-la; a lista em si está em "Sugestões da busca".
+ */
 export const Padrao: Story = {}
 
-/** Enquanto a resposta não chega, a lista diz que está buscando em vez de ficar muda. */
-export const Buscando: Story = {
-  render: () => <Harness suggestions={[]} pending />,
+/** Com o "Buscar em": o nome escolhido é cortado com reticências, e inteiro no `title` e na lista. */
+export const ComCategoriaLonga: Story = {
+  render: () => (
+    <div className="max-w-[30rem]">
+      <Harness scopes={[{ value: "longa", label: "Suplementos para academia, treino funcional e corrida de rua" }, { value: "whey", label: "Whey" }]} scope="longa" />
+    </div>
+  ),
 }
 
 /** No header, que é escuro: o campo vira claro para o placeholder não ler como desabilitado. */

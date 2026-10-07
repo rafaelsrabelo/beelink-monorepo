@@ -1,6 +1,8 @@
 // Types
 import type {
   CreateRestockRequestPayload,
+  CustomerOffers,
+  CustomerOffersPayload,
   CustomerOrder,
   CustomerOrderPaymentAnswer,
   CustomerOrderQuotePayload,
@@ -103,6 +105,27 @@ export async function quoteCart(slug: string, cart: CustomerOrderQuotePayload): 
   // A 2xx that is not a price — a proxy's own page — is a failure here, never a cart to draw from.
   if (typeof answer !== "object" || answer === null || !("lines" in answer) || !Array.isArray(answer.lines)) throw new ShopperOrderError("UNKNOWN")
   return answer as OrderQuote
+}
+
+/**
+ * The signed-in shopper's offers for a cart: the shop's shown coupons it may take. Through the shop's
+ * own handler, where their cookies reach. A session that ended, or a cart that cannot be priced, is a
+ * failure with the API's code — the cart then draws no list.
+ */
+export async function fetchCustomerOffers(slug: string, cart: CustomerOffersPayload): Promise<CustomerOffers> {
+  const response = await fetch(`/${encodeURIComponent(slug)}/api/offers`, {
+    method: "POST",
+    headers: { "content-type": "application/json", accept: "application/json" },
+    body: JSON.stringify(cart),
+  })
+  const answer: unknown = await response.json().catch(() => null)
+
+  if (!response.ok) {
+    const code = typeof answer === "object" && answer !== null && "errorCode" in answer ? String(answer.errorCode) : null
+    throw new ShopperOrderError(code ?? (response.status === 429 ? "RATE_LIMITED" : "UNKNOWN"))
+  }
+  if (typeof answer !== "object" || answer === null || !("coupons" in answer) || !Array.isArray(answer.coupons)) throw new ShopperOrderError("UNKNOWN")
+  return answer as CustomerOffers
 }
 
 /** What a refused order carries: the API's stable code, never a sentence, and the lines it named. */

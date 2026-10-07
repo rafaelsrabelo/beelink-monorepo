@@ -5,6 +5,7 @@ import type { Metadata } from "next"
 // UI
 // App
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
+import { StorefrontOffers } from "@/components/storefront/storefront-offers"
 import { contactCopyOf } from "@/components/storefront/storefront-contact-copy"
 import { StorefrontSections } from "@/components/storefront/storefront-sections"
 import { orderHrefOf } from "@/components/storefront/storefront-links"
@@ -83,6 +84,8 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
       // comes first is the shopkeeper's answer rather than this file's.
       year={new Date().getFullYear()}
       shopper={await shopperAt(slug)}
+      // Under the header: the invitation to open an account, or a shopper's first-order benefit.
+      notice={<StorefrontOffers store={store} back={routes.home} messages={ui} />}
       messages={ui}
       blocks={
         <>

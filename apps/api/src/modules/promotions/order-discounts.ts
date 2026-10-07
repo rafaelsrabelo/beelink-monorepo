@@ -32,9 +32,10 @@ export interface CartTargets {
  * naming two hundred products is read as the two the cart holds. Without it, with everything it names.
  *
  * Each comes with its audience, whoever asks: which of them price a cart is the reader's to say —
- * an order by its customer, the shop window by leaving those for a first purchase out.
+ * an order by its customer, the shop window by leaving those for a first purchase out. And with its
+ * end, which no price reads: the shop window's offers say it (`shop-offers.ts`).
  */
-export async function runningPromotions(db: Db, storeId: string, at: Date, only?: CartTargets): Promise<PricingPromotion[]> {
+export async function runningPromotions(db: Db, storeId: string, at: Date, only?: CartTargets): Promise<(PricingPromotion & { endsAt: Date | null })[]> {
   const rows = await db.promotion.findMany({
     where: { storeId, ...promotionWhereOf('ACTIVE', at) },
     orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
@@ -47,6 +48,7 @@ export async function runningPromotions(db: Db, storeId: string, at: Date, only?
       percentBps: true,
       amountCents: true,
       audience: true,
+      endsAt: true,
       products: { ...(only ? { where: { productId: { in: [...only.productIds] } } } : {}), select: { productId: true } },
       categories: { ...(only ? { where: { categoryId: { in: [...only.categoryIds] } } } : {}), select: { categoryId: true } },
     },
