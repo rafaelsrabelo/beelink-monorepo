@@ -16,7 +16,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import type { LinkComponent } from "../auth/auth-link"
-import { POPUP_CLOSE, POPUP_TEXT, POPUP_TITLE, StorefrontPopupCard } from "./storefront-popup-card"
+import { POPUP_CLOSE, POPUP_TEXT, POPUP_TITLE, StorefrontPopupCard, type PopupCardCode } from "./storefront-popup-card"
 
 export interface StorefrontPopupProps {
   open: boolean
@@ -27,8 +27,11 @@ export interface StorefrontPopupProps {
   text: string
   detail?: string | null
   imageUrl?: string | null
-  /** The shop's sign-up, carrying the way back to this page. */
-  action: { label: string; href: string }
+  /** A customer's coupon code, with its copy button's words (BEELINK-310); never given for a visitor. */
+  code?: PopupCardCode | null
+  /** The shop's sign-up carrying the way back, or the cart with the coupon; with no `href`, a button that only tells `onAction`. */
+  action: { label: string; href?: string }
+  /** The button was pressed. The screen decides what that means — and, with no `href`, it is what closes. */
   onAction?: () => void
   /** The shop's `--shop-*` variables and typeface: the dialog is drawn outside the element that carries them. */
   style?: CSSProperties
@@ -42,7 +45,9 @@ const STILL = "motion-reduce:animate-none motion-reduce:transition-none motion-r
 /**
  * A shop's first-purchase pop-up (BEELINK-306): a modal dialog that calls a visitor to open an
  * account. It says what it is handed and collects nothing — its one action is a link to the shop's
- * own sign-up.
+ * own sign-up. To a signed-in customer who never ordered (BEELINK-310) it is the same dialog saying
+ * their first-order benefit: a coupon's code with a way to copy it and the way to the cart, or — for
+ * a promotion, which applies by itself — one button that closes.
  *
  * The primitive's dialog, so the hard parts are the ones already debugged: the focus moves in and
  * stays in, Escape and a press outside close it, the page behind is inert, and closing returns the
@@ -54,7 +59,7 @@ const STILL = "motion-reduce:animate-none motion-reduce:transition-none motion-r
  * Fixed over the page and never in its flow, so nothing behind it moves; never taller than the
  * screen — it scrolls inside. Wide with a picture, narrow without.
  */
-export function StorefrontPopup({ open, onOpenChange, title, text, detail = null, imageUrl = null, action, onAction, style, linkComponent, messages = defaultMessages }: StorefrontPopupProps) {
+export function StorefrontPopup({ open, onOpenChange, title, text, detail = null, imageUrl = null, code = null, action, onAction, style, linkComponent, messages = defaultMessages }: StorefrontPopupProps) {
   const copy = messages.storefront.popup
   const close = useRef<HTMLButtonElement>(null)
 
@@ -73,6 +78,7 @@ export function StorefrontPopup({ open, onOpenChange, title, text, detail = null
           body={<DialogDescription className={POPUP_TEXT}>{text}</DialogDescription>}
           detail={detail}
           imageUrl={imageUrl}
+          code={code}
           action={action}
           onAction={onAction}
           linkComponent={linkComponent}

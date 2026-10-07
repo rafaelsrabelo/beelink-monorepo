@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest"
 import { ptBR } from "../locales/pt-BR"
 
 // App
-import { popupWordsOf, typedDiscountIn, type PopupBenefitValue, type PopupCopyValue } from "./shop-popup"
+import { customerPopupWordsOf, popupWordsOf, typedDiscountIn, type CustomerPopupOfferValue, type PopupBenefitValue, type PopupCopyValue } from "./shop-popup"
 
 const BLANK: PopupCopyValue = { title: null, text: null, buttonLabel: null }
 const coupon: PopupBenefitValue = { source: "COUPON", kind: "PERCENT", percentBps: 500, amountCents: null, minSubtotalCents: 0, wholeCart: true }
@@ -63,5 +63,43 @@ describe("typedDiscountIn", () => {
 
   it.each(["Ganhe {beneficio}", "Entrega em 2 dias", "Parcele em 10 vezes"])('takes "%s"', (sentence) => {
     expect(typedDiscountIn(sentence)).toBe(false)
+  })
+})
+
+describe("customerPopupWordsOf (BEELINK-310)", () => {
+  const theirs: CustomerPopupOfferValue = { source: "COUPON", code: "SEJAMUTANTE", kind: "PERCENT", percentBps: 1500, amountCents: null, minSubtotalCents: 0 }
+  const say = (offer: CustomerPopupOfferValue) => customerPopupWordsOf(offer, "pt-BR", ptBR)
+
+  it("says the coupon: the benefit's own number, the code, and the way to the cart", () => {
+    expect(say(theirs)).toEqual({ title: "Seu primeiro pedido tem 15% de desconto", text: "Use este cupom no carrinho:", detail: null, buttonLabel: "Usar no carrinho", code: "SEJAMUTANTE" })
+  })
+
+  it("says the coupon's minimum, with the API's amount", () => {
+    expect(say({ ...theirs, minSubtotalCents: 5000 }).detail).toMatch(/^Em compras a partir de R\$\s50,00\.$/)
+  })
+
+  it("says an amount and a free delivery as what they are", () => {
+    expect(say({ ...theirs, kind: "FIXED", percentBps: null, amountCents: 1500 }).title).toMatch(/^Seu primeiro pedido tem R\$\s15,00 de desconto$/)
+    expect(say({ ...theirs, kind: "FREE_SHIPPING", percentBps: null }).title).toBe("Seu primeiro pedido tem frete grátis")
+  })
+
+  it("says a promotion applies by itself: no code, and a button that only closes", () => {
+    expect(say({ source: "PROMOTION", kind: "PERCENT", percentBps: 1000, amountCents: null, minSubtotalCents: 0, wholeCart: true })).toEqual({
+      title: "Seu primeiro pedido tem 10% de desconto",
+      text: "Aplicado automaticamente no seu primeiro pedido. Não precisa de código.",
+      detail: null,
+      buttonLabel: "Continuar comprando",
+      code: null,
+    })
+  })
+
+  it("says a promotion over named products as that", () => {
+    expect(say({ source: "PROMOTION", kind: "PERCENT", percentBps: 1000, amountCents: null, minSubtotalCents: 0, wholeCart: false }).title).toBe("Seu primeiro pedido tem 10% de desconto em produtos selecionados")
+  })
+
+  it("never says a sentence written for a visitor", () => {
+    const words = JSON.stringify(say(theirs))
+
+    expect(words).not.toMatch(/Crie sua conta|Ganhar cupom|Criar minha conta/)
   })
 })

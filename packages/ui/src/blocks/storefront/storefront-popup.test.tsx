@@ -152,4 +152,79 @@ describe("StorefrontPopup", () => {
     popup({ imageUrl: null })
     await expectNoA11yViolations(document.body)
   })
+
+  describe("for a signed-in customer who never ordered (BEELINK-310)", () => {
+    const code = { value: "SEJAMUTANTE", copyLabel: "Copiar", copiedLabel: "Copiado", selectedLabel: "Código selecionado" }
+    const coupon = { title: "Seu primeiro pedido tem 15% de desconto", text: "Use este cupom no carrinho:", code, action: { label: "Usar no carrinho", href: "/loja/carrinho?cupom=SEJAMUTANTE" } }
+    const promotion = { title: "Seu primeiro pedido tem 15% de desconto", text: "Aplicado automaticamente no seu primeiro pedido. Não precisa de código.", action: { label: "Continuar comprando" } }
+
+    it("is the same modal dialog, named by the benefit, with the coupon's code drawn large and selectable", () => {
+      popup(coupon)
+
+      const dialog = screen.getByRole("dialog", { name: "Seu primeiro pedido tem 15% de desconto" })
+      expect(dialog).toHaveAttribute("aria-modal", "true")
+      expect(dialog).toHaveAccessibleDescription("Use este cupom no carrinho:")
+      const drawn = within(dialog).getByText("SEJAMUTANTE")
+      expect(drawn.tagName).toBe("STRONG")
+      expect(drawn).toHaveClass("select-all", "text-2xl", "font-mono")
+    })
+
+    it("copies the code, and says it did", async () => {
+      const user = userEvent.setup()
+      popup(coupon)
+
+      const copy = screen.getByRole("button", { name: "Copiar" })
+      expect(copy).toHaveAccessibleDescription("SEJAMUTANTE")
+      await user.click(copy)
+      expect(await screen.findByRole("button", { name: "Copiado" })).toBeInTheDocument()
+      expect(await navigator.clipboard.readText()).toBe("SEJAMUTANTE")
+    })
+
+    it("leads to the cart with the coupon in its address, and tells the screen the button was pressed", async () => {
+      const onAction = vi.fn()
+      popup({ ...coupon, onAction })
+
+      const link = screen.getByRole("link", { name: "Usar no carrinho" })
+      expect(link).toHaveAttribute("href", "/loja/carrinho?cupom=SEJAMUTANTE")
+      link.addEventListener("click", (event) => event.preventDefault())
+      await userEvent.click(link)
+      expect(onAction).toHaveBeenCalledOnce()
+    })
+
+    it("still moves the focus to the close control: an Enter on its way to the page never leaves for the cart", async () => {
+      popup(coupon)
+
+      await waitFor(() => expect(screen.getByRole("button", { name: "Fechar" })).toHaveFocus())
+    })
+
+    it("for a promotion, has no code, nothing to copy and one button that leads nowhere", async () => {
+      const onAction = vi.fn()
+      popup({ ...promotion, onAction })
+
+      const dialog = screen.getByRole("dialog", { name: "Seu primeiro pedido tem 15% de desconto" })
+      expect(dialog).toHaveAccessibleDescription("Aplicado automaticamente no seu primeiro pedido. Não precisa de código.")
+      expect(dialog.querySelector("[data-popup-code]")).toBeNull()
+      expect(within(dialog).queryByRole("button", { name: "Copiar" })).toBeNull()
+      expect(within(dialog).queryByRole("link")).toBeNull()
+
+      await userEvent.click(within(dialog).getByRole("button", { name: "Continuar comprando" }))
+      expect(onAction).toHaveBeenCalledOnce()
+    })
+
+    it("closes on Escape as the invitation does", async () => {
+      const { onOpenChange } = popup(coupon)
+
+      await userEvent.keyboard("{Escape}")
+      expect(onOpenChange).toHaveBeenLastCalledWith(false, expect.anything())
+    })
+
+    it("has no accessibility violations, with a code and with none", async () => {
+      const withCode = popup({ ...coupon, imageUrl: popupPicture, detail: "Em compras a partir de R$ 50,00." })
+      await expectNoA11yViolations(document.body)
+      withCode.unmount()
+
+      popup(promotion)
+      await expectNoA11yViolations(document.body)
+    })
+  })
 })

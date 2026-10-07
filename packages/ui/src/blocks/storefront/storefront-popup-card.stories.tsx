@@ -31,5 +31,16 @@ export const LadoALado: Story = { decorators: [(Story) => <div className="w-[45r
 /** Sem espaço (a largura de um celular): a foto vira faixa no alto. Quem decide é o espaço dado, não a tela. */
 export const Empilhado: Story = { decorators: [(Story) => <div className="w-[22.375rem]">{Story()}</div>] }
 
+/** Para o cliente que nunca pediu: o código do cupom entre o texto e o botão (BEELINK-310). */
+export const ComCodigo: Story = {
+  args: {
+    heading: <p className={POPUP_TITLE}>Seu primeiro pedido tem 15% de desconto</p>,
+    body: <p className={POPUP_TEXT}>Use este cupom no carrinho:</p>,
+    code: { value: "SEJAMUTANTE", copyLabel: "Copiar", copiedLabel: "Copiado", selectedLabel: "Código selecionado" },
+    action: { label: "Usar no carrinho", href: "#carrinho" },
+  },
+  decorators: [(Story) => <div className="w-[45rem]">{Story()}</div>],
+}
+
 /** Sem imagem: o painel colorido sozinho. */
 export const SoOPainel: Story = { args: { imageUrl: null }, decorators: [(Story) => <div className="w-[28rem]">{Story()}</div>] }
