@@ -94,6 +94,15 @@ describe("StorefrontSearchCombobox", () => {
       expect(screen.queryByRole("listbox")).not.toBeInTheDocument()
     })
 
+    // Chrome clears a search field on Escape: the list of the term just erased must not open again.
+    it("closes when the field is emptied", async () => {
+      const { user } = await typed()
+
+      await user.clear(screen.getByRole("combobox"))
+
+      expect(screen.queryByRole("listbox")).not.toBeInTheDocument()
+    })
+
     it("comes back on the arrow down, on its first row", async () => {
       const { user } = await typed()
       await user.keyboard("{Escape}{ArrowDown}")

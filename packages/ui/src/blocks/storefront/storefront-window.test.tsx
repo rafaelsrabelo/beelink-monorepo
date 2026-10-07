@@ -33,6 +33,37 @@ describe("StorefrontWindow", () => {
     expect((container.firstElementChild as HTMLElement).style.fontFamily).toBe("var(--font-shop, inherit)")
   })
 
+  describe("the notice under the header", () => {
+    const notice = <section aria-label="Oferta da loja">Crie sua conta</section>
+
+    // The shop speaking, not the page's content: after the banner, before `main`, and inside neither.
+    it("sits between the header and the page, in the flow, outside both", () => {
+      renderWindow({ notice, children: <p>Produtos</p> })
+
+      const strip = screen.getByRole("region", { name: "Oferta da loja" })
+      expect(screen.getByRole("banner")).not.toContainElement(strip)
+      expect(screen.getByRole("main")).not.toContainElement(strip)
+      expect(screen.getByRole("banner").compareDocumentPosition(strip) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      expect(strip.compareDocumentPosition(screen.getByRole("main")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    })
+
+    it("comes before a landing's own blocks too", () => {
+      renderWindow({ notice, blocks: <div data-testid="capa">Capa</div> })
+
+      const strip = screen.getByRole("region", { name: "Oferta da loja" })
+      expect(strip.compareDocumentPosition(screen.getByTestId("capa")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    })
+
+    it("is not drawn on a page that asked for no header and footer, nor when there is none", () => {
+      const { unmount } = renderWindow({ notice, chrome: false })
+      expect(screen.queryByRole("region", { name: "Oferta da loja" })).toBeNull()
+      unmount()
+
+      renderWindow()
+      expect(screen.queryByRole("region", { name: "Oferta da loja" })).toBeNull()
+    })
+  })
+
   it("wears the shop's own colours, from data", () => {
     const { container } = renderWindow()
     const dressed = container.firstElementChild as HTMLElement

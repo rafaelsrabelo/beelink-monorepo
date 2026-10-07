@@ -48,6 +48,9 @@ export interface StorefrontWindowProps
 
   // Bands 1 and 2 — the header and the menu — are the masthead's props, documented there once.
 
+  /** Under the header, above the page and outside `<main>`: the shop's offer strip. In the flow; not drawn without the chrome. */
+  notice?: ReactNode
+
   /** Band 3 — the cover, when the shopkeeper chose one. */
   banner?: StorefrontBanner | null
   /** Band 6 — a second one, under the products. */
@@ -141,6 +144,7 @@ export function StorefrontWindow({
   menu = [],
   cta = null,
   categories,
+  notice,
   banner,
   blocks,
   pageHeader,
@@ -182,13 +186,10 @@ export function StorefrontWindow({
           homeHref={homeHref}
           searchSlot={searchSlot}
           deliverTo={deliverTo}
-          {...(searchAction ? { searchAction } : {})}
-          searchValue={searchValue}
+          {...(searchAction ? { searchAction } : {})} searchValue={searchValue}
           {...(searchHidden ? { searchHidden } : {})}
-          {...(searchScopes ? { searchScopes } : {})}
-          {...(searchScope ? { searchScope } : {})}
-          {...(cartHref ? { cartHref } : {})}
-          {...(cartCount !== undefined ? { cartCount } : {})}
+          {...(searchScopes ? { searchScopes } : {})} {...(searchScope ? { searchScope } : {})}
+          {...(cartHref ? { cartHref } : {})} {...(cartCount !== undefined ? { cartCount } : {})}
           cartSlot={cartSlot}
           {...(accountHref ? { accountHref, accountName: accountName ?? null } : {})}
           {...(accountMenu ? { accountMenu } : {})}
@@ -201,6 +202,7 @@ export function StorefrontWindow({
         />
       ) : null}
 
+      {notice && chrome ? notice : null}
       {/* ---------------------------------------------------------------- 3 · the cover */}
       {blocks ? null : banner ? <StorefrontCover banner={banner} tall linkComponent={Link} /> : null}
 

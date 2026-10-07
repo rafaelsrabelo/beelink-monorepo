@@ -176,7 +176,9 @@ export function StorefrontSearchCombobox({
             value={value}
             onChange={(event) => {
               onValueChange(event.target.value)
-              setDismissed(false)
+              // An emptied field asks nothing: Escape clears a search field in Chrome, and the
+              // suggestions of the term just erased would otherwise open again until they settle.
+              setDismissed(event.target.value.trim() === "")
               setActive(-1)
             }}
             onKeyDown={onKeyDown}
