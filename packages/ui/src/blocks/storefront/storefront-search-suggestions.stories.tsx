@@ -22,7 +22,7 @@ const meta = {
         className="p-6"
         style={{ "--shop-background": "oklch(1 0 0)", "--shop-text": "oklch(0.15 0 0)", "--shop-primary-ink": "oklch(0.45 0.2 25)" } as CSSProperties}
       >
-        <div className="relative h-11 max-w-[30rem]">
+        <div className="relative h-10 max-w-[22rem]">
           <Story />
         </div>
       </div>

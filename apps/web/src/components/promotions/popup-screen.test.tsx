@@ -22,7 +22,7 @@ vi.mock("next/link", () => ({ default: ({ href, children, ...props }: { href: st
 
 const five: FirstPurchaseHeadline = { source: "COUPON", kind: "PERCENT", percentBps: 500, amountCents: null, minSubtotalCents: 0, endsAt: null, wholeCart: true }
 const fifteen: FirstPurchaseHeadline = { source: "PROMOTION", kind: "PERCENT", percentBps: 1500, amountCents: null, minSubtotalCents: 0, endsAt: null, wholeCart: true }
-const settings: StorePopupOverview["settings"] = { enabled: false, imageUrl: null, title: null, text: null, buttonLabel: null, trigger: "ON_ARRIVAL", delaySeconds: 5, benefitSource: "AUTO", benefitId: null, revision: 1, updatedAt: null }
+const settings: StorePopupOverview["settings"] = { enabled: false, imageUrl: null, title: null, text: null, buttonLabel: null, trigger: "ON_ARRIVAL", delaySeconds: 5, benefitSource: "AUTO", benefitId: null, keepReminder: true, revision: 1, updatedAt: null }
 const overview: StorePopupOverview = {
   settings,
   benefit: fifteen,
@@ -31,6 +31,7 @@ const overview: StorePopupOverview = {
     { source: "PROMOTION", id: "p1", label: "Primeira compra", benefit: fifteen },
     { source: "COUPON", id: "c1", label: "PRIMEIRA5", benefit: five },
   ],
+  customerOffer: { source: "COUPON", code: "PRIMEIRA5", kind: "PERCENT", percentBps: 500, amountCents: null, minSubtotalCents: 0, endsAt: null },
 }
 const colors = { background: "oklch(1 0 0)", primary: "oklch(0.5 0.2 260)", header: "oklch(1 0 0)", footer: "oklch(0.2 0 0)" }
 const mutate = vi.fn()
@@ -91,7 +92,7 @@ describe("PopupScreen (BEELINK-306)", () => {
     await userEvent.type(screen.getByLabelText("Segundos depois de chegar"), "8")
     await userEvent.click(screen.getByRole("button", { name: "Salvar" }))
 
-    expect(mutate).toHaveBeenCalledWith({ enabled: true, imageUrl: null, title: null, text: null, buttonLabel: "Quero meu cupom", trigger: "ON_ARRIVAL", delaySeconds: 8, benefitSource: "AUTO", benefitId: null }, expect.anything())
+    expect(mutate).toHaveBeenCalledWith({ enabled: true, imageUrl: null, title: null, text: null, buttonLabel: "Quero meu cupom", trigger: "ON_ARRIVAL", delaySeconds: 8, benefitSource: "AUTO", benefitId: null, keepReminder: true }, expect.anything())
   })
 
   it("refuses a discount typed by hand before asking the API, and sends nothing", async () => {
@@ -119,7 +120,7 @@ describe("PopupScreen (BEELINK-306)", () => {
   })
 
   it("says clearly that no discount is promised at a shop with no first-purchase benefit", () => {
-    reading({ settings: { ...settings, enabled: true }, benefit: null, headline: null, options: [] })
+    reading({ settings: { ...settings, enabled: true }, benefit: null, headline: null, options: [], customerOffer: null })
     show()
 
     expect(within(preview()).getByText("Sua loja não tem benefício de primeira compra valendo. O pop-up convida a criar a conta e não promete desconto nenhum.")).toBeInTheDocument()
@@ -158,5 +159,63 @@ describe("PopupScreen (BEELINK-306)", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("Não foi possível carregar o pop-up.")
     await userEvent.click(screen.getByRole("button", { name: "Tentar de novo" }))
     expect(refetch).toHaveBeenCalledOnce()
+  })
+})
+
+describe("PopupScreen — whom the pop-up speaks to, and the strip as its reminder (BEELINK-310)", () => {
+  it("says, in plain words, the two people it speaks to", () => {
+    show()
+
+    const intro = screen.getByText(/Um aviso que abre sobre a loja e fala com duas pessoas\./)
+    expect(intro).toHaveTextContent("Quem ainda não tem conta lê o convite para se cadastrar")
+    expect(intro).toHaveTextContent("Quem já entrou na conta e nunca fez um pedido vê o cupom de primeira compra")
+    expect(screen.getByText(/Quem já fez um pedido não vê\./)).toBeInTheDocument()
+  })
+
+  it("shows the reminder as saved — on for a shop that never said — and sends it with the form", async () => {
+    show()
+    const reminder = screen.getByRole("switch", { name: "Depois de fechado, manter um lembrete abaixo do cabeçalho" })
+    expect(reminder).toBeChecked()
+
+    await userEvent.click(reminder)
+    expect(reminder).not.toBeChecked()
+    await userEvent.click(screen.getByRole("button", { name: "Salvar" }))
+    expect(mutate).toHaveBeenCalledWith(expect.objectContaining({ keepReminder: false, enabled: false }), expect.anything())
+  })
+
+  it("reads a reminder saved off", () => {
+    reading({ ...overview, settings: { ...settings, enabled: true, keepReminder: false } })
+    show()
+
+    expect(screen.getByRole("switch", { name: "Depois de fechado, manter um lembrete abaixo do cabeçalho" })).not.toBeChecked()
+  })
+
+  it("previews the customer's notice with the code the API says is theirs, and none of the visitor's words", async () => {
+    show()
+    expect(within(preview()).queryByText("PRIMEIRA5")).toBeNull()
+
+    await userEvent.click(within(preview()).getByRole("button", { name: "Cliente sem pedido" }))
+    expect(within(preview()).getByText("Seu primeiro pedido tem 5% de desconto")).toBeInTheDocument()
+    expect(within(preview()).getByText("PRIMEIRA5")).toBeInTheDocument()
+    expect(within(preview()).getByText("Usar no carrinho")).toBeInTheDocument()
+    expect(within(preview()).queryByText("Ganhe 15% de desconto na primeira compra")).toBeNull()
+  })
+
+  it("keeps the customer's notice as it is while the visitor's sentences are typed: its words are not the shopkeeper's", async () => {
+    show()
+    await userEvent.type(screen.getByLabelText("Título"), "Cadastre-se já")
+    await userEvent.click(within(preview()).getByRole("button", { name: "Cliente sem pedido" }))
+
+    expect(within(preview()).getByText("Seu primeiro pedido tem 5% de desconto")).toBeInTheDocument()
+    expect(preview()).not.toHaveTextContent("Cadastre-se já")
+  })
+
+  it("says a signed-in customer sees no pop-up at a shop with nothing for a first purchase", async () => {
+    reading({ settings: { ...settings, enabled: true }, benefit: null, headline: null, options: [], customerOffer: null })
+    show()
+
+    await userEvent.click(within(preview()).getByRole("button", { name: "Cliente sem pedido" }))
+    expect(within(preview()).getByText("Sua loja não tem benefício de primeira compra valendo: quem já entrou na conta não vê pop-up.")).toBeInTheDocument()
+    expect(preview()).not.toHaveTextContent("Crie sua conta na loja")
   })
 })

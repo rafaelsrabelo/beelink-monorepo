@@ -202,24 +202,40 @@ describe("StorefrontSearchCombobox", () => {
       const onScopeChange = vi.fn()
       const { user } = renderBox({ scopes, scope: "", onScopeChange })
 
-      await user.selectOptions(screen.getByRole("combobox", { name: "Buscar em" }), "whey")
+      await user.click(screen.getByRole("combobox", { name: "Buscar em" }))
+      await user.click(await screen.findByRole("option", { name: "Whey" }))
       expect(onScopeChange).toHaveBeenCalledWith("whey")
     })
 
-    // A select is as wide as its longest option: one long category name set the header's proportions.
-    it("keeps to a width of its own, with the chosen name cut and whole in its title and its list", () => {
+    it("sends the scope the screen holds with the search, under `categoria`", () => {
+      const { container } = renderBox({ scopes, scope: "whey" })
+
+      expect(container.querySelector('form input[type="hidden"][name="categoria"]')).toHaveValue("whey")
+    })
+
+    // The complaint: "Todos" drawn 160px wide because another category has a long name.
+    it("keeps the scope to the chosen name's room, capped, with a 60-character category chosen", () => {
       renderBox({ scopes, scope: "longa" })
 
-      const select = screen.getByRole("combobox", { name: "Buscar em" })
-      expect(select).toHaveClass("max-w-[7.5rem]", "shop-md:max-w-[10rem]", "truncate", "shrink-0")
-      expect(select).toHaveAttribute("title", LONG)
-      expect(screen.getByRole("option", { name: LONG })).toBeInTheDocument()
+      const scope = screen.getByRole("combobox", { name: "Buscar em" })
+      expect(scope).toHaveClass("max-w-[7rem]", "w-fit", "shrink-0")
+      expect(scope).toHaveAttribute("title", LONG)
     })
 
     it("is titled as the whole shop while no category is chosen", () => {
       renderBox({ scopes, scope: "" })
 
       expect(screen.getByRole("combobox", { name: "Buscar em" })).toHaveAttribute("title", "Todos")
+    })
+
+    // What the #233 fix got right stays: the scope's own list is not the suggestions', and opening it asks nothing.
+    it("does not open the suggestions by opening the scope's list, and Enter in the field still searches", async () => {
+      const { user } = renderBox({ scopes, scope: "" })
+      const field = screen.getByRole("combobox", { name: "Buscar nesta loja" })
+
+      await user.click(screen.getByRole("combobox", { name: "Buscar em" }))
+      await screen.findByRole("option", { name: "Whey" })
+      expect(field).toHaveAttribute("aria-expanded", "false")
     })
   })
 

@@ -14,7 +14,7 @@ import { expectNoA11yViolations } from "../../test/a11y"
 import { popupPicture } from "../storefront/popup.fixtures"
 import { PopupForm, type PopupFormProps } from "./popup-form"
 import { PopupPreview, type PopupPreviewProps } from "./popup-preview"
-import { popupAnnouncing, popupAnnouncingNothing, popupChoices, popupDefaults, popupPlainWords, popupValues, popupWords } from "./popup.fixtures"
+import { popupAnnouncing, popupAnnouncingNothing, popupChoices, popupCustomerPromotionWords, popupCustomerWords, popupDefaults, popupPlainWords, popupValues, popupWords } from "./popup.fixtures"
 
 function form(props: Partial<PopupFormProps> = {}) {
   const onChange = vi.fn<(value: PopupFormValues) => void>()
@@ -23,7 +23,7 @@ function form(props: Partial<PopupFormProps> = {}) {
   return { ...view, onChange, onSubmit }
 }
 
-const preview = (props: Partial<PopupPreviewProps> = {}) => render(<PopupPreview words={popupWords} imageUrl={null} announcing={popupAnnouncing} {...props} />)
+const preview = (props: Partial<PopupPreviewProps> = {}) => render(<PopupPreview words={popupWords} customerWords={popupCustomerWords} imageUrl={null} announcing={popupAnnouncing} {...props} />)
 
 describe("PopupForm", () => {
   it("offers the switch, the three sentences, what is announced and when it opens", () => {
@@ -71,6 +71,26 @@ describe("PopupForm", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "Ao sair" }))
     expect(onChange).toHaveBeenLastCalledWith({ ...popupValues, trigger: "ON_LEAVE" })
+  })
+
+  // BEELINK-310.
+  it("offers the strip's reminder, on by default, with a line saying what off means", async () => {
+    const { onChange } = form()
+
+    const reminder = screen.getByRole("switch", { name: "Depois de fechado, manter um lembrete abaixo do cabeçalho" })
+    expect(reminder).toBeChecked()
+    expect(reminder).toHaveAccessibleDescription(/Desligado, a faixa não aparece na loja enquanto o pop-up estiver ligado\./)
+
+    await userEvent.click(reminder)
+    expect(onChange).toHaveBeenLastCalledWith({ ...popupValues, keepReminder: false })
+  })
+
+  it("draws the reminder as saved, and locks it while saving", () => {
+    form({ value: { ...popupValues, keepReminder: false }, pending: true })
+
+    const reminder = screen.getByRole("switch", { name: "Depois de fechado, manter um lembrete abaixo do cabeçalho" })
+    expect(reminder).not.toBeChecked()
+    expect(reminder).toHaveAttribute("aria-disabled", "true")
   })
 
   it("counts each sentence's room in characters, and marks one past it without cutting it", () => {
@@ -164,8 +184,8 @@ describe("PopupPreview", () => {
     const region = screen.getByRole("region", { name: "Prévia" })
     expect(within(region).queryByRole("link")).toBeNull()
     expect(screen.queryByRole("dialog")).toBeNull()
-    // The two buttons are the width toggle's, and nothing else.
-    expect(within(region).getAllByRole("button").map((button) => button.textContent)).toEqual(["Computador", "Celular"])
+    // The buttons are the two toggles', and nothing else.
+    expect(within(region).getAllByRole("button").map((button) => button.textContent)).toEqual(["Visitante", "Cliente sem pedido", "Computador", "Celular"])
   })
 
   it("switches between a computer's width and a phone's", async () => {
@@ -200,5 +220,72 @@ describe("PopupPreview", () => {
     const { container } = preview({ imageUrl: popupPicture, announcing: { ...popupAnnouncingNothing, note: "Os textos que você escreveu aparecem como estão." } })
 
     await expectNoA11yViolations(container)
+  })
+
+  describe("for a signed-in customer who never ordered (BEELINK-310)", () => {
+    const asCustomer = () => userEvent.click(screen.getByRole("button", { name: "Cliente sem pedido" }))
+
+    it("starts on the visitor's, and draws the customer's coupon with its code when asked", async () => {
+      const { container } = preview()
+      const region = screen.getByRole("region", { name: "Prévia" })
+      expect(screen.getByRole("button", { name: "Visitante" })).toHaveAttribute("aria-pressed", "true")
+      expect(within(region).queryByText("PRIMEIRA5")).toBeNull()
+
+      await asCustomer()
+      expect(container.querySelector("[data-preview-reader]")).toHaveAttribute("data-preview-reader", "customer")
+      expect(within(region).getByText("Seu primeiro pedido tem 5% de desconto")).toBeInTheDocument()
+      expect(within(region).getByText("Use este cupom no carrinho:")).toBeInTheDocument()
+      expect(within(region).getByText("PRIMEIRA5")).toBeInTheDocument()
+      expect(within(region).getByText("Usar no carrinho")).toBeInTheDocument()
+      // None of the visitor's sentences is left on the card.
+      expect(within(region).queryByText("Ganhe 5% de desconto na primeira compra")).toBeNull()
+      expect(within(region).queryByText("Ganhar cupom")).toBeNull()
+      expect(within(region).getByText(/As palavras são fixas/)).toBeInTheDocument()
+    })
+
+    it("operates nothing there either: no copy button, no link", async () => {
+      preview()
+      await asCustomer()
+
+      const region = screen.getByRole("region", { name: "Prévia" })
+      expect(within(region).queryByRole("link")).toBeNull()
+      expect(within(region).getAllByRole("button").map((button) => button.textContent)).toEqual(["Visitante", "Cliente sem pedido", "Computador", "Celular"])
+    })
+
+    it("draws a promotion with no code and a button that closes", async () => {
+      const { container } = preview({ customerWords: popupCustomerPromotionWords })
+      await asCustomer()
+
+      expect(screen.getByText("Aplicado automaticamente no seu primeiro pedido. Não precisa de código.")).toBeInTheDocument()
+      expect(screen.getByText("Continuar comprando")).toBeInTheDocument()
+      expect(container.querySelector("[data-popup-code]")).toBeNull()
+    })
+
+    it("says that customer sees no pop-up at a shop with nothing for a first purchase, and draws none", async () => {
+      const { container } = preview({ words: popupPlainWords, customerWords: null, announcing: popupAnnouncingNothing })
+      await asCustomer()
+
+      expect(screen.getByText("Sua loja não tem benefício de primeira compra valendo: quem já entrou na conta não vê pop-up.")).toBeInTheDocument()
+      expect(container.querySelector("[data-preview-width]")).toBeNull()
+      expect(screen.queryByText("Crie sua conta na loja")).toBeNull()
+    })
+
+    it("keeps the width chosen across the two, and comes back to the visitor's", async () => {
+      const { container } = preview({ imageUrl: popupPicture })
+
+      await userEvent.click(screen.getByRole("button", { name: "Celular" }))
+      await asCustomer()
+      expect(container.querySelector("[data-preview-width]")).toHaveClass("w-[22.375rem]")
+
+      await userEvent.click(screen.getByRole("button", { name: "Visitante" }))
+      expect(screen.getByText("Ganhe 5% de desconto na primeira compra")).toBeInTheDocument()
+    })
+
+    it("has no accessibility violations", async () => {
+      const { container } = preview({ imageUrl: popupPicture })
+      await asCustomer()
+
+      await expectNoA11yViolations(container)
+    })
   })
 })

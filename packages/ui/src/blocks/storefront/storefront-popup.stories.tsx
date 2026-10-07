@@ -57,5 +57,25 @@ export const LojaEscura: Story = { args: { style: shopPaletteVariables(sampleDar
 /** Num celular: a foto vira uma faixa no alto e a chamada vem embaixo. */
 export const NoCelular: Story = { globals: { viewport: { value: "mobile1" } } }
 
+const sampleCode = { value: "SEJAMUTANTE", copyLabel: "Copiar", copiedLabel: "Copiado", selectedLabel: "Código selecionado" }
+
+/** Cliente que já entrou e nunca pediu: o cupom, com o código grande, "Copiar" e o caminho para o carrinho (BEELINK-310). */
+export const ClienteComCupom: Story = {
+  args: { title: "Seu primeiro pedido tem 15% de desconto", text: "Use este cupom no carrinho:", code: sampleCode, action: { label: "Usar no carrinho", href: "#carrinho" } },
+}
+
+/** O mesmo, com o mínimo do cupom e sem imagem. */
+export const ClienteComCupomEMinimo: Story = {
+  args: { ...ClienteComCupom.args, imageUrl: null, detail: "Em compras a partir de R$ 50,00." },
+}
+
+/** Promoção de primeira compra: não há código; um botão só, que fecha. */
+export const ClienteComPromocao: Story = {
+  args: { title: "Seu primeiro pedido tem 15% de desconto", text: "Aplicado automaticamente no seu primeiro pedido. Não precisa de código.", action: { label: "Continuar comprando" } },
+}
+
+/** O cupom num celular: a foto vira faixa e o código continua inteiro. */
+export const ClienteNoCelular: Story = { args: ClienteComCupom.args, globals: { viewport: { value: "mobile1" } } }
+
 /** Fechado: nada na página. */
 export const Fechado: Story = { args: { open: false } }

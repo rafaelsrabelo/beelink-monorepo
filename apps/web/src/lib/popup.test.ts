@@ -21,9 +21,13 @@ describe("popupVisitorAt", () => {
     await expect(popupVisitorAt()).resolves.toEqual({ seen: null, holdsSession: false })
   })
 
-  it("reads the revision the browser closed here", async () => {
+  it("reads the notice the browser closed here, and at which revision", async () => {
     mocks.jar = { bl_popup: "4" }
-    await expect(popupVisitorAt()).resolves.toEqual({ seen: 4, holdsSession: false })
+    await expect(popupVisitorAt()).resolves.toEqual({ seen: { notice: "VISITOR", revision: 4 }, holdsSession: false })
+
+    // BEELINK-310: the coupon's notice, closed by a customer.
+    mocks.jar = { bl_popup: "1000000004", bl_shopper_refresh: "r" }
+    await expect(popupVisitorAt()).resolves.toEqual({ seen: { notice: "CUSTOMER", revision: 4 }, holdsSession: true })
   })
 
   it("reads an edited cookie as none, and no other cookie as this one", async () => {

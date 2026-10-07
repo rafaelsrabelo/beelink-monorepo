@@ -4,16 +4,17 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // UI
 import { shopPaletteVariables } from "@harness-monorepo/ui/lib/shop-palette"
-import { popupWordsOf } from "@harness-monorepo/ui/lib/shop-popup"
+import { customerPopupWordsOf, popupWordsOf } from "@harness-monorepo/ui/lib/shop-popup"
 
 // App
 import { figtree } from "./shop-font"
 import { StorefrontOfferStripLive } from "./storefront-offer-strip-live"
 import { StorefrontPopupLive } from "./storefront-popup-live"
+import { pathWithCoupon } from "@/lib/cart-coupon"
 import { customerOffersAt } from "@/lib/customer-offers"
-import { offerStripOf } from "@/lib/offer-strip"
+import { firstOrderOfferOf, offerStripOf } from "@/lib/offer-strip"
+import { offersViewOf } from "@/lib/offers-view"
 import { popupVisitorAt } from "@/lib/popup"
-import { popupSeen } from "@/lib/popup-cookie"
 import { shopperAt } from "@/lib/shopper"
 import { offersAt } from "@/lib/storefront-data"
 import { storefrontRoutes } from "@/lib/storefront-routes"
@@ -29,25 +30,26 @@ export interface StorefrontOffersProps {
 const LOCALE = "pt-BR"
 
 /**
- * The strip under the shop's header, for whoever this page is drawn for: an invitation to open an
+ * What a shop says of its offers to whoever this page is drawn for: an invitation to open an
  * account to a visitor, their first-order benefit to a shopper who has not ordered, and nothing to
- * anyone else. Which of those is `offerStripOf`'s to say; this reads what it asks for.
+ * anyone else. What is said is `offerStripOf`'s; this reads what it asks for.
  *
- * Read on the server, so the strip is in the HTML — no skeleton that most pages would only take
- * back. The shop's headline is anyone's and kept; a shopper's own offers are asked for only when
- * that headline says the shop has something for a first order, so a shop with none costs a signed-in
+ * Read on the server, so it is in the HTML — no skeleton that most pages would only take back. The
+ * shop's headline is anyone's and kept; a shopper's own offers are asked for only when that
+ * headline says the shop has something for a first order, so a shop with none costs a signed-in
  * shopper's page no call at all.
  *
  * A page mounts it by handing it to the frame, and only the shop's home, its listings and its
  * product pages do: not the cart, the account, the sign-in and token pages or a landing — and the
  * panel's design preview draws the frame without it. A site has no account to open.
  *
- * The shop's first-purchase pop-up is mounted here too (BEELINK-306), and for that reason: this is
- * the one component that knows who is looking and on which pages the shop speaks of offers — a
- * second list of pages would be a second rule. It is for a visitor alone: nobody signed in, nor a
- * browser that holds a shopper's session whose token ran out; and not for one who already closed
- * the pop-up as it stands (`bl_popup`). Its headline, its words and its benefit arrive in the same
- * kept read as the strip's, so a shop with a pop-up costs its page no call more.
+ * It is said as a strip under the header or, at a shop that switched its first-purchase pop-up on
+ * (BEELINK-306), as a dialog first — never both on one page, and which is `offersViewOf`'s
+ * (BEELINK-310): the dialog while it is still due to this browser, the strip after, if the
+ * shopkeeper keeps it as the reminder. Mounted here because this is the one component that knows
+ * who is looking and on which pages the shop speaks of offers — a second list of pages would be a
+ * second rule. The pop-up's words and benefit arrive in the same kept read as the headline, and a
+ * customer's notice is their own offers, already read for the strip: a pop-up costs no call more.
  */
 export async function StorefrontOffers({ store, back, messages }: StorefrontOffersProps) {
   if (store.type === "INSTITUTIONAL") return null
@@ -58,28 +60,30 @@ export async function StorefrontOffers({ store, back, messages }: StorefrontOffe
 
   const routes = storefrontRoutes(store)
   const signUpHref = routes.signIn({ mode: "criar", back })
-  const strip = offerStripOf({
-    headline,
-    viewer: shopper ? { offers: await customerOffersAt(store.slug) } : "visitor",
-    signUpHref,
-    cartHref: routes.cart(),
-    locale: LOCALE,
-    messages,
-  })
-  const calls = popup && !shopper && !visitor.holdsSession && !popupSeen(visitor.seen, popup.revision) ? popup : null
+  const offers = shopper ? await customerOffersAt(store.slug) : null
+  const strip = offerStripOf({ headline, viewer: shopper ? { offers } : "visitor", signUpHref, cartHref: routes.cart(), locale: LOCALE, messages })
+
+  // Their coupon, by the strip's own rule: the pop-up never tells a shopper what the strip would not.
+  const offer = firstOrderOfferOf(offers)
+  const view = offersViewOf({ popup, viewer: shopper ? { offer } : visitor.holdsSession ? "session" : "visitor", seen: visitor.seen })
+  const customerWords = view.notice === "CUSTOMER" && offer ? customerPopupWordsOf(offer, LOCALE, messages) : null
+  const words = customerWords ?? (popup && view.notice === "VISITOR" ? popupWordsOf(popup, popup.benefit, LOCALE, messages) : null)
 
   return (
     <>
-      {strip ? <StorefrontOfferStripLive slug={store.slug} strip={strip} messages={messages} /> : null}
-      {calls ? (
+      {strip && view.strip ? <StorefrontOfferStripLive slug={store.slug} strip={strip} messages={messages} /> : null}
+      {popup && view.notice && words ? (
         <StorefrontPopupLive
           slug={store.slug}
-          revision={calls.revision}
-          trigger={calls.trigger}
-          delaySeconds={calls.delaySeconds}
-          words={popupWordsOf(calls, calls.benefit, LOCALE, messages)}
-          imageUrl={calls.imageUrl}
-          signUpHref={signUpHref}
+          notice={view.notice}
+          revision={popup.revision}
+          trigger={popup.trigger}
+          delaySeconds={popup.delaySeconds}
+          words={words}
+          code={customerWords?.code ?? null}
+          // A visitor goes to the sign-up; a customer to the cart with their coupon, or — a promotion has no code — nowhere.
+          actionHref={customerWords ? (customerWords.code ? pathWithCoupon(routes.cart(), customerWords.code) : null) : signUpHref}
+          imageUrl={popup.imageUrl}
           // The dialog is drawn in a portal, outside the frame that carries the shop's variables and typeface.
           style={{ ...shopPaletteVariables(store.colors), fontFamily: figtree.style.fontFamily }}
           messages={messages}

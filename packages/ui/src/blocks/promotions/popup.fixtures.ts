@@ -1,9 +1,9 @@
 // UI
 import type { PopupAnnouncing, PopupBenefitChoice, PopupFormValues } from "@harness-monorepo/ui/lib/popup-form"
-import type { PopupWords } from "@harness-monorepo/ui/lib/shop-popup"
+import type { CustomerPopupWords, PopupWords } from "@harness-monorepo/ui/lib/shop-popup"
 
 /** The form as a shop that never saved one reads it. */
-export const popupValues: PopupFormValues = { enabled: false, imageUrl: "", title: "", text: "", buttonLabel: "", trigger: "ON_ARRIVAL", delay: "5", benefit: "AUTO" }
+export const popupValues: PopupFormValues = { enabled: false, imageUrl: "", title: "", text: "", buttonLabel: "", trigger: "ON_ARRIVAL", delay: "5", benefit: "AUTO", keepReminder: true }
 
 export const popupChoices: PopupBenefitChoice[] = [
   { value: "AUTO", label: "Seguir o destaque de primeira compra da loja" },
@@ -18,3 +18,7 @@ export const popupPlainWords: PopupWords = { title: "Crie sua conta na loja", te
 
 export const popupAnnouncing: PopupAnnouncing = { tone: "benefit", sentence: "O pop-up está anunciando 5% de desconto." }
 export const popupAnnouncingNothing: PopupAnnouncing = { tone: "nothing", sentence: "Sua loja não tem benefício de primeira compra valendo. O pop-up convida a criar a conta e não promete desconto nenhum." }
+
+/** What a signed-in customer who never ordered reads (BEELINK-310): the coupon, and the promotion that has no code. */
+export const popupCustomerWords: CustomerPopupWords = { title: "Seu primeiro pedido tem 5% de desconto", text: "Use este cupom no carrinho:", detail: null, buttonLabel: "Usar no carrinho", code: "PRIMEIRA5" }
+export const popupCustomerPromotionWords: CustomerPopupWords = { title: "Seu primeiro pedido tem 15% de desconto", text: "Aplicado automaticamente no seu primeiro pedido. Não precisa de código.", detail: null, buttonLabel: "Continuar comprando", code: null }

@@ -10,7 +10,7 @@ import { StoresService } from '../stores/stores.service.js';
 import type { StorePopupDto } from './dto/popup.dto.js';
 import { runningPromotions } from './order-discounts.js';
 import { UUID } from './promotions.constants.js';
-import { firstPurchaseHeadlineOf, shownFirstPurchaseCoupon, shownFirstPurchaseCouponById, shownFirstPurchaseCoupons } from './shop-offers.js';
+import { firstOrderOfferOf, firstPurchaseHeadlineOf, shownFirstPurchaseCoupon, shownFirstPurchaseCouponById, shownFirstPurchaseCoupons } from './shop-offers.js';
 import { couponOptionOf, popupBenefitOf, popupError, promotionOptionOf, refuseTypedDiscounts, toPopupSettings, visitorsReadAnother } from './shop-popup.js';
 
 /**
@@ -32,15 +32,15 @@ export class PopupService {
   /**
    * The whole of the form. A sentence stating a discount by hand is refused, and so is naming a
    * promotion or a coupon the pop-up could never announce. The revision goes up only when what a
-   * visitor reads changed: the switch and the trigger leave it, so switching the pop-up off and on
-   * does not show it again to everyone who closed it.
+   * visitor reads changed: the switch, the trigger and the strip's reminder leave it, so switching
+   * the pop-up off and on does not show it again to everyone who closed it.
    */
   async save(storeSlug: string, userId: string, dto: StorePopupDto): Promise<StorePopupOverview> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
     refuseTypedDiscounts({ title: dto.title, text: dto.text, buttonLabel: dto.buttonLabel });
 
     const read = { imageUrl: dto.imageUrl, title: dto.title, text: dto.text, buttonLabel: dto.buttonLabel, ...(await this.namedOf(storeId, dto)) };
-    const fields = { enabled: dto.enabled, trigger: dto.trigger, delaySeconds: dto.delaySeconds, ...read };
+    const fields = { enabled: dto.enabled, trigger: dto.trigger, delaySeconds: dto.delaySeconds, keepReminder: dto.keepReminder, ...read };
 
     await this.prisma.$transaction(async (tx) => {
       const before = await tx.storePopup.findUnique({ where: { storeId } });
@@ -90,6 +90,8 @@ export class PopupService {
       benefit: popupBenefitOf(row, { promotions, headlineCoupon, namedCoupon }),
       headline: firstPurchaseHeadlineOf(promotions, headlineCoupon),
       options: [...promotions.filter((promotion) => promotion.audience === 'FIRST_PURCHASE').map(promotionOptionOf), ...coupons.map(couponOptionOf)],
+      // A customer who never ordered and never used a coupon: the shop's newest shown first-purchase coupon is theirs.
+      customerOffer: firstOrderOfferOf(headlineCoupon, promotions),
     } satisfies StorePopupOverview;
   }
 }

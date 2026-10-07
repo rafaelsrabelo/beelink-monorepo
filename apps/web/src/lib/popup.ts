@@ -5,12 +5,12 @@ import { cookies } from "next/headers"
 
 // App
 import { CUSTOMER_ACCESS_COOKIE, CUSTOMER_REFRESH_COOKIE } from "./customer-session-cookies"
-import { POPUP_COOKIE, decodePopupSeen } from "./popup-cookie"
+import { POPUP_COOKIE, decodePopupSeen, type PopupSeen } from "./popup-cookie"
 
 /** What a request says of this browser and the shop's pop-up (BEELINK-306). */
 export interface PopupVisitor {
-  /** The revision this browser closed at this shop; null for none. */
-  seen: number | null
+  /** The notice this browser closed at this shop, and at which revision; null for none. */
+  seen: PopupSeen | null
   /**
    * Whether the browser holds anything of a shopper's session at this shop. A token that ran out
    * reads as a visitor to `shopperAt` until the proxy renews it — and a customer must never be

@@ -64,7 +64,7 @@ export const LojaSemLogo: Story = {
 export const LojaNoCelular: Story = {
   args: {
     ...Loja.args,
-    // A long name on purpose: the select is as wide as its longest option, and the field must keep its room.
+    // A long name on purpose: the scope takes the room of the chosen name alone, and the field keeps its own.
     searchScopes: [
       { value: "pre-treino", label: "Pré treino" },
       { value: "acessorios", label: "Acessórios para academia e treino funcional" },

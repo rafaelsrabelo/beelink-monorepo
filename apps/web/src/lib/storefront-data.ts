@@ -70,8 +70,9 @@ export async function offersAt(slug: string): Promise<StorefrontOffers> {
   const response = await callPublicApi({ path: `/stores/${slug}/offers`, tags: [storeTag(slug), offersTag(slug)] }).catch(() => null)
   if (!response?.ok) return NO_OFFERS
   const offers = (await response.json()) as StorefrontOffers
-  // An answer kept from before the pop-up existed has no such key, and that is no pop-up.
-  return { ...offers, popup: offers.popup ?? null }
+  // An answer kept from before the pop-up existed has no such key, and that is no pop-up. One kept
+  // from before its reminder could be switched (BEELINK-310) has no `keepReminder`: the strip stays.
+  return { ...offers, popup: offers.popup ? { ...offers.popup, keepReminder: offers.popup.keepReminder ?? true } : null }
 }
 
 export interface CatalogueAsk {

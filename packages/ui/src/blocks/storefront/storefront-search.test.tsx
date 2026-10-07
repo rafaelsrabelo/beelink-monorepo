@@ -95,30 +95,43 @@ describe("StorefrontSearch", () => {
       { value: "creatina", label: "Creatina" },
     ]
 
-    it("offers the whole shop first, then each category, under the key the catalogue reads", () => {
-      renderSearch({ scopes })
+    // What the control itself does is `storefront-search-scope.test.tsx`; here, that the form carries it.
+    it("offers the scope before the field, on the whole shop, travelling under the key the catalogue reads", () => {
+      const { container } = renderSearch({ scopes })
 
-      const select = screen.getByRole("combobox", { name: "Buscar em" })
-      expect(select).toHaveAttribute("name", "categoria")
-      expect([...select.querySelectorAll("option")].map((option) => option.textContent)).toEqual(["Todos", "Whey", "Creatina"])
-      expect(select).toHaveValue("")
+      const form = screen.getByRole("search")
+      expect(screen.getByRole("combobox", { name: "Buscar em" })).toHaveTextContent("Todos")
+      expect(form.querySelector('input[type="hidden"][name="categoria"]')).toHaveValue("")
+      // The scope first, then the field: the order they are read and tabbed in.
+      expect([...form.querySelectorAll("button, input[type=search]")].map((control) => control.getAttribute("aria-label") ?? control.getAttribute("type"))).toEqual(["Buscar em", "search", "Buscar"])
+      expect(container.querySelector("select:not([aria-hidden='true'])")).toBeNull()
     })
 
     it("opens on the category whose page this is", () => {
       renderSearch({ scopes, scope: "creatina" })
 
-      expect(screen.getByRole("combobox", { name: "Buscar em" })).toHaveValue("creatina")
+      expect(screen.getByRole("combobox", { name: "Buscar em" })).toHaveTextContent("Creatina")
+      expect(screen.getByRole("search").querySelector('input[name="categoria"]')).toHaveValue("creatina")
     })
 
-    // A select is as wide as its longest option: one long category name set the header's proportions.
-    it("keeps to a width of its own, with the chosen name cut and whole in its title", () => {
-      const label = "Acessórios para academia, treino funcional e corrida de rua"
+    it("keeps the scope to a small cap with a 60-character category chosen, and the field its room", () => {
+      const label = "Acessórios para academia, treino funcional e corrida de rua!"
       renderSearch({ scopes: [{ value: "a", label }], scope: "a" })
 
-      const select = screen.getByRole("combobox", { name: "Buscar em" })
-      expect(select).toHaveClass("max-w-[7.5rem]", "shop-md:max-w-[10rem]", "truncate", "shrink-0")
-      expect(select).toHaveAttribute("title", label)
-      expect(screen.getByRole("option", { name: label })).toBeInTheDocument()
+      const scope = screen.getByRole("combobox", { name: "Buscar em" })
+      expect(scope).toHaveClass("max-w-[7rem]", "w-fit", "shrink-0")
+      expect(scope).toHaveAttribute("title", label)
+      // The field is what gives: it shrinks and grows, the scope and the button do not.
+      expect(screen.getByRole("searchbox").closest("label")).toHaveClass("min-w-0", "flex-1")
+      expect(screen.getByRole("search")).toHaveClass("min-w-0", "overflow-hidden")
+    })
+
+    // 44px on a phone, 40px beside the header's other controls.
+    it("is a lighter bar from shop-md: 40px tall, with a 44px button", () => {
+      renderSearch({ scopes })
+
+      expect(screen.getByRole("search")).toHaveClass("h-11", "shop-md:h-10")
+      expect(screen.getByRole("button", { name: "Buscar" })).toHaveClass("w-12", "shop-md:w-11")
     })
 
     it("draws no select when there is nothing to narrow to", () => {

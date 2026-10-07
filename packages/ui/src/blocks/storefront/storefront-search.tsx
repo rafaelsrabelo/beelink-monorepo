@@ -6,14 +6,11 @@ import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
-/** One entry of the "Buscar em" select: a category, by its slug and its name. */
-export interface StorefrontSearchScope {
-  value: string
-  label: string
-}
+// Block
+import { StorefrontSearchScopeSelect, type StorefrontSearchScope } from "./storefront-search-scope"
 
-/** The key the scope travels under: the same `categoria` the catalogue reads. */
-export const SEARCH_SCOPE_NAME = "categoria"
+// Declared beside the control that draws them; re-exported because screens import them from here.
+export { SEARCH_SCOPE_NAME, type StorefrontSearchScope } from "./storefront-search-scope"
 
 export interface StorefrontSearchProps {
   /**
@@ -33,8 +30,8 @@ export interface StorefrontSearchProps {
   /** Pinned to the form, for a screen that has to carry something along with the term. */
   hidden?: Record<string, string>
   /**
-   * The categories the search can be narrowed to, drawn as a select before the field — "Buscar
-   * em" — with "Todos" first. Absent, there is no select. The chosen one travels as `categoria`.
+   * The categories the search can be narrowed to, drawn as a compact button before the field —
+   * "Buscar em" — with "Todos" first. Absent, there is none. The chosen one travels as `categoria`.
    */
   scopes?: readonly StorefrontSearchScope[]
   /** The scope already chosen: a category's own page opens with it. */
@@ -52,23 +49,16 @@ export interface StorefrontSearchProps {
 }
 
 /**
- * The bar's classes, shared with the live search so the two are one thing to look at. The field and
- * the scope are 16px on a phone: below that, iOS zooms the page into whatever is tapped.
+ * The bar's classes, shared with the live search so the two are one thing to look at. 44px on a
+ * phone, where it is pressed with a thumb and has the line to itself; 40px from `shop-md`, beside
+ * the header's other controls (36px), where 44 read as the heaviest thing in the row. The field is
+ * 16px on a phone: below that, iOS zooms the page into whatever is tapped.
  *
- * The scope has a width of its own and not a share of the bar: a native select is as wide as its
- * longest option, so a share let one long category name set the header's proportions — 248px of a
- * 646px bar at the shop this was measured on. Past its width the chosen name ends in an ellipsis;
- * the whole name is in the list the select opens, and in its `title`.
+ * The scope is `StorefrontSearchScopeSelect`: as wide as the chosen name, never more than 7rem.
  */
-export const SEARCH_BAR = "flex h-11 w-full min-w-0 overflow-hidden rounded-[10px]"
-export const SEARCH_SCOPE = "max-w-[7.5rem] shrink-0 truncate border-r bg-shop-fill px-3 text-base text-shop-on-background outline-none focus-visible:bg-shop-line shop-md:max-w-[10rem] shop-md:text-[13px]"
-export const SEARCH_FIELD = "min-w-0 flex-1 border-0 bg-transparent px-3.5 text-base text-shop-on-background outline-none shop-md:text-[15px]"
-export const SEARCH_BUTTON = "flex w-14 shrink-0 items-center justify-center"
-
-/** The chosen scope's whole name, for the select's `title`: what the ellipsis cut is one hover away. */
-export function scopeTitleOf(scopes: readonly StorefrontSearchScope[], scope: string, all: string): string {
-  return scopes.find((entry) => entry.value === scope)?.label ?? all
-}
+export const SEARCH_BAR = "flex h-11 w-full min-w-0 overflow-hidden rounded-[10px] shop-md:h-10"
+export const SEARCH_FIELD = "min-w-0 flex-1 border-0 bg-transparent px-3 text-base text-shop-on-background outline-none shop-md:text-sm"
+export const SEARCH_BUTTON = "flex w-12 shrink-0 items-center justify-center shop-md:w-11"
 
 /** The button's paint, by tone. */
 export function searchButtonStyle(tone: "inherit" | "panel") {
@@ -83,10 +73,9 @@ export function searchButtonStyle(tone: "inherit" | "panel") {
  * `<form method="get">` with a named field and nothing else: the shop is crawled, and a term has
  * to survive being bookmarked, shared and read back off the URL — none of which a handler that
  * filters a list in memory leaves behind. It also has to work before any JavaScript arrives, which
- * is why the scope is a real `<select>` in the form and the button a real submit.
+ * is why the scope travels in a hidden field of the form and the button is a real submit.
  *
- * Drawn as 5a and 5b draw it: a 44px bar, the scope's select on the left, the field, and a 56px
- * button with the magnifier. The accessible name and the placeholder are two different sentences
+ * A bar with the scope's button on the left, the field, and a button with the magnifier. The accessible name and the placeholder are two different sentences
  * on purpose: a placeholder is gone the moment someone types, so it can never be the only name a
  * field has (WCAG 3.3.2). The label wraps the field instead of pointing at an id, because a page
  * may render this twice and two controls answering to one id is a duplicate id, not a second
@@ -113,23 +102,7 @@ export function StorefrontSearch({
       className={cn(SEARCH_BAR, "flex-1")}
       style={{ backgroundColor: "var(--shop-background)", color: "var(--shop-on-background)", borderColor: "var(--shop-frame)" }}
     >
-      {scopes?.length ? (
-        <select
-          name={SEARCH_SCOPE_NAME}
-          defaultValue={scope}
-          aria-label={text.searchScope}
-          title={scopeTitleOf(scopes, scope, text.searchScopeAll)}
-          className={SEARCH_SCOPE}
-          style={{ borderColor: "var(--shop-frame)" }}
-        >
-          <option value="">{text.searchScopeAll}</option>
-          {scopes.map((entry) => (
-            <option key={entry.value} value={entry.value}>
-              {entry.label}
-            </option>
-          ))}
-        </select>
-      ) : null}
+      {scopes?.length ? <StorefrontSearchScopeSelect scopes={scopes} value={scope} messages={messages} /> : null}
 
       <label className="flex min-w-0 flex-1">
         <span className="sr-only">{text.search}</span>
@@ -148,7 +121,7 @@ export function StorefrontSearch({
       ))}
 
       <button type="submit" aria-label={text.searchAction} className={SEARCH_BUTTON} style={searchButtonStyle(tone)}>
-        <SearchIcon aria-hidden="true" className="size-5" strokeWidth={2} />
+        <SearchIcon aria-hidden="true" className="size-[18px]" strokeWidth={2} />
       </button>
     </form>
   )

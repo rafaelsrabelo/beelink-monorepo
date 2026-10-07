@@ -277,6 +277,21 @@ export interface UiMessages {
       plainButton: string
       /** A second line, under the text, on a promotion that is not over the whole cart. */
       selected: string
+      /**
+       * The same dialog for a signed-in customer who never ordered (BEELINK-310). Fixed sentences —
+       * the shopkeeper's were written for somebody with no account. `{benefit}` and the code are the API's.
+       */
+      customer: {
+        title: string
+        /** On a promotion over named products or categories. */
+        titleSelected: string
+        /** Over the coupon's code. */
+        couponText: string
+        /** On a promotion: there is no code, and nothing to do. */
+        promotionText: string
+        /** The one button of a promotion's notice: it closes. */
+        keepShopping: string
+      }
     }
     offers: {
       /** The strip's accessible name. */
@@ -2496,6 +2511,9 @@ export interface UiMessages {
       back: string
       enabled: string
       enabledHelp: string
+      /** The offer strip as the pop-up's reminder, once closed (BEELINK-310). */
+      keepReminder: string
+      keepReminderHelp: string
       image: string
       imageHelp: string
       titleLabel: string
@@ -2533,6 +2551,13 @@ export interface UiMessages {
       previewDesktop: string
       previewPhone: string
       previewWidth: string
+      /** Whose pop-up the preview draws: a visitor's invitation, or the notice of a customer who never ordered (BEELINK-310). */
+      previewReader: string
+      previewVisitor: string
+      previewCustomer: string
+      previewCustomerNote: string
+      /** With nothing for a first purchase: such a customer is shown no pop-up. */
+      previewCustomerNothing: string
       save: string
       saving: string
       saved: string

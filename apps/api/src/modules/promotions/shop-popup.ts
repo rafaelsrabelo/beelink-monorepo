@@ -40,6 +40,7 @@ export const POPUP_DEFAULTS = {
   delaySeconds: 5,
   benefitSource: 'AUTO',
   benefitId: null,
+  keepReminder: true,
 } as const satisfies StorePopupSettings;
 
 export function popupError(errorCode: PopupErrorCode, message: string): { errorCode: PopupErrorCode; message: string } {
@@ -98,12 +99,13 @@ export function toPopupSettings(row: StorePopupModel | null): StorePopupOverview
     trigger: row.trigger,
     delaySeconds: row.delaySeconds,
     ...benefitSourceOf(row),
+    keepReminder: row.keepReminder,
     revision: row.revision,
     updatedAt: row.updatedAt.toISOString(),
   };
 }
 
-/** What a visitor reads of a pop-up: a change in any of these is a new revision. The switch and the trigger are not among them. */
+/** What a visitor reads of a pop-up: a change in any of these is a new revision. The switch, the trigger and the strip's reminder are not among them. */
 const READ_BY_VISITORS = ['imageUrl', 'title', 'text', 'buttonLabel', 'promotionId', 'couponId'] as const satisfies readonly (keyof StorePopupModel)[];
 
 export function visitorsReadAnother(before: StorePopupModel, after: Pick<StorePopupModel, (typeof READ_BY_VISITORS)[number]>): boolean {
@@ -167,5 +169,6 @@ export async function servedPopupOf(
     trigger: row.trigger,
     delaySeconds: row.delaySeconds,
     benefit: popupBenefitOf(row, { ...read, namedCoupon }),
+    keepReminder: row.keepReminder,
   };
 }

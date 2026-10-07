@@ -1,5 +1,5 @@
 // Types
-import type { CustomerOffers, FirstPurchaseHeadline } from "@harness-monorepo/contracts"
+import type { CustomerFirstPurchaseOffer, CustomerOffers, FirstPurchaseHeadline } from "@harness-monorepo/contracts"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // UI
@@ -35,6 +35,16 @@ export interface OfferStripAsk {
 }
 
 /**
+ * The first-order benefit a signed-in shopper is to be told, or null: none once an order of theirs
+ * stands, none at a shop with nothing for a first order, and none when their offers could not be
+ * read. The one rule the strip and the pop-up's customer notice (BEELINK-310) both ask — so the
+ * pop-up never surfaces a coupon the strip would not.
+ */
+export function firstOrderOfferOf(offers: CustomerOffers | null): CustomerFirstPurchaseOffer | null {
+  return offers && !offers.hasOrder ? offers.firstPurchase : null
+}
+
+/**
  * Which strip this page shows, if any — one at most:
  *
  * - a visitor is invited to open an account, with the shop's first-purchase benefit when it has one
@@ -57,8 +67,8 @@ export function offerStripOf({ headline, viewer, signUpHref, cartHref, locale, m
     return { message: format(headline.wholeCart ? text.signUpBenefit : text.signUpBenefitSelected, { benefit }), detail: offerMinimumSentence(headline, locale, text), code: null, action }
   }
 
-  const offer = viewer.offers?.firstPurchase
-  if (!offer || viewer.offers?.hasOrder) return null
+  const offer = firstOrderOfferOf(viewer.offers)
+  if (!offer) return null
 
   const benefit = offerBenefitWords(offer, locale, text)
   if (offer.source === "COUPON") {

@@ -9,12 +9,12 @@ import type { PopupFormValues } from "@harness-monorepo/ui/lib/popup-form"
 import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 
 // App
-import { popupAnnouncingOf, popupChoicesOf, popupDefaultsOf, popupErrorOf, popupFormOf, popupPayloadOf, previewBenefitOf, previewWordsOf } from "./popup-form"
+import { popupAnnouncingOf, popupChoicesOf, popupDefaultsOf, popupErrorOf, popupFormOf, popupPayloadOf, previewBenefitOf, previewCustomerWordsOf, previewWordsOf } from "./popup-form"
 
 const issues = ptBR.discounts.popup.issues
 const five: FirstPurchaseHeadline = { source: "COUPON", kind: "PERCENT", percentBps: 500, amountCents: null, minSubtotalCents: 0, endsAt: null, wholeCart: true }
 const fifteen: FirstPurchaseHeadline = { source: "PROMOTION", kind: "PERCENT", percentBps: 1500, amountCents: null, minSubtotalCents: 0, endsAt: null, wholeCart: true }
-const settings: StorePopupOverview["settings"] = { enabled: false, imageUrl: null, title: null, text: null, buttonLabel: null, trigger: "ON_ARRIVAL", delaySeconds: 5, benefitSource: "AUTO", benefitId: null, revision: 1, updatedAt: null }
+const settings: StorePopupOverview["settings"] = { enabled: false, imageUrl: null, title: null, text: null, buttonLabel: null, trigger: "ON_ARRIVAL", delaySeconds: 5, benefitSource: "AUTO", benefitId: null, keepReminder: true, revision: 1, updatedAt: null }
 const overview: StorePopupOverview = {
   settings,
   benefit: fifteen,
@@ -23,12 +23,13 @@ const overview: StorePopupOverview = {
     { source: "PROMOTION", id: "p1", label: "Primeira compra", benefit: fifteen },
     { source: "COUPON", id: "c1", label: "PRIMEIRA5", benefit: five },
   ],
+  customerOffer: { source: "COUPON", code: "PRIMEIRA5", kind: "PERCENT", percentBps: 500, amountCents: null, minSubtotalCents: 0, endsAt: null },
 }
 const form: PopupFormValues = popupFormOf(settings)
 
 describe("popupFormOf", () => {
   it("reads the defaults as a blank form, switched off, following the shop", () => {
-    expect(form).toEqual({ enabled: false, imageUrl: "", title: "", text: "", buttonLabel: "", trigger: "ON_ARRIVAL", delay: "5", benefit: "AUTO" })
+    expect(form).toEqual({ enabled: false, imageUrl: "", title: "", text: "", buttonLabel: "", trigger: "ON_ARRIVAL", delay: "5", benefit: "AUTO", keepReminder: true })
   })
 
   it("reads a named benefit as the select's value", () => {
@@ -41,12 +42,12 @@ describe("popupPayloadOf", () => {
   const payloadOf = (patch: Partial<PopupFormValues>) => popupPayloadOf({ ...form, ...patch }, issues)
 
   it("sends the whole form, with nothing typed as null — the default", () => {
-    expect(payloadOf({ enabled: true })).toEqual({ payload: { enabled: true, imageUrl: null, title: null, text: null, buttonLabel: null, trigger: "ON_ARRIVAL", delaySeconds: 5, benefitSource: "AUTO", benefitId: null } })
+    expect(payloadOf({ enabled: true })).toEqual({ payload: { enabled: true, imageUrl: null, title: null, text: null, buttonLabel: null, trigger: "ON_ARRIVAL", delaySeconds: 5, benefitSource: "AUTO", benefitId: null, keepReminder: true } })
   })
 
   it("trims what was typed and names the benefit chosen", () => {
     expect(payloadOf({ title: "  Ganhe {beneficio}  ", imageUrl: " https://res.cloudinary.com/demo/p.jpg ", delay: " 12 ", benefit: "COUPON:c1" })).toEqual({
-      payload: { enabled: false, imageUrl: "https://res.cloudinary.com/demo/p.jpg", title: "Ganhe {beneficio}", text: null, buttonLabel: null, trigger: "ON_ARRIVAL", delaySeconds: 12, benefitSource: "COUPON", benefitId: "c1" },
+      payload: { enabled: false, imageUrl: "https://res.cloudinary.com/demo/p.jpg", title: "Ganhe {beneficio}", text: null, buttonLabel: null, trigger: "ON_ARRIVAL", delaySeconds: 12, benefitSource: "COUPON", benefitId: "c1", keepReminder: true },
     })
   })
 
@@ -151,5 +152,24 @@ describe("popupErrorOf", () => {
     expect(popupErrorOf("POPUP_TEXT_PROMISES_NUMBER", text)).toBe(text.POPUP_TEXT_PROMISES_NUMBER)
     expect(popupErrorOf("POPUP_BENEFIT_INVALID", text)).toBe(text.POPUP_BENEFIT_INVALID)
     expect(popupErrorOf("STORE_FORBIDDEN", text)).toBe(text.UNKNOWN)
+  })
+})
+
+/** BEELINK-310. */
+describe("the strip's reminder, across the form", () => {
+  it("is read from the pop-up as saved, and sent as set", () => {
+    expect(popupFormOf({ ...settings, keepReminder: false }).keepReminder).toBe(false)
+    expect(popupPayloadOf({ ...form, keepReminder: false }, issues)).toMatchObject({ payload: { keepReminder: false } })
+    expect(popupPayloadOf({ ...form, keepReminder: true }, issues)).toMatchObject({ payload: { keepReminder: true } })
+  })
+})
+
+describe("previewCustomerWordsOf (BEELINK-310)", () => {
+  it("says what the API says a customer who never ordered is told, code included", () => {
+    expect(previewCustomerWordsOf(overview, "pt-BR", ptBR)).toEqual({ title: "Seu primeiro pedido tem 5% de desconto", text: "Use este cupom no carrinho:", detail: null, buttonLabel: "Usar no carrinho", code: "PRIMEIRA5" })
+  })
+
+  it("is nothing at a shop with nothing for a first purchase: that customer is shown no pop-up", () => {
+    expect(previewCustomerWordsOf({ customerOffer: null }, "pt-BR", ptBR)).toBeNull()
   })
 })

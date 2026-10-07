@@ -34,7 +34,7 @@ export const EmIngles: Story = {
   args: { action: "/ana-bakery/search", messages: en },
 }
 
-/** Com "Buscar em": o select de categorias antes do campo, aberto na categoria da página. */
+/** Com "Buscar em": o botão compacto de categorias antes do campo, aberto na categoria da página. */
 export const ComEscopo: Story = {
   args: {
     scopes: [

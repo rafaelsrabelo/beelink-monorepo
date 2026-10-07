@@ -1,4 +1,5 @@
 // Locales
+import { format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
@@ -42,6 +43,15 @@ export interface PopupWords {
   buttonLabel: string
 }
 
+/** Mirrors the wire's `CustomerFirstPurchaseOffer`: a shown coupon with its code, or a promotion, which has none. */
+export type CustomerPopupOfferValue = (OfferBenefitValue & { source: "COUPON"; code: string }) | (OfferBenefitValue & { source: "PROMOTION"; wholeCart: boolean })
+
+/** The words of the notice a signed-in customer who never ordered reads (BEELINK-310). */
+export interface CustomerPopupWords extends PopupWords {
+  /** The coupon's code; null on a promotion, which applies by itself. */
+  code: string | null
+}
+
 /** A figure before a `%`, or after `R$`: a discount written by hand, which the API refuses. */
 const TYPED_DISCOUNT = /\d\s*%|R\$\s*\d/i
 
@@ -76,4 +86,23 @@ export function popupWordsOf(copy: PopupCopyValue, benefit: PopupBenefitValue | 
     detail: detail || null,
     buttonLabel: filled(copy.buttonLabel, text.button[benefit.source]),
   }
+}
+
+/**
+ * The notice of a signed-in customer who never ordered (BEELINK-310): their first-order benefit as
+ * their own offers read it — the coupon, with its code and the way to the cart, or the promotion,
+ * which applies by itself and leaves nothing to do but close.
+ *
+ * None of the shopkeeper's sentences is here: those were written to somebody with no account. The
+ * words are the product's, and every number and the code are the API's.
+ */
+export function customerPopupWordsOf(offer: CustomerPopupOfferValue, locale: string, messages: UiMessages): CustomerPopupWords {
+  const text = messages.storefront.popup.customer
+  const offers = messages.storefront.offers
+  const benefit = offerBenefitWords(offer, locale, offers)
+
+  if (offer.source === "COUPON") {
+    return { title: format(text.title, { benefit }), text: text.couponText, detail: offerMinimumSentence(offer, locale, offers), buttonLabel: offers.useInCart, code: offer.code }
+  }
+  return { title: format(offer.wholeCart ? text.title : text.titleSelected, { benefit }), text: text.promotionText, detail: null, buttonLabel: text.keepShopping, code: null }
 }

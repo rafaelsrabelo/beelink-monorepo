@@ -13,17 +13,17 @@ import { sampleColorPresets } from "../store/store.fixtures"
 import { popupPicture } from "../storefront/popup.fixtures"
 import { PopupForm, type PopupFormProps } from "./popup-form"
 import { PopupPreview, type PopupPreviewProps } from "./popup-preview"
-import { popupAnnouncing, popupAnnouncingNothing, popupChoices, popupDefaults, popupPlainWords, popupValues, popupWords } from "./popup.fixtures"
+import { popupAnnouncing, popupAnnouncingNothing, popupChoices, popupCustomerPromotionWords, popupCustomerWords, popupDefaults, popupPlainWords, popupValues, popupWords } from "./popup.fixtures"
 
-type PanelProps = Pick<PopupPreviewProps, "words" | "announcing" | "imageUrl"> & Pick<PopupFormProps, "issues" | "error" | "saved" | "pending"> & { initial?: Partial<PopupFormValues> }
+type PanelProps = Pick<PopupPreviewProps, "words" | "customerWords" | "announcing" | "imageUrl"> & Pick<PopupFormProps, "issues" | "error" | "saved" | "pending"> & { initial?: Partial<PopupFormValues> }
 
 /** The screen as it composes the two: the preview over the form, which holds what is typed. */
-function PopupPanel({ words, announcing, imageUrl, initial, ...form }: PanelProps) {
+function PopupPanel({ words, customerWords, announcing, imageUrl, initial, ...form }: PanelProps) {
   const [value, setValue] = useState<PopupFormValues>({ ...popupValues, ...initial })
 
   return (
     <div className="flex max-w-4xl flex-col gap-6">
-      <PopupPreview words={words} announcing={announcing} imageUrl={imageUrl} style={shopPaletteVariables(sampleColorPresets[2]!.colors)} />
+      <PopupPreview words={words} customerWords={customerWords} announcing={announcing} imageUrl={imageUrl} style={shopPaletteVariables(sampleColorPresets[2]!.colors)} />
       <PopupForm value={value} onChange={setValue} onSubmit={() => {}} choices={popupChoices} defaults={popupDefaults} onUploadImage={async () => popupPicture} {...form} />
     </div>
   )
@@ -32,7 +32,7 @@ function PopupPanel({ words, announcing, imageUrl, initial, ...form }: PanelProp
 const meta = {
   title: "Blocos/Painel/Pop-up de primeira compra",
   component: PopupPanel,
-  args: { words: popupWords, announcing: popupAnnouncing, imageUrl: null },
+  args: { words: popupWords, customerWords: popupCustomerWords, announcing: popupAnnouncing, imageUrl: null },
 } satisfies Meta<typeof PopupPanel>
 
 export default meta
@@ -51,7 +51,13 @@ export const ComImagem: Story = {
 }
 
 /** Loja sem benefício de primeira compra: a prévia é o convite simples e o aviso diz que nada é prometido. */
-export const SemBeneficio: Story = { args: { words: popupPlainWords, announcing: popupAnnouncingNothing } }
+export const SemBeneficio: Story = { args: { words: popupPlainWords, customerWords: null, announcing: popupAnnouncingNothing } }
+
+/** A loja tem só promoção de primeira compra: em "Cliente sem pedido" a prévia não tem código e o botão só fecha. */
+export const ClienteComPromocao: Story = { args: { customerWords: popupCustomerPromotionWords } }
+
+/** Lembrete desligado: depois de fechado o pop-up, a faixa não aparece na loja. */
+export const SemLembrete: Story = { args: { initial: { enabled: true, keepReminder: false } } }
 
 /** Gatilho "ao sair": a ajuda diz o que acontece no celular. */
 export const AoSair: Story = { args: { initial: { enabled: true, trigger: "ON_LEAVE" } } }

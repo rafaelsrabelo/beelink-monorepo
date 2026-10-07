@@ -5,7 +5,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // UI
 import { POPUP_BENEFIT_AUTO, type PopupAnnouncing, type PopupBenefitChoice, type PopupFormIssues, type PopupFormValues } from "@harness-monorepo/ui/lib/popup-form"
 import { offerBenefitWords } from "@harness-monorepo/ui/lib/shop-offers"
-import { POPUP_BENEFIT_PLACEHOLDER, POPUP_BUTTON_MAX, POPUP_DELAY_MAX_SECONDS, POPUP_TEXT_MAX, POPUP_TITLE_MAX, popupWordsOf, typedDiscountIn, type PopupCopyValue, type PopupWords } from "@harness-monorepo/ui/lib/shop-popup"
+import { POPUP_BENEFIT_PLACEHOLDER, POPUP_BUTTON_MAX, POPUP_DELAY_MAX_SECONDS, POPUP_TEXT_MAX, POPUP_TITLE_MAX, customerPopupWordsOf, popupWordsOf, typedDiscountIn, type CustomerPopupWords, type PopupCopyValue, type PopupWords } from "@harness-monorepo/ui/lib/shop-popup"
 import { format } from "@harness-monorepo/ui/locales/index"
 
 /**
@@ -32,6 +32,7 @@ export function popupFormOf(settings: StorePopupOverview["settings"]): PopupForm
     trigger: settings.trigger,
     delay: String(settings.delaySeconds),
     benefit: settings.benefitSource === "AUTO" || !settings.benefitId ? POPUP_BENEFIT_AUTO : choiceOf(settings.benefitSource, settings.benefitId),
+    keepReminder: settings.keepReminder,
   }
 }
 
@@ -76,6 +77,7 @@ export function popupPayloadOf(value: PopupFormValues, text: Text["issues"]): { 
       trigger: value.trigger,
       delaySeconds: delay ?? DEFAULT_DELAY_SECONDS,
       ...benefitOf(value.benefit),
+      keepReminder: value.keepReminder,
     },
   }
 }
@@ -111,6 +113,15 @@ const copyOf = (value: PopupFormValues): PopupCopyValue => ({ title: sentenceOf(
 /** The words a visitor would read of the form as typed: `popupWordsOf`, the function the shop window draws from. */
 export function previewWordsOf(value: PopupFormValues, benefit: FirstPurchaseHeadline | null, locale: string, messages: UiMessages): PopupWords {
   return popupWordsOf(copyOf(value), benefit, locale, messages)
+}
+
+/**
+ * The words a signed-in customer who never ordered would read now (BEELINK-310), or null when the
+ * shop has nothing for a first purchase and such a customer is shown no pop-up. Nothing typed in the
+ * form changes them: they are the product's words over the offer the API says is that customer's.
+ */
+export function previewCustomerWordsOf(overview: Pick<StorePopupOverview, "customerOffer">, locale: string, messages: UiMessages): CustomerPopupWords | null {
+  return overview.customerOffer ? customerPopupWordsOf(overview.customerOffer, locale, messages) : null
 }
 
 /** What a visitor reads where every sentence is left blank: the form's placeholders. */

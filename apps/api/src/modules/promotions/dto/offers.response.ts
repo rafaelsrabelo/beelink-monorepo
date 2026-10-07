@@ -32,6 +32,7 @@ export class PopupCopyResponse {
   @ApiProperty({ enum: POPUP_TRIGGERS }) trigger!: PopupTrigger;
   @ApiProperty({ description: 'Seconds after the page arrives, on ON_ARRIVAL.' }) delaySeconds!: number;
   @ApiProperty({ description: 'Up by one when what a visitor reads changes.' }) revision!: number;
+  @ApiProperty({ description: 'Whether the offer strip is drawn once the pop-up is no longer due to whoever is looking (BEELINK-310).' }) keepReminder!: boolean;
 }
 
 /** The pop-up inside the public offers' answer: no code and no id of a coupon, ever. */
@@ -53,7 +54,7 @@ export class OfferedCouponResponse extends OfferBenefitResponse implements Offer
 }
 
 /** Both arms of `CustomerFirstPurchaseOffer` in one schema: `code` on a COUPON, `wholeCart` on a PROMOTION. */
-class CustomerFirstPurchaseOfferResponse extends OfferBenefitResponse {
+export class CustomerFirstPurchaseOfferResponse extends OfferBenefitResponse {
   @ApiProperty({ enum: HEADLINE_SOURCES }) source!: CustomerFirstPurchaseOffer['source'];
   @ApiProperty({ required: false, description: 'On a COUPON: the code to apply.' }) code?: string;
   @ApiProperty({ required: false, description: 'On a PROMOTION: false when it is over named products or categories.' }) wholeCart?: boolean;

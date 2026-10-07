@@ -15,7 +15,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // App
 import { AppLink } from "@/components/app-link"
 import { figtree } from "@/components/storefront/shop-font"
-import { popupAnnouncingOf, popupChoicesOf, popupDefaultsOf, popupErrorOf, popupFormOf, popupPayloadOf, previewBenefitOf, previewWordsOf } from "@/lib/popup-form"
+import { popupAnnouncingOf, popupChoicesOf, popupDefaultsOf, popupErrorOf, popupFormOf, popupPayloadOf, previewBenefitOf, previewCustomerWordsOf, previewWordsOf } from "@/lib/popup-form"
 import { usePopup, useSavePopup } from "@/services/promotions/popup-hooks"
 import { DiscountError } from "@/services/promotions/promotion-requests"
 import { useStore } from "@/services/stores/store-hooks"
@@ -34,7 +34,8 @@ const NO_ISSUES: PopupFormIssues = {}
  * form. The form starts from the pop-up as saved and holds what is typed until it is saved again;
  * the preview follows every keystroke, in the shop's own colours and typeface, and draws its words
  * with the function the shop window draws them with — so what is seen here is what a visitor reads,
- * with the benefit as it stands now.
+ * with the benefit as it stands now. It draws the notice of a signed-in customer who never ordered
+ * too (BEELINK-310), from the offer the API says is theirs.
  *
  * The shop is read for its colours alone. Both reads are waited for: a preview painted in the
  * panel's colours for a moment would be a preview of another shop.
@@ -88,6 +89,7 @@ export function PopupScreen({ slug, locale, messages }: PopupScreenProps) {
     <Frame slug={slug} text={text}>
       <PopupPreview
         words={previewWordsOf(value, benefit, locale, messages)}
+        customerWords={previewCustomerWordsOf(overview.data, locale, messages)}
         imageUrl={value.imageUrl.trim() || null}
         announcing={popupAnnouncingOf(value, benefit, locale, messages)}
         style={{ ...shopPaletteVariables(store.data.colors), fontFamily: figtree.style.fontFamily }}

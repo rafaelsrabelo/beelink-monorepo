@@ -45,8 +45,9 @@ const PRESSED = "aria-pressed:border-primary aria-pressed:bg-primary aria-presse
 const TRIGGERS = ["ON_ARRIVAL", "ON_LEAVE"] as const satisfies readonly PopupFormValues["trigger"][]
 
 /**
- * The shop's first-purchase pop-up, as its shopkeeper sets it (BEELINK-306): the switch, the
- * picture, the three sentences, what it announces and when it opens. Values are what was typed; the
+ * The shop's first-purchase pop-up, as its shopkeeper sets it (BEELINK-306): the switch, whether
+ * the offer strip stays as its reminder (BEELINK-310), the picture, the three sentences, what it
+ * announces and when it opens. Values are what was typed; the
  * screen reads them, refuses what does not hold field by field, and says why the API refused.
  *
  * A sentence left blank is the default, shown as the field's placeholder — the very words a
@@ -70,6 +71,14 @@ export function PopupForm({ value, onChange, onSubmit, issues = {}, choices, def
         <FieldContent>
           <FieldLabel htmlFor={`${id}-enabled`}>{text.enabled}</FieldLabel>
           <FieldDescription id={`${id}-enabled-help`}>{text.enabledHelp}</FieldDescription>
+        </FieldContent>
+      </Field>
+
+      <Field orientation="horizontal">
+        <Switch id={`${id}-reminder`} checked={value.keepReminder} disabled={pending} aria-describedby={`${id}-reminder-help`} onCheckedChange={(keepReminder: boolean) => set({ keepReminder })} />
+        <FieldContent>
+          <FieldLabel htmlFor={`${id}-reminder`}>{text.keepReminder}</FieldLabel>
+          <FieldDescription id={`${id}-reminder-help`}>{text.keepReminderHelp}</FieldDescription>
         </FieldContent>
       </Field>
 
