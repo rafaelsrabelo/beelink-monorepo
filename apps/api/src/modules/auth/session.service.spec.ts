@@ -19,6 +19,7 @@ function sessionsWith(refreshRecord: unknown = null) {
       updateManyAndReturn: vi.fn(async () => [{ id: 's1' }, { id: 's2' }]),
     },
     refreshToken: { findUnique: vi.fn(async () => refreshRecord) },
+    backofficeSession: { updateMany: vi.fn(async () => ({ count: 0 })) },
   };
   const realtime = { endSessions: vi.fn() };
   const service = new SessionService(
@@ -42,6 +43,12 @@ describe('SessionService — the sockets of a session that ends', () => {
     await service.revokeAllForUser('u1');
     expect(prisma.session.updateManyAndReturn).toHaveBeenCalledWith(expect.objectContaining({ where: { userId: 'u1', revokedAt: null } }));
     expect(realtime.endSessions).toHaveBeenCalledWith(['s1', 's2']);
+  });
+
+  it("ends the account's backoffice sessions with them, whichever panel session is kept (BEELINK-227)", async () => {
+    const { service, prisma } = sessionsWith();
+    await service.revokeAllForUser('u1', 's1');
+    expect(prisma.backofficeSession.updateMany).toHaveBeenCalledWith({ where: { userId: 'u1', revokedAt: null }, data: { revokedAt: expect.any(Date) } });
   });
 
   it('closes them when a spent refresh token comes back, which revokes its session', async () => {

@@ -116,6 +116,10 @@ export class SessionService {
       select: { id: true },
     });
     this.realtime.endSessions(revoked.map((session) => session.id));
+
+    // Whoever knew the old password is out of the backoffice too (BEELINK-227), `keep` or not: the
+    // one session kept is the panel's, and an administrator signs in there again with the new one.
+    await this.prisma.backofficeSession.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } });
   }
 
   private async revokeSession(sessionId: string): Promise<void> {

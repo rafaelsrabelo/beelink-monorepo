@@ -127,6 +127,32 @@ gate "api/order-payments-in-payments" \
   "order(Stray)?(Payment|Refund)\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\(" \
   --exclude-dir=payments --exclude-dir=generated --exclude='*.spec.ts'
 
+# Who administers the platform, and what the backoffice did, are written in one folder (BEELINK-227):
+# no route of a shopkeeper, of a customer or of a sign-up can make an administrator, and no module
+# can write a line of the audit record in somebody's name. Reading either is anyone's.
+gate "api/backoffice-writes-in-backoffice" \
+  "Only src/modules/backoffice writes platform_admins and backoffice_audit_log: the role is granted by PlatformAdminsService, a line recorded by AuditService (apps/api/AGENTS.md rule 11, BEELINK-227)." \
+  "apps/api/src" \
+  "(platformAdmin|backofficeAuditLog)\.(create|createMany|createManyAndReturn|update|updateMany|updateManyAndReturn|upsert|delete|deleteMany)\(" \
+  --exclude-dir=backoffice --exclude-dir=generated --exclude='*.spec.ts'
+
+# The audit record is append-only: not even the folder that writes it may change or remove a line.
+# The table's own trigger refuses both; this refuses the code that would try.
+gate "api/audit-append-only" \
+  "backoffice_audit_log is append-only — no update, upsert or delete of it anywhere in the API (apps/api/AGENTS.md rule 11, BEELINK-227)." \
+  "apps/api/src" \
+  "backofficeAuditLog\.(update|updateMany|updateManyAndReturn|upsert|delete|deleteMany)\(" \
+  --exclude-dir=generated
+
+# A controller reaches /backoffice through @BackofficeController, which puts it behind the guard and
+# through the audit interceptor; the sign-in itself is the one written by hand. The same rule is held
+# over the live metadata by backoffice-routes.spec.ts — this is its fast half, for the pre-commit.
+gate "api/backoffice-one-door" \
+  "A controller under /backoffice is declared with @BackofficeController('…'), never @Controller('backoffice/…') by hand (apps/api/AGENTS.md rule 11, BEELINK-227)." \
+  "apps/api/src" \
+  "@?Controller\([\`'\"]/?backoffice" \
+  --exclude='backoffice-auth.controller.ts' --exclude='backoffice.decorators.ts' --exclude-dir=generated --exclude='*.spec.ts'
+
 gate "web/no-fetch-in-components" \
   "Components never call fetch — a service function plus a TanStack Query hook does, and packages/ui blocks take data through props (docs/ai-rules/state-and-data.md)." \
   "apps/web/src/components packages/ui/src" \
