@@ -38,3 +38,38 @@ Tomadas pelo assistente; o Rafael pode mudar qualquer uma.
 - Um arquivo diferente para o celular, link no banner, ou mais de um banner por categoria.
 - Recorte da imagem no envio.
 - Usar o banner como imagem de compartilhamento (Open Graph) da categoria.
+
+## Notas da entrega (acréscimo, 07/10)
+
+**Onde ficou cada coisa.**
+
+- Contrato: `PublicProductCategory.bannerUrl` e `CreateProductCategoryPayload.bannerUrl?` em `packages/contracts/src/catalog.ts`.
+- Migration `20261007200000_category_banner`: coluna anulável `product_categories."bannerUrl"`.
+- API: `dto/product-category.dto.ts` (regra `imageUrl`), `product-categories.service.ts` (criar e patch), `catalog.mapper.ts`, `dto/catalog.response.ts`.
+- UI: `blocks/storefront/storefront-category-banner.tsx` (a moldura 4:1); `storefront-results-band.tsx` ganhou o lugar `banner`, entre a trilha e o título; `blocks/catalog/category-form.tsx` ganhou o campo; copy em `locales/` (`catalog.categories.bannerLabel`, `bannerHelp`, `bannerHelpChild`).
+- Web: `lib/storefront-section.ts` (`bannerOf`, a herança), `components/storefront/storefront-section-band.tsx`; `components/catalog/category-form-values.ts` (o que a tela fazia em funções privadas, agora testável) e `category-screen.tsx` (um segundo `useImageUpload`, para o envio de um campo não aparecer nos dois).
+
+**Cobertura da Definição de Pronto.**
+
+| # | Evidência |
+|---|---|
+| 1 | `packages/ui/src/blocks/catalog/category-form.test.tsx` — "asks for a wide banner apart from the card's image, and says the size to make"; "sends a picked file through the banner's own upload, and keeps the address it answers" |
+| 2 | `apps/api/test/category-banner.e2e-spec.ts` — "has none until one is saved, on create or on an update…"; "leaves it alone on a patch that does not name it, and clears it on null or a blank"; "refuses an address that is not http or https, and keeps what was saved"; `apps/web/src/components/catalog/category-form-values.test.ts` — "sends the banner as saved, and null once the field is cleared" |
+| 3 | `category-banner.e2e-spec.ts` — "serves it to a visitor with the catalogue"; "never serves one shop's banner in another, nor lets a stranger write it" |
+| 4 | `packages/ui/src/blocks/storefront/storefront-category-banner.test.tsx` (uma proporção só, `alt=""`, `loading="eager"`); `storefront-results-band.test.tsx` — "draws a banner between the trail and the title, on a row of its own"; `apps/web/src/components/storefront/storefront-section-band.test.tsx`; no navegador, 1216 × 304 a 1280 px e 358 × 90 a 390 px (4,000 nas duas) |
+| 5 | `storefront-results-band.test.tsx` — "is drawn as it always was with no banner…"; `storefront-section-band.test.tsx` — "draws no picture, and the band as it always was, for a category with none"; no navegador, o título de uma categoria sem banner fica na mesma altura de antes |
+| 6 | `apps/web/src/lib/storefront-section.test.ts` — `bannerOf` (4 casos); `storefront-section-band.test.tsx` — "draws a subcategory with none under its parent's"; `category-banner.e2e-spec.ts` — "serves a subcategory its own, or none beside the parent's it falls back on"; `category-form.test.tsx` — "says, on a subcategory, that with none of its own it shows its parent's" |
+| 7 | `apps/web/src/app/api/stores/[slug]/product-categories/[categoryId]/route.test.ts` — "forwards … and drops what the shop window kept"; no navegador, salvar e limpar pelo painel mudaram a página na requisição seguinte |
+| 8 | `storefront-section.test.ts` — "is none on the search and on the whole catalogue, even narrowed to a category that has one"; `storefront-section-band.test.tsx` — "draws none on the whole catalogue" |
+| 9 | `locales/pt-BR.ts`/`en.ts`; stories `Banner da categoria` (3), `Faixa de resultados` (`CategoriaComBanner`, `CategoriaComBannerNoCelular`), `Formulário de categoria` (3) |
+
+**O que o navegador mostrou** (Chromium sem janela, web em :4100 e API em :4101, banco `harness_offers`).
+
+- O Cloudinary deste ambiente não está configurado, então **o envio de arquivo não foi exercitado**: o banner foi gravado com uma URL pública (`placehold.co`, 1600 × 400) pelo handler do BFF do painel, com o cookie da sessão; limpar foi feito no formulário de verdade ("Remover imagem" → "Salvar").
+- Categoria com banner: a moldura mede 1216 × 304 px a 1280 e 358 × 90 px a 390 — 4:1 nas duas, a arte inteira, cantos de 18 px, entre a trilha e o título, sem rolagem horizontal.
+- Categoria sem banner: o título na mesma posição de antes da entrega (medido antes de gravar o primeiro banner).
+- Subcategoria sem banner ("Furadeiras") mostra o da mãe; subcategoria com banner ("Serras") mostra o dela; depois de limpar o da mãe, "Furadeiras" fica sem nenhum e "Serras" continua com o dela.
+- "Todos os produtos", `?categoria=ferramentas` e a busca restrita à categoria: sem banner.
+- Formulário: o campo "Banner da página" com a moldura 4:1, "Dimensão recomendada: 1600 x 400 pixels." e, numa subcategoria, a frase da herança.
+
+**Visto e não mexido** (já estava assim em `main`): o seletor "Dentro de" do formulário mostra o valor cru `none` em vez de "Nenhuma" quando a categoria é de primeiro nível; e o formulário de categoria abre acima da lista, não numa rota própria.
