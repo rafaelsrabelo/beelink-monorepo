@@ -1,0 +1,121 @@
+/// The backoffice (BEELINK-226): bee-link's own team administering the platform. A third door beside
+/// the panel's and a shop's, with its own sessions, and a record of everything done behind it.
+
+/// Who administers the platform. A row of its own rather than a column of `users`, so no write of an
+/// account — a sign-up, a profile, anything that spreads a body — can reach it: only
+/// `PlatformAdminsService` writes here. One row per account, kept when the role is revoked and
+/// reused when it is granted again; the history is the audit record's.
+model PlatformAdmin {
+  userId          String    @id @db.Uuid
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  grantedAt       DateTime  @default(now())
+  /// The administrator who granted it; null when it came from the command that creates the first.
+  grantedByUserId String?   @db.Uuid
+  revokedAt       DateTime?
+  revokedByUserId String?   @db.Uuid
+
+  @@map("platform_admins")
+}
+
+/// What proved the second step of a backoffice sign-in. One value today; TOTP would be another.
+enum BackofficeSecondStep {
+  EMAIL_CODE
+}
+
+/// A backoffice sign-in between its two steps: the password was an administrator's, a code was
+/// e-mailed. Neither the token step two presents nor the code is stored — only what proves them.
+model BackofficeSignInChallenge {
+  id         String    @id @default(uuid(7)) @db.Uuid
+  userId     String    @db.Uuid
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// SHA-256 of the challenge token, hex.
+  tokenHash  String    @unique
+  /// HMAC-SHA-256 of the code, keyed by the server and salted with the challenge token: a dump of
+  /// this table cannot be searched for the million codes there are.
+  codeHash   String
+  expiresAt  DateTime
+  /// Wrong codes presented so far; at the limit the challenge is dead.
+  attempts   Int       @default(0)
+  /// Set when it opened a session, ran out of attempts, or a newer one replaced it.
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId, createdAt])
+  @@map("backoffice_sign_in_challenges")
+}
+
+/// One signed-in administrator, after both steps. Its own table, not an audience of `sessions`:
+/// nothing of the panel — refresh, sign-out, "end every session" — reaches one, nor the reverse.
+model BackofficeSession {
+  id           String               @id @default(uuid(7)) @db.Uuid
+  userId       String               @db.Uuid
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// A session exists only once the second step passed; this says which, and when.
+  secondStep   BackofficeSecondStep
+  secondStepAt DateTime
+  ip           String?
+  userAgent    String?
+  createdAt    DateTime             @default(now())
+  /// Moved by use; a session left alone past the idle limit is over.
+  lastSeenAt   DateTime             @default(now())
+  /// The end whatever its use.
+  expiresAt    DateTime
+  revokedAt    DateTime?
+
+  refreshTokens BackofficeRefreshToken[]
+
+  @@index([userId])
+  @@map("backoffice_sessions")
+}
+
+model BackofficeRefreshToken {
+  id        String            @id @default(uuid(7)) @db.Uuid
+  sessionId String            @db.Uuid
+  session   BackofficeSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  /// SHA-256 of the token, hex — the token itself is never stored.
+  tokenHash String            @unique
+  expiresAt DateTime
+  /// Set when the token is rotated. A token presented again after that is a leak.
+  usedAt    DateTime?
+  createdAt DateTime          @default(now())
+
+  @@index([sessionId])
+  @@map("backoffice_refresh_tokens")
+}
+
+enum BackofficeActorKind {
+  ADMIN
+  /// The server-side command that creates the first administrator.
+  COMMAND
+  /// A sign-in that was refused: nobody proved who they were.
+  ANONYMOUS
+}
+
+/// Everything the backoffice did: who, what, on what, when, from where. Append-only — the code has
+/// no update or delete of it, and a trigger in its migration refuses both.
+///
+/// No foreign key to `users` on purpose: deleting an account must neither remove nor alter what it
+/// did, and `ON DELETE SET NULL` would be an update. The actor's e-mail is kept as it was then.
+model BackofficeAuditLog {
+  id          String              @id @default(uuid(7)) @db.Uuid
+  actorKind   BackofficeActorKind
+  actorUserId String?             @db.Uuid
+  actorLabel  String?
+  /// A stable code, `SUBJECT_VERB-IN-THE-PAST` — text, so a new one needs no migration. The closed
+  /// list is `BackofficeAuditAction` in packages/contracts.
+  action      String
+  targetType  String?
+  targetId    String?
+  targetLabel String?
+  /// Flat and small. Never a secret, a password, a token or a code — `audit-details.ts` refuses them.
+  details     Json                @default("{}")
+  /// The client's address as the API saw it.
+  ip          String?
+  userAgent   String?
+  createdAt   DateTime            @default(now())
+
+  @@index([createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([action, createdAt])
+  @@map("backoffice_audit_log")
+}

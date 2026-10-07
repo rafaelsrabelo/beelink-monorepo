@@ -35,6 +35,10 @@ model User {
   legalAcceptances LegalAcceptance[]
   /// The cashback adjustments this shopkeeper made (BEELINK-238).
   cashbackAdjustments CashbackEntry[]
+  /// Set while — or after — this account administers the platform (BEELINK-227). Written by nothing here.
+  platformAdmin PlatformAdmin?
+  backofficeSessions BackofficeSession[]
+  backofficeSignInChallenges BackofficeSignInChallenge[]
 
   @@unique([storeId, email])
   // The composite above leaves bee-link's accounts unconstrained — Postgres counts every null
