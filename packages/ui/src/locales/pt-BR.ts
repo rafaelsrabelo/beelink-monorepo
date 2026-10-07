@@ -2166,6 +2166,36 @@ export const ptBR: UiMessages = {
     navUnread: "{count} conversas com mensagens não lidas",
     navUnreadOne: "1 conversa com mensagens não lidas",
   },
+  reports: {
+    salesByOrigin: {
+      title: "Vendas por origem",
+      description: "Quanto a loja vendeu por campanha: de onde veio o cliente de cada pedido.",
+      periodLabel: "Período",
+      periodDays: "{days} dias",
+      periodRange: "De {from} a {to}",
+      caption: "Vendas por origem, de {from} a {to}",
+      columns: { origin: "Origem", orders: "Pedidos", revenue: "Vendas", share: "% das vendas" },
+      panel: "Venda registrada no painel",
+      metaAdOrders: "{count} de {total} pedidos com clique em anúncio da Meta",
+      total: "Total",
+      noShare: "—",
+      empty: {
+        title: "Nenhuma venda neste período.",
+        text: "Para uma venda aparecer com a origem, os links dos seus anúncios e posts precisam levar utm_source, utm_medium e utm_campaign. Um exemplo com o endereço da sua loja:",
+        exampleLabel: "Link de exemplo",
+      },
+      notes: {
+        title: "Bom saber",
+        links: "Uma venda só aparece com a origem quando o link do anúncio ou do post leva utm_source, utm_medium e utm_campaign. Um exemplo com o endereço da sua loja:",
+        counted: "Conta como venda o pedido que não foi cancelado, no dia em que foi feito e pelo total do pedido. O pedido cobrado no site só conta depois de pago.",
+        older: "Pedidos feitos antes de a loja guardar a origem contam como “Direto / sem campanha”.",
+        metaClicks: "O clique em anúncio da Meta só é registrado de quem aceita os cookies da loja. O número de cliques é o mínimo, não o total.",
+        meta: "O gasto com anúncios e o retorno (ROAS) continuam na Meta: o bee-link não mostra o resultado dos anúncios.",
+      },
+      failed: "Não foi possível carregar as vendas por origem.",
+      retry: "Tentar de novo",
+    },
+  },
   leads: {
     title: "Leads",
     description: "Quem preencheu o formulário do seu site, do mais recente ao mais antigo.",
@@ -3170,6 +3200,11 @@ export const ptBR: UiMessages = {
       errors: {
         META_PIXEL_ID_INVALID: "Esse não parece um ID de pixel. O ID tem só números, de 10 a 20 dígitos: copie de novo no Gerenciador de Eventos e cole aqui.",
         UNKNOWN: "Não foi possível salvar o ID agora. Tente de novo.",
+      },
+      salesByOrigin: {
+        title: "Vendas por campanha",
+        text: "Veja quanto a loja vendeu por origem do pedido: a campanha do link, a visita direta ou a venda registrada no painel. Funciona com ou sem pixel.",
+        link: "Ver vendas por origem",
       },
       guide: {
         title: "Onde encontrar o ID do pixel",

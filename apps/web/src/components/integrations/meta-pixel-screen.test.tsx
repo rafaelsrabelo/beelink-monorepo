@@ -89,6 +89,13 @@ describe("MetaPixelScreen (BEELINK-270), for a shop yet to give its pixel", () =
     expect(screen.queryByRole("status")).toBeNull()
   })
 
+  /** BEELINK-275: the labels of a campaign are kept on an order with or without a pixel. */
+  it("leads to the sales by origin, with or without a pixel saved", () => {
+    view()
+
+    expect(within(screen.getByRole("region", { name: "Vendas por campanha" })).getByRole("link", { name: "Ver vendas por origem" })).toHaveAttribute("href", "/admin/loja/reports/origins")
+  })
+
   it("saves the ID typed, as the API takes it", async () => {
     view()
 

@@ -2507,6 +2507,46 @@ export interface UiMessages {
     navUnread: string
     navUnreadOne: string
   }
+  /** What the shop sold, read back in groups (BEELINK-275). */
+  reports: {
+    salesByOrigin: {
+      title: string
+      description: string
+      /** Names the group of period links. */
+      periodLabel: string
+      /** `{days}`. One period on offer: "30 dias". */
+      periodDays: string
+      /** `{from}`, `{to}`: the days the numbers are of, as dates. */
+      periodRange: string
+      /** `{from}`, `{to}`. The table's caption, for a screen reader. */
+      caption: string
+      columns: { origin: string; orders: string; revenue: string; share: string }
+      /** The line of sales the shopkeeper registered in the panel, which have no origin. */
+      panel: string
+      /** `{count}`, `{total}`. Under a campaign some of whose orders came by a kept Meta ad click. */
+      metaAdOrders: string
+      total: string
+      /** Where a share cannot be said: nothing was sold for money in the period. */
+      noShare: string
+      empty: {
+        title: string
+        /** How an origin gets recorded; the example link follows it. */
+        text: string
+        exampleLabel: string
+      }
+      notes: {
+        title: string
+        /** `{link}` is not in it: the example is drawn after the sentence, as text. */
+        links: string
+        counted: string
+        older: string
+        metaClicks: string
+        meta: string
+      }
+      failed: string
+      retry: string
+    }
+  }
   leads: {
     title: string
     description: string
@@ -3568,6 +3608,8 @@ export interface UiMessages {
       disconnectFailed: string
       /** By the API's code; `UNKNOWN` for any other. The first is also what the form says of an ID it would not send. */
       errors: Record<"META_PIXEL_ID_INVALID" | "UNKNOWN", string>
+      /** The way from this page to the report of sales by origin (BEELINK-275), which needs no pixel. */
+      salesByOrigin: { title: string; text: string; link: string }
       /** Where the ID is copied from at Meta, and what stays there. */
       guide: {
         title: string

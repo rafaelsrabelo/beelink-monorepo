@@ -2165,6 +2165,36 @@ export const en: UiMessages = {
     navUnread: "{count} conversations with unread messages",
     navUnreadOne: "1 conversation with unread messages",
   },
+  reports: {
+    salesByOrigin: {
+      title: "Sales by origin",
+      description: "How much the shop sold per campaign: where each order's customer came from.",
+      periodLabel: "Period",
+      periodDays: "{days} days",
+      periodRange: "From {from} to {to}",
+      caption: "Sales by origin, from {from} to {to}",
+      columns: { origin: "Origin", orders: "Orders", revenue: "Sales", share: "% of sales" },
+      panel: "Sale registered in the panel",
+      metaAdOrders: "{count} of {total} orders with a Meta ad click",
+      total: "Total",
+      noShare: "—",
+      empty: {
+        title: "No sales in this period.",
+        text: "For a sale to show its origin, the links in your ads and posts need to carry utm_source, utm_medium and utm_campaign. An example with your shop's address:",
+        exampleLabel: "Example link",
+      },
+      notes: {
+        title: "Good to know",
+        links: "A sale only shows its origin when the link in the ad or post carries utm_source, utm_medium and utm_campaign. An example with your shop's address:",
+        counted: "A sale is an order that was not cancelled, on the day it was placed and for the order's total. An order charged on the site only counts once it is paid.",
+        older: "Orders placed before the shop kept origins count as “Direct / no campaign”.",
+        metaClicks: "A Meta ad click is only recorded for those who accept the shop's cookies. The number of clicks is a minimum, not the total.",
+        meta: "Ad spend and return (ROAS) stay at Meta: bee-link does not show how the ads performed.",
+      },
+      failed: "Could not load sales by origin.",
+      retry: "Try again",
+    },
+  },
   leads: {
     title: "Leads",
     description: "Everyone who filled in your site's form, newest first.",
@@ -3169,6 +3199,11 @@ export const en: UiMessages = {
       errors: {
         META_PIXEL_ID_INVALID: "That does not look like a pixel ID. The ID is numbers only, 10 to 20 digits: copy it again in Events Manager and paste it here.",
         UNKNOWN: "Could not save the ID right now. Try again.",
+      },
+      salesByOrigin: {
+        title: "Sales by campaign",
+        text: "See how much the shop sold by each order's origin: the link's campaign, a direct visit or a sale registered in the panel. It works with or without a pixel.",
+        link: "See sales by origin",
       },
       guide: {
         title: "Where to find the pixel ID",
