@@ -3,10 +3,10 @@ import { ApiProperty } from '@nestjs/swagger';
 
 // Libs
 import { Transform } from 'class-transformer';
-import { IsString, Matches } from 'class-validator';
+import { IsString, Length, Matches } from 'class-validator';
 
 // Types
-import type { IntegrationErrorCode, MetaPixelConnectPayload } from '@harness-monorepo/contracts';
+import type { IntegrationErrorCode, MetaPixelConnectPayload, MetaPixelTestEventPayload, MetaPixelTokenPayload } from '@harness-monorepo/contracts';
 
 /**
  * Meta states no length for a pixel's ID; the ones it hands out today have 15 or 16 digits. The
@@ -34,4 +34,31 @@ export class MetaPixelConnectDto implements MetaPixelConnectPayload {
   @IsString(answering)
   @Matches(META_PIXEL_ID, answering)
   pixelId!: string;
+}
+
+/** Meta states no shape for a token; the range refuses what is plainly none — a sentence, a pixel's ID — and nothing else. */
+export const META_TOKEN_MIN = 20;
+export const META_TOKEN_MAX = 1000;
+
+const tokenAnswering = { context: { errorCode: 'META_PIXEL_TOKEN_INVALID' satisfies IntegrationErrorCode } };
+
+export class MetaPixelTokenDto implements MetaPixelTokenPayload {
+  @ApiProperty({ example: 'EAAB…', minLength: META_TOKEN_MIN, maxLength: META_TOKEN_MAX, description: "The pixel's Conversions API access token, as Meta's Events Manager generates it — sealed, and never answered back." })
+  // A token pasted from the Events Manager often carries the line break or the space around it.
+  @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value))
+  @IsString(tokenAnswering)
+  @Length(META_TOKEN_MIN, META_TOKEN_MAX, tokenAnswering)
+  // Visible ASCII only: an invisible character copied along would be refused by Meta as a token gone bad.
+  @Matches(/^[\x21-\x7e]+$/, tokenAnswering)
+  accessToken!: string;
+}
+
+const codeAnswering = { context: { errorCode: 'META_PIXEL_TEST_CODE_INVALID' satisfies IntegrationErrorCode } };
+
+export class MetaPixelTestEventDto implements MetaPixelTestEventPayload {
+  @ApiProperty({ example: 'TEST12345', description: 'The code Events Manager shows under "Test events".' })
+  @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value))
+  @IsString(codeAnswering)
+  @Matches(/^[A-Za-z0-9_-]{3,40}$/, codeAnswering)
+  testEventCode!: string;
 }

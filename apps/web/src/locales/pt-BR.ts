@@ -63,6 +63,7 @@ export const ptBR: WebMessages = {
       promotions: "Promoções",
       cashback: "Cashback",
       integrations: "Integrações",
+      reports: "Relatórios",
       coupons: "Cupons",
       customers: "Clientes",
       categories: "Categorias",

@@ -63,6 +63,18 @@ bee-link has **no app** at Asaas: each shop pastes its own account's API key (BE
 - **A shop's webhook token is a secret.** It is sealed with the key, never returned, and `asaas-access-token` is redacted from the API's request logs. Keep it out of any access log in front of the web that records request headers.
 - **Asaas's quota is per shop**, 25,000 requests in twelve hours of the shop's own account. A `429` is honoured until the time Asaas names; nothing is retried in a loop.
 
+## Meta Pixel
+
+bee-link has **no app** at Meta either: each shop gives its own pixel's ID (BEELINK-269) and, to have its purchases told from the server, its own Conversions API access token (BEELINK-274), generated in the shop's Events Manager. Nothing of bee-link's is registered at Meta, and no variable of its own is needed.
+
+- **`INTEGRATIONS_SECRET_KEY` is all it takes**, and only for the token. Without it a shop still saves its pixel's ID — the ID is public — and the panel says the token is not available in this installation.
+- **What the server calls:** `POST https://graph.facebook.com/v25.0/<pixel id>/events`, from the API's container, one purchase a request, with the shop's token in the body — never in the address. The version is one constant, `META_GRAPH_VERSION` (`integrations/meta-pixel/meta-conversions-http.client.ts`). The API needs to reach `graph.facebook.com` on 443; nothing of Meta's calls in, so there is no webhook to open.
+- **Nothing here was tried against the real Meta, and nothing from the production server.** Its way out is a datacenter address in France. The first shop to save a token should press "Enviar evento de teste" in Integrações → Pixel da Meta and see the event arrive in its Events Manager; a deployment that cannot reach Meta answers "Não foi possível falar com a Meta agora".
+- **Nothing needs a cron.** The API's own clock runs every minute (`MetaPurchases`): the purchases owed (`order_meta_purchases`) are claimed and sent, one that failed is tried again after 1, 2, 4… minutes up to every six hours, and one past seven days is given up — Meta takes no event older. More than one API replica is fine: rows are claimed.
+- **A token Meta refuses stops that shop's sends** (`store_integrations.secretRefusal`) until its shopkeeper saves another; the panel says so. The pixel in the browser needs no token and goes on.
+- **A shop's token is a secret.** It is sealed with the key, never returned, and never written to a log: it travels in request bodies alone, which neither the API nor the web logs. Keep request bodies out of any access log in front of the web.
+- **What was sent, and what was not, is in the database:** `SELECT "outcome", "lastError", "processedAt" FROM order_meta_purchases WHERE "orderId" = …` — `SENT`, `SKIPPED` (no token then, the buyer's consent gone, the order cancelled) or `GIVEN_UP` (Meta's own words, or too old). No row is an order that owed nothing: no consent kept, or registered in the panel.
+
 ## Homologation
 
 A second Compose service in Dokploy, on the branch `homolog`, from the same file. It is a stack of its own, and **none of its Environment is copied from production**: a value pasted across is how one of the two stops working.

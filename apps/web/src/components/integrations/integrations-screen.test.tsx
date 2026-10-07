@@ -20,8 +20,8 @@ vi.mock("@/services/integrations/meta-pixel-hooks", () => ({ useMetaPixelConnect
 const connected: MelhorEnvioConnection = { available: true, environment: "PRODUCTION", status: "CONNECTED", account: { name: "Mutante Suplementos", email: null }, connectedAt: "2026-10-02T12:00:00.000Z", accessExpiresAt: "2026-11-01T12:00:00.000Z" }
 const asaasNever: AsaasConnection = { available: true, environment: "SANDBOX", status: "DISCONNECTED", account: null, webhook: null, approval: null, approvalCheckedAt: null, connectedAt: null }
 const asaasConnected: AsaasConnection = { ...asaasNever, status: "CONNECTED", account: { name: "Mutante Suplementos LTDA", document: "**.222.333/0001-**" }, webhook: "SKIPPED", connectedAt: "2026-10-05T12:00:00.000Z" }
-const pixelNever: MetaPixelConnection = { status: "DISCONNECTED", pixelId: null, connectedAt: null }
-const pixelConnected: MetaPixelConnection = { status: "CONNECTED", pixelId: "123456789012345", connectedAt: "2026-10-06T12:00:00.000Z" }
+const pixelNever: MetaPixelConnection = { status: "DISCONNECTED", pixelId: null, connectedAt: null, conversions: { available: true, token: "NONE", refusal: null, refusedAt: null } }
+const pixelConnected: MetaPixelConnection = { status: "CONNECTED", pixelId: "123456789012345", connectedAt: "2026-10-06T12:00:00.000Z", conversions: { available: true, token: "NONE", refusal: null, refusedAt: null } }
 
 const read = (data: object) => ({ isPending: false, isError: false, data })
 const reading = { isPending: true, isError: false }

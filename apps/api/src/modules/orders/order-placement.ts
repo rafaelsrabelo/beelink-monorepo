@@ -14,6 +14,7 @@ import { belowMinimumOf } from '../payments/payment-terms.js';
 import { paymentDueAtOf } from '../payments/payments.constants.js';
 import { refreshBooks } from '../customers/customer-books.js';
 import { lockCustomer } from '../customers/customer-lock.js';
+import { owePurchase } from '../integrations/meta-pixel/meta-purchase-outbox.js';
 import { redeemCoupon } from '../promotions/order-discounts.js';
 import { businessDaysAfter } from './business-days.js';
 import { deliveryOf, deliveryWindowColumnsOf } from './order-delivery.js';
@@ -220,6 +221,9 @@ export class OrderPlacement {
       await noteOrderStatus(tx, { order: { id: order.id, customerId }, status, at: new Date(), seen: actor === 'CUSTOMER' });
       // A sale the shopkeeper registers is born accepted, which the customer hears of like any move.
       const owed = await oweStatusEmail(tx, { order: { id: order.id, customerId }, status, byCustomer: actor === 'CUSTOMER' });
+      // An order settled with the shop is a purchase the moment it is placed (BEELINK-274): what that
+      // owes Meta is written with it, and sent by nobody here. One charged online owes it when paid.
+      if (actor === 'CUSTOMER' && placement.marketingConsent) await owePurchase(tx, order.id, 'PLACED', placement.placedAt);
       // Read once everything placing it did is written: its cashback's lot included.
       return { order: await tx.order.findUniqueOrThrow({ where: { id: order.id }, include: ORDER_INCLUDE }), owed };
     });

@@ -10,7 +10,7 @@ import type { MetaPixelConnection } from "@harness-monorepo/contracts"
 // App
 import { integrationKeys } from "./integration-keys"
 import { IntegrationError } from "./integration-requests"
-import { useMetaPixelConnection, useRemoveMetaPixel, useSaveMetaPixel } from "./meta-pixel-hooks"
+import { useMetaPixelConnection, useRemoveMetaPixel, useRemoveMetaPixelToken, useSaveMetaPixel, useSaveMetaPixelToken, useSendMetaPixelTestEvent } from "./meta-pixel-hooks"
 
 type Fetched = (url: string, init?: RequestInit) => Promise<Response>
 
@@ -19,8 +19,8 @@ const ID = "123456789012345"
 const OTHER = "987654321098765"
 const PIXEL = "/api/stores/loja/integrations/meta-pixel"
 
-const disconnected: MetaPixelConnection = { status: "DISCONNECTED", pixelId: null, connectedAt: null }
-const connected: MetaPixelConnection = { status: "CONNECTED", pixelId: ID, connectedAt: "2026-10-06T12:00:00.000Z" }
+const disconnected: MetaPixelConnection = { status: "DISCONNECTED", pixelId: null, connectedAt: null, conversions: { available: true, token: "NONE", refusal: null, refusedAt: null } }
+const connected: MetaPixelConnection = { status: "CONNECTED", pixelId: ID, connectedAt: "2026-10-06T12:00:00.000Z", conversions: { available: true, token: "NONE", refusal: null, refusedAt: null } }
 
 /** A client of the test's own, so what it keeps can be looked into; nothing is retried, as nothing here fails by chance. */
 function mount() {
@@ -66,7 +66,7 @@ describe("the shop's Meta Pixel (BEELINK-270)", () => {
   })
 
   it("replaces the ID saved with another, by the same call", async () => {
-    const replaced: MetaPixelConnection = { status: "CONNECTED", pixelId: OTHER, connectedAt: "2026-10-07T09:00:00.000Z" }
+    const replaced: MetaPixelConnection = { status: "CONNECTED", pixelId: OTHER, connectedAt: "2026-10-07T09:00:00.000Z", conversions: { available: true, token: "NONE", refusal: null, refusedAt: null } }
     vi.stubGlobal("fetch", vi.fn<Fetched>(async (_url, init) => Response.json(init?.method === "POST" ? replaced : connected)))
     const { wrapper } = mount()
     const { result } = renderHook(() => ({ connection: useMetaPixelConnection("loja"), save: useSaveMetaPixel("loja") }), { wrapper })
@@ -132,5 +132,100 @@ describe("the shop's Meta Pixel (BEELINK-270)", () => {
     await waitFor(() => expect(result.current.remove.isError).toBe(true))
 
     expect(result.current.connection.data).toEqual(connected)
+  })
+})
+
+describe("the pixel's Conversions API token (BEELINK-274)", () => {
+  /** The shape of a token, and nobody's. */
+  const TOKEN = "EAABnobodys0token0000000000000000000000"
+  const withToken: MetaPixelConnection = { ...connected, conversions: { available: true, token: "SET", refusal: null, refusedAt: null } }
+
+  it("saves the token in the body, keeps the answer as the connection — and keeps the token nowhere", async () => {
+    const fetched = vi.fn<Fetched>(async (_url, init) => Response.json(init?.method === "POST" ? withToken : connected))
+    vi.stubGlobal("fetch", fetched)
+    const { client, wrapper } = mount()
+    const { result } = renderHook(() => ({ connection: useMetaPixelConnection("loja"), token: useSaveMetaPixelToken("loja") }), { wrapper })
+    await waitFor(() => expect(result.current.connection.data?.conversions.token).toBe("NONE"))
+
+    act(() => result.current.token.save(TOKEN))
+    await waitFor(() => expect(result.current.token.savedCount).toBe(1))
+
+    expect(methodsOf(fetched)).toEqual([`GET ${PIXEL}`, `POST ${PIXEL}/token`])
+    expect(JSON.parse(String(fetched.mock.calls[1]?.[1]?.body))).toEqual({ accessToken: TOKEN })
+    expect(result.current.connection.data).toEqual(withToken)
+    expect(result.current.token).toMatchObject({ isPending: false, refusal: null })
+    // The mutation that carried it is gone, variables and all; nothing the client keeps holds the token.
+    await waitFor(() => expect(client.getMutationCache().getAll().every((mutation) => mutation.state.variables === undefined)).toBe(true))
+    expect(JSON.stringify(client.getQueryCache().getAll().map((query) => query.state.data))).not.toContain(TOKEN)
+  })
+
+  it("keeps the API's code for a refusal, and nothing of what was sent, until the next try or until told to forget", async () => {
+    const fetched = vi.fn<Fetched>(async () => Response.json({ statusCode: 400, errorCode: "META_PIXEL_TOKEN_INVALID", message: "x" }, { status: 400 }))
+    vi.stubGlobal("fetch", fetched)
+    const { client, wrapper } = mount()
+    const { result } = renderHook(() => useSaveMetaPixelToken("loja"), { wrapper })
+
+    act(() => result.current.save(TOKEN))
+    await waitFor(() => expect(result.current.refusal).toBe("META_PIXEL_TOKEN_INVALID"))
+
+    expect(result.current.savedCount).toBe(0)
+    await waitFor(() => expect(client.getMutationCache().getAll().every((mutation) => mutation.state.variables === undefined)).toBe(true))
+    act(() => result.current.forget())
+    expect(result.current.refusal).toBeNull()
+  })
+
+  it("removes the token and reads the connection again", async () => {
+    let removed = false
+    const fetched = vi.fn<Fetched>(async (_url, init) => {
+      if (init?.method === "DELETE") {
+        removed = true
+        return Response.json({})
+      }
+      return Response.json(removed ? connected : withToken)
+    })
+    vi.stubGlobal("fetch", fetched)
+    const { wrapper } = mount()
+    const { result } = renderHook(() => ({ connection: useMetaPixelConnection("loja"), remove: useRemoveMetaPixelToken("loja") }), { wrapper })
+    await waitFor(() => expect(result.current.connection.data?.conversions.token).toBe("SET"))
+
+    act(() => result.current.remove.mutate())
+    await waitFor(() => expect(result.current.connection.data?.conversions.token).toBe("NONE"))
+
+    expect(methodsOf(fetched)).toEqual([`GET ${PIXEL}`, `DELETE ${PIXEL}/token`, `GET ${PIXEL}`])
+  })
+
+  /** Meta's answer may have changed where the token stands: refused, or taken again. */
+  it("sends a test event, answers what Meta said, and reads the connection again", async () => {
+    const rejected: MetaPixelConnection = { ...connected, conversions: { available: true, token: "REJECTED", refusal: "TOKEN_REJECTED", refusedAt: "2026-10-06T13:00:00.000Z" } }
+    let tested = false
+    const fetched = vi.fn<Fetched>(async (url) => {
+      if (String(url).endsWith("/test-event")) {
+        tested = true
+        return Response.json({ outcome: "TOKEN_REJECTED", detail: "Meta refused (400, code 190): expired" })
+      }
+      return Response.json(tested ? rejected : withToken)
+    })
+    vi.stubGlobal("fetch", fetched)
+    const { wrapper } = mount()
+    const { result } = renderHook(() => ({ connection: useMetaPixelConnection("loja"), test: useSendMetaPixelTestEvent("loja") }), { wrapper })
+    await waitFor(() => expect(result.current.connection.data?.conversions.token).toBe("SET"))
+
+    act(() => result.current.test.mutate({ testEventCode: "TEST12345" }))
+    await waitFor(() => expect(result.current.connection.data?.conversions.token).toBe("REJECTED"))
+
+    expect(result.current.test.data).toEqual({ outcome: "TOKEN_REJECTED", detail: "Meta refused (400, code 190): expired" })
+    expect(methodsOf(fetched)).toEqual([`GET ${PIXEL}`, `POST ${PIXEL}/test-event`, `GET ${PIXEL}`])
+    expect(JSON.parse(String(fetched.mock.calls[1]?.[1]?.body))).toEqual({ testEventCode: "TEST12345" })
+  })
+
+  it("throws the API's code when a test is not made at all", async () => {
+    vi.stubGlobal("fetch", vi.fn<Fetched>(async () => Response.json({ statusCode: 429, errorCode: "RATE_LIMITED", message: "x" }, { status: 429 })))
+    const { wrapper } = mount()
+    const { result } = renderHook(() => useSendMetaPixelTestEvent("loja"), { wrapper })
+
+    act(() => result.current.mutate({ testEventCode: "TEST12345" }))
+    await waitFor(() => expect(result.current.isError).toBe(true))
+
+    expect(result.current.error).toMatchObject({ errorCode: "RATE_LIMITED" })
   })
 })
