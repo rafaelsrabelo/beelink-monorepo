@@ -9,4 +9,6 @@ export const promotionKeys = {
   couponList: (slug: string, query: object) => [...promotionKeys.coupons(slug), "list", query] as const,
   coupon: (slug: string, couponId: string) => [...promotionKeys.coupons(slug), "one", couponId] as const,
   redemptions: (slug: string, couponId: string, query: object) => [...promotionKeys.coupons(slug), "redemptions", couponId, query] as const,
+  /** The shop's first-purchase pop-up (BEELINK-306): one record, read whole. */
+  popup: (slug: string) => [...promotionKeys.shop(slug), "popup"] as const,
 }

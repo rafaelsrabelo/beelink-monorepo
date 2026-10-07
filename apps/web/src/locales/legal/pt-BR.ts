@@ -16,11 +16,11 @@ export interface LegalTexts {
  * keeps or shares is a new version of these texts, with a new `version`.
  */
 export const legalTexts = {
-  version: "2026-10-06",
+  version: "2026-10-07",
   terms: {
     lang: "pt-BR",
     title: "Termos de uso",
-    effective: "Vigente desde 6 de outubro de 2026",
+    effective: "Vigente desde 7 de outubro de 2026",
     intro: [
       "Estes Termos de uso são as regras para usar o bee-link. Eles explicam o que a plataforma faz, o que ela não faz e o que se espera de cada pessoa que a usa.",
       "Eles valem para dois públicos: o lojista, que cria uma conta no painel para publicar a sua loja, e o cliente, que cria uma conta numa loja para comprar dela. Quando uma regra vale só para um dos dois, o texto diz.",
@@ -360,7 +360,7 @@ export const legalTexts = {
   privacy: {
     lang: "pt-BR",
     title: "Política de privacidade",
-    effective: "Vigente desde 6 de outubro de 2026",
+    effective: "Vigente desde 7 de outubro de 2026",
     intro: [
       "Esta Política de privacidade explica quais dados pessoais o bee-link trata, para quê, com quem os compartilha, por quanto tempo os guarda e como você exerce os seus direitos, conforme a Lei Geral de Proteção de Dados (Lei nº 13.709/2018, a LGPD).",
       "Ela vale para os lojistas, para os clientes das lojas e para quem visita uma loja sem criar conta. Ao criar uma conta, ou ao definir uma senha pelo link enviado por e-mail, você declara que leu esta Política.",
@@ -623,6 +623,7 @@ export const legalTexts = {
               "bl_consent: a sua resposta, aceitar ou recusar, ao aviso de cookies de uma loja que usa o Pixel da Meta; vale só para aquela loja e dura 180 dias;",
               "bl_purchases: numa loja que usa o Pixel da Meta, e só depois que você aceita, os códigos dos seus últimos pedidos já informados à Meta, para que o mesmo pedido não seja informado duas vezes; vale só para aquela loja e dura 7 dias, renovados a cada pedido informado;",
               "bl_origin: a campanha do link pelo qual você chegou a uma loja, isto é, os parâmetros utm_source, utm_medium, utm_campaign, utm_content e utm_term do endereço, para que o pedido que você fizer ali registre de qual campanha veio; e, numa loja que usa o Pixel da Meta, só depois que você aceita, o identificador do clique no anúncio (fbclid) com que você chegou; vale só para aquela loja e dura 30 dias a partir da chegada;",
+              "bl_popup: numa loja que mostra um aviso de primeira compra (pop-up), que você já fechou esse aviso ou apertou o botão dele, para que ele não abra de novo; guarda só o número da versão do aviso, e nada sobre você; vale só para aquela loja e dura 30 dias;",
               "bl_prefs: as preferências de exibição do painel, como o menu recolhido; dura 1 ano;",
               "bl_locale: o idioma escolhido; dura 1 ano.",
             ],

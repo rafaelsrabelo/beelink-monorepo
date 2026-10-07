@@ -30,3 +30,4 @@ export type * from "./report.js";
 export type * from "./review.js";
 export type * from "./shipping.js";
 export type * from "./user.js";
+export type * from "./popup.js";

@@ -35,12 +35,34 @@ export function shownFirstPurchaseCoupon(db: Db, storeId: string, at: Date, maxU
   return db.coupon.findFirst({ where: { storeId, ...SHOWN, audience: 'FIRST_PURCHASE', ...couponWhereOf('ACTIVE', at, maxUses) }, orderBy: NEWEST });
 }
 
+/** The shop's shown coupons for a first purchase in force at `at`, the newest first — what its pop-up may name (BEELINK-306). */
+export function shownFirstPurchaseCoupons(db: Db, storeId: string, at: Date, maxUses: Prisma.FieldRef<'Coupon', 'Int'>): Promise<CouponModel[]> {
+  return db.coupon.findMany({ where: { storeId, ...SHOWN, audience: 'FIRST_PURCHASE', ...couponWhereOf('ACTIVE', at, maxUses) }, orderBy: NEWEST, take: SHOWN_COUPONS_MAX });
+}
+
+/** One shown first-purchase coupon by its id, if it is in force at `at`; null otherwise — paused, ended, used up, or no longer shown. */
+export function shownFirstPurchaseCouponById(db: Db, storeId: string, couponId: string, at: Date, maxUses: Prisma.FieldRef<'Coupon', 'Int'>): Promise<CouponModel | null> {
+  return db.coupon.findFirst({ where: { id: couponId, storeId, ...SHOWN, audience: 'FIRST_PURCHASE', ...couponWhereOf('ACTIVE', at, maxUses) } });
+}
+
 export function couponBenefitOf(coupon: Pick<CouponModel, 'kind' | 'percentBps' | 'amountCents' | 'minSubtotalCents' | 'endsAt'>): OfferBenefit {
   return { kind: coupon.kind, percentBps: coupon.percentBps, amountCents: coupon.amountCents, minSubtotalCents: coupon.minSubtotalCents, endsAt: coupon.endsAt?.toISOString() ?? null };
 }
 
 /** A running promotion with its end, which pricing does not read and a strip may say. */
 export type OfferPromotion = PricingPromotion & { endsAt: Date | null };
+
+/** One running promotion as the benefit a page says: its kind and amount, and whether it is over the whole cart. A promotion asks for no minimum. */
+export function promotionBenefitOf(promotion: OfferPromotion): OfferBenefit & { wholeCart: boolean } {
+  return {
+    kind: promotion.discountKind,
+    percentBps: promotion.percentBps,
+    amountCents: promotion.amountCents,
+    minSubtotalCents: 0,
+    endsAt: promotion.endsAt?.toISOString() ?? null,
+    wholeCart: promotion.scope === 'CART',
+  };
+}
 
 /**
  * The promotion a shop's first-purchase strip speaks of, among those running (the newest first):
@@ -50,16 +72,7 @@ export type OfferPromotion = PricingPromotion & { endsAt: Date | null };
 export function firstPurchasePromotionOf(promotions: readonly OfferPromotion[]): (OfferBenefit & { wholeCart: boolean }) | null {
   const forFirstPurchase = promotions.filter((promotion) => promotion.audience === 'FIRST_PURCHASE');
   const chosen = forFirstPurchase.find((promotion) => promotion.scope === 'CART') ?? forFirstPurchase[0];
-  if (!chosen) return null;
-
-  return {
-    kind: chosen.discountKind,
-    percentBps: chosen.percentBps,
-    amountCents: chosen.amountCents,
-    minSubtotalCents: 0,
-    endsAt: chosen.endsAt?.toISOString() ?? null,
-    wholeCart: chosen.scope === 'CART',
-  };
+  return chosen ? promotionBenefitOf(chosen) : null;
 }
 
 /** The headline anyone is told: the promotion when there is one — it applies by itself — else the shown coupon, without its code. */

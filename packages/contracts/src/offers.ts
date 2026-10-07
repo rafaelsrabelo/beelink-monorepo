@@ -1,4 +1,5 @@
 import type { CreateOrderItemInput, OrderFulfillment, OrderShippingChoice } from "./order.js";
+import type { StorefrontPopup } from "./popup.js";
 import type { CouponKind, DiscountAudience } from "./promotion.js";
 
 /**
@@ -42,6 +43,12 @@ export interface FirstPurchaseHeadline extends OfferBenefit {
  */
 export interface StorefrontOffers {
   firstPurchase: FirstPurchaseHeadline | null;
+  /**
+   * The shop's first-purchase pop-up (BEELINK-306), while it is switched on; null otherwise — a
+   * shop that switched it off serves nothing of what it configured. Read with the headline because
+   * the page that draws one asks for the other, and both change at the same instants.
+   */
+  popup: StorefrontPopup | null;
 }
 
 /**

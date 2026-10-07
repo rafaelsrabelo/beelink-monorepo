@@ -64,9 +64,15 @@ export function PromotionsScreen({ slug, locale, messages, web }: PromotionsScre
           <h1 className="text-2xl font-semibold">{text.title}</h1>
           <p className="text-muted-foreground text-sm">{text.intro}</p>
         </div>
-        <AppLink href={`/admin/${slug}/promotions/new`} className={buttonVariants()}>
-          {text.create}
-        </AppLink>
+        <div className="flex flex-wrap gap-2">
+          {/* The shop's first-purchase pop-up (BEELINK-306) announces one of these: its page is one click from here. */}
+          <AppLink href={`/admin/${slug}/coupons/popup`} className={buttonVariants({ variant: "outline" })}>
+            {shared.popup.open}
+          </AppLink>
+          <AppLink href={`/admin/${slug}/promotions/new`} className={buttonVariants()}>
+            {text.create}
+          </AppLink>
+        </div>
       </header>
 
       <DiscountStatusTabs tabs={tabs} linkComponent={AppLink} messages={messages} />

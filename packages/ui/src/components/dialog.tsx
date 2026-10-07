@@ -44,15 +44,18 @@ function DialogContent({
   children,
   showCloseButton = true,
   closeLabel = "Close",
+  overlayClassName,
   ...props
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean
   /** What a screen reader calls the close button — the screen passes it in the shop's language. */
   closeLabel?: string
+  /** The backdrop's own classes: a dialog that interrupts a page dims it more than one the page asked for. */
+  overlayClassName?: string
 }) {
   return (
     <DialogPortal>
-      <DialogOverlay />
+      <DialogOverlay className={overlayClassName} />
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(

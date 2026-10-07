@@ -201,16 +201,27 @@ describe("offersAt — what the shop says of its offers to anyone", () => {
   it("reads the first-purchase headline under the store's tag and the offers' own", async () => {
     const asked = stubApi(() => HEADLINE)
 
-    expect(await offersAt("loja")).toEqual(HEADLINE)
+    // An answer kept from before the pop-up existed (BEELINK-306) has no `popup`: read as none.
+    expect(await offersAt("loja")).toEqual({ ...HEADLINE, popup: null })
     expect(asked[0]?.url.pathname).toMatch(/\/stores\/loja\/offers$/)
     expect(asked[0]?.tags).toEqual([storeTag("loja"), offersTag("loja")])
   })
 
+  it("reads the shop's pop-up with the headline, in the same kept answer", async () => {
+    const popup = { revision: 2, imageUrl: null, title: null, text: null, buttonLabel: null, trigger: "ON_ARRIVAL", delaySeconds: 5, benefit: HEADLINE.firstPurchase }
+    const asked = stubApi(() => ({ ...HEADLINE, popup }))
+
+    expect((await offersAt("loja")).popup).toEqual(popup)
+    // One read for both: saving the pop-up drops the offers' tag, and the headline with it.
+    expect(asked).toHaveLength(1)
+    expect(asked[0]?.tags).toContain(offersTag("loja"))
+  })
+
   it("is no offer when the read fails: the strip then promises nothing", async () => {
     vi.stubGlobal("fetch", () => Promise.reject(new TypeError("Failed to fetch")))
-    expect(await offersAt("loja")).toEqual({ firstPurchase: null })
+    expect(await offersAt("loja")).toEqual({ firstPurchase: null, popup: null })
 
     vi.stubGlobal("fetch", () => Promise.resolve(new Response("{}", { status: 500 })))
-    expect(await offersAt("loja")).toEqual({ firstPurchase: null })
+    expect(await offersAt("loja")).toEqual({ firstPurchase: null, popup: null })
   })
 })

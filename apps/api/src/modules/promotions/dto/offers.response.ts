@@ -2,10 +2,11 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 // Types
-import type { CouponKind, CustomerFirstPurchaseOffer, CustomerOffers, DiscountAudience, FirstPurchaseHeadline, OfferBenefit, OfferedCoupon, StorefrontOffers } from '@harness-monorepo/contracts';
+import type { CouponKind, CustomerFirstPurchaseOffer, CustomerOffers, DiscountAudience, FirstPurchaseHeadline, OfferBenefit, OfferedCoupon, PopupTrigger, StorefrontOffers, StorefrontPopup } from '@harness-monorepo/contracts';
 
 // App
 import { COUPON_KINDS, DISCOUNT_AUDIENCES } from '../promotions.constants.js';
+import { POPUP_TRIGGERS } from '../shop-popup.js';
 
 const HEADLINE_SOURCES = ['PROMOTION', 'COUPON'] as const satisfies readonly FirstPurchaseHeadline['source'][];
 
@@ -22,9 +23,27 @@ export class FirstPurchaseHeadlineResponse extends OfferBenefitResponse implemen
   @ApiProperty({ description: 'False on a promotion over named products or categories.' }) wholeCart!: boolean;
 }
 
+/** What a pop-up says and when it opens: the part its owner's read and a visitor's share (BEELINK-306). */
+export class PopupCopyResponse {
+  @ApiProperty({ nullable: true, type: String, description: 'http(s); null draws the coloured panel alone.' }) imageUrl!: string | null;
+  @ApiProperty({ nullable: true, type: String, description: 'Null is the default. May carry {beneficio}.' }) title!: string | null;
+  @ApiProperty({ nullable: true, type: String }) text!: string | null;
+  @ApiProperty({ nullable: true, type: String }) buttonLabel!: string | null;
+  @ApiProperty({ enum: POPUP_TRIGGERS }) trigger!: PopupTrigger;
+  @ApiProperty({ description: 'Seconds after the page arrives, on ON_ARRIVAL.' }) delaySeconds!: number;
+  @ApiProperty({ description: 'Up by one when what a visitor reads changes.' }) revision!: number;
+}
+
+/** The pop-up inside the public offers' answer: no code and no id of a coupon, ever. */
+export class StorefrontPopupResponse extends PopupCopyResponse implements StorefrontPopup {
+  @ApiProperty({ type: FirstPurchaseHeadlineResponse, nullable: true, description: 'What it announces; null promises no discount.' }) benefit!: FirstPurchaseHeadlineResponse | null;
+}
+
 export class StorefrontOffersResponse implements StorefrontOffers {
   @ApiProperty({ type: FirstPurchaseHeadlineResponse, nullable: true, description: "The shop's benefit for a first purchase, without any code; null with none." })
   firstPurchase!: FirstPurchaseHeadlineResponse | null;
+  @ApiProperty({ type: StorefrontPopupResponse, nullable: true, description: "The shop's first-purchase pop-up while it is switched on; null otherwise." })
+  popup!: StorefrontPopupResponse | null;
 }
 
 export class OfferedCouponResponse extends OfferBenefitResponse implements OfferedCoupon {
