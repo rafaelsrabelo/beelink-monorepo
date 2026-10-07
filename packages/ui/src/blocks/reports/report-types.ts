@@ -1,5 +1,5 @@
 // Locales
-import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
+import type { FunnelStepKey, UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 /**
  * The shapes the report blocks draw, restated here rather than imported from the wire: this package
@@ -33,4 +33,11 @@ export interface SalesByOriginRowsProps {
   caption: string
   locale?: string
   messages?: UiMessages
+}
+
+/** A step of the shop's funnel as the blocks draw it. Mirrors `FunnelStepCount`. */
+export interface FunnelStepView {
+  step: FunnelStepKey
+  /** Events for the four counted steps, orders for the purchase. */
+  count: number
 }
