@@ -55,4 +55,42 @@ describe("StorefrontCategoryRail", () => {
 
     await expectNoA11yViolations(container)
   })
+
+  describe("drawn as the artwork alone", () => {
+    it("draws the picture and nothing else, and the link answers to the category's name", () => {
+      renderRail({ cardStyle: "ART_ONLY" })
+
+      const card = screen.getByRole("link", { name: "Mais vendidos" })
+      expect(card).toHaveAttribute("href", "/lessari/categorias/mais-vendidos")
+      expect(within(card).getByRole("img", { name: "Mais vendidos" })).toHaveAttribute("src", "https://cdn/mv.png")
+      // Nothing written with it: no name under the picture, no count.
+      expect(card).toHaveTextContent("")
+      expect(card.className).toContain("aspect-square")
+      expect(card.className).toContain("focus-visible:outline-2")
+      expect(card.className).toContain("rounded-xl")
+    })
+
+    it("draws a category with no picture as the card with its name, never an empty square", () => {
+      renderRail({ cardStyle: "ART_ONLY" })
+
+      const card = screen.getByRole("link", { name: /Promoções/ })
+      expect(within(card).getByText("Promoções")).toBeInTheDocument()
+      expect(within(card).getByText("3 produtos")).toBeInTheDocument()
+      expect(screen.getAllByRole("link")).toHaveLength(categories.length)
+    })
+
+    it("has no accessibility violations", async () => {
+      const { container } = renderRail({ cardStyle: "ART_ONLY" })
+
+      await expectNoA11yViolations(container)
+    })
+  })
+
+  it("writes the name with the photograph unless told otherwise", () => {
+    renderRail()
+
+    const card = screen.getByRole("link", { name: /Mais vendidos/ })
+    expect(within(card).getByText("Mais vendidos")).toBeInTheDocument()
+    expect(within(card).getByText("12 produtos")).toBeInTheDocument()
+  })
 })

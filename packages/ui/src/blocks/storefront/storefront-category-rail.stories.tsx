@@ -2,6 +2,7 @@ import type { CSSProperties } from "react"
 
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
+import { artCategories } from "./category-art.fixtures"
 import { StorefrontCategoryRail } from "./storefront-category-rail"
 
 const categories = [
@@ -44,6 +45,20 @@ export const Padrao: Story = {}
  * inside a wide canvas would keep the desktop ones.
  */
 export const NoCelular: Story = {
+  globals: { viewport: { value: "mobile2", isRotated: false } },
+}
+
+/**
+ * Artwork that already carries its words: a square of the picture and nothing written with it. The
+ * one category with no picture ("Jardim") is drawn with its name, never as an empty square.
+ */
+export const SoAArte: Story = {
+  args: { categories: artCategories, cardStyle: "ART_ONLY" },
+}
+
+/** Two squares and a peek of the third. */
+export const SoAArteNoCelular: Story = {
+  args: { categories: artCategories, cardStyle: "ART_ONLY" },
   globals: { viewport: { value: "mobile2", isRotated: false } },
 }
 
