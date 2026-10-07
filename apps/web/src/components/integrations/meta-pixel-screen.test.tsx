@@ -173,8 +173,16 @@ describe("MetaPixelScreen, where to find the ID", () => {
     expect(said.join(" ")).not.toMatch(/enviando|já envia|está medindo|já mede|is sending|being sent|is measuring|is tracking/i)
   })
 
-  it.each([["pt-BR", ui, /compras ainda não são enviadas/i], ["en", en, /purchases are not sent yet/i]] as const)("says, in %s, that purchases are not sent yet", (_name, messages, notYet) => {
-    expect(messages.integrations.metaPixel.guide.notes.events).toMatch(notYet)
+  // BEELINK-273: the purchase is sent now, and the shopkeeper is told which moment counts as one at each kind of shop.
+  it.each([
+    ["pt-BR", ui, /pedido feito, quando o pagamento é combinado com você/i, /pagamento aprovado, quando é cobrado no site/i],
+    ["en", en, /order placed, when payment is settled with you/i, /payment approved, when it is charged on the site/i],
+  ] as const)("says, in %s, what counts as a purchase — and no longer that purchases are not sent", (_name, messages, settled, charged) => {
+    const events = messages.integrations.metaPixel.guide.notes.events
+
+    expect(events).toMatch(settled)
+    expect(events).toMatch(charged)
+    expect(events).not.toMatch(/ainda não|not sent yet/i)
   })
 
   it("loads nothing of Meta's: no script, no frame, and no image from another site", () => {

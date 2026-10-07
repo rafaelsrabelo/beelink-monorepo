@@ -3178,7 +3178,7 @@ export const en: UiMessages = {
           reports: "Reports and ad creation stay at Meta: bee-link does not show how the ads perform.",
           unchecked: "bee-link has no way to check the ID with Meta. Copy and paste the number rather than typing it.",
           consent: "With an ID saved, whoever visits your shop sees a cookie notice and chooses to accept or refuse. The pixel only applies to visitors who accept.",
-          events: "For visitors who accept, the shop sends Meta the pages and products they view, their searches, their favourites, what goes into the cart and their arrival at checkout. Purchases are not sent yet.",
+          events: "For visitors who accept, the shop sends Meta the pages and products they view, their searches, their favourites, what goes into the cart, their arrival at checkout and the purchase. A purchase is the order placed, when payment is settled with you, or the payment approved, when it is charged on the site.",
         },
       },
     },
