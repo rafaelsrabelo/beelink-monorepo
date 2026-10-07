@@ -8,7 +8,7 @@ import type { StorefrontPaymentOptions } from "@harness-monorepo/contracts"
 import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 
 // App
-import { checkoutPaymentOf, finishesOnWhatsAppOf, heldPaymentOf, paymentPayloadOf } from "./checkout-payment"
+import { checkoutChannelOf, checkoutPaymentOf, finishesOnWhatsAppOf, heldPaymentOf, paymentPayloadOf } from "./checkout-payment"
 
 const context = { money: (cents: number) => `R$ ${(cents / 100).toFixed(2).replace(".", ",")}`, text: ptBR.storefront }
 const ONLINE = { pix: true, card: true, maxInstallments: 6, minimumChargeCents: 500, minimumInstallmentCents: 500 }
@@ -150,5 +150,31 @@ describe("finishesOnWhatsAppOf — what the product page says of where the order
   it("never says so of a shop with no WhatsApp", () => {
     expect(finishesOnWhatsAppOf(undefined, BEFORE)).toBe(false)
     expect(finishesOnWhatsAppOf("", BEFORE)).toBe(false)
+  })
+})
+
+describe("checkoutChannelOf — what the checkout's button promises", () => {
+  const plan = (offlineMethods: readonly string[], online: boolean, nothingToPay = false) =>
+    ({ offlineMethods, online: online ? { methods: ["PIX"], unavailable: null, installments: [], note: null } : null, nothingToPay: nothingToPay ? "nada a pagar" : null }) as unknown as Parameters<typeof checkoutChannelOf>[0]
+
+  // The owner's report: a shop charging online only, a cart under the least charge, and a button that said WhatsApp.
+  it("says paying here at a shop that only charges online, before any way is picked — or can be", () => {
+    expect(checkoutChannelOf(plan([], true), null, true)).toBe("pay")
+    expect(checkoutChannelOf(plan([], true), { paymentChannel: "ONLINE" }, true)).toBe("pay")
+  })
+
+  it("says WhatsApp at a shop that charges nothing online, as before", () => {
+    expect(checkoutChannelOf(plan(["PIX"], false), null, true)).toBe("whatsapp")
+    expect(checkoutChannelOf(plan(["PIX"], false), null, false)).toBe("shop")
+  })
+
+  it("follows the pick where both kinds are offered, and says neither while none is picked", () => {
+    expect(checkoutChannelOf(plan(["CASH"], true), null, true)).toBe("shop")
+    expect(checkoutChannelOf(plan(["CASH"], true), { paymentChannel: "ONLINE" }, true)).toBe("pay")
+    expect(checkoutChannelOf(plan(["CASH"], true), {}, true)).toBe("whatsapp")
+  })
+
+  it("settles an order with nothing to pay with the shop, whatever it charges online", () => {
+    expect(checkoutChannelOf(plan([], true, true), null, true)).toBe("whatsapp")
   })
 })

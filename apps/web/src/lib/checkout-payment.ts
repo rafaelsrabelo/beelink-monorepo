@@ -121,3 +121,25 @@ export function paymentPayloadOf(held: Required<PickedPayment>, plan: CheckoutPa
 export function finishesOnWhatsAppOf(whatsapp: string | null | undefined, options: StorefrontPaymentOptions): boolean {
   return Boolean(whatsapp) && options.online === null
 }
+
+/** What the checkout's button promises: paying here, the shop's WhatsApp opening, or the order alone. */
+export type CheckoutChannel = "pay" | "whatsapp" | "shop"
+
+/**
+ * What pressing the checkout's button leads to, said before it is pressed.
+ *
+ * It follows what the shop takes, not only what was picked: a shop that charges online and takes
+ * nothing on delivery never opens WhatsApp, so its button must not say so while no way is chosen
+ * yet, or while the total is under the least charge and no way can be. The owner's report was that
+ * cart: "Fechar pedido pelo WhatsApp" at a shop that had switched paying on delivery off.
+ *
+ * With both kinds on offer and none picked, the button says neither: which it is depends on the pick.
+ */
+export function checkoutChannelOf(plan: Pick<CheckoutPaymentPlan, "offlineMethods" | "online" | "nothingToPay">, picked: Pick<PlaceCustomerOrderPayload, "paymentChannel"> | null, hasWhatsApp: boolean): CheckoutChannel {
+  const settled: CheckoutChannel = hasWhatsApp ? "whatsapp" : "shop"
+  // Nothing to pay is settled with the shop, whatever the shop charges online.
+  if (plan.nothingToPay) return settled
+  if (picked) return picked.paymentChannel === "ONLINE" ? "pay" : settled
+  if (!plan.online) return settled
+  return plan.offlineMethods.length === 0 ? "pay" : "shop"
+}

@@ -25,6 +25,7 @@ import { useCheckoutTracking } from "./use-checkout-tracking"
 import { waysBackWithCoupon } from "@/lib/cart-coupon"
 import type { ServedQuote } from "@/lib/cart-pricing"
 import { cartViewOf, orderItemsOf, rowKeyOf } from "@/lib/cart-view"
+import { checkoutChannelOf } from "@/lib/checkout-payment"
 import { checkoutRefusalOf, REPRICED, rereadsTheCart } from "@/lib/checkout-refusal"
 import { isReachable } from "@/lib/customer-address"
 import { ShopperOrderError } from "@/services/storefront/storefront-requests"
@@ -199,7 +200,7 @@ export function StorefrontCartLive({
           <>
             <CartPriceControls pricing={pricing} signedOut={!shopper} disabled={order.pending || view.count === 0} onChange={changed} locale={locale} messages={messages} />
             <StorefrontCheckout
-              channel={paysOnline ? "pay" : whatsapp ? "whatsapp" : "shop"}
+              channel={checkoutChannelOf({ offlineMethods, online, nothingToPay }, payment, Boolean(whatsapp))}
               customer={
                 shopper
                   ? {
