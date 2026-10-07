@@ -32,6 +32,16 @@ describe("the pop-up cookie", () => {
   it("reads no cookie, or one somebody edited, as never closed", () => {
     for (const raw of [undefined, "", "0", "-1", "1.5", "01", "1e3", "sim", "3;4", " 3", "99999999999"]) expect(decodePopupSeen(raw)).toBeNull()
   })
+
+  // The policy names the cookie and its 30 days; a change here is a new version of that text.
+  it("lasts what the privacy policy says it lasts, and holds what it says it holds", async () => {
+    const { legalTexts } = await import("@/locales/legal/pt-BR")
+    const line = JSON.stringify(legalTexts.privacy).split('","').find((item) => item.startsWith(`${POPUP_COOKIE}: `))
+
+    expect(line).toContain(`dura ${POPUP_MAX_AGE_SECONDS / 86_400} dias`)
+    expect(line).toContain("guarda só o número da versão do aviso, e nada sobre você")
+    expect(line).toContain("vale só para aquela loja")
+  })
 })
 
 describe("popupSeen", () => {
