@@ -1,7 +1,7 @@
 // App
 import { metaEventOf } from "./meta-pixel-event"
 import { sendToMetaPixel } from "./meta-pixel"
-import { isQuietPath, newEventId, type Track } from "./storefront-event"
+import { isQuietPath, newEventId, type StorefrontEvent, type Track, type TrackOptions } from "./storefront-event"
 
 export interface TrackInput {
   /** The shop's Meta Pixel; null for a shop with none. */
@@ -22,23 +22,24 @@ export interface TrackInput {
  * again. That holds whatever order the page's effects run in, and however often they do.
  *
  * An event refused is dropped, never kept for later: what a visitor did before saying yes is not
- * told once they do. A second destination — the shop's own record of the event — is a second line
+ * told once they do. The answer says which it was — true for one handed to the pixel. A second destination — the shop's own record of the event — is a second line
  * in `send`.
  */
 export function createTrack({ pixelId, allowed, quietPaths }: TrackInput): Track {
   let page: string | null = null
 
   return (event, options) => {
-    if (!allowed || !pixelId) return
+    if (!allowed || !pixelId) return false
 
     const pathname = window.location.pathname
-    if (isQuietPath(pathname, quietPaths)) return
+    if (isQuietPath(pathname, quietPaths)) return false
 
-    const send: Track = (told, as) => sendToMetaPixel(pixelId, metaEventOf(told), as?.id ?? newEventId())
+    const send = (told: StorefrontEvent, as?: TrackOptions) => sendToMetaPixel(pixelId, metaEventOf(told), as?.id ?? newEventId())
     if (page !== pathname) {
       page = pathname
       send({ name: "PageView" })
     }
     if (event.name !== "PageView") send(event, options)
+    return true
   }
 }

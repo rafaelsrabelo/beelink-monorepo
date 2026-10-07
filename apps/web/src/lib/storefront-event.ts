@@ -7,7 +7,8 @@ import type { PublicStore } from "@harness-monorepo/contracts"
  * event, and under which names, is decided where it is dispatched (`storefront-track.ts`).
  *
  * The names are the ones advertising tools agree on, so a later ticket adds a line here rather than
- * a vocabulary: X6 adds `Purchase`.
+ * a vocabulary. `Purchase` (BEELINK-273) is an order that counted as one — which orders do, and
+ * when, is `purchase.ts`'s to say.
  */
 export type StorefrontEvent =
   | { name: "PageView" }
@@ -17,6 +18,7 @@ export type StorefrontEvent =
   | { name: "AddToCart"; item: EventItem & { name: string } }
   | { name: "InitiateCheckout"; items: readonly EventItem[]; valueCents: number }
   | { name: "AddPaymentInfo"; items: readonly EventItem[]; valueCents: number }
+  | { name: "Purchase"; items: readonly SoldItem[]; valueCents: number }
 
 export type StorefrontEventName = StorefrontEvent["name"]
 
@@ -35,6 +37,13 @@ export interface EventItem {
   qty: number
 }
 
+/** A line of an order: some units of a product, and what the line cost once its promotion was taken off. */
+export interface SoldItem {
+  productId: string
+  qty: number
+  paidCents: number
+}
+
 export interface TrackOptions {
   /**
    * The event's own id, for one that is also told from the server and must be counted once: an
@@ -43,8 +52,12 @@ export interface TrackOptions {
   id?: string
 }
 
-/** The storefront's one way of saying something happened. It never throws and returns nothing: a page works the same told or untold. */
-export type Track = (event: StorefrontEvent, options?: TrackOptions) => void
+/**
+ * The storefront's one way of saying something happened. It never throws, and a page works the same
+ * told or untold. It answers whether the event left — false when it was refused — which only what
+ * must be told exactly once has any use for: an order's purchase is marked as told on a yes alone.
+ */
+export type Track = (event: StorefrontEvent, options?: TrackOptions) => boolean
 
 /**
  * The shop's pages no event may leave from: the ones whose address carries a single-use token —

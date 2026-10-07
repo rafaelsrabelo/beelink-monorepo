@@ -116,7 +116,7 @@ describe("StorefrontProductLive — what it tells (BEELINK-272)", () => {
     variants: [{ id: "v2", optionValueIds: [], priceCents: 10990, compareAtPriceCents: null, imageUrl: null, available: true }],
   } as unknown as PublicProductDetail
 
-  function renderTold(track: () => void) {
+  function renderTold(track: () => boolean) {
     return render(
       <QueryClientProvider client={new QueryClient()}>
         <TrackingContext value={{ allowed: true, track }}>

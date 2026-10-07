@@ -14,7 +14,7 @@ export interface TrackingContextValue {
 
 export const TrackingContext = createContext<TrackingContextValue | null>(null)
 
-const UNTOLD: Track = () => {}
+const UNTOLD: Track = () => false
 
 /**
  * How a component of the shop window says something happened (BEELINK-272):

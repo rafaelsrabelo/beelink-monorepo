@@ -80,4 +80,41 @@ describe("a storefront event in Meta's words", () => {
 
     expect(sent).toEqual({ name: "AddPaymentInfo", params: { content_ids: [WHEY], content_type: "product", contents: [{ id: WHEY, quantity: 1 }], value: 50, currency: "BRL" } })
   })
+  // BEELINK-273
+  it("sends a purchase with the order's value, its units, and each product at what a unit cost", () => {
+    const items = [
+      { productId: HAZE, qty: 2, paidCents: 23980 },
+      { productId: WHEY, qty: 1, paidCents: 8950 },
+    ]
+
+    expect(metaEventOf({ name: "Purchase", items, valueCents: 33430 })).toEqual({
+      name: "Purchase",
+      params: {
+        content_ids: [HAZE, WHEY],
+        content_type: "product",
+        contents: [
+          { id: HAZE, quantity: 2, item_price: 119.9 },
+          { id: WHEY, quantity: 1, item_price: 89.5 },
+        ],
+        num_items: 3,
+        value: 334.3,
+        currency: "BRL",
+      },
+    })
+  })
+
+  it("adds two combinations of one product bought into one entry, at the mean of what a unit cost, to the cent", () => {
+    const items = [
+      { productId: HAZE, qty: 2, paidCents: 2000 },
+      { productId: HAZE, qty: 1, paidCents: 1201 },
+    ]
+
+    expect(metaEventOf({ name: "Purchase", items, valueCents: 3201 }).params).toMatchObject({ content_ids: [HAZE], contents: [{ id: HAZE, quantity: 3, item_price: 10.67 }], num_items: 3, value: 32.01 })
+  })
+
+  it("sends nothing of the order but its goods and its value: no number, no way of paying, nobody's name", () => {
+    const sent = metaEventOf({ name: "Purchase", items: [{ productId: WHEY, qty: 1, paidCents: 5000 }], valueCents: 5000 })
+
+    expect(Object.keys(sent.params).sort()).toEqual(["content_ids", "content_type", "contents", "currency", "num_items", "value"])
+  })
 })
