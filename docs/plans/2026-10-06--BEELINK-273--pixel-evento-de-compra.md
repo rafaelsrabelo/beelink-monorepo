@@ -104,3 +104,36 @@ O servidor tem de enviar **o mesmo evento**, ou a Meta conta em dobro ou não ju
 - Meta, "Reference: standard events and object properties": https://developers.facebook.com/docs/meta-pixel/reference
 - Meta, "Custom Data Parameters" (`contents`: `id`, `quantity`, `item_price`, `delivery_category`): https://developers.facebook.com/docs/marketing-api/conversions-api/parameters/custom-data
 - Meta, "Handling Duplicate Pixel and Conversions API Events" (mesmo `eventID` e mesmo nome; 48 h a contar do primeiro evento recebido): https://developers.facebook.com/docs/marketing-api/conversions-api/deduplicate-pixel-and-server-events
+
+## 06/10, depois do código — o que mudou ao escrever
+
+- **O evento da vitrine leva linhas próprias** (`SoldItem`: produto, unidades, o que a linha custou), e não o `EventItem` do X5: o preço por unidade depois da promoção pode não ser um número inteiro de centavos, e a média entre duas variações se faz sobre o que as linhas custaram.
+- **`usePurchaseTold(slug, purchase)`** (`components/storefront/tracking/`) é o único lugar que conta uma compra: lê `bl_purchases`, chama `track`, grava a marca se `track` respondeu `true`. No carrinho ele mora em `useCartOrder` (o `StorefrontCartLive` está no limite de linhas e não mudou).
+- **Na tela de pagamento a regra roda com a cobrança lida ali**, sobre o pedido que a página leu (`sale`): só o que foi lido depois de a tela abrir conta, como o resto daquela tela.
+- **Um limite a mais da decisão 10:** um evento entregue à fila antes de a biblioteca chegar e uma saída da página (com recarga) nesse intervalo: a marca fica, o evento não saiu. É a mesma janela de fração de segundo de qualquer evento do X5; aqui custa uma compra não contada pelo navegador.
+- **O texto do aviso "pedido enviado" e o resto da tela não mudaram.** O `PageView` de `?pagamento=1` leva a query no endereço que a biblioteca envia, como toda página (X5); não há token nela.
+- **A linha do `bl_purchases` na política** ficou: "bl_purchases: numa loja que usa o Pixel da Meta, e só depois que você aceita, os códigos dos seus últimos pedidos já informados à Meta, para que o mesmo pedido não seja informado duas vezes; vale só para aquela loja e dura 7 dias, renovados a cada pedido informado".
+- **A frase do painel** ficou: "De quem aceita, a loja envia à Meta as páginas e os produtos vistos, as buscas, os favoritos, o que vai para o carrinho, a chegada ao checkout e a compra. Conta como compra o pedido feito, quando o pagamento é combinado com você, ou o pagamento aprovado, quando é cobrado no site."
+
+## 06/10 — o que foi visto no navegador
+
+A vitrine foi aberta de verdade (`next dev` na 3800, API na 3801, banco `harness_meta_pixel`, loja `loja-do-pixel`, pixel `123456789012345`, que não é um pixel de verdade), percorrida pelo Playwright com **a biblioteca real da Meta servida do disco** (a mesma cópia do X5) e **toda requisição a `facebook.com` gravada e abortada**: nada chegou à Meta. Um cliente novo foi criado e confirmado pelo e-mail (Mailpit). Os servidores foram parados depois.
+
+**Pedido combinado com a loja (rodado de ponta a ponta, sem nada simulado):**
+
+- **Com o aceite já dado**, carrinho com uma Creatina (R$ 89,50), "Retirar na loja", "Dinheiro", "Fechar pedido": saem `PageView`, `InitiateCheckout`, `AddPaymentInfo` e **um** `Purchase`, com `eid=purchase-01a113b2-d1f7-755a-ac09-f7cf98d16659` (o UUID do pedido nº 1), `value: 89.5`, `currency: BRL`, `content_ids: ["<uuid do produto>"]`, `content_type: product`, `contents: [{ id, quantity: 1, item_price: 89.5 }]`, `num_items: 1`, endereçado ao pixel da loja, sem nenhum `ud[…]`. O cookie `bl_purchases` aparece com o UUID sem hífens, `Path=/loja-do-pixel`, 7 dias.
+- **Recarregar** a página: só `PageView`. **A página do pedido**, no mesmo navegador: só `PageView`. **Uma segunda aba** na página do pedido, aberta e recarregada: dois `PageView`, nenhum `Purchase`. **Sair e voltar sem recarga**: nenhum `Purchase`.
+- **Outro navegador do mesmo cliente** (sem o `bl_purchases`), com aceite, na página do pedido dentro das 24 h: sai um `Purchase` com o **mesmo** `eid`. É o limite escrito na decisão 9.
+- **Sem ter respondido ao aviso:** o pedido é feito, nenhuma requisição à Meta, `window.fbq` indefinido, nenhum `bl_purchases`. **"Aceitar" na tela "pedido feito":** saem `PageView` e um `Purchase` daquele pedido, e o cookie é gravado. A página do pedido, depois: só `PageView`.
+- **Tendo recusado:** o pedido e a página dele não geram nenhuma requisição, nem cookie.
+- Console sem erros nos percursos.
+
+**Pedido cobrado no site — o que rodou e o que não rodou.** Não há chave de sandbox do Asaas: **nenhuma cobrança de verdade foi criada, e nada foi pago**. O que foi feito no lugar: um pedido já existente no banco de teste foi marcado como `ONLINE`/Pix por SQL, com uma linha `order_payments` `PENDING` escrita à mão; e, no meio do percurso, essa linha foi escrita como `RECEIVED` com `paidAt` por SQL, **no lugar do que o `applyCharge` escreve quando o Asaas avisa**. Tudo o mais é o código de verdade — a API lendo a cobrança, o handler da loja, a tela, o intervalo de leitura:
+
+- A página do pedido com a cobrança pendente diz "Aguardando pagamento": só `PageView`.
+- A tela de pagamento (`?pagamento=1`) mostra o QR e lê a cobrança três vezes em sete segundos: nenhum `Purchase`.
+- Com a linha escrita como paga, a leitura seguinte responde `RECEIVED`, a tela vira "Pagamento aprovado" sem recarregar e sai **um** `Purchase` (`eid=purchase-<UUID do pedido>`, `value: 89.5`), e o cookie é gravado.
+- A tela segue para a página do pedido, que diz "Pagamento aprovado": nenhum evento. Recarregar, e abrir a tela de pagamento de novo: só `PageView`.
+- Um navegador que nunca viu a tela de pagamento abre a página do pedido já pago: `PageView` e um `Purchase` — é o caminho de quem volta do cartão, ou de quem pagou o Pix com a aba fechada.
+
+**Não rodado:** o Asaas (criar a cobrança, o webhook, `PaymentSync`, `applyCharge`); a volta da página do cartão do Asaas; o evento de tempo real que faz a tela ler de novo (aqui foi o intervalo); o build de produção no navegador; um pixel de verdade e o que o Gerenciador de Eventos mostra; a junção com um evento do servidor (não existe até o X7). Em teste de componente, e não no navegador: pedido registrado pelo lojista, cancelado, estornado, total zero, e a janela de 24 h.
