@@ -13,6 +13,8 @@ export const RESERVED_SLUGS: readonly string[] = [
   'admin',
   'api',
   'auth',
+  // bee-link's own backoffice lives at the web's root (BEELINK-226).
+  'backoffice',
   'cart',
   'checkout',
   'create',
