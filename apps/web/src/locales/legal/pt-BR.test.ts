@@ -94,6 +94,14 @@ describe("bee-link's legal texts (BEELINK-171)", () => {
       expect(textOf("Cookies")).toMatch(/bl_purchases: numa loja que usa o Pixel da Meta, e só depois que você aceita, os códigos dos seus últimos pedidos já informados à Meta, para que o mesmo pedido não seja informado duas vezes; vale só para aquela loja e dura 7 dias/)
     })
 
+    // BEELINK-275: and so is the cookie that keeps the campaign a visitor arrived by.
+    it("names the cookie that keeps the campaign of the link, and the ad's click only after a yes", () => {
+      const cookies = textOf("Cookies")
+
+      expect(cookies).toMatch(/bl_origin: a campanha do link pelo qual você chegou a uma loja, isto é, os parâmetros utm_source, utm_medium, utm_campaign, utm_content e utm_term do endereço/)
+      expect(cookies).toMatch(/numa loja que usa o Pixel da Meta, só depois que você aceita, o identificador do clique no anúncio \(fbclid\) com que você chegou; vale só para aquela loja e dura 30 dias a partir da chegada/)
+    })
+
     it("no longer says no advertising pixel and no third-party script is ever used", () => {
       const all = JSON.stringify(legalTexts.privacy)
 

@@ -601,6 +601,7 @@ export const legalTexts = {
               "bl_shop: o CEP informado em \"Entregar em\", em cada loja; dura 1 ano;",
               "bl_consent: a sua resposta, aceitar ou recusar, ao aviso de cookies de uma loja que usa o Pixel da Meta; vale só para aquela loja e dura 180 dias;",
               "bl_purchases: numa loja que usa o Pixel da Meta, e só depois que você aceita, os códigos dos seus últimos pedidos já informados à Meta, para que o mesmo pedido não seja informado duas vezes; vale só para aquela loja e dura 7 dias, renovados a cada pedido informado;",
+              "bl_origin: a campanha do link pelo qual você chegou a uma loja, isto é, os parâmetros utm_source, utm_medium, utm_campaign, utm_content e utm_term do endereço, para que o pedido que você fizer ali registre de qual campanha veio; e, numa loja que usa o Pixel da Meta, só depois que você aceita, o identificador do clique no anúncio (fbclid) com que você chegou; vale só para aquela loja e dura 30 dias a partir da chegada;",
               "bl_prefs: as preferências de exibição do painel, como o menu recolhido; dura 1 ano;",
               "bl_locale: o idioma escolhido; dura 1 ano.",
             ],
