@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest"
 
 // App
-import { originExampleUrl, reportDayText, reportDaysOf, reportPagesOf, reportPeriodOf, salesByOriginHref } from "./report-period"
+import { originExampleUrl, reportDayText, reportDaysOf, reportPagesOf, reportPeriodOf, salesByOriginHref, storeFunnelHref } from "./report-period"
 
 describe("reportPeriodOf", () => {
   it("reads the period off the address", () => {
@@ -22,6 +22,14 @@ describe("salesByOriginHref", () => {
     expect(salesByOriginHref("loja", 30)).toBe("/admin/loja/reports/origins")
     expect(salesByOriginHref("loja", 7)).toBe("/admin/loja/reports/origins?period=7")
     expect(reportPagesOf("loja")).toEqual({ home: "/admin/loja/reports", origins: "/admin/loja/reports/origins" })
+  })
+})
+
+describe("storeFunnelHref", () => {
+  it("is the funnel's page under the reports, with the period on the address and the default left out", () => {
+    expect(storeFunnelHref("loja")).toBe("/admin/loja/reports/funnel")
+    expect(storeFunnelHref("loja", 30)).toBe("/admin/loja/reports/funnel")
+    expect(storeFunnelHref("loja", 90)).toBe("/admin/loja/reports/funnel?period=90")
   })
 })
 

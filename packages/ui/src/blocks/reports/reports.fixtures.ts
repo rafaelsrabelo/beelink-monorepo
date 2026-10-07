@@ -1,4 +1,5 @@
 // Block
+import type { FunnelStepView } from "@harness-monorepo/ui/lib/funnel-view"
 import type { SalesByOriginRowView, SalesTotalsView } from "./report-types"
 
 /** A shop's own address with the three labels on it, as the screen builds it. */
@@ -20,3 +21,24 @@ export const awkwardSalesByOrigin: SalesByOriginRowView[] = [
   { kind: "CAMPAIGN", source: "facebook", medium: "cpc", campaign: "x".repeat(80), orders: 1, metaAdOrders: 0, revenueCents: 5990 },
   { kind: "CAMPAIGN", source: "newsletter", medium: "email", campaign: "<img src=x onerror=alert(1)>", orders: 1, metaAdOrders: 0, revenueCents: 5990 },
 ]
+
+/** A month of a small shop: most visits never reach a product, and half the checkouts become orders. */
+export const sampleFunnel: FunnelStepView[] = [
+  { step: "PAGE_VIEW", count: 1840 },
+  { step: "PRODUCT_VIEW", count: 612 },
+  { step: "ADD_TO_CART", count: 148 },
+  { step: "CHECKOUT_START", count: 96 },
+  { step: "PURCHASE", count: 41 },
+]
+
+/** Events, not people: more additions to the cart than products seen, straight from the cards. */
+export const cardHeavyFunnel: FunnelStepView[] = [
+  { step: "PAGE_VIEW", count: 300 },
+  { step: "PRODUCT_VIEW", count: 40 },
+  { step: "ADD_TO_CART", count: 52 },
+  { step: "CHECKOUT_START", count: 30 },
+  { step: "PURCHASE", count: 0 },
+]
+
+/** Nothing counted. */
+export const emptyFunnel: FunnelStepView[] = sampleFunnel.map((step) => ({ ...step, count: 0 }))

@@ -58,3 +58,50 @@ export interface SalesByOriginQuery {
 export type ReportErrorCode =
   /** Not two days in `YYYY-MM-DD`, the first after the second, only one of them, or more than 366 days. */
   "REPORT_PERIOD_INVALID";
+
+/* ── the shop's funnel: anonymous daily counters, and the orders at its end ── */
+
+/**
+ * The steps of a shop's funnel (BEELINK-276), in order. The first four are counted as they happen
+ * on the shop window — events, never people: one visitor opening five products is five. The last
+ * is never told by a browser: it is the shop's own orders.
+ */
+export type FunnelStep = "PAGE_VIEW" | "PRODUCT_VIEW" | "ADD_TO_CART" | "CHECKOUT_START" | "PURCHASE";
+
+/** The steps a shop window counts. */
+export type CountedFunnelStep = Exclude<FunnelStep, "PURCHASE">;
+
+/**
+ * All a shop window says to have a step counted: its name. Nothing of who did it, of the page or of
+ * the product — what is kept is a number per shop, day and step.
+ */
+export interface FunnelEventInput {
+  step: CountedFunnelStep;
+}
+
+export interface FunnelStepCount {
+  step: FunnelStep;
+  count: number;
+}
+
+/**
+ * A shop's funnel in a period. The counted steps are sums of the days' counters; `PURCHASE` is the
+ * sales (the rule of `SalesByOriginReport`) the customers placed on the shop window, from the first
+ * day anything was counted at this shop — before it there are no visits to set them against.
+ */
+export interface StoreFunnelReport {
+  /** The period used, as days on the shop's clock (Brasília), both counted: `YYYY-MM-DD`. */
+  from: string;
+  to: string;
+  /** The five steps, in the funnel's order. */
+  steps: FunnelStepCount[];
+  /** Sales the shopkeeper registered in the panel over the same days: they never came through the shop window, and are no step. */
+  panelSales: number;
+  /** The first day this shop has a counter of, `YYYY-MM-DD`; null while nothing was ever counted. */
+  countingSince: string | null;
+  /** For how many months a day's counters are kept before they are deleted. */
+  retentionMonths: number;
+}
+
+/** A report's period: the same two days as `SalesByOriginQuery`. */
+export type StoreFunnelQuery = SalesByOriginQuery;

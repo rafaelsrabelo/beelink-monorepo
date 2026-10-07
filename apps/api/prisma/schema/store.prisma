@@ -179,6 +179,7 @@ model Store {
   accountIdentities AccountIdentity[]
   /// Its own accounts at the third parties that act in its name (BEELINK-182): Melhor Envio, Asaas.
   integrations      StoreIntegration[]
+  funnelDays        StoreFunnelDay[]
   asaasEvents       AsaasEvent[]
   /// How it ships by carrier through Melhor Envio (BEELINK-183); none until first saved.
   melhorEnvioSettings MelhorEnvioSettings?
@@ -190,4 +191,35 @@ model Store {
   @@index([ownerId])
   @@index([categoryId])
   @@map("stores")
+}
+
+/// A step of a shop's funnel that the shop window counts (BEELINK-276). The purchase is no row here:
+/// it is read from the orders.
+enum FunnelStep {
+  PAGE_VIEW
+  PRODUCT_VIEW
+  ADD_TO_CART
+  CHECKOUT_START
+}
+
+/// How many times a step of the funnel happened at a shop on one day (BEELINK-276) — and that is the
+/// whole of what is kept of a visit. A counter, on purpose: no row per visitor, per session or per
+/// event, no address, no browser, nothing that says who. It is what lets every shop count every
+/// visit without asking anyone's consent.
+///
+/// Written by one statement, `INSERT … ON CONFLICT … count + 1`, never read first. Rows older than
+/// thirteen months are deleted (`funnel-retention.ts`).
+model StoreFunnelDay {
+  storeId String @db.Uuid
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  /// The day on the shop's clock (Brasília, a fixed -03:00), decided by the API when the count arrives.
+  day   DateTime   @db.Date
+  step  FunnelStep
+  count Int        @default(0)
+
+  @@id([storeId, day, step])
+  /// The retention's delete reads by day alone.
+  @@index([day])
+  @@map("store_funnel_days")
 }

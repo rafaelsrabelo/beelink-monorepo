@@ -116,6 +116,15 @@ const envSchema = z.object({
   LEAD_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(5),
   LEAD_RATE_LIMIT_WINDOW: z.string().default('10 minutes'),
 
+  /**
+   * Per IP, on POST /stores/:slug/funnel-events — the shop window counting a step of its funnel
+   * (BEELINK-276). Generous on purpose: a mobile carrier puts many visitors behind one address, and
+   * a count refused is a visit missing from a shopkeeper's numbers, not an error anyone sees. It
+   * bounds a script inflating one shop's counters.
+   */
+  FUNNEL_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(300),
+  FUNNEL_RATE_LIMIT_WINDOW: z.string().default('1 minute'),
+
   TRUST_PROXY: z.string().default('loopback'),
 
   /**

@@ -1,3 +1,6 @@
+// Next
+import { cookies } from "next/headers"
+
 // App
 import { CartProvider } from "@/components/storefront/cart-provider"
 import { FavoritesProvider } from "@/components/storefront/favorites/favorites-provider"
@@ -8,7 +11,9 @@ import { StorefrontOrigin } from "@/components/storefront/storefront-origin"
 import { StorefrontTracking } from "@/components/storefront/tracking/storefront-tracking"
 import { cartLinesAt } from "@/lib/cart"
 import { consentAt } from "@/lib/consent"
+import { funnelCountedAt } from "@/lib/funnel-count"
 import { getMessages } from "@/lib/locale"
+import { REFRESH_COOKIE } from "@/lib/session-cookies"
 import { shopperAt } from "@/lib/shopper"
 import { quietPathsOf } from "@/lib/storefront-event"
 import { shopAt } from "@/lib/storefront-data"
@@ -40,10 +45,16 @@ import { storefrontRoutes } from "@/lib/storefront-routes"
  * Where the visitor came from is kept here too (BEELINK-275), for every shop, pixel or not: the
  * layout is what a landing mounts, and it sits inside the answer because Meta's click identifier
  * is kept only on a yes.
+ *
+ * And the shop's funnel is counted from here (BEELINK-276): a shop that sells counts its visits,
+ * with or without a pixel, as anonymous numbers per day. Not for a browser that holds a panel
+ * session — a shopkeeper looking at a shop is not a visit, and the cookie is read only to leave
+ * them out.
  */
 export default async function StorefrontLayout({ children, params }: LayoutProps<"/[slug]">) {
   const { slug } = await params
-  const [lines, shopper, store, { ui }, choice] = await Promise.all([cartLinesAt(), shopperAt(slug), shopAt(slug), getMessages(), consentAt()])
+  const [lines, shopper, store, { ui }, choice, jar] = await Promise.all([cartLinesAt(), shopperAt(slug), shopAt(slug), getMessages(), consentAt(), cookies()])
+  const countAt = funnelCountedAt(store, jar.has(REFRESH_COOKIE))
   const routes = store ? storefrontRoutes(store) : null
 
   const pages = routes ? (
@@ -60,7 +71,7 @@ export default async function StorefrontLayout({ children, params }: LayoutProps
         {shopper ? <ShopperRealtime slug={slug} /> : null}
         <StorefrontConsentGate slug={slug} store={store} choice={choice} messages={ui}>
           {store ? <StorefrontOrigin slug={slug} pixelId={store.metaPixelId ?? null} /> : null}
-          <StorefrontTracking pixelId={store?.metaPixelId ?? null} quietPaths={store ? quietPathsOf(store) : []}>
+          <StorefrontTracking pixelId={store?.metaPixelId ?? null} quietPaths={store ? quietPathsOf(store) : []} countAt={countAt}>
             {pages}
           </StorefrontTracking>
         </StorefrontConsentGate>

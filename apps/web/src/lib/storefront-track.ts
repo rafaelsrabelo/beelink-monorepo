@@ -1,4 +1,5 @@
 // App
+import type { FunnelCount } from "./funnel-count"
 import { metaEventOf } from "./meta-pixel-event"
 import { sendToMetaPixel } from "./meta-pixel"
 import { isQuietPath, newEventId, type StorefrontEvent, type Track, type TrackOptions } from "./storefront-event"
@@ -10,6 +11,8 @@ export interface TrackInput {
   allowed: boolean
   /** The shop's pages nothing is told from (`quietPathsOf`). */
   quietPaths: readonly string[]
+  /** The shop's own count of its funnel (BEELINK-276); absent where nothing is counted. */
+  count?: FunnelCount
 }
 
 /**
@@ -22,17 +25,24 @@ export interface TrackInput {
  * again. That holds whatever order the page's effects run in, and however often they do.
  *
  * An event refused is dropped, never kept for later: what a visitor did before saying yes is not
- * told once they do. The answer says which it was — true for one handed to the pixel. A second destination — the shop's own record of the event — is a second line
- * in `send`.
+ * told once they do. The answer says which it was — true for one handed to the pixel.
+ *
+ * The second destination is the shop's own count of its funnel (BEELINK-276), and it is asked
+ * first because it does not hang on the pixel's two conditions: an anonymous number per day is
+ * counted at a shop with no pixel and for a visitor who said no. It shares the third — nothing is
+ * told from a page whose address holds a token — and it has no say in the answer, which stays the
+ * pixel's alone.
  */
-export function createTrack({ pixelId, allowed, quietPaths }: TrackInput): Track {
+export function createTrack({ pixelId, allowed, quietPaths, count }: TrackInput): Track {
   let page: string | null = null
 
   return (event, options) => {
-    if (!allowed || !pixelId) return false
-
     const pathname = window.location.pathname
-    if (isQuietPath(pathname, quietPaths)) return false
+    const quiet = isQuietPath(pathname, quietPaths)
+    if (!quiet) count?.(event, pathname)
+
+    if (!allowed || !pixelId) return false
+    if (quiet) return false
 
     const send = (told: StorefrontEvent, as?: TrackOptions) => sendToMetaPixel(pixelId, metaEventOf(told), as?.id ?? newEventId())
     if (page !== pathname) {

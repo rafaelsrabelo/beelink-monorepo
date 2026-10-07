@@ -2546,6 +2546,48 @@ export interface UiMessages {
       failed: string
       retry: string
     }
+    /** The shop's funnel (BEELINK-276): four steps the shop window counts, and its orders. */
+    funnel: {
+      title: string
+      description: string
+      /** `{from}`, `{to}`. The list's name, for a screen reader. */
+      caption: string
+      steps: Record<FunnelStepKey, string>
+      /** What a step counts, in a few words: events, never people. */
+      stepHints: Record<FunnelStepKey, string>
+      /** `{count}`: how many of this step for every hundred of the one before. The first step has none. */
+      rates: Record<Exclude<FunnelStepKey, "PAGE_VIEW">, string>
+      /** `{count}`: how many fewer than the step before. Said only when there are fewer. */
+      drop: string
+      panelSalesOne: string
+      /** `{count}`. */
+      panelSalesMany: string
+      /** `{day}`. Said when the shop's first counted day falls inside the period. */
+      countingSince: string
+      empty: { title: string; text: string }
+      notes: {
+        title: string
+        events: string
+        above: string
+        purchases: string
+        anonymous: string
+        owner: string
+        since: string
+        /** `{months}`. */
+        retention: string
+      }
+      failed: string
+      retry: string
+    }
+    /** The page that lists the reports. */
+    index: {
+      title: string
+      description: string
+      /** Names the list of reports. */
+      listLabel: string
+      origins: { title: string; text: string }
+      funnel: { title: string; text: string }
+    }
   }
   leads: {
     title: string
@@ -3783,3 +3825,6 @@ export interface LandingQuestion {
   question: string
   answer: string
 }
+
+/** The steps of a shop's funnel, restated here: this package declares no dependency on the contracts. Mirrors `FunnelStep`. */
+export type FunnelStepKey = "PAGE_VIEW" | "PRODUCT_VIEW" | "ADD_TO_CART" | "CHECKOUT_START" | "PURCHASE"
