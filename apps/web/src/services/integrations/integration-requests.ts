@@ -10,6 +10,9 @@ import type {
   MelhorEnvioSettingsPayload,
   MetaPixelConnectPayload,
   MetaPixelConnection,
+  MetaPixelTestEventPayload,
+  MetaPixelTestEventResult,
+  MetaPixelTokenPayload,
 } from "@harness-monorepo/contracts"
 
 /** What a failed call carries: the API's stable code, never a sentence (apps/web/AGENTS.md, rule 9). */
@@ -98,4 +101,18 @@ export function saveMetaPixel(slug: string, payload: MetaPixelConnectPayload): P
 
 export function removeMetaPixel(slug: string): Promise<object> {
   return ask(metaPixel(slug), "DELETE")
+}
+
+/** The token travels in the body, to this app's own origin, and nowhere else: never in an address, never kept. */
+export function saveMetaPixelToken(slug: string, payload: MetaPixelTokenPayload): Promise<MetaPixelConnection> {
+  return ask(`${metaPixel(slug)}/token`, "POST", payload)
+}
+
+export function removeMetaPixelToken(slug: string): Promise<object> {
+  return ask(`${metaPixel(slug)}/token`, "DELETE")
+}
+
+/** One test event sent to the shop's pixel with its token: what Meta said of it. */
+export function sendMetaPixelTestEvent(slug: string, payload: MetaPixelTestEventPayload): Promise<MetaPixelTestEventResult> {
+  return ask(`${metaPixel(slug)}/test-event`, "POST", payload)
 }

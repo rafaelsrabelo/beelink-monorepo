@@ -100,4 +100,15 @@ describe("the shop's quiet pages", () => {
     expect(isQuietPath("/loja/redefinir-senha-nova", QUIET)).toBe(false)
     expect(isQuietPath("/loja", QUIET)).toBe(false)
   })
+  // BEELINK-273: what must be told exactly once is marked as told on this answer alone.
+  it("answers whether the event left: true for one handed to the pixel, false for one refused", () => {
+    const search = { name: "Search", term: "whey" } as const
+
+    expect(createTrack({ pixelId: PIXEL, allowed: true, quietPaths: QUIET })(search)).toBe(true)
+    expect(createTrack({ pixelId: PIXEL, allowed: false, quietPaths: QUIET })(search)).toBe(false)
+    expect(createTrack({ pixelId: null, allowed: true, quietPaths: QUIET })(search)).toBe(false)
+
+    window.history.replaceState(null, "", "/loja/redefinir-senha")
+    expect(createTrack({ pixelId: PIXEL, allowed: true, quietPaths: QUIET })(search)).toBe(false)
+  })
 })

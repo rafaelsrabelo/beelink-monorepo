@@ -1,5 +1,5 @@
 // App
-import type { EventItem, StorefrontEvent } from "./storefront-event"
+import type { EventItem, SoldItem, StorefrontEvent } from "./storefront-event"
 
 /**
  * A storefront event in Meta's words (BEELINK-272): its standard event names and object properties,
@@ -14,7 +14,8 @@ export interface MetaPixelEvent {
 export interface MetaPixelParams {
   content_ids?: string[]
   content_type?: "product" | "product_group"
-  contents?: { id: string; quantity: number }[]
+  /** `item_price` on a purchase alone: what one unit cost, in reais. */
+  contents?: { id: string; quantity: number; item_price?: number }[]
   content_name?: string
   content_category?: string
   value?: number
@@ -47,6 +48,26 @@ function contentsOf(items: readonly Pick<EventItem, "productId" | "qty">[]): Pic
     content_ids: [...units.keys()],
     content_type: CONTENT_TYPE,
     contents: [...units].map(([id, quantity]) => ({ id, quantity })),
+  }
+}
+
+/**
+ * What was bought, one entry per product like any other event's, each with what a unit of it cost
+ * (BEELINK-273). Two combinations of one product are one id: their units added up, and the price
+ * the mean of what each unit cost, to the cent.
+ */
+function soldOf(items: readonly SoldItem[]): Pick<MetaPixelParams, "content_ids" | "content_type" | "contents" | "num_items"> {
+  const products = new Map<string, { quantity: number; paidCents: number }>()
+  for (const item of items) {
+    const product = products.get(item.productId) ?? { quantity: 0, paidCents: 0 }
+    products.set(item.productId, { quantity: product.quantity + item.qty, paidCents: product.paidCents + item.paidCents })
+  }
+
+  return {
+    content_ids: [...products.keys()],
+    content_type: CONTENT_TYPE,
+    contents: [...products].map(([id, { quantity, paidCents }]) => ({ id, quantity, item_price: reaisOf(Math.round(paidCents / quantity)) })),
+    num_items: items.reduce((sum, item) => sum + item.qty, 0),
   }
 }
 
@@ -91,5 +112,7 @@ export function metaEventOf(event: StorefrontEvent): MetaPixelEvent {
       }
     case "AddPaymentInfo":
       return { name: event.name, params: { ...contentsOf(event.items), ...valueOf(event.valueCents) } }
+    case "Purchase":
+      return { name: event.name, params: { ...soldOf(event.items), ...valueOf(event.valueCents) } }
   }
 }

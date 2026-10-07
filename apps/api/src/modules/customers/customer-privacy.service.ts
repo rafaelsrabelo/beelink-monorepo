@@ -5,7 +5,7 @@ import { ForbiddenException, Injectable } from '@nestjs/common';
 import { verify } from '@node-rs/argon2';
 
 // Types
-import type { CustomerDataAccount, CustomerDataExport } from '@harness-monorepo/contracts';
+import type { CustomerDataAccount, CustomerDataExport, CustomerDataOrderOrigin } from '@harness-monorepo/contracts';
 import type { Prisma } from '../../generated/prisma/client.js';
 import type { UserModel } from '../../generated/prisma/models.js';
 
@@ -54,7 +54,7 @@ export class CustomerPrivacyService {
     const { storeId, shopName, user, record } = await this.customers.shopperRecordAt(storeSlug, userId);
     const customerId = record.id;
 
-    const [account, addresses, orders, favorites, reviews, talked, credits, entries] = await Promise.all([
+    const [account, addresses, orders, favorites, reviews, talked, credits, entries, origins] = await Promise.all([
       this.prisma.user.findUniqueOrThrow({
         where: { id: user.id },
         include: { identities: { select: { provider: true } }, legalAcceptances: { orderBy: { acceptedAt: 'asc' } } },
@@ -70,6 +70,12 @@ export class CustomerPrivacyService {
       }),
       creditsOf(this.prisma, customerId, new Date()),
       entriesOf(this.prisma, customerId),
+      // Only the orders that recorded something of the visit they came from (BEELINK-275).
+      this.prisma.order.findMany({
+        where: { storeId, customerId, OR: [{ utmSource: { not: null } }, { utmMedium: { not: null } }, { utmCampaign: { not: null } }, { marketingConsent: { isNot: null } }] },
+        orderBy: [{ placedAt: 'desc' }, { number: 'desc' }],
+        select: { number: true, utmSource: true, utmMedium: true, utmCampaign: true, utmContent: true, utmTerm: true, originAt: true, marketingConsent: true },
+      }),
     ]);
 
     return {
@@ -86,6 +92,26 @@ export class CustomerPrivacyService {
       profile: toCustomerProfile(record, user, addresses),
       record: { createdAt: record.createdAt.toISOString(), claimedPhone: record.claimedPhone },
       orders: orders.map(toCustomerOrder),
+      orderOrigins: origins.map(
+        (order) =>
+          ({
+            orderNumber: order.number,
+            source: order.utmSource,
+            medium: order.utmMedium,
+            campaign: order.utmCampaign,
+            content: order.utmContent,
+            term: order.utmTerm,
+            arrivedAt: order.originAt?.toISOString() ?? null,
+            marketingConsent: order.marketingConsent && {
+              fbclid: order.marketingConsent.fbclid,
+              clickedAt: order.marketingConsent.clickedAt?.toISOString() ?? null,
+              fbp: order.marketingConsent.fbp,
+              userAgent: order.marketingConsent.userAgent,
+              pageUrl: order.marketingConsent.pageUrl,
+              recordedAt: order.marketingConsent.createdAt.toISOString(),
+            },
+          }) satisfies CustomerDataOrderOrigin,
+      ),
       favorites: favorites.map(toCustomerFavorite),
       reviews: reviews.map(toCustomerReview),
       conversations: talked.map((order) => toCustomerConversation(order, order.conversation?.messages ?? [])),
@@ -137,6 +163,9 @@ export class CustomerPrivacyService {
     // The shop's statement of what it gave them (BEELINK-238) is its books too, and its adjustments name who made them.
     const cashback = await tx.cashbackEntry.count({ where: { customerId } });
 
+    // What an order kept of their browser with their yes to the shop's pixel (BEELINK-275) is theirs, not
+    // the books': the orders stay, with the campaign they came by, and these identifiers go.
+    await tx.orderMarketingConsent.deleteMany({ where: { order: { customerId } } });
     await tx.customerFavorite.deleteMany({ where: { customerId } });
     await tx.favoriteNotice.deleteMany({ where: { customerId } });
     if (orders > 0 || reviews > 0 || cashback > 0) {
