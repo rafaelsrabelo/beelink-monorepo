@@ -73,23 +73,25 @@ describe("PopupForm", () => {
     expect(onChange).toHaveBeenLastCalledWith({ ...popupValues, trigger: "ON_LEAVE" })
   })
 
-  // BEELINK-310.
-  it("offers the strip's reminder, on by default, with a line saying what off means", async () => {
+  // BEELINK-310; off by default, and closing for good, since BEELINK-311.
+  it("offers the strip's reminder, off by default, with a line saying what on and off mean now", async () => {
     const { onChange } = form()
 
     const reminder = screen.getByRole("switch", { name: "Depois de fechado, manter um lembrete abaixo do cabeçalho" })
-    expect(reminder).toBeChecked()
-    expect(reminder).toHaveAccessibleDescription(/Desligado, a faixa não aparece na loja enquanto o pop-up estiver ligado\./)
+    expect(reminder).not.toBeChecked()
+    expect(reminder).toHaveAccessibleDescription(
+      "Ligado, a faixa fina abaixo do cabeçalho mostra o convite ou o cupom para quem já fechou o pop-up, até a pessoa fechar a faixa também; fechada, ela não volta. Desligado, depois de fechado o pop-up nada mais aparece nas páginas da loja: o lembrete do cupom fica no carrinho.",
+    )
 
     await userEvent.click(reminder)
-    expect(onChange).toHaveBeenLastCalledWith({ ...popupValues, keepReminder: false })
+    expect(onChange).toHaveBeenLastCalledWith({ ...popupValues, keepReminder: true })
   })
 
   it("draws the reminder as saved, and locks it while saving", () => {
-    form({ value: { ...popupValues, keepReminder: false }, pending: true })
+    form({ value: { ...popupValues, keepReminder: true }, pending: true })
 
     const reminder = screen.getByRole("switch", { name: "Depois de fechado, manter um lembrete abaixo do cabeçalho" })
-    expect(reminder).not.toBeChecked()
+    expect(reminder).toBeChecked()
     expect(reminder).toHaveAttribute("aria-disabled", "true")
   })
 

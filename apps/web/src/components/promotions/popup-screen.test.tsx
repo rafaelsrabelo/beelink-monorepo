@@ -22,7 +22,7 @@ vi.mock("next/link", () => ({ default: ({ href, children, ...props }: { href: st
 
 const five: FirstPurchaseHeadline = { source: "COUPON", kind: "PERCENT", percentBps: 500, amountCents: null, minSubtotalCents: 0, endsAt: null, wholeCart: true }
 const fifteen: FirstPurchaseHeadline = { source: "PROMOTION", kind: "PERCENT", percentBps: 1500, amountCents: null, minSubtotalCents: 0, endsAt: null, wholeCart: true }
-const settings: StorePopupOverview["settings"] = { enabled: false, imageUrl: null, title: null, text: null, buttonLabel: null, trigger: "ON_ARRIVAL", delaySeconds: 5, benefitSource: "AUTO", benefitId: null, keepReminder: true, revision: 1, updatedAt: null }
+const settings: StorePopupOverview["settings"] = { enabled: false, imageUrl: null, title: null, text: null, buttonLabel: null, trigger: "ON_ARRIVAL", delaySeconds: 5, benefitSource: "AUTO", benefitId: null, keepReminder: false, revision: 1, updatedAt: null }
 const overview: StorePopupOverview = {
   settings,
   benefit: fifteen,
@@ -92,7 +92,7 @@ describe("PopupScreen (BEELINK-306)", () => {
     await userEvent.type(screen.getByLabelText("Segundos depois de chegar"), "8")
     await userEvent.click(screen.getByRole("button", { name: "Salvar" }))
 
-    expect(mutate).toHaveBeenCalledWith({ enabled: true, imageUrl: null, title: null, text: null, buttonLabel: "Quero meu cupom", trigger: "ON_ARRIVAL", delaySeconds: 8, benefitSource: "AUTO", benefitId: null, keepReminder: true }, expect.anything())
+    expect(mutate).toHaveBeenCalledWith({ enabled: true, imageUrl: null, title: null, text: null, buttonLabel: "Quero meu cupom", trigger: "ON_ARRIVAL", delaySeconds: 8, benefitSource: "AUTO", benefitId: null, keepReminder: false }, expect.anything())
   })
 
   it("refuses a discount typed by hand before asking the API, and sends nothing", async () => {
@@ -172,22 +172,30 @@ describe("PopupScreen — whom the pop-up speaks to, and the strip as its remind
     expect(screen.getByText(/Quem já fez um pedido não vê\./)).toBeInTheDocument()
   })
 
-  it("shows the reminder as saved — on for a shop that never said — and sends it with the form", async () => {
+  // BEELINK-311: closed is closed, and the reminder lives in the cart.
+  it("says what happens once the notice is closed, and where the coupon's reminder lives", () => {
     show()
-    const reminder = screen.getByRole("switch", { name: "Depois de fechado, manter um lembrete abaixo do cabeçalho" })
-    expect(reminder).toBeChecked()
 
-    await userEvent.click(reminder)
-    expect(reminder).not.toBeChecked()
-    await userEvent.click(screen.getByRole("button", { name: "Salvar" }))
-    expect(mutate).toHaveBeenCalledWith(expect.objectContaining({ keepReminder: false, enabled: false }), expect.anything())
+    expect(screen.getByText(/Um aviso que abre sobre a loja/)).toHaveTextContent("Fechado, o aviso não volta nas páginas da loja; quem não aplicou o cupom é lembrado dele no carrinho.")
+    expect(screen.getByRole("switch", { name: "Depois de fechado, manter um lembrete abaixo do cabeçalho" })).toHaveAccessibleDescription(/até a pessoa fechar a faixa também; fechada, ela não volta\. Desligado, depois de fechado o pop-up nada mais aparece nas páginas da loja: o lembrete do cupom fica no carrinho\./)
   })
 
-  it("reads a reminder saved off", () => {
-    reading({ ...overview, settings: { ...settings, enabled: true, keepReminder: false } })
+  it("shows the reminder as saved — off for a shop that never said — and sends it with the form", async () => {
+    show()
+    const reminder = screen.getByRole("switch", { name: "Depois de fechado, manter um lembrete abaixo do cabeçalho" })
+    expect(reminder).not.toBeChecked()
+
+    await userEvent.click(reminder)
+    expect(reminder).toBeChecked()
+    await userEvent.click(screen.getByRole("button", { name: "Salvar" }))
+    expect(mutate).toHaveBeenCalledWith(expect.objectContaining({ keepReminder: true, enabled: false }), expect.anything())
+  })
+
+  it("reads a reminder saved on", () => {
+    reading({ ...overview, settings: { ...settings, enabled: true, keepReminder: true } })
     show()
 
-    expect(screen.getByRole("switch", { name: "Depois de fechado, manter um lembrete abaixo do cabeçalho" })).not.toBeChecked()
+    expect(screen.getByRole("switch", { name: "Depois de fechado, manter um lembrete abaixo do cabeçalho" })).toBeChecked()
   })
 
   it("previews the customer's notice with the code the API says is theirs, and none of the visitor's words", async () => {

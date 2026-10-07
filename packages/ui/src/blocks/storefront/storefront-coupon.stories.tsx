@@ -39,3 +39,9 @@ export const AplicadoSemValer: Story = {
 
 /** Sem ninguém identificado: só a frase. */
 export const Visitante: Story = { args: { signedOut: true } }
+
+/** Visitante numa loja com cupom de primeira compra: o benefício, sem código, antes da frase (BEELINK-311). */
+export const VisitanteComBeneficio: Story = { args: { signedOut: true, signedOutBenefit: "Crie sua conta e ganhe 15% de desconto no primeiro pedido." } }
+
+/** O cliente tem um cupom que ainda não aplicou: a chamada fica sobre o campo (BEELINK-311). */
+export const ComChamada: Story = { args: { call: { message: "Você tem 15% de desconto no primeiro pedido com o cupom", code: "SEJAMUTANTE" } } }

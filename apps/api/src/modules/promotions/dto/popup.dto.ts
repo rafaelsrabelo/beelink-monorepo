@@ -75,7 +75,7 @@ export class StorePopupDto implements StorePopupPayload {
   @MaxLength(36, INVALID)
   benefitId!: string | null;
 
-  @ApiProperty({ description: 'Whether the offer strip stays under the header once the pop-up was closed. Off, the shop draws no strip while the pop-up is on.' })
+  @ApiProperty({ description: 'Whether the offer strip stays under the header once the pop-up was closed, until the strip is closed too. Off — the default — the shop draws no strip while the pop-up is on.' })
   @IsBoolean(INVALID)
   keepReminder!: boolean;
 }

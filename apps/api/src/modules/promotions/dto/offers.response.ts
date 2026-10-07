@@ -32,7 +32,7 @@ export class PopupCopyResponse {
   @ApiProperty({ enum: POPUP_TRIGGERS }) trigger!: PopupTrigger;
   @ApiProperty({ description: 'Seconds after the page arrives, on ON_ARRIVAL.' }) delaySeconds!: number;
   @ApiProperty({ description: 'Up by one when what a visitor reads changes.' }) revision!: number;
-  @ApiProperty({ description: 'Whether the offer strip is drawn once the pop-up is no longer due to whoever is looking (BEELINK-310).' }) keepReminder!: boolean;
+  @ApiProperty({ description: 'Whether the offer strip is drawn once the pop-up is no longer due to whoever is looking, until they close it too (BEELINK-310, BEELINK-311).' }) keepReminder!: boolean;
 }
 
 /** The pop-up inside the public offers' answer: no code and no id of a coupon, ever. */

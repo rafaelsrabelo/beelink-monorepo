@@ -44,9 +44,10 @@ const LOCALE = "pt-BR"
  * panel's design preview draws the frame without it. A site has no account to open.
  *
  * It is said as a strip under the header or, at a shop that switched its first-purchase pop-up on
- * (BEELINK-306), as a dialog first — never both on one page, and which is `offersViewOf`'s
- * (BEELINK-310): the dialog while it is still due to this browser, the strip after, if the
- * shopkeeper keeps it as the reminder. Mounted here because this is the one component that knows
+ * (BEELINK-306), as a dialog — never both on one page, and which is `offersViewOf`'s (BEELINK-310):
+ * the dialog while it is still due to this browser; the strip after only if the shopkeeper keeps it
+ * as a reminder. Either is said until it is closed, and then no more (BEELINK-311): the browser's
+ * `bl_popup` remembers, and this leaves it out of the HTML. Mounted here because this is the one component that knows
  * who is looking and on which pages the shop speaks of offers — a second list of pages would be a
  * second rule. The pop-up's words and benefit arrive in the same kept read as the headline, and a
  * customer's notice is their own offers, already read for the strip: a pop-up costs no call more.
@@ -71,12 +72,12 @@ export async function StorefrontOffers({ store, back, messages }: StorefrontOffe
 
   return (
     <>
-      {strip && view.strip ? <StorefrontOfferStripLive slug={store.slug} strip={strip} messages={messages} /> : null}
+      {strip && view.strip ? <StorefrontOfferStripLive slug={store.slug} strip={strip} notice={view.strip} revision={view.revision} messages={messages} /> : null}
       {popup && view.notice && words ? (
         <StorefrontPopupLive
           slug={store.slug}
           notice={view.notice}
-          revision={popup.revision}
+          revision={view.revision}
           trigger={popup.trigger}
           delaySeconds={popup.delaySeconds}
           words={words}

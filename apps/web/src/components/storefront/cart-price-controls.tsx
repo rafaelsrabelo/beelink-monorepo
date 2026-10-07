@@ -9,7 +9,7 @@ import { StorefrontCartCoupons } from "@harness-monorepo/ui/blocks/storefront/st
 import { StorefrontCashbackUse } from "@harness-monorepo/ui/blocks/storefront/storefront-cashback-use"
 import { StorefrontCoupon } from "@harness-monorepo/ui/blocks/storefront/storefront-coupon"
 import { formatCents } from "@harness-monorepo/ui/blocks/storefront/storefront-price"
-import { cartCouponRowsOf } from "@harness-monorepo/ui/lib/shop-offers"
+import { cartCouponCallOf, cartCouponRowsOf } from "@harness-monorepo/ui/lib/shop-offers"
 
 // App
 import type { CartPricingHandle } from "./use-cart-pricing"
@@ -20,6 +20,8 @@ export interface CartPriceControlsProps {
   offers?: readonly OfferedCoupon[]
   /** A visitor: a coupon is asked of them once they sign in, and credit is nobody's. */
   signedOut: boolean
+  /** What the shop gives a first order, as a visitor may be told of it — never a code; null says nothing. */
+  signedOutBenefit?: string | null
   /** The order is on its way, or there is nothing to order. */
   disabled: boolean
   /** Runs a change of the price's terms: the cart's page forgets what it said of the last order. */
@@ -35,14 +37,24 @@ export interface CartPriceControlsProps {
  *
  * "Aplicar" on a listed coupon is the field's own `apply` with that code: one check, one way in —
  * the code is priced with the cart exactly as one typed is, and lands in the address as `?cupom=`.
+ *
+ * While no coupon is in force, one of the listed — `highlightedCouponOf` says which — is called to
+ * over the field instead of standing in the list (BEELINK-311): the cart is where a customer who
+ * closed the shop's first-purchase notice is reminded of their coupon. Applied, the call is gone
+ * and the list is whole again, with the one in force marked.
  */
-export function CartPriceControls({ pricing: { coupon, credit }, offers = [], signedOut, disabled, onChange, locale, messages }: CartPriceControlsProps) {
+export function CartPriceControls({ pricing: { coupon, credit }, offers = [], signedOut, signedOutBenefit = null, disabled, onChange, locale, messages }: CartPriceControlsProps) {
   const money = (cents: number) => formatCents(cents, locale, "BRL")
+  // A visitor is told of no code, and a coupon in force is the answer already.
+  const call = signedOut || coupon.applied ? null : cartCouponCallOf(offers, locale, messages.storefront.offers)
+  const listed = call ? offers.filter((offer) => offer.code !== call.code) : offers
 
   return (
     <>
       <StorefrontCoupon
         signedOut={signedOut}
+        signedOutBenefit={signedOutBenefit}
+        call={call}
         applied={coupon.applied}
         holding={coupon.holding}
         pending={coupon.pending}
@@ -56,7 +68,7 @@ export function CartPriceControls({ pricing: { coupon, credit }, offers = [], si
       {/* A visitor is told of no code: the API lists none for them, and nothing is drawn if it ever did. */}
       {signedOut ? null : (
         <StorefrontCartCoupons
-          coupons={cartCouponRowsOf(offers, locale, messages.storefront.offers)}
+          coupons={cartCouponRowsOf(listed, locale, messages.storefront.offers)}
           applied={coupon.applied}
           onApply={(code) => onChange(() => coupon.apply(code))}
           disabled={disabled || coupon.pending}

@@ -1190,9 +1190,10 @@ describe("the cart's available coupons", () => {
     const fetched = network()
     renderCart(false, bia, { servedOffers: offersFor(false, bia, [offered({}), offered({ code: "PRIMEIRA", audience: "FIRST_PURCHASE", minSubtotalCents: 5000 })]) })
 
-    expect(within(list()).getAllByRole("listitem")).toHaveLength(2)
+    // One of them is the cart's call (BEELINK-311), and so not in the list; the other is listed.
+    expect(within(list()).getAllByRole("listitem")).toHaveLength(1)
     expect(rowOf("BEMVINDO10")).toHaveTextContent("10% de desconto")
-    expect(rowOf("PRIMEIRA").textContent?.replace(/ /g, " ")).toContain("10% de desconto · Pedido mínimo de R$ 50,00 · Só no primeiro pedido")
+    expect(screen.getByText("Você tem 10% de desconto no primeiro pedido com o cupom")).toBeInTheDocument()
     expect(fetched).not.toHaveBeenCalled()
   })
 
@@ -1205,9 +1206,9 @@ describe("the cart's available coupons", () => {
 
   // One check, one way in: the code is priced with the cart exactly as a typed one is.
   it("applies the one pressed as typing it does — the same question to the same door — then marks it and takes it to the order", async () => {
-    const fetched = network({ offers: answering([offered({})]) })
+    const fetched = network({ offers: answering([offered({ code: "NOVO" }), offered({})]) })
     openedTab()
-    renderCart(false, bia, { servedOffers: offersFor(false, bia, [offered({})]) })
+    renderCart(false, bia, { servedOffers: offersFor(false, bia, [offered({ code: "NOVO" }), offered({})]) })
 
     fireEvent.click(screen.getByRole("button", { name: "Aplicar o cupom BEMVINDO10" }))
 
@@ -1226,7 +1227,7 @@ describe("the cart's available coupons", () => {
 
   it("says the quote's own refusal when the coupon stopped holding between the list and the press", async () => {
     network({ quote: (cart) => (cart.couponCode ? Response.json({ ...quoteOf({ ...cart, couponCode: undefined }), coupon: { status: "REFUSED", code: "ACABOU", reason: "EXHAUSTED" } }) : Response.json(quoteOf(cart))) })
-    renderCart(false, bia, { servedOffers: offersFor(false, bia, [offered({ code: "ACABOU" })]) })
+    renderCart(false, bia, { servedOffers: offersFor(false, bia, [offered({ code: "NOVO" }), offered({ code: "ACABOU" })]) })
 
     fireEvent.click(screen.getByRole("button", { name: "Aplicar o cupom ACABOU" }))
 
@@ -1243,8 +1244,8 @@ describe("the cart's available coupons", () => {
   })
 
   it("asks again as the cart changes — about the cart alone, never with a code — and keeps the last list on screen meanwhile", async () => {
-    const fetched = network({ offers: (cart) => answering(cart.items?.[0]?.quantity === 3 ? [offered({}), offered({ code: "TRES" })] : [offered({})])() })
-    renderCart(false, bia, { servedOffers: offersFor(false, bia, [offered({})]) })
+    const fetched = network({ offers: (cart) => answering(cart.items?.[0]?.quantity === 3 ? [offered({ code: "NOVO" }), offered({}), offered({ code: "TRES" })] : [offered({ code: "NOVO" }), offered({})])() })
+    renderCart(false, bia, { servedOffers: offersFor(false, bia, [offered({ code: "NOVO" }), offered({})]) })
 
     fireEvent.click(screen.getByRole("button", { name: "Aumentar a quantidade de Blusa" }))
     expect(rowOf("BEMVINDO10")).toBeInTheDocument()
@@ -1273,5 +1274,144 @@ describe("the cart's available coupons", () => {
     await waitFor(() => expect(bodiesTo(fetched, "/loja/api/offers")).toHaveLength(1))
     expect(screen.queryByText("Cupons disponíveis")).toBeNull()
     expect(screen.getByLabelText("Cupom de desconto")).toBeInTheDocument()
+  })
+})
+
+/** BEELINK-311: the cart is where a customer who closed the shop's notice is reminded of their coupon. */
+describe("the cart's call to a coupon not yet applied", () => {
+  const variantId = blusa.variants[0]!.id
+  const offered = (over: Partial<OfferedCoupon>): OfferedCoupon => ({ code: "BEMVINDO10", audience: "EVERYONE", kind: "PERCENT", percentBps: 1000, amountCents: null, minSubtotalCents: 0, endsAt: null, missingCents: 0, ...over })
+  const first = offered({ code: "SEJAMUTANTE", audience: "FIRST_PURCHASE", percentBps: 1500 })
+  const answering = (coupons: OfferedCoupon[]) => () => Response.json({ hasOrder: false, firstPurchase: null, coupons } satisfies CustomerOffers)
+  const callButton = () => screen.queryByRole("button", { name: "Aplicar cupom" })
+  const withCoupons = (coupons: OfferedCoupon[], props: Partial<StorefrontCartLiveProps> = {}) => renderCart(false, bia, { servedOffers: offersFor(false, bia, coupons), ...props })
+
+  it("calls a signed-in customer to their first-order coupon, in the HTML the page was served with: the benefit, the code, one press", () => {
+    const fetched = network()
+    withCoupons([first])
+
+    expect(screen.getByText("Você tem 15% de desconto no primeiro pedido com o cupom")).toBeInTheDocument()
+    expect(callButton()).toHaveAccessibleDescription("Você tem 15% de desconto no primeiro pedido com o cupom SEJAMUTANTE")
+    expect(fetched).not.toHaveBeenCalled()
+  })
+
+  it("stands over the coupon's field, and the one it calls to is not said again in the list", () => {
+    withCoupons([first])
+
+    expect(callButton()!.compareDocumentPosition(screen.getByLabelText("Cupom de desconto")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    // It was the only one: no heading over an empty list.
+    expect(screen.queryByText("Cupons disponíveis")).toBeNull()
+  })
+
+  it("picks the first-order coupon over a newer one for everyone, and leaves the rest in the list", () => {
+    withCoupons([offered({ code: "NOVO" }), first, offered({ code: "VELHO" })])
+
+    expect(callButton()).toHaveAccessibleDescription(/com o cupom SEJAMUTANTE$/)
+    const list = screen.getByRole("region", { name: "Cupons disponíveis" })
+    expect(within(list).getAllByRole("listitem").map((row) => row.querySelector("strong")?.textContent)).toEqual(["NOVO", "VELHO"])
+  })
+
+  it("with no first-order coupon, picks the first of the API's list, and does not say \"primeiro pedido\"", () => {
+    withCoupons([offered({ code: "NOVO", kind: "FIXED", percentBps: null, amountCents: 1500 }), offered({ code: "VELHO" })])
+
+    expect(callButton()).toHaveAccessibleDescription(/^Você tem R\$\s15,00 de desconto com o cupom NOVO$/)
+  })
+
+  // A press would be refused: one short of its minimum keeps its "Faltam R$ X…" row, and is never the call.
+  it("never calls to a coupon the cart is below the minimum of — not even a first-order one", () => {
+    withCoupons([{ ...first, minSubtotalCents: 15000, missingCents: 3020 }, offered({ code: "VELHO" })])
+
+    expect(callButton()).toHaveAccessibleDescription(/com o cupom VELHO$/)
+    expect(screen.getByRole("region", { name: "Cupons disponíveis" }).textContent?.replace(/ /g, " ")).toContain("Faltam R$ 30,20 em produtos para usar.")
+  })
+
+  it("calls to nothing when every listed coupon is below its minimum, or the shop shows none", () => {
+    const below = withCoupons([{ ...first, minSubtotalCents: 15000, missingCents: 3020 }])
+    expect(callButton()).toBeNull()
+    below.unmount()
+
+    withCoupons([])
+    expect(callButton()).toBeNull()
+  })
+
+  // Whether a code exists is told only to an identified customer; a hidden coupon is in no list the API sends.
+  it("is never shown to a visitor, whatever the page was handed", () => {
+    renderCart(false, null, { servedOffers: offersFor(false, bia, [first]) })
+
+    expect(callButton()).toBeNull()
+    expect(screen.queryByText("SEJAMUTANTE")).toBeNull()
+  })
+
+  // The network these tests meet takes one code, BEMVINDO10: here it is the first-order coupon.
+  const taken = { ...first, code: "BEMVINDO10" }
+
+  it("applies it in one press, by the field's own way — the same question to the same door — and then is gone", async () => {
+    const fetched = network({ offers: answering([taken, offered({ code: "OUTRO" })]) })
+    withCoupons([taken, offered({ code: "OUTRO" })])
+
+    fireEvent.click(callButton()!)
+
+    await waitFor(() => expect(screen.getByText("Cupom BEMVINDO10 aplicado.")).toBeInTheDocument())
+    expect(bodiesTo(fetched, "/loja/api/orders/quote")).toEqual([{ items: [{ variantId, quantity: 2 }], fulfillment: "DELIVERY", addressId: "a1", couponCode: "BEMVINDO10" }])
+    expect(window.location.search).toBe("?cupom=BEMVINDO10")
+    expect(callButton()).toBeNull()
+    // The list is whole again, with the one in force marked as it always was.
+    const list = screen.getByRole("region", { name: "Cupons disponíveis" })
+    expect(within(list).getAllByRole("listitem")).toHaveLength(2)
+    expect(within(list).getByText("BEMVINDO10").closest("li")).toHaveTextContent("Aplicado")
+    // The pressed control is gone: the focus is on the applied coupon's own button.
+    expect(screen.getByRole("button", { name: "Remover o cupom BEMVINDO10" })).toHaveFocus()
+  })
+
+  it("comes back when the coupon in force is taken off", async () => {
+    network({ offers: answering([taken]) })
+    withCoupons([taken])
+
+    fireEvent.click(callButton()!)
+    await waitFor(() => expect(screen.getByText("Cupom BEMVINDO10 aplicado.")).toBeInTheDocument())
+    expect(callButton()).toBeNull()
+
+    fireEvent.click(screen.getByRole("button", { name: "Remover o cupom BEMVINDO10" }))
+    await waitFor(() => expect(callButton()).toBeInTheDocument())
+  })
+
+  it("says the quote's own refusal if the coupon stopped holding since the list, and stays", async () => {
+    network({ quote: (cart) => (cart.couponCode ? Response.json({ ...quoteOf({ ...cart, couponCode: undefined }), coupon: { status: "REFUSED", code: "SEJAMUTANTE", reason: "EXHAUSTED" } }) : Response.json(quoteOf(cart))) })
+    withCoupons([first])
+
+    fireEvent.click(callButton()!)
+
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(ptBR.storefront.couponRefusals.EXHAUSTED))
+    expect(callButton()).toBeInTheDocument()
+  })
+
+  // The one place left that says the coupon: it has no way to be dismissed while unapplied.
+  it("has no control to dismiss it", () => {
+    withCoupons([first])
+
+    expect(screen.queryByRole("button", { name: /Fechar aviso|Dispensar/ })).toBeNull()
+  })
+
+  describe("for a visitor", () => {
+    it("adds the shop's first-purchase benefit, with no code, over the sentence that sends them to sign in", () => {
+      renderCart(false, null, { signedOutBenefit: "Crie sua conta e ganhe 15% de desconto no primeiro pedido." })
+
+      const benefit = screen.getByText("Crie sua conta e ganhe 15% de desconto no primeiro pedido.")
+      const where = screen.getByText("Tem um cupom de desconto? Você aplica depois de entrar na sua conta.")
+      expect(benefit.compareDocumentPosition(where) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      expect(callButton()).toBeNull()
+    })
+
+    it("says nothing more at a shop with no first-purchase coupon", () => {
+      renderCart(false, null)
+
+      expect(screen.queryByText(/Crie sua conta e ganhe/)).toBeNull()
+    })
+
+    it("is never said to somebody signed in", () => {
+      renderCart(false, bia, { signedOutBenefit: "Crie sua conta e ganhe 15% de desconto no primeiro pedido." })
+
+      expect(screen.queryByText(/Crie sua conta e ganhe/)).toBeNull()
+    })
   })
 })

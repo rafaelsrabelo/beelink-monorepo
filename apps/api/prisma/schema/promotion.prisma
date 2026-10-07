@@ -216,9 +216,10 @@ model StorePopup {
   /// The visitor's `bl_popup` cookie holds the one they closed, so a new one may be shown once.
   revision Int @default(1)
 
-  /// Whether the offer strip stays under the header for whoever already closed the pop-up
-  /// (BEELINK-310). Read only while `enabled`; off, the shop draws no strip. Not part of `revision`.
-  keepReminder Boolean @default(true)
+  /// Whether the offer strip stays under the header for whoever already closed the pop-up's dialog
+  /// (BEELINK-310), until they close the strip too. Read only while `enabled`; off — the default
+  /// since BEELINK-311 — the shop draws no strip. Not part of `revision`.
+  keepReminder Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

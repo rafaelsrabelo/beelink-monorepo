@@ -1,5 +1,6 @@
 // Libs
 import { act, render, screen } from "@testing-library/react"
+import { renderToStaticMarkup } from "react-dom/server"
 import userEvent from "@testing-library/user-event"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { readFileSync, readdirSync, statSync } from "node:fs"
@@ -13,6 +14,7 @@ import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 
 // App
 import type { PopupVisitor as Visitor } from "@/lib/popup"
+import { POPUP_MAX_AGE_SECONDS, decodePopupSeen } from "@/lib/popup-cookie"
 import { useOfferStrip } from "@/stores/offer-strip"
 import { useShopPopup } from "@/stores/shop-popup"
 
@@ -37,8 +39,16 @@ const bia = { id: "c1", name: "Bia" }
 
 const POPUP: StorefrontPopup = { revision: 3, imageUrl: null, title: null, text: null, buttonLabel: null, trigger: "ON_ARRIVAL", delaySeconds: 5, benefit: COUPON.firstPurchase, keepReminder: true }
 const NEW_HERE: Visitor = { seen: null, holdsSession: false }
-const closedInvitation = (revision: number): Visitor => ({ seen: { notice: "VISITOR", revision }, holdsSession: false })
-const closedCoupon = (revision: number): Visitor => ({ seen: { notice: "CUSTOMER", revision }, holdsSession: false })
+const closedInvitation = (revision: number): Visitor => ({ seen: { notice: "VISITOR", surface: "DIALOG", revision }, holdsSession: false })
+const closedCoupon = (revision: number): Visitor => ({ seen: { notice: "CUSTOMER", surface: "DIALOG", revision }, holdsSession: false })
+/** A browser as its `bl_popup` reads on the server. */
+const holding = (cookie: string): Visitor => ({ seen: decodePopupSeen(cookie), holdsSession: false })
+/** Every `Set-Cookie` the page writes from here on, as `name=value`. */
+function cookiesWritten(): string[] {
+  const written: string[] = []
+  vi.spyOn(document, "cookie", "set").mockImplementation((value) => void written.push(value))
+  return written
+}
 const withCoupon: CustomerOffers = { hasOrder: false, firstPurchase: { ...benefit, source: "COUPON", code: "PRIMEIRA10" }, coupons: [] }
 const withPromotion: CustomerOffers = { hasOrder: false, firstPurchase: { ...benefit, source: "PROMOTION", wholeCart: true }, coupons: [] }
 
@@ -146,14 +156,72 @@ describe("StorefrontOffers", () => {
       expect(screen.queryByRole("region", { name: "Oferta da loja" })).toBeNull()
     })
 
-    // Kept in memory alone: a cookie would be one more for the privacy text to list, and none is written.
-    it("writes no cookie", async () => {
-      const cookieBefore = document.cookie
-      await strip({ headline: PROMOTION })
+    // BEELINK-311: closed is remembered — in the shop's own `bl_popup`, at revision 0 where no pop-up is on.
+    it("remembers it in the shop's cookie: the invitation's strip for a visitor, the coupon's for a customer", async () => {
+      const written = cookiesWritten()
 
+      const visitor = await strip({ headline: PROMOTION })
+      await userEvent.click(screen.getByRole("button", { name: "Fechar aviso" }))
+      visitor.unmount()
+      useOfferStrip.setState({ closed: {} })
+
+      await strip({ shopper: bia, headline: COUPON, offers: withCoupon })
       await userEvent.click(screen.getByRole("button", { name: "Fechar aviso" }))
 
-      expect(document.cookie).toBe(cookieBefore)
+      expect(written).toEqual([`bl_popup=2000000000; Path=/loja; Max-Age=${POPUP_MAX_AGE_SECONDS}; SameSite=Lax`, `bl_popup=3000000000; Path=/loja; Max-Age=${POPUP_MAX_AGE_SECONDS}; SameSite=Lax`])
+    })
+
+    it("counts using it as closing it: the way to the cart, and the way to the sign-up", async () => {
+      const written = cookiesWritten()
+      // jsdom follows no link; the press is what is asked about.
+      const press = (name: string) => {
+        const link = screen.getByRole("link", { name })
+        link.addEventListener("click", (event) => event.preventDefault())
+        return userEvent.click(link)
+      }
+
+      const customer = await strip({ shopper: bia, headline: COUPON, offers: withCoupon })
+      await press("Usar no carrinho")
+      customer.unmount()
+
+      await strip({ headline: COUPON })
+      await press("Criar conta")
+
+      expect(written.map((cookie) => cookie.split(";")[0])).toEqual(["bl_popup=3000000000", "bl_popup=2000000000"])
+    })
+
+    // Whoever copied the code may still want the way to the cart: copying dismisses nothing.
+    it("does not count copying the code: the strip stays, and nothing is written", async () => {
+      const written = cookiesWritten()
+      await strip({ shopper: bia, headline: COUPON, offers: withCoupon })
+
+      await userEvent.click(screen.getByRole("button", { name: "Copiar" }))
+
+      expect(written).toEqual([])
+      expect(screen.getByRole("region", { name: "Oferta da loja" })).toBeInTheDocument()
+    })
+
+    it("writes nothing by being seen", async () => {
+      const written = cookiesWritten()
+      await strip({ headline: PROMOTION })
+
+      expect(written).toEqual([])
+    })
+
+    it("is not in what the server renders once the cookie says it was closed", async () => {
+      mocks.popupVisitorAt.mockResolvedValue(holding("2000000000"))
+      mocks.shopperAt.mockResolvedValue(null)
+      mocks.offersAt.mockResolvedValue(COUPON)
+      const visitorHtml = renderToStaticMarkup(await StorefrontOffers({ store: shop, back: "/loja", messages: ptBR }))
+
+      mocks.popupVisitorAt.mockResolvedValue(holding("3000000000"))
+      mocks.shopperAt.mockResolvedValue(bia)
+      mocks.customerOffersAt.mockResolvedValue(withCoupon)
+      const customerHtml = renderToStaticMarkup(await StorefrontOffers({ store: shop, back: "/loja", messages: ptBR }))
+
+      expect(visitorHtml).toBe("")
+      expect(customerHtml).toBe("")
+      expect(customerHtml).not.toContain("PRIMEIRA10")
     })
 
     it("is one shop's: another shop's strip is still there", async () => {
@@ -410,14 +478,12 @@ describe("StorefrontOffers", () => {
     const stripRegion = () => screen.queryByRole("region", { name: "Oferta da loja" })
     const withPopup = (headline: Headline, popup: Partial<StorefrontPopup> = {}): Headline => ({ ...headline, popup: { ...POPUP, ...popup } })
 
-    // The pin: a shop that never touched its pop-up sees no change at all.
     describe("at a shop whose pop-up is off", () => {
-      it("draws the strip for a visitor and for a customer who never ordered, exactly as before, whatever the cookie says", async () => {
-        for (const visitor of [NEW_HERE, closedInvitation(3), closedCoupon(9), { seen: null, holdsSession: true }]) {
+      it("draws the strip for a visitor and for a customer who never ordered, in a browser that closed nothing", async () => {
+        for (const visitor of [NEW_HERE, { seen: null, holdsSession: true }]) {
           const asVisitor = await strip({ headline: COUPON, visitor })
           expect(stripRegion()).toHaveTextContent("Crie sua conta e ganhe 10% de desconto no primeiro pedido.")
           expect(screen.getByRole("link", { name: "Criar conta" })).toBeInTheDocument()
-          expect(document.querySelector("[data-offer-strip]")).not.toHaveClass("invisible")
           asVisitor.unmount()
 
           const asCustomer = await strip({ shopper: bia, headline: COUPON, offers: withCoupon, visitor })
@@ -426,6 +492,39 @@ describe("StorefrontOffers", () => {
           asCustomer.unmount()
         }
         expect(screen.queryByRole("dialog")).toBeNull()
+      })
+
+      // BEELINK-311: the owner's "aparecer só uma vez e o cliente fecha, salva no browser isso".
+      it("draws none once it was closed here — and none for a dialog closed while the pop-up was on", async () => {
+        for (const cookie of ["2000000000", "3000000000", "1", "2000000007"]) {
+          const view = await strip({ headline: COUPON, visitor: holding(cookie) })
+          expect(stripRegion()).toBeNull()
+          view.unmount()
+        }
+        for (const cookie of ["3000000000", "1000000001", "3000000007"]) {
+          const view = await strip({ shopper: bia, headline: COUPON, offers: withCoupon, visitor: holding(cookie) })
+          expect(stripRegion()).toBeNull()
+          expect(view.container).not.toHaveTextContent("PRIMEIRA10")
+          view.unmount()
+        }
+      })
+
+      it("still tells a customer who never ordered their coupon once, after they closed the invitation as a visitor", async () => {
+        const written = cookiesWritten()
+        await strip({ shopper: bia, headline: COUPON, offers: withCoupon, visitor: holding("2000000000") })
+
+        expect(stripRegion()).toHaveTextContent("Seu primeiro pedido tem 10% de desconto com o cupom PRIMEIRA10")
+        await userEvent.click(screen.getByRole("button", { name: "Fechar aviso" }))
+        expect(written.map((cookie) => cookie.split(";")[0])).toEqual(["bl_popup=3000000000"])
+      })
+
+      // A shop that had its pop-up on at revision 5 and switched it off: the closing is not written back at 0.
+      it("remembers a closing at the revision the cookie already holds, never one before it", async () => {
+        const written = cookiesWritten()
+        await strip({ shopper: bia, headline: COUPON, offers: withCoupon, visitor: holding("5") })
+
+        await userEvent.click(screen.getByRole("button", { name: "Fechar aviso" }))
+        expect(written.map((cookie) => cookie.split(";")[0])).toEqual(["bl_popup=3000000005"])
       })
     })
 
@@ -475,13 +574,45 @@ describe("StorefrontOffers", () => {
 
         expect(stripRegion()).toBeInTheDocument()
       })
+
+      // BEELINK-311: the reminder closes for good too, at the pop-up's revision.
+      it("is closed for good by its own \"×\": the cookie takes the strip's number, and the next page has neither", async () => {
+        const written = cookiesWritten()
+        const first = await strip({ headline: withPopup(COUPON), visitor: closedInvitation(3) })
+        await userEvent.click(screen.getByRole("button", { name: "Fechar aviso" }))
+        first.unmount()
+        useOfferStrip.setState({ closed: {} })
+        expect(written.map((cookie) => cookie.split(";")[0])).toEqual(["bl_popup=2000000003"])
+
+        vi.useFakeTimers()
+        await strip({ headline: withPopup(COUPON), visitor: holding("2000000003") })
+        act(() => vi.advanceTimersByTime(60_000))
+        expect(stripRegion()).toBeNull()
+        expect(screen.queryByRole("dialog")).toBeNull()
+      })
+
+      it("is closed for good for a customer too, and their code is no longer on the shop's pages", async () => {
+        const view = await strip({ shopper: bia, headline: withPopup(COUPON), offers: withCoupon, visitor: holding("3000000003") })
+
+        expect(stripRegion()).toBeNull()
+        expect(view.container).not.toHaveTextContent("PRIMEIRA10")
+      })
+
+      it("comes back once, after the dialog, when the shopkeeper changes the pop-up", async () => {
+        vi.useFakeTimers()
+        await strip({ headline: withPopup(COUPON, { revision: 4 }), visitor: holding("2000000003") })
+        expect(stripRegion()).toBeNull()
+
+        act(() => vi.advanceTimersByTime(POPUP.delaySeconds * 1000))
+        expect(screen.getByRole("dialog")).toBeInTheDocument()
+      })
     })
 
     describe("with the reminder switched off", () => {
       const off = (headline: Headline) => withPopup(headline, { keepReminder: false })
 
       it("is never drawn at that shop: not before the dialog, not after it was closed, to nobody", async () => {
-        for (const visitor of [NEW_HERE, closedInvitation(3), closedCoupon(3), { seen: null, holdsSession: true }]) {
+        for (const visitor of [NEW_HERE, closedInvitation(3), closedCoupon(3), holding("1"), holding("1000000001"), { seen: null, holdsSession: true }]) {
           const asVisitor = await strip({ headline: off(COUPON), visitor })
           expect(stripRegion()).toBeNull()
           asVisitor.unmount()

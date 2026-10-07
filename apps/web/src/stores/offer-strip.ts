@@ -8,13 +8,14 @@ export interface OfferStripState {
 }
 
 /**
- * Whether a shop's offer strip was closed — in memory, and nowhere else. It holds across the pages
- * a visitor follows inside the shop and is gone at the next full load, when the strip is back.
+ * Whether a shop's offer strip was closed on this page — in memory. It takes the strip off the page
+ * at the click, and across the pages a visitor follows inside the shop without a full load.
  *
- * Not remembered on purpose. A cookie would be one more the published privacy policy has to list,
- * which is a new version of a legal text; web storage is forbidden outright (`web/no-web-storage`).
- * A module store and not one per shop, like the conversations' panel: it holds nothing of a
- * visitor, and nothing sets it on the server, where every request reads it open.
+ * What outlives the page is the browser's `bl_popup` cookie (BEELINK-311), written at the same
+ * click by `StorefrontOfferStripLive`: the server reads it and leaves the strip out of the next
+ * page. Web storage is forbidden outright (`web/no-web-storage`). A module store and not one per
+ * shop, like the conversations' panel: it holds nothing of a visitor, and nothing sets it on the
+ * server, where every request reads it open.
  */
 export const useOfferStrip = create<OfferStripState>()((set) => ({
   closed: {},

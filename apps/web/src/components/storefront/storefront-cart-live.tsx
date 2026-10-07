@@ -61,6 +61,8 @@ export interface StorefrontCartLiveProps {
   served?: ServedQuote | null
   /** The shopper's offers for this cart as the page was served with them, so the list is in the HTML; null and the browser asks. */
   servedOffers?: ServedOffers | null
+  /** A visitor's cart alone: what the shop's first-purchase coupon gives, in a sentence with no code (BEELINK-311); null says nothing. */
+  signedOutBenefit?: string | null
   /** The coupon the page's address named (`?cupom=`), to be checked on arrival; null with none. */
   coupon?: string | null
   locale: string
@@ -100,6 +102,7 @@ export function StorefrontCartLive({
   arrival,
   served = null,
   servedOffers = null,
+  signedOutBenefit = null,
   coupon = null,
   locale,
   messages,
@@ -202,7 +205,7 @@ export function StorefrontCartLive({
         notice={goneOnArrival ? messages.storefront.cartGone : null}
         checkout={
           <>
-            <CartPriceControls pricing={pricing} offers={offers} signedOut={!shopper} disabled={order.pending || view.count === 0} onChange={changed} locale={locale} messages={messages} />
+            <CartPriceControls pricing={pricing} offers={offers} signedOut={!shopper} signedOutBenefit={signedOutBenefit} disabled={order.pending || view.count === 0} onChange={changed} locale={locale} messages={messages} />
             <StorefrontCheckout
               channel={checkoutChannelOf({ offlineMethods, online, nothingToPay }, payment, Boolean(whatsapp))}
               customer={

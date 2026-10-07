@@ -40,7 +40,7 @@ export const POPUP_DEFAULTS = {
   delaySeconds: 5,
   benefitSource: 'AUTO',
   benefitId: null,
-  keepReminder: true,
+  keepReminder: false,
 } as const satisfies StorePopupSettings;
 
 export function popupError(errorCode: PopupErrorCode, message: string): { errorCode: PopupErrorCode; message: string } {

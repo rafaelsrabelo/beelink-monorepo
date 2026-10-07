@@ -3,7 +3,7 @@ import type { PopupAnnouncing, PopupBenefitChoice, PopupFormValues } from "@harn
 import type { CustomerPopupWords, PopupWords } from "@harness-monorepo/ui/lib/shop-popup"
 
 /** The form as a shop that never saved one reads it. */
-export const popupValues: PopupFormValues = { enabled: false, imageUrl: "", title: "", text: "", buttonLabel: "", trigger: "ON_ARRIVAL", delay: "5", benefit: "AUTO", keepReminder: true }
+export const popupValues: PopupFormValues = { enabled: false, imageUrl: "", title: "", text: "", buttonLabel: "", trigger: "ON_ARRIVAL", delay: "5", benefit: "AUTO", keepReminder: false }
 
 export const popupChoices: PopupBenefitChoice[] = [
   { value: "AUTO", label: "Seguir o destaque de primeira compra da loja" },
