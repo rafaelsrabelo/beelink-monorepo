@@ -4,6 +4,7 @@ import type { NextRequest } from "next/server"
 
 // App
 import { forwardSignedIn, readJsonBody, refuseCrossOrigin } from "@/lib/bff"
+import { revalidateOffers } from "@/lib/revalidate"
 
 type Context = RouteContext<"/api/stores/[slug]/coupons/[couponId]">
 
@@ -27,6 +28,8 @@ async function write(request: NextRequest, context: Context, method: "PUT" | "PA
     method,
     body: (await readJsonBody(request)) ?? {},
   })
+  // Replaced, paused or switched back on: what the shop window says of the shop's offers may have changed.
+  if (status >= 200 && status < 300) revalidateOffers(slug)
   return NextResponse.json(payload, { status })
 }
 

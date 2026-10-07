@@ -6,6 +6,10 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import { POST } from "./route"
 import { encodeOrigin } from "@/lib/origin-cookie"
 
+const mocks = vi.hoisted(() => ({ revalidateOffers: vi.fn() }))
+// The tags stay real: the shop's own read, which the origin asks for, is kept under them.
+vi.mock("@/lib/revalidate", async (original) => ({ ...(await original<typeof import("@/lib/revalidate")>()), revalidateOffers: mocks.revalidateOffers }))
+
 const RENEWED = {
   accessToken: "new-access",
   accessTokenExpiresAt: new Date(Date.now() + 900_000).toISOString(),
@@ -33,6 +37,7 @@ const authOf = (call: unknown[] | undefined) => new Headers((call?.[1] as Reques
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  mocks.revalidateOffers.mockReset()
 })
 
 describe("the cart's order", () => {
@@ -46,6 +51,37 @@ describe("the cart's order", () => {
     expect(await response.json()).toEqual(placed)
     expect(urlOf(fetched.mock.calls[0])).toContain("/stores/loja/customer/orders")
     expect(authOf(fetched.mock.calls[0])).toBe("Bearer shopper-access")
+  })
+
+  /**
+   * A shown coupon may be what the shop window says of a first purchase, and an order may take its
+   * last use: the kept headline is dropped by the order that took a coupon, and by no other.
+   */
+  describe("the shop's kept offers", () => {
+    const answering = (order: object, status = 201) => vi.stubGlobal("fetch", vi.fn(async () => Response.json(order, { status })))
+
+    it("are dropped by an order the API says took a coupon", async () => {
+      answering({ ...placed, coupon: { code: "PRIMEIRA10", kind: "PERCENT" } })
+
+      expect((await post({ cookie: "bl_shopper_access=shopper-access", body: { ...cart, couponCode: "PRIMEIRA10" } })).status).toBe(201)
+      expect(mocks.revalidateOffers.mock.calls).toEqual([["loja"]])
+    })
+
+    it("are left alone by an order with none, whatever the page sent", async () => {
+      answering({ ...placed, coupon: null })
+      await post({ cookie: "bl_shopper_access=shopper-access", body: { ...cart, couponCode: "PRIMEIRA10" } })
+      answering(placed)
+      await post({ cookie: "bl_shopper_access=shopper-access" })
+
+      expect(mocks.revalidateOffers).not.toHaveBeenCalled()
+    })
+
+    it("are left alone by an order that was refused", async () => {
+      answering({ statusCode: 409, errorCode: "ORDER_COUPON_REFUSED", message: "x", coupon: { code: "PRIMEIRA10" } }, 409)
+
+      expect((await post({ cookie: "bl_shopper_access=shopper-access" })).status).toBe(409)
+      expect(mocks.revalidateOffers).not.toHaveBeenCalled()
+    })
   })
 
   it("renews a token that ran out, once, places the order and stores the new pair on the shop's path", async () => {

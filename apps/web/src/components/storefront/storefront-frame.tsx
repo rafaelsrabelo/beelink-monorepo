@@ -65,6 +65,11 @@ export interface StorefrontFrameProps {
    * columns: on that page they are blocks. Every other page passes `children` and keeps them.
    */
   blocks?: ReactNode
+  /**
+   * The shop's offer strip, under the header: `<StorefrontOffers>`, handed over by the pages that
+   * show one — the home, the listings and a product's. Absent everywhere else, the design preview included.
+   */
+  notice?: ReactNode
   /** The page's strip under the menu, edge to edge: the listing's results band (5a). */
   pageHeader?: ReactNode
   /** How the page below it sits: 5a's listing draws its own columns on the canvas. */
@@ -128,6 +133,7 @@ export function StorefrontFrame({
   description = null,
   showBanner = false,
   blocks,
+  notice,
   pageHeader,
   body,
   colors,
@@ -227,6 +233,7 @@ export function StorefrontFrame({
           />
         ) : undefined
       }
+      {...(notice ? { notice } : {})}
       {...(blocks ? { blocks } : {})}
       {...(pageHeader ? { pageHeader } : {})}
       {...body}

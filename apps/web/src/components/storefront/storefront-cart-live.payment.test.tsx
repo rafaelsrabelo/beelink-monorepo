@@ -66,7 +66,11 @@ const placedOnline = { number: 12, status: "RECEIVED", fulfillment: "PICKUP", pa
 type Fetched = ReturnType<typeof vi.fn<(url: string, init?: RequestInit) => Promise<Response>>>
 
 function network({ order = () => Response.json(placedOnline, { status: 201 }), quote = {} }: { order?: () => Response; quote?: Partial<OrderQuote> } = {}): Fetched {
-  const fetched = vi.fn(async (url: string, init?: RequestInit) => (url.endsWith("/api/orders/quote") ? Response.json(quoteOf(JSON.parse(String(init?.body)) as CustomerOrderQuotePayload, quote)) : order()))
+  const fetched = vi.fn(async (url: string, init?: RequestInit) => {
+    // The shop's shown coupons for the cart: none here, and never an order.
+    if (url.endsWith("/api/offers")) return Response.json({ hasOrder: false, firstPurchase: null, coupons: [] })
+    return url.endsWith("/api/orders/quote") ? Response.json(quoteOf(JSON.parse(String(init?.body)) as CustomerOrderQuotePayload, quote)) : order()
+  })
   vi.stubGlobal("fetch", fetched)
   return fetched
 }

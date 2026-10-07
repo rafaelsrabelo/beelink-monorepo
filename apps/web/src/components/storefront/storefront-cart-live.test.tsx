@@ -4,13 +4,14 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 // Types
-import type { CustomerOrderQuotePayload, CustomerProfile, OrderQuote, PublicProductDetail } from "@harness-monorepo/contracts"
+import type { CustomerOffers, CustomerOffersPayload, CustomerOrderQuotePayload, CustomerProfile, OfferedCoupon, OrderQuote, PublicProductDetail } from "@harness-monorepo/contracts"
 
 // UI
 import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 
 // App
 import { CART_COOKIE, decodeCart } from "@/lib/cart-cookie"
+import { offersCartOf, type ServedOffers } from "@/lib/cart-offers"
 import { cartQuoteOf, firstFulfillmentOf, type ServedQuote } from "@/lib/cart-pricing"
 import { checkoutAddressesOf, checkoutAddressIdOf } from "@/lib/saved-address"
 import { cartViewOf } from "@/lib/cart-view"
@@ -102,14 +103,24 @@ function servedFor(goneOnArrival: boolean, shopper: CustomerProfile | null, over
   return { shopperId: shopper?.id ?? null, cart, quote: quoteOf(cart, over), at: Date.now() }
 }
 
+/** The shop's shown coupons for that same cart, as the page serves them to a shopper: none, unless a test lists some. */
+function offersFor(goneOnArrival: boolean, shopper: CustomerProfile | null, coupons: OfferedCoupon[] = []): ServedOffers | null {
+  if (!shopper) return null
+  return { shopperId: shopper.id, cart: offersCartOf(servedFor(goneOnArrival, shopper).cart), offers: { hasOrder: false, firstPurchase: null, coupons }, at: Date.now() }
+}
+
 type Fetched = ReturnType<typeof vi.fn<(url: string, init?: RequestInit) => Promise<Response>>>
 
-/** The network as the page meets it: the cart's price at one address, the order at another. */
+/** The network as the page meets it: the cart's price at one address, the shop's shown coupons at another, the order at a third. */
 function network({
   order = () => Response.json(placed, { status: 201 }),
   quote = (cart: CustomerOrderQuotePayload) => Response.json(quoteOf(cart)),
-}: { order?: () => Response; quote?: (cart: CustomerOrderQuotePayload) => Response } = {}): Fetched {
-  const fetched = vi.fn(async (url: string, init?: RequestInit) => (url.endsWith("/api/orders/quote") ? quote(JSON.parse(String(init?.body)) as CustomerOrderQuotePayload) : order()))
+  offers = () => Response.json({ hasOrder: false, firstPurchase: null, coupons: [] } satisfies CustomerOffers),
+}: { order?: () => Response; quote?: (cart: CustomerOrderQuotePayload) => Response; offers?: (cart: CustomerOffersPayload) => Response } = {}): Fetched {
+  const fetched = vi.fn(async (url: string, init?: RequestInit) => {
+    const body = () => JSON.parse(String(init?.body)) as CustomerOrderQuotePayload
+    return url.endsWith("/api/orders/quote") ? quote(body()) : url.endsWith("/api/offers") ? offers(body()) : order()
+  })
   vi.stubGlobal("fetch", fetched)
   return fetched
 }
@@ -133,6 +144,7 @@ function cartTree(client: QueryClient, goneOnArrival: boolean, shopper: Customer
           shopper={shopper}
           identityHrefs={identityHrefs}
           served={servedFor(goneOnArrival, shopper)}
+          servedOffers={offersFor(goneOnArrival, shopper)}
           locale="pt-BR"
           messages={ptBR}
           {...props}
@@ -1161,5 +1173,105 @@ describe("the cart's cashback", () => {
 
     expect(box()).toBeDisabled()
     expect(screen.getByText("Não sobra valor de produtos neste pedido para pagar com cashback.")).toBeInTheDocument()
+  })
+})
+
+/** The shop's shown coupons, in the cart for the customer to take: the list is the API's, and "Aplicar" is the field's own way in. */
+describe("the cart's available coupons", () => {
+  const variantId = blusa.variants[0]!.id
+  const blusas = (quantity: number) => [{ variantId, quantity }]
+  const offered = (over: Partial<OfferedCoupon>): OfferedCoupon => ({ code: "BEMVINDO10", audience: "EVERYONE", kind: "PERCENT", percentBps: 1000, amountCents: null, minSubtotalCents: 0, endsAt: null, missingCents: 0, ...over })
+  const answering = (coupons: OfferedCoupon[]) => () => Response.json({ hasOrder: false, firstPurchase: null, coupons } satisfies CustomerOffers)
+  const list = () => screen.getByRole("region", { name: "Cupons disponíveis" })
+  const rowOf = (code: string) => within(list()).getByText(code).closest("li")!
+  const placeButton = () => screen.getByRole("button", { name: "Fechar pedido pelo WhatsApp" })
+
+  it("lists what the page was served with, in the HTML: nothing is asked to draw it", () => {
+    const fetched = network()
+    renderCart(false, bia, { servedOffers: offersFor(false, bia, [offered({}), offered({ code: "PRIMEIRA", audience: "FIRST_PURCHASE", minSubtotalCents: 5000 })]) })
+
+    expect(within(list()).getAllByRole("listitem")).toHaveLength(2)
+    expect(rowOf("BEMVINDO10")).toHaveTextContent("10% de desconto")
+    expect(rowOf("PRIMEIRA").textContent?.replace(/ /g, " ")).toContain("10% de desconto · Pedido mínimo de R$ 50,00 · Só no primeiro pedido")
+    expect(fetched).not.toHaveBeenCalled()
+  })
+
+  it("draws no section at a shop that shows no coupon", () => {
+    renderCart()
+
+    expect(screen.queryByRole("region", { name: "Cupons disponíveis" })).toBeNull()
+    expect(screen.queryByText("Cupons disponíveis")).toBeNull()
+  })
+
+  // One check, one way in: the code is priced with the cart exactly as a typed one is.
+  it("applies the one pressed as typing it does — the same question to the same door — then marks it and takes it to the order", async () => {
+    const fetched = network({ offers: answering([offered({})]) })
+    openedTab()
+    renderCart(false, bia, { servedOffers: offersFor(false, bia, [offered({})]) })
+
+    fireEvent.click(screen.getByRole("button", { name: "Aplicar o cupom BEMVINDO10" }))
+
+    await waitFor(() => expect(screen.getByText("Cupom BEMVINDO10 aplicado.")).toBeInTheDocument())
+    expect(bodiesTo(fetched, "/loja/api/orders/quote")).toEqual([{ items: blusas(2), fulfillment: "DELIVERY", addressId: "a1", couponCode: "BEMVINDO10" }])
+    // In the address, as a typed one: a reload and the trip to add an address come back with it.
+    expect(window.location.search).toBe("?cupom=BEMVINDO10")
+    // In force: marked, and not offered again.
+    expect(rowOf("BEMVINDO10")).toHaveTextContent("Aplicado")
+    expect(screen.queryByRole("button", { name: "Aplicar o cupom BEMVINDO10" })).toBeNull()
+
+    fireEvent.click(placeButton())
+    await waitFor(() => expect(bodiesTo(fetched, "/loja/api/orders")).toHaveLength(1))
+    expect(bodiesTo(fetched, "/loja/api/orders")[0]).toMatchObject({ couponCode: "BEMVINDO10" })
+  })
+
+  it("says the quote's own refusal when the coupon stopped holding between the list and the press", async () => {
+    network({ quote: (cart) => (cart.couponCode ? Response.json({ ...quoteOf({ ...cart, couponCode: undefined }), coupon: { status: "REFUSED", code: "ACABOU", reason: "EXHAUSTED" } }) : Response.json(quoteOf(cart))) })
+    renderCart(false, bia, { servedOffers: offersFor(false, bia, [offered({ code: "ACABOU" })]) })
+
+    fireEvent.click(screen.getByRole("button", { name: "Aplicar o cupom ACABOU" }))
+
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(ptBR.storefront.couponRefusals.EXHAUSTED))
+    expect(window.location.search).toBe("")
+  })
+
+  // A press would be refused: the API says what is missing, and no button is drawn.
+  it("offers no press on one the cart is below the minimum of, and says what is missing", () => {
+    renderCart(false, bia, { servedOffers: offersFor(false, bia, [offered({ code: "ACIMA150", minSubtotalCents: 15000, missingCents: 3020 })]) })
+
+    expect(within(rowOf("ACIMA150")).queryByRole("button")).toBeNull()
+    expect(rowOf("ACIMA150").textContent?.replace(/ /g, " ")).toContain("Faltam R$ 30,20 em produtos para usar.")
+  })
+
+  it("asks again as the cart changes — about the cart alone, never with a code — and keeps the last list on screen meanwhile", async () => {
+    const fetched = network({ offers: (cart) => answering(cart.items?.[0]?.quantity === 3 ? [offered({}), offered({ code: "TRES" })] : [offered({})])() })
+    renderCart(false, bia, { servedOffers: offersFor(false, bia, [offered({})]) })
+
+    fireEvent.click(screen.getByRole("button", { name: "Aumentar a quantidade de Blusa" }))
+    expect(rowOf("BEMVINDO10")).toBeInTheDocument()
+
+    await waitFor(() => expect(within(list()).getAllByRole("listitem")).toHaveLength(2))
+    expect(bodiesTo(fetched, "/loja/api/offers")).toEqual([{ items: blusas(3), fulfillment: "DELIVERY", addressId: "a1" }])
+  })
+
+  // Whether a code exists is told only to an identified customer.
+  it("shows a visitor no code and asks for none, whatever the page was handed", async () => {
+    const fetched = network({ offers: answering([offered({})]) })
+    renderCart(false, null, { servedOffers: offersFor(false, bia, [offered({})]) })
+
+    fireEvent.click(screen.getByRole("button", { name: "Aumentar a quantidade de Blusa" }))
+    await waitFor(() => expect(bodiesTo(fetched, "/loja/api/orders/quote")).toHaveLength(1))
+
+    expect(screen.queryByText("Cupons disponíveis")).toBeNull()
+    expect(screen.queryByText("BEMVINDO10")).toBeNull()
+    expect(bodiesTo(fetched, "/loja/api/offers")).toEqual([])
+  })
+
+  it("draws no list when the answer fails: the cart loses nothing else by it", async () => {
+    const fetched = network({ offers: () => Response.json({ statusCode: 502, errorCode: "UNKNOWN", message: "x" }, { status: 502 }) })
+    renderCart(false, bia, { servedOffers: null })
+
+    await waitFor(() => expect(bodiesTo(fetched, "/loja/api/offers")).toHaveLength(1))
+    expect(screen.queryByText("Cupons disponíveis")).toBeNull()
+    expect(screen.getByLabelText("Cupom de desconto")).toBeInTheDocument()
   })
 })

@@ -4,7 +4,7 @@
 import { useMemo, useState } from "react"
 
 // Types
-import type { CustomerProfile, PaymentMethod, PlaceCustomerOrderPayload, StorefrontPaymentOptions } from "@harness-monorepo/contracts"
+import type { CustomerProfile, OfferedCoupon, PaymentMethod, PlaceCustomerOrderPayload, StorefrontPaymentOptions } from "@harness-monorepo/contracts"
 import type { StorefrontCheckoutOnline, StorefrontCheckoutShipping } from "@harness-monorepo/ui/blocks/storefront/storefront-checkout"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
@@ -12,8 +12,10 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { formatCents } from "@harness-monorepo/ui/blocks/storefront/storefront-price"
 
 // App
+import { useCartOffers } from "./use-cart-offers"
 import { useCartPricing, type CartPricingHandle } from "./use-cart-pricing"
 import { useCheckoutChoice, type CheckoutChoiceHandle, type CheckoutWays } from "./use-checkout-choice"
+import type { ServedOffers } from "@/lib/cart-offers"
 import type { ServedQuote } from "@/lib/cart-pricing"
 import type { CartView } from "@/lib/cart-view"
 import { checkoutPaymentOf, heldPaymentOf, paymentPayloadOf } from "@/lib/checkout-payment"
@@ -28,6 +30,8 @@ export interface CartCheckoutInput {
   paymentOptions: StorefrontPaymentOptions
   deliverTo: string | null
   served: ServedQuote | null
+  /** The shopper's offers for this cart as the page was served with them; null and the browser asks. */
+  servedOffers?: ServedOffers | null
   arrivedWith: string | null
   locale: string
   messages: UiMessages
@@ -35,6 +39,8 @@ export interface CartCheckoutInput {
 
 export interface CartCheckoutHandle extends CheckoutChoiceHandle {
   pricing: CartPricingHandle
+  /** The shop's shown coupons this cart may take, as the API lists them; none for a visitor. */
+  offers: OfferedCoupon[]
   /** What the shop's delivery rules quote to the chosen address, in words; null while nobody knows. */
   shipping: StorefrontCheckoutShipping | null
   /** Why no order can go out the way chosen — the shop does not reach the address, or hands nothing over now — in words; null when one can. */
@@ -65,7 +71,7 @@ export interface CartCheckoutHandle extends CheckoutChoiceHandle {
  * The CPF is one field for its two reasons — a carrier's label and an online payment — shown where
  * the first of them is.
  */
-export function useCartCheckout({ slug, view, shopper, paymentMethods, paymentOptions, deliverTo, served, arrivedWith, locale, messages }: CartCheckoutInput): CartCheckoutHandle {
+export function useCartCheckout({ slug, view, shopper, paymentMethods, paymentOptions, deliverTo, served, servedOffers = null, arrivedWith, locale, messages }: CartCheckoutInput): CartCheckoutHandle {
   const text = messages.storefront
   const [ways, setWays] = useState<CheckoutWays | null>(null)
   const [cpf, setCpf] = useState("")
@@ -74,6 +80,8 @@ export function useCartCheckout({ slug, view, shopper, paymentMethods, paymentOp
   const carrier = useMemo(() => (delivering ? shippingChoiceOf(picked.wayId) : null), [delivering, picked.wayId])
   // The address goes with a pick-up too: the delivery beside it says what it would cost.
   const pricing = useCartPricing({ slug, view, fulfillment: picked.fulfillment, addressId: picked.addressId, shipping: carrier, shopperId: shopper?.id ?? null, served, arrivedWith, locale, messages })
+  // Asked about the same cart the price is: its lines, how it leaves, where to and by which carrier.
+  const offers = useCartOffers({ slug, shopperId: shopper?.id ?? null, view, fulfillment: picked.fulfillment, addressId: picked.addressId, shipping: carrier, served: servedOffers })
   const shipping = useMemo(() => checkoutShippingOf(pricing.shipping, (cents) => formatCents(cents, locale, "BRL"), locale, text), [pricing.shipping, locale, text])
   // Remembered during the draw itself, as the price's other verdicts are: the next draw already keeps to them.
   const ids = shipping?.ways.map((way) => way.id) ?? []
@@ -119,6 +127,7 @@ export function useCartCheckout({ slug, view, shopper, paymentMethods, paymentOp
     choice: { ...picked, ...held },
     setChoice,
     pricing,
+    offers,
     shipping,
     blocked,
     sent,

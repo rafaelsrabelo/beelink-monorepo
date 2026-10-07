@@ -12,6 +12,7 @@ import { StorefrontReorderNotice } from "@harness-monorepo/ui/blocks/storefront/
 
 // App
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
+import { StorefrontOffers } from "@/components/storefront/storefront-offers"
 import { StorefrontCartLive } from "@/components/storefront/storefront-cart-live"
 import { StorefrontListing } from "@/components/storefront/storefront-listing"
 import { StorefrontAccountArea } from "@/components/storefront/account/storefront-account-area"
@@ -27,11 +28,13 @@ import { cartQuoteOf, firstFulfillmentOf } from "@/lib/cart-pricing"
 import { cartQuoteAt } from "@/lib/cart-quote"
 import { cartViewOf } from "@/lib/cart-view"
 import { customerFavoritesAt } from "@/lib/customer-favorites"
+import { servedOffersAt } from "@/lib/customer-offers"
 import { pendingReviewsAt } from "@/lib/customer-reviews"
 import { OVERVIEW_FAVORITES } from "@/lib/overview-parts"
 import { customerOrdersAt, customerReorderAt } from "@/lib/customer-orders"
 import { reorderNoticeOf } from "@/lib/reorder-view"
 import { ADDRESS_KEY, checkoutAddressesOf, checkoutAddressIdOf, DELIVER_TO_KEY, NEW_ADDRESS } from "@/lib/saved-address"
+import { pathWithQuery } from "@/lib/offer-strip"
 import { shopperAt } from "@/lib/shopper"
 import { catalogueAt, paymentOptionsAt } from "@/lib/storefront-data"
 import { BACK_KEY, orderNumberOf, paramOf, REORDER_FAILED_KEY, REORDER_TRIMMED_KEY, REORDERED_KEY, storefrontRoutes } from "@/lib/storefront-routes"
@@ -95,9 +98,9 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
   // (BEELINK-245): the promotions' rows are in the HTML too — and to the address a delivery would go
   // to (BEELINK-178), so the fee is as well.
   const deliverTo = paramOf(query[DELIVER_TO_KEY]) ?? null
-  const served = cart
-    ? await cartQuoteAt(store.slug, cartQuoteOf(cartViewOf(cart.lines, cart.products).rows, firstFulfillmentOf(shopper), null, { addressId: shopper ? checkoutAddressIdOf(checkoutAddressesOf(shopper), deliverTo) : null }), shopper?.id ?? null)
-    : null
+  const asked = cart ? cartQuoteOf(cartViewOf(cart.lines, cart.products).rows, firstFulfillmentOf(shopper), null, { addressId: shopper ? checkoutAddressIdOf(checkoutAddressesOf(shopper), deliverTo) : null }) : null
+  // With it, for a shopper: the shop's shown coupons that same cart may take, so the list is in the HTML as well.
+  const [served, servedOffers] = await Promise.all([asked ? cartQuoteAt(store.slug, asked, shopper?.id ?? null) : null, asked?.items.length && shopper ? servedOffersAt(store.slug, shopper.id, asked) : null])
   // The menu's counts, read together on the area's own front: each is its own call to the API. The
   // favourites' page is the rail's too, so the front reads it once.
   const [inProgress, liked, toRate] =
@@ -130,6 +133,8 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
       year={new Date().getFullYear()}
       shopper={shopper}
       body={catalogue ? { layout: "flush", surface: "canvas" } : undefined}
+      // On a shelf alone — the catalogue, a category, the search: the cart, the account and the sign-in pages show none.
+      notice={catalogue ? <StorefrontOffers store={store} back={pathWithQuery(`${routes.home}/${encodeURIComponent(section)}`, query)} messages={ui} /> : undefined}
       // The shopper's area draws its own front (6c): the greeting is its heading, and there is no band.
       pageHeader={place.section.kind === "account" ? undefined : <StorefrontSectionBand place={place} routes={routes} {...(catalogue ? { catalogue } : {})} locale={locale} />}
       messages={ui}
@@ -185,6 +190,7 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
           deliverTo={deliverTo}
           arrival={reorderNotice ? <StorefrontReorderNotice {...reorderNotice} messages={ui} /> : undefined}
           served={served}
+          servedOffers={servedOffers}
           coupon={couponIn(paramOf(query[COUPON_KEY]))}
           locale={locale}
           messages={ui}

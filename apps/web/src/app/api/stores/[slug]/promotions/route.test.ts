@@ -9,8 +9,8 @@ import { GET as coupons, POST as createCoupon } from "../coupons/route"
 import { GET as readPromotion, PATCH, PUT } from "./[promotionId]/route"
 import { GET, POST } from "./route"
 
-const mocks = vi.hoisted(() => ({ revalidateStore: vi.fn() }))
-vi.mock("@/lib/revalidate", () => ({ revalidateStore: mocks.revalidateStore }))
+const mocks = vi.hoisted(() => ({ revalidateStore: vi.fn(), revalidateOffers: vi.fn() }))
+vi.mock("@/lib/revalidate", () => ({ revalidateStore: mocks.revalidateStore, revalidateOffers: mocks.revalidateOffers }))
 
 type Fetched = (url: string, init?: RequestInit) => Promise<Response>
 
@@ -29,6 +29,7 @@ const coupon = { params: Promise.resolve({ slug: "loja", couponId: "c1" }) }
 afterEach(() => {
   vi.unstubAllGlobals()
   mocks.revalidateStore.mockReset()
+  mocks.revalidateOffers.mockReset()
 })
 
 describe("the shop's promotions, for the panel", () => {
@@ -92,7 +93,11 @@ describe("the shop's promotions, for the panel", () => {
 })
 
 describe("the shop's coupons, for the panel", () => {
-  it("pages them, reads, creates, replaces and pauses one, and reads its uses — never touching the shop window's cache", async () => {
+  /**
+   * A coupon switched on to be shown may be the shop's first-purchase headline, which the shop
+   * window keeps: a write drops that — and only that, since a coupon is in no catalogue.
+   */
+  it("pages them, reads, creates, replaces and pauses one, and reads its uses — dropping the shop's kept offers on each write, and never its catalogue", async () => {
     const fetched = vi.fn<Fetched>(async () => Response.json({ id: "c1" }))
     vi.stubGlobal("fetch", fetched)
 
@@ -113,6 +118,16 @@ describe("the shop's coupons, for the panel", () => {
     ])
     expect(JSON.parse(String(fetched.mock.calls[3]?.[1]?.body))).toEqual({ code: "VOLTEI15" })
     expect(mocks.revalidateStore).not.toHaveBeenCalled()
+    // The three writes, and neither of the reads.
+    expect(mocks.revalidateOffers.mock.calls).toEqual([["loja"], ["loja"], ["loja"]])
+  })
+
+  it("leaves the shop's kept offers alone when a write was refused", async () => {
+    vi.stubGlobal("fetch", vi.fn<Fetched>(async () => Response.json({ errorCode: "COUPON_CODE_TAKEN" }, { status: 409 })))
+
+    expect((await createCoupon(request("/api/stores/loja/coupons", { method: "POST", body: { code: "BEMVINDO10" } }), shop)).status).toBe(409)
+    expect((await replaceCoupon(request("/api/stores/loja/coupons/c1", { method: "PUT", body: { code: "BEMVINDO10" } }), coupon)).status).toBe(409)
+    expect(mocks.revalidateOffers).not.toHaveBeenCalled()
   })
 
   it("refuses a request from another site", async () => {

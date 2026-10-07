@@ -23,6 +23,7 @@ import { useCartCheckout } from "./use-cart-checkout"
 import { useCartOrder } from "./use-cart-order"
 import { useCheckoutTracking } from "./use-checkout-tracking"
 import { waysBackWithCoupon } from "@/lib/cart-coupon"
+import type { ServedOffers } from "@/lib/cart-offers"
 import type { ServedQuote } from "@/lib/cart-pricing"
 import { cartViewOf, orderItemsOf, rowKeyOf } from "@/lib/cart-view"
 import { checkoutChannelOf } from "@/lib/checkout-payment"
@@ -58,6 +59,8 @@ export interface StorefrontCartLiveProps {
   arrival?: ReactNode
   /** The cart's price as the page was served with it, so the summary is in the HTML; null and the browser asks. */
   served?: ServedQuote | null
+  /** The shopper's offers for this cart as the page was served with them, so the list is in the HTML; null and the browser asks. */
+  servedOffers?: ServedOffers | null
   /** The coupon the page's address named (`?cupom=`), to be checked on arrival; null with none. */
   coupon?: string | null
   locale: string
@@ -96,6 +99,7 @@ export function StorefrontCartLive({
   deliverTo = null,
   arrival,
   served = null,
+  servedOffers = null,
   coupon = null,
   locale,
   messages,
@@ -112,7 +116,7 @@ export function StorefrontCartLive({
   const view = useMemo(() => cartViewOf(lines, products), [lines, products])
   const told = useCheckoutTracking(view)
   const byKey = useMemo(() => new Map(view.rows.map((row) => [rowKeyOf(row), row])), [view.rows])
-  const { addresses, choice, setChoice, pricing, shipping, blocked, sent: leaving, recipientDocument, offlineMethods, online, nothingToPay, payment } = useCartCheckout({ slug, view, shopper, paymentMethods, paymentOptions, deliverTo, served, arrivedWith: coupon, locale, messages })
+  const { addresses, choice, setChoice, pricing, offers, shipping, blocked, sent: leaving, recipientDocument, offlineMethods, online, nothingToPay, payment } = useCartCheckout({ slug, view, shopper, paymentMethods, paymentOptions, deliverTo, served, servedOffers, arrivedWith: coupon, locale, messages })
   const paysOnline = payment?.paymentChannel === "ONLINE"
   // Each way out of the cart that comes back to it — to sign in, to change details, to add an address — takes the coupon along.
   const ways = useMemo(() => waysBackWithCoupon(identityHrefs, pricing.carried), [identityHrefs, pricing.carried])
@@ -198,7 +202,7 @@ export function StorefrontCartLive({
         notice={goneOnArrival ? messages.storefront.cartGone : null}
         checkout={
           <>
-            <CartPriceControls pricing={pricing} signedOut={!shopper} disabled={order.pending || view.count === 0} onChange={changed} locale={locale} messages={messages} />
+            <CartPriceControls pricing={pricing} offers={offers} signedOut={!shopper} disabled={order.pending || view.count === 0} onChange={changed} locale={locale} messages={messages} />
             <StorefrontCheckout
               channel={checkoutChannelOf({ offlineMethods, online, nothingToPay }, payment, Boolean(whatsapp))}
               customer={
