@@ -110,6 +110,14 @@ gate "api/asaas-secret-in-asaas" \
   "['\"]ASAAS['\"]" \
   --exclude-dir=asaas --exclude='*.spec.ts'
 
+# The same for a shop's Conversions API token (BEELINK-274), which sends events to the shop's own Meta
+# account: nothing else under integrations names the party, so nothing else can seal or open it.
+gate "api/meta-secret-in-meta-pixel" \
+  "Only src/modules/integrations/meta-pixel seals or opens a shop's Meta token; nothing else under integrations names the META_PIXEL party (apps/api/AGENTS.md, BEELINK-274)." \
+  "apps/api/src/modules/integrations" \
+  "['\"]META_PIXEL['\"]" \
+  --exclude-dir=meta-pixel --exclude='*.spec.ts'
+
 # A row of order_payments says whether a shop holds a customer's money. It is written in one folder,
 # by the door a fact from Asaas comes in by, so no other module can mark an order paid — or unpaid —
 # by a write of its own. Reading it is anyone's.

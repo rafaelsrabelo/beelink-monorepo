@@ -3,6 +3,7 @@ import { MessageCircleIcon } from "lucide-react"
 
 // UI
 import { buttonVariants } from "@harness-monorepo/ui/components/button"
+import { originLinesOf } from "@harness-monorepo/ui/lib/order-origin"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Locales
@@ -14,7 +15,7 @@ import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import type { OrderDetailView } from "./order-types"
 
 export interface OrderFactsProps {
-  order: Pick<OrderDetailView, "customer" | "fulfillment" | "deliveryAddress" | "paymentMethod" | "note">
+  order: Pick<OrderDetailView, "customer" | "fulfillment" | "deliveryAddress" | "paymentMethod" | "note"> & Partial<Pick<OrderDetailView, "origin" | "events">>
   /** The order's delivery address in one line, as the screen writes addresses; null when it has none. */
   deliveryLine: string | null
   /** The conversation with the order already typed; null when the customer has no phone. */
@@ -38,11 +39,17 @@ function Fact({ label, children, className }: { label: string; children: React.R
  * Who bought — the name leading to their record — how it leaves and where to, how it was paid, and
  * a way to talk to them. The address is the order's own, as it was when placed: the customer's of
  * today may be somewhere else.
+ *
+ * An order its customer placed from the cart also says where they came from (BEELINK-275): the
+ * campaign of the link, or a direct visit. A sale the shop registered came by no link and says
+ * nothing. The labels are a stranger's words out of an address: drawn as text, wrapped inside the card.
  */
 export function OrderFacts({ order, deliveryLine, whatsappHref, customerHref, linkComponent: Link = AnchorLink, messages = defaultMessages }: OrderFactsProps) {
   const text = messages.orders.detail
   const labels = messages.orders
   const recipient = order.deliveryAddress?.recipientName
+  const fromCart = order.events?.[0]?.actor === "CUSTOMER"
+  const origin = fromCart && order.origin !== undefined ? originLinesOf(order.origin, text.origin) : null
 
   return (
     <section aria-labelledby="order-facts-title" className="bg-shell-surface border-shell-border flex flex-col gap-4 rounded-xl border p-4 shadow-xs">
@@ -84,6 +91,12 @@ export function OrderFacts({ order, deliveryLine, whatsappHref, customerHref, li
           </Fact>
         ) : null}
         <Fact label={text.payment}>{labels.payments[order.paymentMethod]}</Fact>
+        {origin ? (
+          <Fact label={text.origin.label} className="flex flex-col gap-0.5 break-words">
+            <span>{origin.line}</span>
+            {origin.detail ? <span className="text-muted-foreground text-xs">{origin.detail}</span> : null}
+          </Fact>
+        ) : null}
         {/* Typed in a textarea: its line breaks are the shopkeeper's, and a pasted link must not run out of the card. */}
         {order.note ? (
           <Fact label={text.note} className="break-words whitespace-pre-line">

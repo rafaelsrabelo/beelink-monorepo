@@ -1,5 +1,5 @@
 // Block
-import type { AsaasCardView, IntegrationCardView, MelhorEnvioCardView, PaymentSettingsFormValues, ShippingServiceView, ShippingSettingsFormValues, UpcomingIntegrationView } from "@harness-monorepo/ui/lib/integrations"
+import type { AsaasCardView, IntegrationCardView, MelhorEnvioCardView, MetaPixelCardView, PaymentSettingsFormValues, ShippingServiceView, ShippingSettingsFormValues, UpcomingIntegrationView } from "@harness-monorepo/ui/lib/integrations"
 
 export const connected: MelhorEnvioCardView = {
   available: true,
@@ -62,3 +62,22 @@ export const asaasConnected: AsaasCardView = {
 export const asaasDisconnected: AsaasCardView = { ...asaasConnected, status: "DISCONNECTED", account: null, webhook: null, approval: null, connectedAt: null }
 
 export const payments: PaymentSettingsFormValues = { pix: true, card: true, maxInstallments: 3, offline: true }
+
+export const META_LOGO = "/brand/integrations/meta-icon.svg"
+
+/** Connecting the pixel is typing its ID on its own page: both ways lead there. It has no account and no sandbox. */
+export const metaPixelCard: IntegrationCardView = {
+  provider: "META_PIXEL",
+  logoSrc: META_LOGO,
+  href: "/admin/lessari/integrations/meta-pixel",
+  connectHref: "/admin/lessari/integrations/meta-pixel",
+  connectBy: "page",
+  connection: { state: "disconnected", account: null, sandbox: false },
+}
+
+/** An ID of the right shape, and nobody's pixel. */
+export const metaPixelConnected: MetaPixelCardView = { pixelId: "123456789012345", connectedAt: "2026-10-06T12:00:00.000Z", savedAt: "06/10/2026" }
+
+export const metaPixelDisconnected: MetaPixelCardView = { pixelId: null, connectedAt: null, savedAt: null }
+
+export const META_EVENTS_MANAGER = "https://business.facebook.com/events_manager"

@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 // Types
-import type { AsaasConnection, MelhorEnvioConnection } from "@harness-monorepo/contracts"
+import type { AsaasConnection, MelhorEnvioConnection, MetaPixelConnection } from "@harness-monorepo/contracts"
 
 // UI
 import { ptBR as ui } from "@harness-monorepo/ui/locales/pt-BR"
@@ -12,13 +12,16 @@ import { ptBR as ui } from "@harness-monorepo/ui/locales/pt-BR"
 // App
 import { IntegrationsScreen } from "./integrations-screen"
 
-const mocks = vi.hoisted(() => ({ connection: vi.fn(), asaas: vi.fn() }))
+const mocks = vi.hoisted(() => ({ connection: vi.fn(), asaas: vi.fn(), pixel: vi.fn() }))
 vi.mock("@/services/integrations/integration-hooks", () => ({ useMelhorEnvioConnection: mocks.connection }))
 vi.mock("@/services/integrations/asaas-hooks", () => ({ useAsaasConnection: mocks.asaas }))
+vi.mock("@/services/integrations/meta-pixel-hooks", () => ({ useMetaPixelConnection: mocks.pixel }))
 
 const connected: MelhorEnvioConnection = { available: true, environment: "PRODUCTION", status: "CONNECTED", account: { name: "Mutante Suplementos", email: null }, connectedAt: "2026-10-02T12:00:00.000Z", accessExpiresAt: "2026-11-01T12:00:00.000Z" }
 const asaasNever: AsaasConnection = { available: true, environment: "SANDBOX", status: "DISCONNECTED", account: null, webhook: null, approval: null, approvalCheckedAt: null, connectedAt: null }
 const asaasConnected: AsaasConnection = { ...asaasNever, status: "CONNECTED", account: { name: "Mutante Suplementos LTDA", document: "**.222.333/0001-**" }, webhook: "SKIPPED", connectedAt: "2026-10-05T12:00:00.000Z" }
+const pixelNever: MetaPixelConnection = { status: "DISCONNECTED", pixelId: null, connectedAt: null, conversions: { available: true, token: "NONE", refusal: null, refusedAt: null } }
+const pixelConnected: MetaPixelConnection = { status: "CONNECTED", pixelId: "123456789012345", connectedAt: "2026-10-06T12:00:00.000Z", conversions: { available: true, token: "NONE", refusal: null, refusedAt: null } }
 
 const read = (data: object) => ({ isPending: false, isError: false, data })
 const reading = { isPending: true, isError: false }
@@ -30,6 +33,7 @@ const view = () => render(<IntegrationsScreen slug="mutante" messages={ui} />)
 beforeEach(() => {
   mocks.connection.mockReturnValue(read(connected))
   mocks.asaas.mockReturnValue(read(asaasNever))
+  mocks.pixel.mockReturnValue(read(pixelNever))
 })
 
 describe("IntegrationsScreen", () => {
@@ -39,8 +43,9 @@ describe("IntegrationsScreen", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Integrações" })).toBeInTheDocument()
     expect(mocks.connection).toHaveBeenCalledWith("mutante")
     expect(mocks.asaas).toHaveBeenCalledWith("mutante")
-    expect(screen.getAllByRole("article")).toHaveLength(3)
-    expect([...container.querySelectorAll("img")].map((mark) => mark.getAttribute("src"))).toEqual(["/brand/integrations/melhor-envio-icon.png", "/brand/integrations/asaas-icon.png", "/brand/integrations/beeflow.png"])
+    expect(mocks.pixel).toHaveBeenCalledWith("mutante")
+    expect(screen.getAllByRole("article")).toHaveLength(4)
+    expect([...container.querySelectorAll("img")].map((mark) => mark.getAttribute("src"))).toEqual(["/brand/integrations/melhor-envio-icon.png", "/brand/integrations/asaas-icon.png", "/brand/integrations/meta-icon.svg", "/brand/integrations/beeflow.png"])
     // One page: nothing leads to a second one to add an integration, and no list is ever empty.
     expect(screen.queryByRole("link", { name: "Nova integração" })).toBeNull()
     expect(container.querySelector("a[href$='/integrations/new']")).toBeNull()
@@ -122,6 +127,40 @@ describe("IntegrationsScreen", () => {
     expect(card("Asaas").queryByText("Não conectado")).toBeNull()
     await userEvent.click(card("Asaas").getByRole("button", { name: "Tentar de novo: Asaas" }))
     expect([melhorEnvio, asaas].map((refetch) => refetch.mock.calls.length)).toEqual([0, 1])
+  })
+
+  /** BEELINK-270: the ID is typed on the pixel's own page; the list says whether one is saved, and leads there. */
+  it("shows the Meta Pixel as a card of its own: to connect on its page, and in green once an ID is saved", () => {
+    const { unmount } = view()
+
+    expect(card("Pixel da Meta").getByText("Não conectado")).toBeInTheDocument()
+    expect(card("Pixel da Meta").getByRole("link", { name: "Conectar Pixel da Meta" })).toHaveAttribute("href", "/admin/mutante/integrations/meta-pixel")
+    unmount()
+
+    mocks.pixel.mockReturnValue(read(pixelConnected))
+    view()
+    expect(card("Pixel da Meta").getByText("Conectado")).toHaveAttribute("data-variant", "success")
+    expect(card("Pixel da Meta").getByRole("link", { name: "Configurar Pixel da Meta" })).toHaveAttribute("href", "/admin/mutante/integrations/meta-pixel")
+    expect(card("Pixel da Meta").queryByRole("link", { name: "Conectar Pixel da Meta" })).toBeNull()
+    expect(screen.queryByRole("textbox")).toBeNull()
+  })
+
+  it("holds the pixel's card alone while it is read, says its failed read in it alone, and reads only it again", async () => {
+    mocks.pixel.mockReturnValue(reading)
+    const { unmount } = view()
+    expect(screen.getByRole("article", { name: "Pixel da Meta" })).toHaveAttribute("aria-busy", "true")
+    expect(card("Pixel da Meta").queryByText("Não conectado")).toBeNull()
+    expect(screen.getByRole("article", { name: "Asaas" })).not.toHaveAttribute("aria-busy")
+    unmount()
+
+    const [melhorEnvio, pixel] = [vi.fn(), vi.fn()]
+    mocks.connection.mockReturnValue({ ...read(connected), refetch: melhorEnvio })
+    mocks.pixel.mockReturnValue(unread(pixel))
+    view()
+    expect(screen.getAllByRole("alert")).toHaveLength(1)
+    expect(card("Pixel da Meta").queryByText("Não conectado")).toBeNull()
+    await userEvent.click(card("Pixel da Meta").getByRole("button", { name: "Tentar de novo: Pixel da Meta" }))
+    expect([melhorEnvio, pixel].map((refetch) => refetch.mock.calls.length)).toEqual([0, 1])
   })
 
   it("offers each to be read again when neither could be", async () => {

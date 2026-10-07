@@ -70,6 +70,15 @@ describe("site chrome", () => {
     expect(legal?.items.map((item) => item.href)).toEqual(["/termos", "/privacidade"])
   })
 
+  /** BEELINK-271: a site can connect a pixel too, and its footer leads back to the choice the same way. */
+  it("adds \"Cookies\" to the legal column of a site with a Meta Pixel", () => {
+    const store = { socialNetworks: { whatsapp: null }, metaPixelId: "123456789012345" } as unknown as PublicStore
+
+    const legal = siteFooterColumnsOf(store, sections, ptBR).at(-1)
+
+    expect(legal?.items.map((item) => item.href ?? item.id)).toEqual(["/termos", "/privacidade", "cookies"])
+  })
+
   /** On a landing the bands are the home's: an anchor alone would point at a band this page does not have. */
   it("leads back to the home's bands from another page", () => {
     expect(menuOf(sections, "/asfalto")[0]).toMatchObject({ label: "Serviços", href: "/asfalto#servicos" })

@@ -12,6 +12,10 @@ import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 // App
 import { PAYMENT_POLL_MS, PIX_CODE_POLL_MS } from "@/lib/order-payment-view"
 import { IN_PROGRESS_REREAD_MS } from "@/lib/order-payment-refusal"
+import { TrackingContext } from "@/components/storefront/tracking/use-track"
+import type { PurchaseOrder } from "@/lib/purchase"
+import { PURCHASES_COOKIE } from "@/lib/purchase-cookie"
+import type { StorefrontEvent, TrackOptions } from "@/lib/storefront-event"
 import { APPROVED_LINGER_MS, OrderPaymentLive, type OrderPaymentLiveProps } from "./order-payment-live"
 
 const router = vi.hoisted(() => ({ refresh: vi.fn(), replace: vi.fn() }))
@@ -45,11 +49,32 @@ function handler({ reads, makes = [] }: { reads: Answer[]; makes?: Answer[] }) {
 
 const answer = (payment: CustomerOrderPayment | null): Answer => () => reply(200, { payment })
 
+const ORDER_ID = "0b9f6c1e-5a44-4a8b-9d55-3f1f1c2a7e10"
+const BLUSA = "01a0d395-c1ab-7399-a472-000000000001"
+/** The order the page read, charged online and placed from the cart a moment ago. */
+const sale: PurchaseOrder = {
+  id: ORDER_ID,
+  status: "RECEIVED",
+  placedBy: "CUSTOMER",
+  paymentChannel: "ONLINE",
+  totalCents: 5990,
+  deliveryFeeCents: 0,
+  placedAt: "2026-10-06T14:58:00.000Z",
+  items: [{ productId: BLUSA, quantity: 1, lineTotalCents: 5990, discountCents: 0 }],
+  payment: { status: "PENDING", paidAt: null },
+}
+
+/** What the screen told the shop's tracking, as a visitor who said yes: each event with the id it was given. */
+const told: { event: StorefrontEvent; id: string | undefined }[] = []
+const tracking = { allowed: true, track: (event: StorefrontEvent, options?: TrackOptions) => told.push({ event, id: options?.id }) > 0 }
+
 function renderScreen(props: Partial<OrderPaymentLiveProps> = {}) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
-      <OrderPaymentLive slug="loja" number={14} orderHref="/loja/conta/pedidos/14" profileHref="/loja/conta/perfil?voltar=x" order={{ cancelled: false, awaitingTotal: false }} locale="pt-BR" messages={ptBR} {...props} />
+      <TrackingContext value={tracking}>
+        <OrderPaymentLive slug="loja" number={14} orderHref="/loja/conta/pedidos/14" profileHref="/loja/conta/perfil?voltar=x" order={{ cancelled: false, awaitingTotal: false }} sale={sale} locale="pt-BR" messages={ptBR} {...props} />
+      </TrackingContext>
     </QueryClientProvider>,
   )
 }
@@ -70,11 +95,15 @@ const tab = (state: "hidden" | "visible") => {
 }
 
 beforeEach(() => {
+  // The shop's cookies are on its path: read only from a page of the shop.
+  window.history.replaceState(null, "", "/loja/conta/pedidos/14")
   // The clock is held and moved by hand, and still ticks with the real one: TanStack Query does not tell its observers under a clock that stands still.
   vi.useFakeTimers({ now: NOW, shouldAdvanceTime: true })
 })
 
 afterEach(() => {
+  told.length = 0
+  document.cookie = `${PURCHASES_COOKIE}=; Path=/loja; Max-Age=0`
   tab("visible")
   vi.useRealTimers()
   vi.unstubAllGlobals()
@@ -154,6 +183,49 @@ describe("OrderPaymentLive — the payment screen of an order", () => {
     expect(router.replace).toHaveBeenCalledExactlyOnceWith("/loja/conta/pedidos/14")
     await pass(PAYMENT_POLL_MS * 3)
     expect(shop.count("GET")).toBe(2)
+  })
+
+  // BEELINK-273: an order charged on the site is a purchase when it is paid, and not before.
+  it("tells the order's purchase the moment the API says paid — once, under the order's id, worth what was charged — and nothing while it waits", async () => {
+    handler({ reads: [answer(pix()), answer(pix({ status: "RECEIVED", pix: null, paidAt: NOW.toISOString() }))] })
+    renderScreen()
+    await settle()
+    expect(told).toEqual([])
+
+    await pass(PAYMENT_POLL_MS)
+    expect(screen.getByRole("status")).toHaveTextContent("Pagamento aprovado")
+    expect(told).toEqual([{ id: `purchase-${ORDER_ID}`, event: { name: "Purchase", valueCents: 5990, items: [{ productId: BLUSA, qty: 1, paidCents: 5990 }] } }])
+
+    // The screen lingers, and is drawn again: the purchase is not told again.
+    await pass(APPROVED_LINGER_MS)
+    expect(told).toHaveLength(1)
+  })
+
+  it("tells the purchase of an order found already paid — the way back from the card's page — and not again on a second visit", async () => {
+    handler({ reads: [answer(card({ status: "CONFIRMED", invoiceUrl: null, paidAt: NOW.toISOString() }))] })
+    const first = renderScreen()
+    await settle()
+    expect(told).toHaveLength(1)
+
+    first.unmount()
+    renderScreen()
+    await settle()
+    expect(screen.getByRole("status")).toHaveTextContent("Pagamento aprovado")
+    expect(told).toHaveLength(1)
+  })
+
+  it.each([
+    ["never paid", pix({ status: "OVERDUE", pix: null }), sale],
+    ["paid and given back", pix({ status: "REFUNDED", pix: null, paidAt: NOW.toISOString() }), sale],
+    ["paid, of an order cancelled since", pix({ status: "RECEIVED", pix: null, paidAt: NOW.toISOString() }), { ...sale, status: "CANCELLED" } satisfies PurchaseOrder],
+    ["paid, of an order the shop registered", pix({ status: "RECEIVED", pix: null, paidAt: NOW.toISOString() }), { ...sale, placedBy: "SHOP" } satisfies PurchaseOrder],
+    ["paid more than a day ago", pix({ status: "RECEIVED", pix: null, paidAt: "2026-10-05T14:00:00.000Z" }), sale],
+  ] as const)("tells no purchase for a charge %s", async (_name, payment, order) => {
+    handler({ reads: [answer(payment)] })
+    renderScreen({ sale: order })
+    await settle()
+
+    expect(told).toEqual([])
   })
 
   it("offers a new Pix once it expired, makes it through the handler, and shows the new one without reading again", async () => {

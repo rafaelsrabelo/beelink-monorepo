@@ -9,6 +9,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation"
 // App
 import { LIKE_ON_RETURN_KEYS } from "@/lib/favorite-list-query"
 import { useToggleFavorite } from "@/services/favorites/favorite-hooks"
+import { useTrack } from "../tracking/use-track"
 
 export interface LikeOnReturnProps {
   slug: string
@@ -25,19 +26,20 @@ export function LikeOnReturn({ slug, onRefused }: LikeOnReturnProps) {
   const router = useRouter()
   const toggle = useToggleFavorite(slug)
   const done = useRef<string | null>(null)
+  const track = useTrack()
   const productId = search.get(LIKE_ON_RETURN_KEYS.product)
   const variantId = search.get(LIKE_ON_RETURN_KEYS.variant)
 
   useEffect(() => {
     if (!productId || done.current === productId) return
     done.current = productId
-    toggle.mutate({ productId, variantId, like: true }, { onError: onRefused })
+    toggle.mutate({ productId, variantId, like: true }, { onError: onRefused, onSuccess: () => track({ name: "AddToWishlist", product: { id: productId } }) })
 
     const rest = new URLSearchParams(search)
     rest.delete(LIKE_ON_RETURN_KEYS.product)
     rest.delete(LIKE_ON_RETURN_KEYS.variant)
     router.replace((rest.size > 0 ? `${pathname}?${rest}` : pathname) as Parameters<typeof router.replace>[0], { scroll: false })
-  }, [productId, variantId, search, pathname, router, toggle, onRefused])
+  }, [productId, variantId, search, pathname, router, toggle, onRefused, track])
 
   return null
 }

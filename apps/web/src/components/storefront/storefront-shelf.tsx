@@ -81,7 +81,7 @@ export function StorefrontShelf({
     showRating,
     ...(quickAdd ? { cardAction: (product: StorefrontProduct) => <StorefrontCardCartLive product={product} messages={messages} /> } : {}),
     // Nothing outside a shop's pages: the panel's previews draw these shelves with no shopper to ask.
-    cardFavorite: (product: StorefrontProduct) => <StorefrontFavoriteLive productId={product.id} productName={product.name} messages={messages} />,
+    cardFavorite: (product: StorefrontProduct) => <StorefrontFavoriteLive productId={product.id} productName={product.name} priceCents={product.priceCents} messages={messages} />,
     ...(linkComponent ? { linkComponent } : {}),
     messages,
   }

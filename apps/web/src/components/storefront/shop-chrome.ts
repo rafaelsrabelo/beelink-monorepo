@@ -5,7 +5,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import { orderHrefOf } from "./storefront-links"
-import { legalFooterColumnOf } from "@/lib/legal-routes"
+import { shopLegalColumnOf } from "./shop-legal-column"
 import type { StorefrontRoutes } from "@/lib/storefront-routes"
 
 /**
@@ -35,6 +35,6 @@ export function shopFooterColumnsOf(
       ],
     },
     ...(whatsapp ? [{ id: "contact", title: text.footerContact, items: [{ label: text.order, href: whatsapp }] }] : []),
-    legalFooterColumnOf(messages),
+    shopLegalColumnOf(store, messages),
   ]
 }

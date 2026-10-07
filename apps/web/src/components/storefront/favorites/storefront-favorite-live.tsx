@@ -13,10 +13,13 @@ import { LIKE_ON_RETURN_KEYS } from "@/lib/favorite-list-query"
 import { BACK_KEY } from "@/lib/storefront-routes"
 import { useFavoriteIds, useToggleFavorite } from "@/services/favorites/favorite-hooks"
 import { useFavorites, type FavoritesContextValue } from "./favorites-provider"
+import { useTrack } from "../tracking/use-track"
 
 export interface StorefrontFavoriteLiveProps {
   productId: string
   productName: string
+  /** What it costs now, where the page knows: it goes with the like told as made. */
+  priceCents?: number
   /** The combination chosen on the product's page; null likes the product as a whole. */
   variantId?: string | null
   look?: "icon" | "text"
@@ -36,10 +39,13 @@ export function StorefrontFavoriteLive(props: StorefrontFavoriteLiveProps) {
 
 type HeartProps = StorefrontFavoriteLiveProps & { favorites: FavoritesContextValue }
 
-function SignedInHeart({ productId, productName, variantId = null, look = "icon", messages, favorites }: HeartProps) {
+function SignedInHeart({ productId, productName, priceCents, variantId = null, look = "icon", messages, favorites }: HeartProps) {
   const ids = useFavoriteIds(favorites.slug, true)
   const toggle = useToggleFavorite(favorites.slug)
   const liked = ids.data?.productIds.includes(productId) ?? false
+  const track = useTrack()
+  // Told once the shop kept it, and only a like: one refused at the cap was never added, and a heart turned off adds nothing.
+  const told = liked ? {} : { onSuccess: () => track({ name: "AddToWishlist", product: { id: productId, name: productName, ...(priceCents !== undefined ? { priceCents } : {}) } }) }
 
   return (
     <StorefrontFavoriteButton
@@ -48,7 +54,7 @@ function SignedInHeart({ productId, productName, variantId = null, look = "icon"
       look={look}
       // Only while the first read is on its way: one that failed leaves the heart pressable, and the press says why.
       disabled={ids.isPending}
-      onToggle={() => toggle.mutate({ productId, variantId, like: !liked }, { onError: favorites.report })}
+      onToggle={() => toggle.mutate({ productId, variantId, like: !liked }, { onError: favorites.report, ...told })}
       messages={messages}
     />
   )

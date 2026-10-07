@@ -11,6 +11,7 @@ import { CustomersService } from '../customers/customers.service.js';
 import { CUSTOMER_ORDER_INCLUDE, toCustomerOrder, toCustomerOrderSummary } from './customer-order.mapper.js';
 import type { ListCustomerOrdersDto, PlaceCustomerOrderDto } from './dto/customer-order.dto.js';
 import { settleCancellation } from './order-cancellation.js';
+import { placedConsentOf, placedOriginOf } from './order-origin.js';
 import { OrderPlacement } from './order-placement.js';
 import { OrderShipping } from './order-shipping.js';
 import { reorderOf } from './order-reorder.js';
@@ -82,6 +83,8 @@ export class CustomerOrdersService {
       actor: 'CUSTOMER',
       userId,
       onSaleOnly: true,
+      origin: placedOriginOf(dto.origin),
+      marketingConsent: placedConsentOf(dto.marketingConsent),
       customerOf: async () => customerId,
     });
     this.realtime.publish({ storeId, customerId }, { type: 'order.created', orderNumber: placed.number, placedBy: 'CUSTOMER' });

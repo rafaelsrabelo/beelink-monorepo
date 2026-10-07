@@ -7,6 +7,7 @@ import { shopPaletteStyle } from "@harness-monorepo/ui/lib/shop-palette"
 // Block
 import { sampleColorPresets } from "../store/store.fixtures"
 import { StorefrontFooter } from "./storefront-footer"
+import { StorefrontFooterAction } from "./storefront-footer-action"
 
 const meta = {
   title: "Blocos/Vitrine/Rodapé",
@@ -43,6 +44,24 @@ type Story = StoryObj<typeof meta>
 
 /** O rodapé como sempre foi: o design 5a/5b não desenha um, então este é o de hoje. */
 export const Padrao: Story = {}
+
+/** Uma loja com Pixel da Meta: "Cookies" é um botão entre os links, o caminho de volta à escolha (BEELINK-271). */
+export const ComCookies: Story = {
+  args: {
+    columns: [
+      ...meta.args.columns,
+      {
+        id: "legal",
+        title: "Termos e privacidade",
+        items: [
+          { label: "Termos de uso", href: "/termos" },
+          { label: "Política de privacidade", href: "/privacidade" },
+          { id: "cookies", action: <StorefrontFooterAction onClick={() => {}}>Cookies</StorefrontFooterAction> },
+        ],
+      },
+    ],
+  },
+}
 
 /** Sem logo nem endereço: o nome em texto, e nada de espaço vazio. */
 export const SemLogo: Story = { args: { logoUrl: null, addressLine: null, links: [] } }

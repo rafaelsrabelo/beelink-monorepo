@@ -11,7 +11,9 @@ import type { PublicProductDetail } from "@harness-monorepo/contracts"
 import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 
 // App
+import { CartProvider } from "./cart-provider"
 import { StorefrontProductLive } from "./storefront-product-live"
+import { TrackingContext } from "./tracking/use-track"
 
 const product = {
   id: "p1",
@@ -100,5 +102,50 @@ describe("StorefrontProductLive — Avise-me", () => {
     const [url, init] = fetchSpy.mock.calls[0]! as unknown as [string, RequestInit]
     expect(url).toBe("/api/storefront/lessari/products/p1/restock-requests")
     expect(JSON.parse(String(init.body))).toMatchObject({ variantId: "v1", phone: "11977776666" })
+  })
+})
+
+describe("StorefrontProductLive — what it tells (BEELINK-272)", () => {
+  const whey = {
+    ...product,
+    id: "p2",
+    name: "Whey",
+    priceCents: 9990,
+    soldOut: false,
+    category: { id: "c1", slug: "proteinas", name: "Proteínas", parentSlug: null },
+    variants: [{ id: "v2", optionValueIds: [], priceCents: 10990, compareAtPriceCents: null, imageUrl: null, available: true }],
+  } as unknown as PublicProductDetail
+
+  function renderTold(track: () => boolean) {
+    return render(
+      <QueryClientProvider client={new QueryClient()}>
+        <TrackingContext value={{ allowed: true, track }}>
+          <CartProvider slug="lessari" lines={[]}>
+            <StorefrontProductLive slug="lessari" shopName="Lessari" homeHref="/lessari" product={whey} initialVariantId={null} cartHref="/lessari/carrinho" showPrice showBadge showStock finishesOnWhatsApp={false} seller={{ name: "Lessari", paymentMethods: ["PIX"], cashback: null }} restockCopy={copy} messages={ptBR} />
+          </CartProvider>
+        </TrackingContext>
+      </QueryClientProvider>,
+    )
+  }
+
+  afterEach(() => {
+    document.cookie = "bl_cart=; Path=/lessari; Max-Age=0"
+  })
+
+  it("tells the product as seen, once, by its own id, with its category and price", () => {
+    const track = vi.fn()
+    const view = renderTold(track)
+    view.rerender(<></>)
+
+    expect(track.mock.calls).toEqual([[{ name: "ViewContent", product: { id: "p2", name: "Whey", priceCents: 9990, category: "Proteínas" } }]])
+  })
+
+  it("tells what goes into the cart by the product's id, at the price of the combination chosen", async () => {
+    const track = vi.fn()
+    renderTold(track)
+
+    await userEvent.click(screen.getAllByRole("button", { name: /Adicionar ao carrinho/ })[0]!)
+
+    expect(track.mock.calls.at(-1)).toEqual([{ name: "AddToCart", item: { productId: "p2", qty: 1, name: "Whey", unitPriceCents: 10990 } }])
   })
 })
