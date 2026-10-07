@@ -18,6 +18,7 @@ import { redeemCoupon } from '../promotions/order-discounts.js';
 import { businessDaysAfter } from './business-days.js';
 import { deliveryOf, deliveryWindowColumnsOf } from './order-delivery.js';
 import { readOrderLines } from './order-lines.js';
+import { originColumnsOf, type PlacedMarketingConsent, type PlacedOrigin } from './order-origin.js';
 import { cashbackRefused, couponRefused, earningPartsOf, priceOrder } from './order-pricing.js';
 import { oweStatusEmail } from './order-status-email.js';
 import { OrderStatusMailer } from './order-status-mailer.js';
@@ -70,6 +71,10 @@ export interface Placement {
    * shopkeeper may still register a sale of one of their own drafts.
    */
   onSaleOnly: boolean;
+  /** The campaign its buyer arrived by (BEELINK-275); absent on a sale registered in the panel, which came by none. */
+  origin?: PlacedOrigin | null;
+  /** The buyer's yes to the shop's pixel as it stood, and what was kept with it; absent or null is no consent, and nothing is written. */
+  marketingConsent?: PlacedMarketingConsent | null;
   /** Who it is for, inside the transaction: a customer registered with the order goes back with a refusal. */
   customerOf: (tx: Tx) => Promise<string>;
 }
@@ -185,6 +190,8 @@ export class OrderPlacement {
           couponKind: priced.coupon?.kind ?? null,
           cashbackEarnedCents: cashback?.earnedCents ?? 0,
           cashbackRateBps: cashback?.rateBps ?? null,
+          ...originColumnsOf(placement.origin, placement.marketingConsent),
+          ...(placement.marketingConsent ? { marketingConsent: { create: placement.marketingConsent } } : {}),
           note: placement.note,
           placedAt: placement.placedAt,
           stockTaken: true,

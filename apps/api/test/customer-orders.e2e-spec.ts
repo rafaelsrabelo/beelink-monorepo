@@ -552,4 +552,111 @@ describe("a shopper's order from the cart", () => {
       expect((await prisma.order.findFirstOrThrow()).status).toBe('RECEIVED');
     });
   });
+
+  describe('where the buyer came from (BEELINK-275)', () => {
+    const arrivedAt = new Date(Date.now() - 3 * 86_400_000).toISOString();
+    const origin = { source: 'facebook', medium: 'cpc', campaign: 'Black Friday', content: 'vídeo 1', term: 'whey', arrivedAt };
+    const marketingConsent = {
+      fbclid: 'IwAR0abc-DEF_123',
+      clickedAt: arrivedAt,
+      fbp: 'fb.1.1759795200000.1234567890',
+      userAgent: 'Mozilla/5.0 (e2e)',
+      pageUrl: 'https://beelink.biz/lessari/carrinho',
+    };
+    const shopRead = async (number: number) => (await call('GET', `/api/stores/lessari/orders/${number}`, owner)).json<Order>();
+    const rowOf = (number: number) => prisma.order.findFirstOrThrow({ where: { number, store: { slug: 'lessari' } }, include: { marketingConsent: true } });
+
+    it("records the campaign and, with the buyer's yes, what stood in their browser — readable in one query, and never told whole to the shop", async () => {
+      const response = await place({ fulfillment: 'PICKUP', origin, marketingConsent });
+      expect(response.statusCode).toBe(201);
+      // The shopper's own read of the order gains nothing.
+      expect(response.json<CustomerOrder>()).not.toHaveProperty('origin');
+      expect(response.payload).not.toMatch(/IwAR0abc|fb\.1\.|Mozilla/);
+
+      // What a purchase told from the server reads, in one query.
+      const row = await rowOf(1);
+      expect(row).toMatchObject({ utmSource: 'facebook', utmMedium: 'cpc', utmCampaign: 'Black Friday', utmContent: 'vídeo 1', utmTerm: 'whey', originMetaAd: true });
+      expect(row.originAt?.toISOString()).toBe(arrivedAt);
+      expect(row.marketingConsent).toMatchObject({
+        fbclid: 'IwAR0abc-DEF_123',
+        fbp: 'fb.1.1759795200000.1234567890',
+        userAgent: 'Mozilla/5.0 (e2e)',
+        pageUrl: 'https://beelink.biz/lessari/carrinho',
+      });
+      // To the millisecond: Meta's `fbc` is built from it.
+      expect(row.marketingConsent?.clickedAt?.getTime()).toBe(Date.parse(arrivedAt));
+
+      const shop = await call('GET', '/api/stores/lessari/orders/1', owner);
+      expect(shop.json<Order>().origin).toEqual({ source: 'facebook', medium: 'cpc', campaign: 'Black Friday', content: 'vídeo 1', term: 'whey', metaAd: true });
+      // The shop reads that an ad's click was kept, never the identifiers.
+      expect(shop.payload).not.toMatch(/IwAR0abc|fb\.1\.|Mozilla|lessari\/carrinho/);
+      expect((await call('GET', '/api/stores/lessari/orders', owner)).payload).not.toMatch(/IwAR0abc|facebook/);
+    });
+
+    it('keeps the campaign without a yes, and nothing else: no row, no ad click', async () => {
+      expect((await place({ fulfillment: 'PICKUP', origin })).statusCode).toBe(201);
+
+      const row = await rowOf(1);
+      expect(row).toMatchObject({ utmSource: 'facebook', utmCampaign: 'Black Friday', originMetaAd: false, marketingConsent: null });
+      expect(await prisma.orderMarketingConsent.count()).toBe(0);
+      expect((await shopRead(1)).origin).toMatchObject({ source: 'facebook', metaAd: false });
+    });
+
+    it('records a yes with nothing else in the browser, and an order with neither as a direct visit', async () => {
+      expect((await place({ fulfillment: 'PICKUP', marketingConsent: {} })).statusCode).toBe(201);
+      expect((await place({ fulfillment: 'PICKUP' })).statusCode).toBe(201);
+
+      expect((await rowOf(1)).marketingConsent).toMatchObject({ fbclid: null, clickedAt: null, fbp: null, userAgent: null, pageUrl: null });
+      expect(await rowOf(2)).toMatchObject({ utmSource: null, utmMedium: null, utmCampaign: null, originAt: null, originMetaAd: false, marketingConsent: null });
+      expect((await shopRead(1)).origin).toBeNull();
+      expect((await shopRead(2)).origin).toBeNull();
+    });
+
+    it('cleans and cuts what a link or a browser wrote, drops what has no shape, and never refuses the order for it', async () => {
+      const response = await place({
+        fulfillment: 'PICKUP',
+        origin: { source: '  FaceBook\u0001\u202E ', medium: 'x'.repeat(300), campaign: '<img src=x onerror=alert(1)>', content: '   ', term: 7, arrivedAt: '2999-01-01T00:00:00.000Z' },
+        marketingConsent: {
+          fbclid: 'abc def; drop',
+          clickedAt: arrivedAt,
+          fbp: 'not-an-fbp',
+          userAgent: `UA\u0007 ${'y'.repeat(900)}`,
+          pageUrl: 'https://beelink.biz/lessari/carrinho?cupom=VIP#fim',
+        },
+      });
+      expect(response.statusCode, response.payload).toBe(201);
+
+      const row = await rowOf(1);
+      expect(row).toMatchObject({ utmSource: 'facebook', utmCampaign: '<img src=x onerror=alert(1)>', utmContent: null, utmTerm: null, originAt: null, originMetaAd: false });
+      expect(row.utmMedium).toBe('x'.repeat(80));
+      // A click that is not one is dropped with its instant; the yes itself stands.
+      expect(row.marketingConsent).toMatchObject({ fbclid: null, clickedAt: null, fbp: null, pageUrl: 'https://beelink.biz/lessari/carrinho' });
+      expect(row.marketingConsent?.userAgent).toHaveLength(512);
+    });
+
+    it('drops a click sent without its instant, and labels that describe no campaign', async () => {
+      expect((await place({ fulfillment: 'PICKUP', origin: { content: 'banner', term: 'whey' }, marketingConsent: { fbclid: 'IwAR0abc' } })).statusCode).toBe(201);
+
+      expect(await rowOf(1)).toMatchObject({ utmContent: null, utmTerm: null, originMetaAd: false, marketingConsent: { fbclid: null, clickedAt: null } });
+    });
+
+    it('refuses what is not the shape at all: a field nobody declared, an origin that is not an object', async () => {
+      for (const payload of [{ origin: { source: 'facebook', gclid: 'x' } }, { origin: 'facebook' }, { marketingConsent: 'granted' }, { marketingConsent: { fbclid: 'a', ip: '1.2.3.4' } }]) {
+        const response = await place({ fulfillment: 'PICKUP', ...payload });
+        expect(response.statusCode, JSON.stringify(payload)).toBe(400);
+      }
+      expect(await prisma.order.count()).toBe(0);
+    });
+
+    it('gives a sale registered in the panel no origin and no consent, and refuses one sent with it', async () => {
+      const sale = { customer: { name: 'Caio Lima', phone: '11977776666' }, items: [{ variantId: whey, quantity: 1 }], fulfillment: 'PICKUP', paymentMethod: 'MONEY' };
+      expect((await call('POST', '/api/stores/lessari/orders', owner, { ...sale, origin })).statusCode).toBe(400);
+      expect((await call('POST', '/api/stores/lessari/orders', owner, { ...sale, marketingConsent })).statusCode).toBe(400);
+
+      const registered = await call('POST', '/api/stores/lessari/orders', owner, sale);
+      expect(registered.statusCode).toBe(201);
+      expect(registered.json<Order>().origin).toBeNull();
+      expect(await rowOf(1)).toMatchObject({ utmSource: null, originAt: null, originMetaAd: false, marketingConsent: null });
+    });
+  });
 });
