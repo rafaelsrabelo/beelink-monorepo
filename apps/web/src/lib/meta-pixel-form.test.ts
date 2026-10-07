@@ -9,7 +9,7 @@ import { en } from "@harness-monorepo/ui/locales/en"
 import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 
 // App
-import { META_EVENTS_MANAGER, metaPixelCardOf, metaPixelErrorOf } from "./meta-pixel-form"
+import { META_EVENTS_MANAGER, metaConversionsOf, metaPixelCardOf, metaPixelErrorOf, metaTestErrorOf, metaTestResultOf, metaTokenErrorOf } from "./meta-pixel-form"
 
 const connected: MetaPixelConnection = { status: "CONNECTED", pixelId: "123456789012345", connectedAt: "2026-10-06T12:00:00.000Z", conversions: { available: true, token: "NONE", refusal: null, refusedAt: null } }
 const errors = ptBR.integrations.metaPixel.errors
@@ -46,5 +46,39 @@ describe("metaPixelErrorOf", () => {
 describe("META_EVENTS_MANAGER", () => {
   it("is Meta's own address, over https", () => {
     expect(new URL(META_EVENTS_MANAGER).origin).toBe("https://business.facebook.com")
+  })
+})
+
+describe("the token's card and its words (BEELINK-274)", () => {
+  const words = ptBR.integrations.metaConversions
+
+  it("draws the token as the wire says it stands, and never more than that", () => {
+    expect(metaConversionsOf(connected)).toEqual({ available: true, token: "NONE", refusal: null })
+    expect(metaConversionsOf({ ...connected, conversions: { available: true, token: "SET", refusal: null, refusedAt: null } })).toEqual({ available: true, token: "SET", refusal: null })
+    expect(metaConversionsOf({ ...connected, conversions: { available: true, token: "REJECTED", refusal: "PIXEL_NOT_FOUND", refusedAt: "2026-10-06T13:00:00.000Z" } })).toEqual({ available: true, token: "REJECTED", refusal: "PIXEL_NOT_FOUND" })
+    // A refusal named beside a token that is not refused is noise, and one refused with no name is the token's.
+    expect(metaConversionsOf({ ...connected, conversions: { available: true, token: "SET", refusal: "TOKEN_REJECTED", refusedAt: null } }).refusal).toBeNull()
+    expect(metaConversionsOf({ ...connected, conversions: { available: true, token: "REJECTED", refusal: null, refusedAt: null } }).refusal).toBe("TOKEN_REJECTED")
+  })
+
+  it("reads an answer with no word of the token as a deployment that keeps none", () => {
+    const old = { status: connected.status, pixelId: connected.pixelId, connectedAt: connected.connectedAt }
+
+    expect(metaConversionsOf(old as typeof connected)).toEqual({ available: false, token: "NONE", refusal: null })
+  })
+
+  it("turns the API's codes into sentences, and any other into the unknown one", () => {
+    expect(metaTokenErrorOf("META_PIXEL_TOKEN_INVALID", words.errors)).toBe(words.errors.META_PIXEL_TOKEN_INVALID)
+    expect(metaTokenErrorOf("toString", words.errors)).toBe(words.errors.UNKNOWN)
+    expect(metaTestErrorOf("RATE_LIMITED", words.test.errors)).toBe(words.test.errors.RATE_LIMITED)
+    expect(metaTestErrorOf("constructor", words.test.errors)).toBe(words.test.errors.UNKNOWN)
+  })
+
+  it("says what Meta answered to a test, with Meta's own words beside a refusal alone", () => {
+    expect(metaTestResultOf({ outcome: "ACCEPTED", detail: "ignored" }, words.test.outcomes)).toEqual({ tone: "done", message: words.test.outcomes.ACCEPTED, detail: null })
+    expect(metaTestResultOf({ outcome: "EVENT_REFUSED", detail: "Meta refused (400, code 100): Invalid parameter" }, words.test.outcomes)).toEqual({ tone: "error", message: words.test.outcomes.EVENT_REFUSED, detail: "Meta refused (400, code 100): Invalid parameter" })
+    expect(metaTestResultOf({ outcome: "UNREACHABLE", detail: null }, words.test.outcomes)).toEqual({ tone: "error", message: words.test.outcomes.UNREACHABLE, detail: null })
+    // An outcome a newer API adds is not a success.
+    expect(metaTestResultOf({ outcome: "SOMETHING_NEW" as "UNREACHABLE", detail: null }, words.test.outcomes).tone).toBe("error")
   })
 })
