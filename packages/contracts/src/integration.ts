@@ -6,9 +6,10 @@
 
 /**
  * The third parties a shop can connect, one connection each. `META_PIXEL` (BEELINK-269) is the odd
- * one: what the shop gives is its pixel's ID, which is public — nothing of it is sealed.
+ * one: what the shop gives is its pixel's ID, which is public — nothing of it is sealed. The same
+ * goes for `GOOGLE_ANALYTICS` (BEELINK-301) and its measurement ID.
  */
-export type IntegrationProvider = "MELHOR_ENVIO" | "ASAAS" | "META_PIXEL";
+export type IntegrationProvider = "MELHOR_ENVIO" | "ASAAS" | "META_PIXEL" | "GOOGLE_ANALYTICS";
 
 /**
  * Where a shop's connection stands. `NEEDS_RECONNECT` is the third party refusing the access it gave
@@ -87,7 +88,9 @@ export type IntegrationErrorCode =
   /** A Conversions API token no token could be: blank, with spaces, too short or too long (BEELINK-274). */
   | "META_PIXEL_TOKEN_INVALID"
   /** A test event code no code could be (BEELINK-274). */
-  | "META_PIXEL_TEST_CODE_INVALID";
+  | "META_PIXEL_TEST_CODE_INVALID"
+  /** A Google Analytics ID that is not `G-` and 6 to 16 capital letters or digits: missing, a `UA-`, a `GTM-`, an `AW-`, a whole snippet pasted (BEELINK-301). */
+  | "GOOGLE_ANALYTICS_ID_INVALID";
 
 /** The `details` of an integration refusal raised after the state named the shop: where to send the browser back. */
 export interface IntegrationRefusalDetails {

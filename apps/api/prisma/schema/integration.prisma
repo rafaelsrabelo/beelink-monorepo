@@ -4,6 +4,8 @@ enum IntegrationProvider {
   ASAAS
   /// The shop's Meta Pixel (BEELINK-269): its ID in `pixelId`, public, and nothing sealed.
   META_PIXEL
+  /// The shop's Google Analytics (BEELINK-301): its measurement ID in `measurementId`, public, and nothing sealed.
+  GOOGLE_ANALYTICS
 }
 
 /// Where a connection stands. A shop with no row is disconnected.
@@ -72,6 +74,11 @@ model StoreIntegration {
   /// nothing else, by a CHECK. It is served to anyone in the shop's public data, so the database
   /// itself refuses what a page could not carry safely. Never a script: shops share one domain.
   pixelId String? @db.VarChar(20)
+
+  /// The shop's GA4 measurement ID (BEELINK-301), on the `GOOGLE_ANALYTICS` row alone: `G-` and 6 to
+  /// 16 capital letters or digits, by a CHECK, for the pixel's reason — it is served to anyone in the
+  /// shop's public data. Never a script or a Tag Manager container.
+  measurementId String? @db.VarChar(18)
 
   /// When the access in hand runs out, and when the means to renew it does. Null for a key that does not.
   accessExpiresAt  DateTime?
