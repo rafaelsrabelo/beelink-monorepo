@@ -2,28 +2,14 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 // Types
-import type { PopupBenefitOption, PopupBenefitSource, PopupTrigger, StorefrontPopup, StorePopupOverview } from '@harness-monorepo/contracts';
+import type { PopupBenefitOption, PopupBenefitSource, StorePopupOverview } from '@harness-monorepo/contracts';
 
 // App
-import { POPUP_BENEFIT_SOURCES, POPUP_TRIGGERS } from '../shop-popup.js';
-import { FirstPurchaseHeadlineResponse } from './offers.response.js';
+import { POPUP_BENEFIT_SOURCES } from '../shop-popup.js';
+// One way only: `offers.response.ts` holds what anyone is served, the pop-up's public shape among it, and imports nothing from here.
+import { FirstPurchaseHeadlineResponse, PopupCopyResponse } from './offers.response.js';
 
 const NAMED_SOURCES = ['PROMOTION', 'COUPON'] as const satisfies readonly PopupBenefitOption['source'][];
-
-class PopupCopyResponse {
-  @ApiProperty({ nullable: true, type: String, description: 'http(s); null draws the coloured panel alone.' }) imageUrl!: string | null;
-  @ApiProperty({ nullable: true, type: String, description: 'Null is the default. May carry {beneficio}.' }) title!: string | null;
-  @ApiProperty({ nullable: true, type: String }) text!: string | null;
-  @ApiProperty({ nullable: true, type: String }) buttonLabel!: string | null;
-  @ApiProperty({ enum: POPUP_TRIGGERS }) trigger!: PopupTrigger;
-  @ApiProperty({ description: 'Seconds after the page arrives, on ON_ARRIVAL.' }) delaySeconds!: number;
-  @ApiProperty({ description: 'Up by one when what a visitor reads changes.' }) revision!: number;
-}
-
-/** The pop-up inside the public offers' answer: no code and no id of a coupon, ever. */
-export class StorefrontPopupResponse extends PopupCopyResponse implements StorefrontPopup {
-  @ApiProperty({ type: FirstPurchaseHeadlineResponse, nullable: true, description: 'What it announces; null promises no discount.' }) benefit!: FirstPurchaseHeadlineResponse | null;
-}
 
 class StorePopupSettingsResponse extends PopupCopyResponse {
   @ApiProperty() enabled!: boolean;
