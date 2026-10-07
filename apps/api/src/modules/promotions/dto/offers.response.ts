@@ -6,6 +6,7 @@ import type { CouponKind, CustomerFirstPurchaseOffer, CustomerOffers, DiscountAu
 
 // App
 import { COUPON_KINDS, DISCOUNT_AUDIENCES } from '../promotions.constants.js';
+import { StorefrontPopupResponse } from './popup.response.js';
 
 const HEADLINE_SOURCES = ['PROMOTION', 'COUPON'] as const satisfies readonly FirstPurchaseHeadline['source'][];
 
@@ -25,6 +26,8 @@ export class FirstPurchaseHeadlineResponse extends OfferBenefitResponse implemen
 export class StorefrontOffersResponse implements StorefrontOffers {
   @ApiProperty({ type: FirstPurchaseHeadlineResponse, nullable: true, description: "The shop's benefit for a first purchase, without any code; null with none." })
   firstPurchase!: FirstPurchaseHeadlineResponse | null;
+  @ApiProperty({ type: () => StorefrontPopupResponse, nullable: true, description: "The shop's first-purchase pop-up while it is switched on; null otherwise." })
+  popup!: StorefrontPopupResponse | null;
 }
 
 export class OfferedCouponResponse extends OfferBenefitResponse implements OfferedCoupon {

@@ -159,6 +159,8 @@ model Store {
   coupons           Coupon[]
   /// Its cashback rules (BEELINK-238); none until first saved.
   cashbackSettings  CashbackSettings?
+  /// Its first-purchase pop-up (BEELINK-306); none until the shopkeeper first saves it.
+  popup             StorePopup?
   cashbackCredits   CashbackCredit[]
   cashbackEntries   CashbackEntry[]
   restockRequests   RestockRequest[]

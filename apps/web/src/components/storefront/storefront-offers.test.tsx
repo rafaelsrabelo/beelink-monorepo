@@ -22,9 +22,9 @@ const { StorefrontOffers } = await import("./storefront-offers")
 const routeWords = { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha", account: "conta", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", cashback: "cashback", profile: "perfil", messages: "conversas" } }
 const shop = { slug: "loja", type: "ECOMMERCE", routeWords } as Parameters<typeof StorefrontOffers>[0]["store"]
 const benefit = { kind: "PERCENT", percentBps: 1000, amountCents: null, minSubtotalCents: 0, endsAt: null } as const
-const NOTHING: Headline = { firstPurchase: null }
-const PROMOTION: Headline = { firstPurchase: { ...benefit, source: "PROMOTION", wholeCart: true } }
-const COUPON: Headline = { firstPurchase: { ...benefit, source: "COUPON", wholeCart: true } }
+const NOTHING: Headline = { firstPurchase: null, popup: null }
+const PROMOTION: Headline = { firstPurchase: { ...benefit, source: "PROMOTION", wholeCart: true }, popup: null }
+const COUPON: Headline = { firstPurchase: { ...benefit, source: "COUPON", wholeCart: true }, popup: null }
 const never: CustomerOffers = { hasOrder: false, firstPurchase: null, coupons: [] }
 const bia = { id: "c1", name: "Bia" }
 
