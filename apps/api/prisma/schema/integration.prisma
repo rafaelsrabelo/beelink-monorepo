@@ -37,6 +37,15 @@ enum IntegrationAccountApproval {
   REJECTED
 }
 
+/// What the party refused of the access a shop gave it, when it is not the whole connection that
+/// stopped (Meta, BEELINK-274): the pixel in the browser needs no token and goes on.
+enum IntegrationSecretRefusal {
+  /// The token is invalid, expired or revoked.
+  TOKEN_REJECTED
+  /// The party knows no pixel by the saved ID that this token may send to.
+  PIXEL_NOT_FOUND
+}
+
 /// A shop's connection to its own account at a third party: what that party gave bee-link to act with,
 /// sealed, and who the account is. One per shop and party.
 model StoreIntegration {
@@ -49,9 +58,15 @@ model StoreIntegration {
   /// The access itself, as JSON — `{ accessToken, refreshToken }` for Melhor Envio, `{ apiKey }` for
   /// Asaas — sealed with AES-256-GCM under INTEGRATIONS_SECRET_KEY, bound to this shop and party.
   /// Read and written only under src/modules/integrations (gate `api/sealed-secret-in-integrations`).
-  /// Empty is nothing sealed: a Meta Pixel's row holds only a public ID (BEELINK-269), and is written
-  /// with no key set. A secret of that party's, when one comes, is sealed here like the others.
+  /// Empty is nothing sealed: a Meta Pixel's row holds a public ID (BEELINK-269), and is written
+  /// with no key set. Its Conversions API token (BEELINK-274) is sealed here like the others, as
+  /// `{ accessToken }`, opened only under src/modules/integrations/meta-pixel.
   secretSealed String @default("")
+
+  /// The party refused what is sealed above, and when (Meta, BEELINK-274): nothing is sent with it
+  /// again until another is saved, which clears both. Null while it works, or was never tried.
+  secretRefusal   IntegrationSecretRefusal?
+  secretRefusedAt DateTime?
 
   /// The shop's Meta Pixel ID (BEELINK-269), on the `META_PIXEL` row alone: 10 to 20 digits and
   /// nothing else, by a CHECK. It is served to anyone in the shop's public data, so the database
@@ -199,4 +214,46 @@ model IntegrationEvent {
 
   @@index([createdAt])
   @@map("integration_events")
+}
+
+/// What came of a purchase owed to Meta.
+enum MetaPurchaseOutcome {
+  /// Meta took it.
+  SENT
+  /// Never sent, and never to be: the shop had no pixel or no token then, the buyer's consent was
+  /// gone, or the order no longer counted as a purchase.
+  SKIPPED
+  /// Meta refused the event itself, or it grew older than Meta takes.
+  GIVEN_UP
+}
+
+/// A purchase owed to the shop's Meta Pixel from the server (BEELINK-274) — the Conversions API's
+/// outbox. Written by the transaction that made the order a purchase: its placement, when it is
+/// settled with the shop, or its charge turning paid, when it is charged online — and only for an
+/// order its customer placed with a consent kept (`order_marketing_consents`). The unique order id
+/// is what makes a purchase owed once. Claimed and retried by `MetaPurchases`; it is also the record
+/// of what was told: whether, when, and Meta's last words — never the token.
+model OrderMetaPurchase {
+  id      String @id @default(uuid(7)) @db.Uuid
+  orderId String @unique @db.Uuid
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  storeId String @db.Uuid
+
+  /// The moment the order counted as a purchase — Meta's `event_time`, and what the seven days it
+  /// takes an event within are counted from.
+  countedAt DateTime
+
+  attempts      Int       @default(0)
+  nextAttemptAt DateTime  @default(now())
+  /// Null while it is owed.
+  processedAt   DateTime?
+  outcome       MetaPurchaseOutcome?
+  lastError     String?   @db.VarChar(300)
+  createdAt     DateTime  @default(now())
+
+  /// The routine's reading: what is owed and due.
+  @@index([nextAttemptAt], where: raw("(\"processedAt\" IS NULL)"), map: "order_meta_purchases_owed_idx")
+  /// A shop's waiting purchases, woken when its token is replaced.
+  @@index([storeId], where: raw("(\"processedAt\" IS NULL)"), map: "order_meta_purchases_store_owed_idx")
+  @@map("order_meta_purchases")
 }

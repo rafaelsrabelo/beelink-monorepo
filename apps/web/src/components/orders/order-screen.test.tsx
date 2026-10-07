@@ -69,6 +69,7 @@ const order: Order = {
   note: null,
   placedAt: "2026-10-06T13:00:00.000Z",
   events: [{ status: "RECEIVED", actor: "CUSTOMER", at: "2026-10-06T13:00:00.000Z" }],
+  origin: null,
   delivery: null,
   deliveryWindow: null,
   createdAt: "2026-10-06T13:00:00.000Z",
@@ -157,5 +158,30 @@ describe("OrderScreen — the order's online payment (BEELINK-207)", () => {
 
     expect(screen.queryByRole("region", { name: "Pagamento online" })).not.toBeInTheDocument()
     expect(mocks.markSeen).not.toHaveBeenCalled()
+  })
+})
+
+describe("OrderScreen — where the buyer came from (BEELINK-275)", () => {
+  const facts = () => screen.getByRole("region", { name: "Cliente" })
+
+  it("says the campaign the order recorded, and that an ad of Meta's brought the buyer", () => {
+    mocks.order.mockReturnValue(read({ ...order, origin: { source: "facebook", medium: "cpc", campaign: "teste", content: null, term: null, metaAd: true } }))
+    renderScreen()
+
+    expect(facts()).toHaveTextContent("Origem")
+    expect(facts()).toHaveTextContent("Anúncio da Meta · facebook / cpc · campanha teste")
+  })
+
+  it("reads an order from the cart with no campaign as a direct visit", () => {
+    renderScreen()
+
+    expect(facts()).toHaveTextContent("Direto / sem campanha")
+  })
+
+  it("says nothing of origin on a sale the shop registered", () => {
+    mocks.order.mockReturnValue(read({ ...order, events: [{ status: "ACCEPTED", actor: "SHOPKEEPER", at: "2026-10-06T13:00:00.000Z" }] }))
+    renderScreen()
+
+    expect(facts()).not.toHaveTextContent("Origem")
   })
 })

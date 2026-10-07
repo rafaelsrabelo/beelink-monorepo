@@ -83,7 +83,11 @@ export type IntegrationErrorCode =
   /** A way of being paid out of range: instalments that are no whole number from 1 to 12, a switch that is no boolean, or every way off (BEELINK-203). */
   | "ASAAS_SETTINGS_INVALID"
   /** A Meta Pixel ID that is not 10 to 20 digits and nothing else: missing, with a letter, a whole snippet pasted (BEELINK-269). */
-  | "META_PIXEL_ID_INVALID";
+  | "META_PIXEL_ID_INVALID"
+  /** A Conversions API token no token could be: blank, with spaces, too short or too long (BEELINK-274). */
+  | "META_PIXEL_TOKEN_INVALID"
+  /** A test event code no code could be (BEELINK-274). */
+  | "META_PIXEL_TEST_CODE_INVALID";
 
 /** The `details` of an integration refusal raised after the state named the shop: where to send the browser back. */
 export interface IntegrationRefusalDetails {

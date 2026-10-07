@@ -8,7 +8,7 @@ import type { ComponentProps, ReactNode } from "react"
 import { usePathname } from "next/navigation"
 
 // Libs
-import { CoinsIcon, HomeIcon, InboxIcon, LayoutTemplateIcon, MessageCircleIcon, PackageIcon, PercentIcon, PlugIcon, SettingsIcon, ShoppingBagIcon, StarIcon, TagsIcon, TicketIcon, UsersIcon } from "lucide-react"
+import { ChartColumnIcon, CoinsIcon, HomeIcon, InboxIcon, LayoutTemplateIcon, MessageCircleIcon, PackageIcon, PercentIcon, PlugIcon, SettingsIcon, ShoppingBagIcon, StarIcon, TagsIcon, TicketIcon, UsersIcon } from "lucide-react"
 
 // Types
 import type { User } from "@harness-monorepo/contracts"
@@ -180,6 +180,9 @@ export function AppShell({ user, ui, web, locale, prefs, children }: AppShellPro
                   item(nav.cashback, "/cashback", <CoinsIcon />, "prefix"),
                   item(nav.integrations, "/integrations", <PlugIcon />, "prefix"),
                   item(nav.customers, "/customers", <UsersIcon />, "prefix"),
+                  // One report today, the sales by origin (BEELINK-275): `/reports` leads to it, and
+                  // becomes the page of sales reports without this entry changing.
+                  item(nav.reports, "/reports", <ChartColumnIcon />, "prefix"),
                   { ...item(nav.reviews, "/reviews", <StarIcon />, "prefix"), ...unseenBadge },
                 ]
           }

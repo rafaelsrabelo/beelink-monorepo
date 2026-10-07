@@ -14,6 +14,7 @@ import type {
   OrderEvent,
   OrderFulfillment,
   OrderItem,
+  OrderOrigin,
   OrderPage,
   OrderPaymentChannel,
   OrderStatus,
@@ -89,6 +90,15 @@ export class OrderDeliveryResponse implements OrderDelivery {
   @ApiProperty({ nullable: true, type: String, format: 'date' }) estimateTo!: string | null;
 }
 
+export class OrderOriginResponse implements OrderOrigin {
+  @ApiProperty({ nullable: true, type: String, example: 'facebook', description: '`utm_source`, lower case.' }) source!: string | null;
+  @ApiProperty({ nullable: true, type: String, example: 'cpc', description: '`utm_medium`, lower case.' }) medium!: string | null;
+  @ApiProperty({ nullable: true, type: String, description: '`utm_campaign`, as written.' }) campaign!: string | null;
+  @ApiProperty({ nullable: true, type: String }) content!: string | null;
+  @ApiProperty({ nullable: true, type: String }) term!: string | null;
+  @ApiProperty({ description: "The visit came by a click on a Meta ad, kept with the buyer's yes. Never the identifier." }) metaAd!: boolean;
+}
+
 export class OrderResponse implements Order {
   @ApiProperty({ format: 'uuid' }) id!: string;
   @ApiProperty({ description: 'Sequential within the shop.' }) number!: number;
@@ -117,6 +127,8 @@ export class OrderResponse implements Order {
   @ApiProperty({ description: "The customer's credit it spent, taken off the total apart from the discount." }) cashbackUsedCents!: number;
   @ApiProperty() totalCents!: number;
   @ApiProperty({ nullable: true, type: String }) note!: string | null;
+  @ApiProperty({ type: OrderOriginResponse, nullable: true, description: 'Where its buyer came from; null with no campaign and no ad click kept, and on a sale registered in the panel.' })
+  origin!: OrderOriginResponse | null;
   @ApiProperty({ format: 'date-time' }) placedAt!: string;
   @ApiProperty({ type: [OrderEventResponse], description: 'Oldest first.' }) events!: OrderEventResponse[];
   @ApiProperty({ type: OrderDeliveryResponse, nullable: true, description: 'Null on a pick-up, and on a delivery nobody told yet.' })
