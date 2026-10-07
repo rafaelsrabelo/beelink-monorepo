@@ -39,3 +39,35 @@ Tomadas pelo assistente; o Rafael pode mudar qualquer uma.
 - Uma segunda imagem só para a arte: o cartão usa a imagem que a categoria já tem.
 - A faixa de categorias sob o cabeçalho, o filtro da listagem e a página "todas as categorias": só a seção do modo design.
 - Recorte ou edição da imagem no envio.
+
+## Notas da entrega (acréscimo, 07/10)
+
+**Correção à decisão 8.** O maior quadrado medido no navegador é de **602 px** (grade de 2 colunas, faixa inteira, tela de 1280 px; a faixa não passa de 1216 px, então é o teto), e não "cerca de 570". O tamanho recomendado fica **600 × 600 px**. No trilho o quadrado mede 144 px (390), 176 px e 208 px (1280).
+
+**Onde ficou cada coisa.**
+
+- Contrato: `CategoryCardStyle`, `StoreComponent.cardStyle`, `PublicComponent.cardStyle?`, `CreateComponentPayload.cardStyle?` e `COMPONENT_CARD_STYLE_INVALID` em `packages/contracts/src/page.ts`.
+- Migration `20261007190000_category_card_style`: enum `CategoryCardStyle` e coluna anulável `store_components."cardStyle"`.
+- API (`apps/api/src/modules/page/`): `CATEGORY_CARD_STYLES` (`page.constants.ts`), `refuseCardStyleFor` (`page.rules.ts`), DTO e respostas (`dto/`), linhas (`page-rows.ts`: criar, patch, duplicar), mapeadores, documento da versão (`page-document.ts`), restauração (`page-restore.ts`) e modelos (`page-template-arrange.ts`).
+- UI: `blocks/storefront/storefront-category-art.tsx` (o quadrado), `storefront-category-card.tsx`, `-rail.tsx`, `-grid.tsx`; `blocks/design/card-style-field.tsx` na aba Layout (`component-layout-fields.tsx`); copy em `locales/pt-BR.ts` e `en.ts` (`design.cardStyle`).
+- Web: `components/design/component-layout.ts`, `design-draft.ts`, `use-design-draft.ts`, `design-draft-preview.ts`; `components/storefront/storefront-categories-block.tsx`.
+
+**Cobertura da Definição de Pronto.**
+
+| # | Evidência |
+|---|---|
+| 1 | `packages/ui/src/blocks/design/component-layout-fields.test.tsx` — "offers the categories a card of photo and name, or of the artwork alone"; "asks no card style of the pills…" |
+| 2 | `apps/api/test/page-category-card-style.e2e-spec.ts` — "opens as the photo with its name: null…"; `apps/web/src/components/storefront/storefront-sections.test.tsx` — "keeps the name under the photo where the style is unset, null or absent"; `component-layout.test.ts` — "reads an unset card style as the photo with its name…" |
+| 3 | `storefront-category-rail.test.tsx` e `-grid.test.tsx` — "draws the picture and nothing else, and the link answers to the category's name" (nome acessível, sem texto, `aspect-square`, anel de foco, `rounded-xl`) e o axe; no navegador, `outline: solid 2px` com 2 px de afastamento no foco pelo teclado |
+| 4 | `storefront-sections.test.tsx` — "draws the picture alone in a RAIL / GRID…"; navegador a 1280 e 390 px, faixa inteira e metade, sem rolagem horizontal da página |
+| 5 | `storefront-category-rail.test.tsx` e `-grid.test.tsx` — "draws a category with no picture as the card with its name, never an empty square"; `component-layout-fields.test.tsx` — "says, under the artwork alone, the file to make and what a category with no picture does" |
+| 6 | `page-category-card-style.e2e-spec.ts` — rascunho e Publicar ("holds the choice in the draft, and serves it only once published"), duplicar, restaurar, recusas; `design-draft.test.ts` — "publishes the card style of a categories block, and none for any other kind", "draws the card style the draft holds, not the one saved"; `page.mapper.spec.ts` — "carries cardStyle to the owner and to the shop window alike…" |
+| 7 | `apps/api/src/modules/page/page-document.spec.ts` — "reads a block frozen before the card style existed, as the photo with its name" |
+| 8 | `locales/pt-BR.ts`/`en.ts`; stories `SoAArte` e `SoAArteNoCelular` (trilho e grade), `Categorias` e `CategoriasSoAArte` (aba Layout) |
+
+**O que o navegador mostrou** (Chromium sem janela, web em :4100 e API em :4101, banco `harness_offers`; as imagens das categorias são URLs públicas de `placehold.co` gravadas pela API — o envio pelo painel não foi exercitado).
+
+- Loja publicada, 1280 e 390 px: a seção "foto com nome" continua com nome e contagem; nas seções "só a arte" (trilho, grade de 4, grade de 2 na faixa inteira, e metade + metade) cada categoria com imagem é um quadrado só com a arte, e "Jardim", sem imagem, aparece com a inicial e o nome.
+- Editor: na aba Layout de uma seção Categorias, "Estilo do cartão" abre em "Foto com nome"; ao escolher "Só a arte" a prévia troca na hora, a barra passa a dizer "Alterações não publicadas", e a loja publicada continua escrevendo o nome até o Publicar.
+
+**Visto e deixado como está.** Numa seção "só a arte", o cartão da categoria sem imagem tem a margem interna do cartão com nome (8 px), então o quadrado dele fica um pouco menor e desalinhado dos quadrados de arte ao lado. É o estado transitório de uma loja que ainda não enviou todas as artes; igualar os dois pede redesenhar o cartão com nome.
