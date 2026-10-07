@@ -35,6 +35,8 @@ export function StorefrontCategoriesBlock({
   messages,
 }: StorefrontCategoriesBlockProps) {
   const columns = gridColumnsOf(component.columns)
+  // Null, or absent on a page cached before the choice existed, is the photo with its name.
+  const cardStyle = component.cardStyle ?? "PHOTO_WITH_NAME"
   const shared = {
     categories: categories.map((category) => ({
       id: category.id,
@@ -63,9 +65,9 @@ export function StorefrontCategoriesBlock({
           messages={messages}
         />
       ) : component.display === "RAIL" ? (
-        <StorefrontCategoryRail {...shared} {...(component.title ? { label: component.title } : {})} />
+        <StorefrontCategoryRail {...shared} cardStyle={cardStyle} {...(component.title ? { label: component.title } : {})} />
       ) : (
-        <StorefrontCategoryGrid {...shared} {...(columns ? { columns } : {})} />
+        <StorefrontCategoryGrid {...shared} cardStyle={cardStyle} {...(columns ? { columns } : {})} />
       )}
     </div>
   )

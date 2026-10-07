@@ -53,7 +53,7 @@ export async function paymentOptionsAt(slug: string): Promise<StorefrontPaymentO
 }
 
 /** A shop with nothing to say for a first purchase — and what a read that failed is taken for. */
-export const NO_OFFERS: StorefrontOffers = { firstPurchase: null }
+export const NO_OFFERS: StorefrontOffers = { firstPurchase: null, popup: null }
 
 /**
  * What the shop says of its offers to anyone: its benefit for a first purchase, without any code.
@@ -69,7 +69,9 @@ export const NO_OFFERS: StorefrontOffers = { firstPurchase: null }
 export async function offersAt(slug: string): Promise<StorefrontOffers> {
   const response = await callPublicApi({ path: `/stores/${slug}/offers`, tags: [storeTag(slug), offersTag(slug)] }).catch(() => null)
   if (!response?.ok) return NO_OFFERS
-  return (await response.json()) as StorefrontOffers
+  const offers = (await response.json()) as StorefrontOffers
+  // An answer kept from before the pop-up existed has no such key, and that is no pop-up.
+  return { ...offers, popup: offers.popup ?? null }
 }
 
 export interface CatalogueAsk {

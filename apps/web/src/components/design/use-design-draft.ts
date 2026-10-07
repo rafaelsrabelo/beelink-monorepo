@@ -73,7 +73,7 @@ export function useDesignDraft(slug: string, pageId?: string) {
       ?.map(
         (section) =>
           `${section.id}${section.isActive ? "" : "!"}:${section.components
-            .map((c) => [c.id, c.isActive, c.span, c.display, c.columns, c.align, c.visibleOn].join("/"))
+            .map((c) => [c.id, c.isActive, c.span, c.display, c.columns, c.align, c.visibleOn, c.cardStyle].join("/"))
             .join("+")}`,
       )
       .join(",") ?? null
@@ -103,7 +103,7 @@ export function useDesignDraft(slug: string, pageId?: string) {
 
   function patchComponent(
     id: string,
-    patch: Partial<Pick<ComponentDraft, "isActive" | "span" | "display" | "columns" | "align" | "visibleOn">>,
+    patch: Partial<Pick<ComponentDraft, "isActive" | "span" | "display" | "columns" | "align" | "visibleOn" | "cardStyle">>,
   ) {
     edit((current) =>
       current.map((row) => ({

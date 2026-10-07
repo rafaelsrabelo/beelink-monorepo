@@ -73,6 +73,13 @@ export const DEVICE_VISIBILITIES = ["ALL", "DESKTOP", "PHONE"] as const
 export type DeviceVisibility = (typeof DEVICE_VISIBILITIES)[number]
 
 /**
+ * How a categories block draws each card. The contract's `CategoryCardStyle`, restated: the photo
+ * with the name under it, or the artwork alone. Null on the wire is the first.
+ */
+export const CATEGORY_CARD_STYLES = ["PHOTO_WITH_NAME", "ART_ONLY"] as const
+export type CategoryCardStyle = (typeof CATEGORY_CARD_STYLES)[number]
+
+/**
  * Which products a showcase draws. The contract's `ProductSource`, restated, in the order the editor
  * offers them: everything first, then a slice of it.
  */

@@ -103,7 +103,7 @@ describe('the storefront listing filters', () => {
   it('lists the filters in force, named as the shop names them', () => {
     const applied = appliedOf(
       { ...none, category: 'blusas', search: 'Crochê', searchKey: 'croche', priceMaxCents: 20000, discount: true, options: [{ name: 'tamanho', values: ['p'] }] },
-      [{ id: 'c1', slug: 'blusas', name: 'Blusas', description: null, imageUrl: null, parentSlug: null, productCount: 1 }],
+      [{ id: 'c1', slug: 'blusas', name: 'Blusas', description: null, imageUrl: null, bannerUrl: null, parentSlug: null, productCount: 1 }],
       {
         categories: [],
         discount: { count: 0, selected: true, ranges: [] },

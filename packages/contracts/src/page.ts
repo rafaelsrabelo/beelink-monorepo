@@ -139,6 +139,16 @@ export type ComponentDisplay =
 export type DeviceVisibility = "ALL" | "DESKTOP" | "PHONE";
 
 /**
+ * How a categories block draws each card, in a rail or a grid: the photo with the category's name and
+ * line under it, or the picture alone — for artwork that already carries its words, where a name
+ * written beside it is the name said twice.
+ *
+ * Null is `PHOTO_WITH_NAME`: what every categories block drew before there was a choice. A category
+ * with no picture is drawn with its name in either style, never as an empty square.
+ */
+export type CategoryCardStyle = "PHOTO_WITH_NAME" | "ART_ONLY";
+
+/**
  * Which products a showcase draws: all of them, one category (and its subcategories), a hand-picked
  * list, the newest, or the ones on sale.
  *
@@ -352,6 +362,8 @@ export interface PublicComponent {
   align: TextAlign | null;
   /** Absent on a page cached before it existed, which shows everywhere. */
   visibleOn?: DeviceVisibility;
+  /** A categories block's card. Null, or absent on a page cached before it existed, is the photo with its name. */
+  cardStyle?: CategoryCardStyle | null;
 }
 
 /** A component as its owner edits it. Slugs on the wire; the uuids stay in the database. */
@@ -374,6 +386,8 @@ export interface StoreComponent {
   columns: number | null;
   align: TextAlign | null;
   visibleOn: DeviceVisibility;
+  /** A categories block's card; null is the photo with its name. Null on every other kind. */
+  cardStyle: CategoryCardStyle | null;
   /** Its place inside its section. The section's own place is the section's. */
   position: number;
   isActive: boolean;
@@ -453,6 +467,8 @@ export interface CreateComponentPayload {
   columns?: number | null;
   align?: TextAlign | null;
   visibleOn?: DeviceVisibility;
+  /** A categories block's card. Refused, when not null, on every other kind. */
+  cardStyle?: CategoryCardStyle | null;
   isActive?: boolean;
 }
 
@@ -504,6 +520,8 @@ export type PageErrorCode =
   | "COMPONENT_DISPLAY_INVALID"
   /** A `visibleOn` that is not one of the three, or one sent to the strip, which shows everywhere. */
   | "COMPONENT_VISIBILITY_INVALID"
+  /** A `cardStyle` that is not one of the two, or one sent to a kind that is not the categories. */
+  | "COMPONENT_CARD_STYLE_INVALID"
   /** A kind the home holds and a landing does not: the strip, which is the shop's on every page. */
   | "COMPONENT_KIND_HOME_ONLY"
   /** A page that is not this shop's, or not there; a landing not published, to a visitor. */

@@ -98,6 +98,7 @@ function toPublicComponent(row: ComponentShape, shopSlug: string, words: Storefr
     columns: row.columns,
     align: row.align,
     visibleOn: row.visibleOn,
+    cardStyle: row.cardStyle,
   } satisfies PublicComponent;
 }
 

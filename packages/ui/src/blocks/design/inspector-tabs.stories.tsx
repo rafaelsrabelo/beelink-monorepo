@@ -64,20 +64,20 @@ const scenarios = {
         },
       ],
     },
-    layout: { span: "HALF", display: "CAROUSEL", columns: 0, align: "LEFT", visibleOn: "ALL" },
+    layout: { span: "HALF", display: "CAROUSEL", columns: 0, align: "LEFT", visibleOn: "ALL", cardStyle: "PHOTO_WITH_NAME" },
     band: plainBand,
     sharedWith: 2,
   },
   showcase: {
     name: "Mais vendidos",
     content: { ...empty, kind: "PRODUCTS", title: "Mais vendidos", source: "CATEGORY" },
-    layout: { span: "FULL", display: "GRID", columns: 4, align: "LEFT", visibleOn: "ALL" },
+    layout: { span: "FULL", display: "GRID", columns: 4, align: "LEFT", visibleOn: "ALL", cardStyle: "PHOTO_WITH_NAME" },
     band: { ...plainBand, width: "FULL" },
   },
   heading: {
     name: "Novidades da semana",
     content: { ...empty, title: "Novidades da semana", subtitle: "Chegou agora" },
-    layout: { span: "FULL", display: null, columns: 0, align: "CENTER", visibleOn: "ALL" },
+    layout: { span: "FULL", display: null, columns: 0, align: "CENTER", visibleOn: "ALL", cardStyle: "PHOTO_WITH_NAME" },
     band: { name: "Novidades", width: "CONTAINED", background: presets[1]!.colors.header },
   },
   strip: {

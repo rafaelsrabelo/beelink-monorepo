@@ -6,7 +6,7 @@
  * and the web shows it on the pages, each from a constant typed with this. Bumping it here stops both
  * from compiling until both say the new day — the text shown and the version recorded cannot drift.
  */
-export type LegalVersion = "2026-10-06";
+export type LegalVersion = "2026-10-07";
 
 /**
  * Where an account took the terms: a sign-up form, "Continuar com Google" at a shop, or setting a

@@ -58,6 +58,7 @@ function publishedWith(form: { id?: string; isActive?: boolean; items?: unknown 
             columns: null,
             align: null,
             visibleOn: 'ALL',
+            cardStyle: null,
             items: form.items ?? FIELDS,
             isActive: form.isActive ?? true,
           },

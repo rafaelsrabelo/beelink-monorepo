@@ -34,6 +34,8 @@ export interface CategoryFormValues {
   slug: string
   description: string
   imageUrl: string
+  /** The wide picture the category's own page opens with. `""` is none. */
+  bannerUrl: string
   /** `""` is "no parent". A select cannot hold null, and the screen turns it back. */
   parentId: string
   isActive: boolean
@@ -58,6 +60,9 @@ export interface CategoryFormProps {
   errors?: FieldIssues<CategoryFormValues>
   onUploadImage?: (file: File) => Promise<string>
   imagePending?: boolean
+  /** The banner's own upload, so one picture in flight does not read as both. The same path as the image's. */
+  onUploadBanner?: (file: File) => Promise<string>
+  bannerPending?: boolean
   onSubmit: () => void
   onCancel?: () => void
   pending?: boolean
@@ -80,6 +85,8 @@ export function CategoryForm({
   errors,
   onUploadImage,
   imagePending,
+  onUploadBanner,
+  bannerPending,
   onSubmit,
   onCancel,
   pending = false,
@@ -177,6 +184,21 @@ export function CategoryForm({
           messages={messages}
         />
 
+        {/* 1600 × 400 is the page's 4:1 frame (`StorefrontCategoryBanner`): the field takes its shape from it. */}
+        <StoreImageField
+          id="category-banner"
+          label={text.bannerLabel}
+          hint={value.parentId ? text.bannerHelpChild : text.bannerHelp}
+          value={value.bannerUrl}
+          onChange={(next) => set("bannerUrl", next)}
+          onUpload={onUploadBanner}
+          pending={bannerPending}
+          previewAlt={text.bannerLabel}
+          aspect="wide"
+          recommendedSize={{ width: 1600, height: 400 }}
+          disabled={pending}
+          messages={messages}
+        />
 
         <Field orientation="horizontal">
           <Checkbox

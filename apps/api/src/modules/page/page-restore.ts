@@ -23,6 +23,7 @@ function fieldsOf(component: ComponentShape, sourceCategoryId: string | null) {
     columns: component.columns,
     align: component.align,
     visibleOn: component.visibleOn,
+    cardStyle: component.cardStyle,
     // Read the forgiving way: a version frozen under an older shape restores its good items rather
     // than failing the whole restore on one it no longer takes.
     items: parseComponentItems(component.kind, component.items) as object[],

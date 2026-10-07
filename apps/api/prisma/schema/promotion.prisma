@@ -67,6 +67,8 @@ model Promotion {
   categories PromotionCategory[]
   /// The order lines it took a discount off (BEELINK-191); each keeps its own photograph.
   orderItems OrderItem[]
+  /// The shop's pop-up, when it names this promotion as what it announces (BEELINK-306).
+  popups     StorePopup[]
 
   /// The panel's list, the newest first.
   @@index([storeId, createdAt(sort: Desc)])
@@ -143,6 +145,8 @@ model Coupon {
   updatedAt DateTime @updatedAt
 
   redemptions CouponRedemption[]
+  /// The shop's pop-up, when it names this coupon as what it announces (BEELINK-306).
+  popups      StorePopup[]
 
   @@unique([storeId, code])
   /// The panel's list, the newest first.
@@ -168,4 +172,54 @@ model CouponRedemption {
   /// A coupon's uses, the most recent first.
   @@index([couponId, createdAt(sort: Desc)])
   @@map("coupon_redemptions")
+}
+
+/// When a shop's pop-up opens: some seconds after the page arrives, or when the visitor is about to
+/// leave it.
+enum PopupTrigger {
+  ON_ARRIVAL
+  ON_LEAVE
+}
+
+/// A shop's first-purchase pop-up (BEELINK-306): the dialog that calls a visitor with no account to
+/// open one. One row per shop, written the first time the shopkeeper saves it; a shop without one
+/// reads the defaults the API states, switched off. A table of its own and not columns of `stores`:
+/// that row is read on every page of every shop window, and most shops never switch this on.
+model StorePopup {
+  storeId String @id @db.Uuid
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  enabled Boolean @default(false)
+
+  /// http(s); null draws the coloured panel alone.
+  imageUrl    String?
+  /// Plain text, shown to every visitor. Null is the product's default, which the web words. Each may
+  /// carry `{beneficio}` and never a discount typed by hand: the number is the benefit's, read when
+  /// the pop-up is served.
+  title       String? @db.VarChar(80)
+  text        String? @db.VarChar(200)
+  buttonLabel String? @db.VarChar(30)
+
+  trigger      PopupTrigger @default(ON_ARRIVAL)
+  /// Seconds after the page arrives, 0 to 60 by a CHECK; read on ON_ARRIVAL alone.
+  delaySeconds Int          @default(5)
+
+  /// What it announces. Both null follows the shop's first-purchase headline; one of them names a
+  /// promotion or a shown coupon for a first purchase — never both, by a CHECK. One named and no
+  /// longer in force announces nothing: the pop-up does not fall back to another offer by itself.
+  promotionId String?    @db.Uuid
+  promotion   Promotion? @relation(fields: [promotionId], references: [id], onDelete: SetNull)
+  couponId    String?    @db.Uuid
+  coupon      Coupon?    @relation(fields: [couponId], references: [id], onDelete: SetNull)
+
+  /// Counts what a visitor reads: up by one when the image, a text or the benefit named changes.
+  /// The visitor's `bl_popup` cookie holds the one they closed, so a new one may be shown once.
+  revision Int @default(1)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([promotionId])
+  @@index([couponId])
+  @@map("store_popups")
 }

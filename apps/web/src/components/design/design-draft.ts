@@ -1,5 +1,6 @@
 // Types
 import type {
+  CategoryCardStyle,
   ComponentDisplay,
   ComponentKind,
   ComponentSpan,
@@ -34,6 +35,7 @@ export interface ComponentDraft {
   columns: number | null
   align: TextAlign | null
   visibleOn: DeviceVisibility
+  cardStyle: CategoryCardStyle | null
   isActive: boolean
 }
 
@@ -58,6 +60,7 @@ export function toComponentDraft(component: StoreComponent): ComponentDraft {
     columns: component.columns,
     align: component.align,
     visibleOn: component.visibleOn,
+    cardStyle: component.cardStyle,
     isActive: component.isActive,
   }
 }
@@ -154,6 +157,8 @@ export function publishedOf(component: ComponentDraft): UpdateComponentPayload {
     columns: component.columns,
     align: component.align,
     visibleOn: component.visibleOn,
+    // Only the categories hold one, and the API refuses it anywhere else: left out, the column is left alone.
+    ...(component.kind === "CATEGORIES" ? { cardStyle: component.cardStyle } : {}),
     ...(component.display ? { display: component.display } : {}),
   }
 }

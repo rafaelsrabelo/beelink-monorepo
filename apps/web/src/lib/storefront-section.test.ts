@@ -11,7 +11,7 @@ import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 import * as data from "./storefront-data"
 import * as locale from "./locale"
 import { storefrontRoutes } from "./storefront-routes"
-import { LISTING_PAGE_SIZE, canonicalOf, headingOf, isShelf, listingAskOf, pageHrefOf, placeOf, sortFormOf, sortOptionsOf } from "./storefront-section"
+import { LISTING_PAGE_SIZE, bannerOf, canonicalOf, headingOf, isShelf, listingAskOf, pageHrefOf, placeOf, sortFormOf, sortOptionsOf } from "./storefront-section"
 
 const store = {
   slug: "loja",
@@ -69,6 +69,41 @@ describe("placeOf", () => {
 
     expect((await placeOf("loja", "busca", { q: "whey", categoria: "proteinas" }))?.scope).toBe("proteinas")
     expect((await placeOf("loja", "whey", { categoria: "proteinas" }))?.scope).toBeUndefined()
+  })
+})
+
+// BEELINK-307: a category's page opens with a banner of its own.
+describe("bannerOf — the banner a category's page opens with", () => {
+  const withBanner = (slug: string, bannerUrl: string | null, parentSlug: string | null = null) => ({ ...category(slug, parentSlug), bannerUrl })
+
+  it("is the category's own", async () => {
+    arrange([withBanner("proteinas", "https://cdn.example/proteinas.png"), withBanner("whey", "https://cdn.example/whey.png", "proteinas")])
+
+    expect(bannerOf((await placeOf("loja", "proteinas", {}))!)).toBe("https://cdn.example/proteinas.png")
+    expect(bannerOf((await placeOf("loja", "whey", {}))!)).toBe("https://cdn.example/whey.png")
+  })
+
+  it("is the parent's for a subcategory with none of its own", async () => {
+    arrange([withBanner("proteinas", "https://cdn.example/proteinas.png"), withBanner("whey", null, "proteinas")])
+
+    expect(bannerOf((await placeOf("loja", "whey", {}))!)).toBe("https://cdn.example/proteinas.png")
+  })
+
+  it("is none for a top-level category with none, and for a subcategory whose parent has none or is hidden", async () => {
+    arrange([withBanner("proteinas", null), withBanner("whey", null, "proteinas"), withBanner("orfa", null, "escondida")])
+
+    expect(bannerOf((await placeOf("loja", "proteinas", {}))!)).toBeNull()
+    expect(bannerOf((await placeOf("loja", "whey", {}))!)).toBeNull()
+    expect(bannerOf((await placeOf("loja", "orfa", {}))!)).toBeNull()
+  })
+
+  // Only a category's own page: the search and "all products" draw none, even narrowed to that category.
+  it("is none on the search and on the whole catalogue, even narrowed to a category that has one", async () => {
+    arrange([withBanner("proteinas", "https://cdn.example/proteinas.png")])
+
+    expect(bannerOf((await placeOf("loja", "produtos", {}))!)).toBeNull()
+    expect(bannerOf((await placeOf("loja", "produtos", { categoria: "proteinas" }))!)).toBeNull()
+    expect(bannerOf((await placeOf("loja", "busca", { q: "whey", categoria: "proteinas" }))!)).toBeNull()
   })
 })
 

@@ -38,6 +38,7 @@ const hidden: Section[] = [
         columns: null,
         align: null,
         visibleOn: "ALL",
+        cardStyle: null,
         position: 0,
         isActive: false,
         createdAt: "2026-09-24T00:00:00.000Z",

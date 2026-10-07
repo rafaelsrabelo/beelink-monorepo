@@ -39,6 +39,7 @@ export function componentRow(
     columns: dto.columns ?? null,
     align: dto.align ?? null,
     ...(dto.visibleOn !== undefined ? { visibleOn: dto.visibleOn } : {}),
+    cardStyle: dto.cardStyle ?? null,
     ...(showcase ?? { items }),
     position,
     isActive: dto.isActive ?? true,
@@ -59,6 +60,7 @@ export function componentPatch(dto: UpdateComponentDto, items: object[] | undefi
     ...(dto.columns !== undefined ? { columns: dto.columns } : {}),
     ...(dto.align !== undefined ? { align: dto.align } : {}),
     ...(dto.visibleOn !== undefined ? { visibleOn: dto.visibleOn } : {}),
+    ...(dto.cardStyle !== undefined ? { cardStyle: dto.cardStyle } : {}),
     ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
     // The whole list or nothing. Slides have an order, so a patch of one would leave the API
     // guessing where it goes — and leaving this line out of the update is what once made a
@@ -120,6 +122,7 @@ export function copiedRow(row: StoreComponentModel, position: number) {
     columns: row.columns,
     align: row.align,
     visibleOn: row.visibleOn,
+    cardStyle: row.cardStyle,
     items: items.map((item) =>
       item && typeof item === 'object' && !Array.isArray(item) && 'id' in item ? { ...item, id: randomUUID() } : item,
     ) as Prisma.InputJsonArray,

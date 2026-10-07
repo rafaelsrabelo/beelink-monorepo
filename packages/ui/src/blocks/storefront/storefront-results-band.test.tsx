@@ -20,6 +20,28 @@ describe("StorefrontResultsBand", () => {
     expect(screen.getByRole("button").parentElement).toHaveClass("ml-auto")
   })
 
+  // BEELINK-307: a category's banner sits between the trail and the title, the band's whole width.
+  it("draws a banner between the trail and the title, on a row of its own", () => {
+    render(
+      <StorefrontResultsBand breadcrumb={<nav aria-label="Você está em">Início › Ferramentas</nav>} banner={<div data-testid="banner" />} heading="Ferramentas">
+        <button type="button">Ordenar</button>
+      </StorefrontResultsBand>,
+    )
+
+    const [trail, banner, heading] = [screen.getByRole("navigation"), screen.getByTestId("banner"), screen.getByRole("heading", { level: 1 })]
+    expect(trail.compareDocumentPosition(banner) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(banner.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(banner.parentElement).toHaveClass("w-full")
+    expect(screen.getAllByRole("navigation")).toHaveLength(1)
+  })
+
+  it("is drawn as it always was with no banner: the trail right over the title", () => {
+    render(<StorefrontResultsBand breadcrumb={<nav aria-label="Você está em">Início › Tintas</nav>} heading="Tintas" />)
+
+    expect(screen.getByRole("navigation").nextElementSibling).toContainElement(screen.getByRole("heading", { level: 1 }))
+    expect(screen.getByRole("navigation").parentElement).toHaveClass("min-w-0", "gap-1")
+  })
+
   it("draws nothing at the far end when there is nothing to sort", () => {
     const { container } = render(<StorefrontResultsBand heading="Categorias" />)
 

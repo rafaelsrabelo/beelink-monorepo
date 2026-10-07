@@ -1,5 +1,12 @@
 // Types
-import type { ComponentDisplay, ComponentKind, ComponentSpan, DeviceVisibility, TextAlign } from "@harness-monorepo/contracts"
+import type {
+  CategoryCardStyle,
+  ComponentDisplay,
+  ComponentKind,
+  ComponentSpan,
+  DeviceVisibility,
+  TextAlign,
+} from "@harness-monorepo/contracts"
 
 // UI
 import type { ComponentLayoutValues } from "@harness-monorepo/ui/blocks/design/component-layout-fields"
@@ -14,6 +21,7 @@ export interface HeldLayout {
   columns: number | null
   align: TextAlign | null
   visibleOn: DeviceVisibility
+  cardStyle: CategoryCardStyle | null
 }
 
 /**
@@ -45,6 +53,8 @@ export function layoutOf(block: HeldLayout): ComponentLayoutValues {
     columns: block.columns ?? 0,
     align: block.align ?? defaultAlignOf(block.kind),
     visibleOn: block.visibleOn,
+    // Unset is a row from before the choice: the photo with its name, as the storefront reads it.
+    cardStyle: block.cardStyle ?? "PHOTO_WITH_NAME",
   }
 }
 
@@ -60,7 +70,8 @@ export function sameLayout(a: HeldLayout, b: HeldLayout): boolean {
     x.display === y.display &&
     x.columns === y.columns &&
     x.align === y.align &&
-    x.visibleOn === y.visibleOn
+    x.visibleOn === y.visibleOn &&
+    x.cardStyle === y.cardStyle
   )
 }
 

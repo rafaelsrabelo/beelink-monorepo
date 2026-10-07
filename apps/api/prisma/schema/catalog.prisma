@@ -48,6 +48,9 @@ model ProductCategory {
 
   description String?
   imageUrl    String?
+  /// The wide picture its own page opens with. Null is none; a subcategory's page then borrows its
+  /// parent's, which the storefront resolves — the column is always the category's own.
+  bannerUrl   String?
 
   /// The category this one sits under. Null is a top level.
   ///

@@ -351,6 +351,7 @@ describe("StorefrontSections — the categories are a rail or a grid", () => {
     name: "Blusas",
     description: null,
     imageUrl: null,
+    bannerUrl: null,
     parentSlug: null,
     productCount: 3,
   }
@@ -393,6 +394,48 @@ describe("StorefrontSections — the categories are a rail or a grid", () => {
 
     expect(container.querySelector("ul")!.className).toContain("grid")
     expect(screen.queryByRole("group")).not.toBeInTheDocument()
+  })
+
+  // BEELINK-308: artwork that carries its own words is drawn alone, on a rail and in a grid alike.
+  describe("drawn as the artwork alone", () => {
+    const tintas = { ...blusas, id: "c2", slug: "tintas", name: "Tintas", imageUrl: "https://cdn.example/tintas.png" }
+
+    function drawArt(over: Partial<PublicComponent>) {
+      return render(
+        <StorefrontSections
+          sections={[band([categoriesBlock({ cardStyle: "ART_ONLY", ...over })])]}
+          primary=""
+          categories={[tintas, blusas]}
+          routes={routes}
+          showPrice
+          showBadge
+          messages={ptBR}
+        />,
+      )
+    }
+
+    it.each(["RAIL", "GRID"] as const)("draws the picture alone in a %s, the link named after the category", (display) => {
+      drawArt({ display })
+
+      const card = screen.getByRole("link", { name: "Tintas" })
+      expect(card).toHaveAttribute("href", routes.category("tintas"))
+      expect(card).toHaveTextContent("")
+      expect(card.querySelector("img")).toHaveAttribute("src", "https://cdn.example/tintas.png")
+    })
+
+    it("draws a category with no picture with its name, never hides it", () => {
+      drawArt({ display: "GRID" })
+
+      expect(screen.getByRole("link", { name: /Blusas/ })).toHaveTextContent("Blusas")
+    })
+
+    it("keeps the name under the photo where the style is unset, null or absent", () => {
+      for (const cardStyle of [null, "PHOTO_WITH_NAME"] as const) {
+        const { unmount } = drawArt({ display: "GRID", cardStyle })
+        expect(screen.getByRole("link", { name: /Tintas/ })).toHaveTextContent("Tintas")
+        unmount()
+      }
+    })
   })
 
   it("draws the categories as chips when told to", () => {

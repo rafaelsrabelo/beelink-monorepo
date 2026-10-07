@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 // Types
 import type {
+  CategoryCardStyle,
   ComponentDisplay,
   ComponentKind,
   ComponentSpan,
@@ -16,6 +17,7 @@ import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
 import {
+  CATEGORY_CARD_STYLES,
   COMPONENT_DISPLAYS,
   COMPONENT_KINDS,
   COMPONENT_SPANS,
@@ -49,6 +51,7 @@ export interface ComponentShape {
   columns: number | null;
   align: TextAlign | null;
   visibleOn: DeviceVisibility;
+  cardStyle: CategoryCardStyle | null;
   /** Raw: each kind's items are narrowed where they are read, by the forgiving `parseComponentItems`. */
   items: unknown;
   isActive: boolean;
@@ -78,6 +81,9 @@ const documentComponent = z.object({
   columns: z.number().int().nullable(),
   align: z.enum(TEXT_ALIGNS).nullable(),
   visibleOn: z.enum(DEVICE_VISIBILITIES),
+  // Absent on a document frozen before the choice existed, which reads as null: a strict key here
+  // would drop every block of every page already published.
+  cardStyle: z.enum(CATEGORY_CARD_STYLES).nullable().default(null),
   items: z.array(z.unknown()),
   isActive: z.boolean(),
 }) satisfies z.ZodType<ComponentShape>;
@@ -117,6 +123,7 @@ function componentOf(row: ComponentShape): ComponentShape {
     columns: row.columns,
     align: row.align,
     visibleOn: row.visibleOn,
+    cardStyle: row.cardStyle,
     items: Array.isArray(row.items) ? row.items : [],
     isActive: row.isActive,
   };

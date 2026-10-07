@@ -18,11 +18,13 @@ import { StorefrontOffersResponse } from './dto/offers.response.js';
 import { runningPromotions } from './order-discounts.js';
 import { PRICES_CHANGE_AT_HEADER } from './promotions.constants.js';
 import { firstPurchaseHeadlineOf, nextHeadlineChange, shownFirstPurchaseCoupon } from './shop-offers.js';
+import { servedPopupOf } from './shop-popup.js';
 
 /**
- * What a shop says of its offers to anyone: today, its benefit for a first purchase — what kind,
- * how much, whether it applies by itself. Read by the shop window to word its invitation to open an
- * account, and kept there under the shop's tag.
+ * What a shop says of its offers to anyone: its benefit for a first purchase — what kind, how
+ * much, whether it applies by itself — and, while it is switched on, its first-purchase pop-up
+ * (BEELINK-306). Read by the shop window to word its invitation to open an account, and kept there
+ * under the shop's tag.
  *
  * It carries no code, ever: whether a code exists is told only to an identified customer, and this
  * answer is the same for a crawler. A coupon reaches it only as a benefit, and only one its
@@ -44,21 +46,25 @@ export class StorefrontOffersController {
   @Get()
   @Public()
   @RouteConfig({ rateLimit: STOREFRONT_RATE_LIMIT })
-  @ApiOperation({ summary: "The shop's benefit for a first purchase, as anyone may be told of it: its kind and amount, never a code" })
+  @ApiOperation({ summary: "The shop's benefit for a first purchase, as anyone may be told of it — its kind and amount, never a code — and its pop-up while switched on" })
   @ApiOkResponse({ type: StorefrontOffersResponse })
   @ApiNotFoundResponse({ description: 'STORE_NOT_FOUND' })
   @ApiTooManyRequestsResponse({ description: 'RATE_LIMITED' })
   async offers(@Param('storeSlug') storeSlug: string, @Res({ passthrough: true }) reply: FastifyReply): Promise<StorefrontOffers> {
     const storeId = await this.stores.publicStoreId(storeSlug);
     const now = new Date();
+    const maxUses = this.prisma.coupon.fields.maxUses;
     const [promotions, coupon, changesAt] = await Promise.all([
       runningPromotions(this.prisma, storeId, now),
-      shownFirstPurchaseCoupon(this.prisma, storeId, now, this.prisma.coupon.fields.maxUses),
+      shownFirstPurchaseCoupon(this.prisma, storeId, now, maxUses),
       // Beside the answer, and never its failure: without the instant the reader's own minute still closes.
       nextHeadlineChange(this.prisma, storeId, now).catch(() => null),
     ]);
     if (changesAt) void reply.header(PRICES_CHANGE_AT_HEADER, changesAt.toISOString());
 
-    return { firstPurchase: firstPurchaseHeadlineOf(promotions, coupon) } satisfies StorefrontOffers;
+    // After the two it speaks of: the pop-up announces from what this answer already read.
+    const popup = await servedPopupOf(this.prisma, storeId, now, maxUses, { promotions, headlineCoupon: coupon });
+
+    return { firstPurchase: firstPurchaseHeadlineOf(promotions, coupon), popup } satisfies StorefrontOffers;
   }
 }

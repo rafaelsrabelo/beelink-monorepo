@@ -35,6 +35,8 @@ export class PublicProductCategoryResponse implements PublicProductCategory {
   @ApiProperty({ example: 'Blusas' }) name!: string;
   @ApiProperty({ nullable: true, type: String }) description!: string | null;
   @ApiProperty({ nullable: true, type: String }) imageUrl!: string | null;
+  @ApiProperty({ nullable: true, type: String, description: 'The wide picture the category’s own page opens with. The category’s own: a subcategory with none borrows its parent’s on the page.' })
+  bannerUrl!: string | null;
 
   @ApiProperty({
     nullable: true,

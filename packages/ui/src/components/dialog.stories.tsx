@@ -39,3 +39,18 @@ export const Padrao: Story = {
     </Dialog>
   ),
 }
+
+/** Com o fundo mais escuro (`overlayClassName`): um diálogo que interrompe a página, e não um que ela pediu. */
+export const FundoEscuro: Story = {
+  render: () => (
+    <Dialog>
+      <DialogTrigger render={<Button variant="outline" />}>Abrir</DialogTrigger>
+      <DialogContent closeLabel="Fechar" overlayClassName="bg-black/50">
+        <DialogHeader>
+          <DialogTitle>Antes de ir embora</DialogTitle>
+          <DialogDescription>O fundo escurece mais para a página de trás sair de cena.</DialogDescription>
+        </DialogHeader>
+      </DialogContent>
+    </Dialog>
+  ),
+}

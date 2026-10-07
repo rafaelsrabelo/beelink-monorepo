@@ -1,5 +1,6 @@
 // Types
 import type {
+  CategoryCardStyle,
   ComponentDisplay,
   ComponentKind,
   ComponentSpan,
@@ -16,6 +17,9 @@ export const COMPONENT_SPANS = ['FULL', 'HALF', 'THIRD', 'TWO_THIRDS'] as const 
 
 /** Everywhere, only on a computer, only on a phone. */
 export const DEVICE_VISIBILITIES = ['ALL', 'DESKTOP', 'PHONE'] as const satisfies readonly DeviceVisibility[];
+
+/** A categories block's card: the photo with its name, or the picture alone. Null on a row is the first. */
+export const CATEGORY_CARD_STYLES = ['PHOTO_WITH_NAME', 'ART_ONLY'] as const satisfies readonly CategoryCardStyle[];
 
 /** Every layout any kind draws; `DISPLAYS_OF_KIND` says which are whose. */
 export const COMPONENT_DISPLAYS = [

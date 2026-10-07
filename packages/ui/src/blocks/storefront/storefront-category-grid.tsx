@@ -6,7 +6,11 @@ import { cn } from "@harness-monorepo/ui/lib/utils"
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import { StorefrontCategoriesEmpty } from "./storefront-categories-empty"
-import { StorefrontCategoryCard, type StorefrontCategoryCardItem } from "./storefront-category-card"
+import {
+  StorefrontCategoryCard,
+  type StorefrontCategoryCardItem,
+  type StorefrontCategoryCardStyle,
+} from "./storefront-category-card"
 
 /** Kept under its old name: the grid's item is the card's. */
 export type StorefrontCategoryGridItem = StorefrontCategoryCardItem
@@ -23,6 +27,8 @@ export interface StorefrontCategoryGridProps {
   locale?: string
   /** Across, where the cell has room. Three when the shopkeeper left it to the grid. */
   columns?: StorefrontCategoryColumns
+  /** The artwork alone, or the photo with its name — the default, and what a category with no picture draws anyway. */
+  cardStyle?: StorefrontCategoryCardStyle
   linkComponent?: LinkComponent
   messages?: UiMessages
 }
@@ -52,6 +58,7 @@ export function StorefrontCategoryGrid({
   catalogHref,
   locale = defaultLocale,
   columns = 3,
+  cardStyle = "PHOTO_WITH_NAME",
   linkComponent = AnchorLink,
   messages = defaultMessages,
 }: StorefrontCategoryGridProps) {
@@ -73,6 +80,7 @@ export function StorefrontCategoryGrid({
             <StorefrontCategoryCard
               category={category}
               href={href(category.slug)}
+              cardStyle={cardStyle}
               locale={locale}
               linkComponent={linkComponent}
               messages={messages}

@@ -2,6 +2,7 @@ import type { CSSProperties } from "react"
 
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
+import { artCategories } from "./category-art.fixtures"
 import { StorefrontCategoryGrid } from "./storefront-category-grid"
 
 const categories = [
@@ -50,6 +51,20 @@ export const DuasPorLinha: Story = {
 /** Four where the cell has room for four; widen and narrow the canvas to watch it step down. */
 export const QuatroPorLinha: Story = {
   args: { columns: 4 },
+}
+
+/**
+ * Artwork that already carries its words: a square of the picture and nothing written with it. The
+ * one category with no picture ("Jardim") is drawn with its name, never as an empty square.
+ */
+export const SoAArte: Story = {
+  args: { categories: artCategories, cardStyle: "ART_ONLY", columns: 4 },
+}
+
+/** Two across, the floor on a phone whatever was chosen. */
+export const SoAArteNoCelular: Story = {
+  args: { categories: artCategories, cardStyle: "ART_ONLY", columns: 4 },
+  globals: { viewport: { value: "mobile2", isRotated: false } },
 }
 
 /** A shop that never separated what it sells: a sentence and a door, never a blank page. */

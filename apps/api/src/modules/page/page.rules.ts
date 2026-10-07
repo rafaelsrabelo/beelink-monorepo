@@ -3,6 +3,7 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 
 // Types
 import type {
+  CategoryCardStyle,
   ComponentDisplay,
   ComponentKind,
   DeviceVisibility,
@@ -88,6 +89,18 @@ export class PageRules {
     if ((UNMOVABLE_COMPONENT_KINDS as readonly ComponentKind[]).includes(kind)) {
       throw new BadRequestException(pageError('COMPONENT_VISIBILITY_INVALID', 'A barra de aviso aparece em todo lugar.'))
     }
+  }
+
+  /**
+   * A card style only on the categories: on any other kind it would be a choice stored for nobody.
+   * Null is taken everywhere — it is "as it always drew".
+   */
+  refuseCardStyleFor(kind: ComponentKind, cardStyle: CategoryCardStyle | null | undefined): void {
+    if (cardStyle === undefined || cardStyle === null || kind === 'CATEGORIES') return;
+
+    throw new BadRequestException(
+      pageError('COMPONENT_CARD_STYLE_INVALID', 'Só o bloco de categorias tem estilo de cartão.'),
+    );
   }
 
   /**

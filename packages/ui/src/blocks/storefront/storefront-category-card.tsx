@@ -5,6 +5,13 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import type { StorefrontCategory } from "./storefront-categories"
+import { StorefrontCategoryArt } from "./storefront-category-art"
+
+/**
+ * How a categories block draws its cards. The contract's `CategoryCardStyle`, restated: the photo
+ * with the name under it — every block's before there was a choice — or the artwork alone.
+ */
+export type StorefrontCategoryCardStyle = "PHOTO_WITH_NAME" | "ART_ONLY"
 
 export interface StorefrontCategoryCardItem extends StorefrontCategory {
   /** The whole category, never the page being shown: it is the promise the card makes. */
@@ -20,6 +27,11 @@ export interface StorefrontCategoryCardItem extends StorefrontCategory {
 export interface StorefrontCategoryCardProps {
   category: StorefrontCategoryCardItem
   href: string
+  /**
+   * `ART_ONLY` draws the picture alone. A category with no picture is drawn with its name all the
+   * same: an empty square says nothing, and a category left out is one the shopkeeper cannot find.
+   */
+  cardStyle?: StorefrontCategoryCardStyle
   /** Spells the count. A formatter cannot live in a dictionary, so the block does it. */
   locale?: string
   linkComponent?: LinkComponent
@@ -46,11 +58,16 @@ function initialOf(name: string): string {
 export function StorefrontCategoryCard({
   category,
   href,
+  cardStyle = "PHOTO_WITH_NAME",
   locale = defaultLocale,
   linkComponent: Link = AnchorLink,
   messages = defaultMessages,
 }: StorefrontCategoryCardProps) {
   const text = messages.storefront
+
+  if (cardStyle === "ART_ONLY" && category.imageUrl) {
+    return <StorefrontCategoryArt name={category.name} imageUrl={category.imageUrl} href={href} linkComponent={Link} />
+  }
 
   return (
     <Link href={href} className="group flex flex-col gap-2 rounded-xl p-2 transition-colors hover:bg-black/5">

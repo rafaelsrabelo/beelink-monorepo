@@ -25,6 +25,7 @@ function block(id: string, kind: ComponentShape['kind'], over: Partial<Component
     columns: null,
     align: null,
     visibleOn: 'ALL',
+    cardStyle: null,
     items: [],
     isActive: true,
     ...over,

@@ -49,6 +49,7 @@ export function toComponent(row: StoreComponentModel): StoreComponent {
     columns: row.columns,
     align: row.align,
     visibleOn: row.visibleOn,
+    cardStyle: row.cardStyle,
     position: row.position,
     isActive: row.isActive,
     createdAt: row.createdAt.toISOString(),
