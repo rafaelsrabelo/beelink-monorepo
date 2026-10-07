@@ -1,5 +1,5 @@
 // Types
-import type { SendConversationMessagePayload, ShopConversation, ShopConversationPage, ShopConversationQuery, ShopConversationUnread } from "@harness-monorepo/contracts"
+import type { SendConversationMessagePayload, ShopConversation, ShopConversationPage, ShopConversationQuery } from "@harness-monorepo/contracts"
 
 /** What a failed call carries: the API's stable code, never a sentence (apps/web/AGENTS.md, rule 9). */
 export class ShopConversationError extends Error {
@@ -28,11 +28,6 @@ export function fetchShopConversations(slug: string, query: ShopConversationQuer
   if (query.q) search.set("q", query.q)
   if (query.page && query.page > 1) search.set("page", String(query.page))
   return ask(`/api/stores/${encodeURIComponent(slug)}/conversations${search.size ? `?${search.toString()}` : ""}`)
-}
-
-/** What the bell counts on the messages' side. */
-export function fetchShopUnread(slug: string): Promise<ShopConversationUnread> {
-  return ask(`/api/stores/${encodeURIComponent(slug)}/conversations/unread`)
 }
 
 const orderPath = (slug: string, number: number) => `/api/stores/${encodeURIComponent(slug)}/orders/${number}/conversation`

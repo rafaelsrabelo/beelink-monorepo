@@ -7,6 +7,7 @@ import { catalogKeys } from "../catalog/catalog-hooks"
 import { conversationKeys } from "../conversations/conversation-keys"
 import { customerKeys } from "../customers/customer-hooks"
 import { orderKeys } from "../orders/order-hooks"
+import { panelCountsKeys } from "../panel/panel-counts-keys"
 import { orderPaymentKeys } from "../storefront/order-payment-hooks"
 
 /**
@@ -15,17 +16,22 @@ import { orderPaymentKeys } from "../storefront/order-payment-hooks"
  * conversations — and an order's status opens or closes its conversation too. Placing an order
  * takes its lines off the stock the catalogue shows, and cancelling one gives them back, as the
  * panel's own mutations read it again.
+ *
+ * The menu's counts (BEELINK-309) are read again by whatever moves one: an order placed, an order
+ * moved — into or out of the open ones, a cancellation among them — and anything about a
+ * conversation. A payment moves none of them.
  */
 export function panelKeysOf(event: RealtimeEvent, slug: string): QueryKey[] {
   switch (event.type) {
     case "order.created":
-      return [orderKeys.lists(slug), customerKeys.store(slug), catalogKeys.products(slug)]
+      return [orderKeys.lists(slug), customerKeys.store(slug), catalogKeys.products(slug), panelCountsKeys.shop(slug)]
     case "order.status":
       return [
         orderKeys.lists(slug),
         orderKeys.detail(slug, event.orderNumber),
         customerKeys.store(slug),
         conversationKeys.shop(slug),
+        panelCountsKeys.shop(slug),
         ...(event.status === "CANCELLED" ? [catalogKeys.products(slug)] : []),
       ]
     // The list says paid or waiting, and the opened order shows its charge (BEELINK-206).
@@ -34,7 +40,7 @@ export function panelKeysOf(event: RealtimeEvent, slug: string): QueryKey[] {
     case "conversation.message":
     case "conversation.read":
     case "conversation.closed":
-      return [conversationKeys.shop(slug)]
+      return [conversationKeys.shop(slug), panelCountsKeys.shop(slug)]
   }
 }
 

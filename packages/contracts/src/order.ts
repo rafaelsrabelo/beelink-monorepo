@@ -217,8 +217,14 @@ export interface OrderPage {
   pageSize: number;
 }
 
+/**
+ * What a shop's list is filtered by: one status, or `OPEN` — every order still asking something of
+ * the shop, the same ones the panel's menu counts (BEELINK-309).
+ */
+export type OrderStatusFilter = OrderStatus | "OPEN";
+
 export interface OrderListQuery {
-  status?: OrderStatus;
+  status?: OrderStatusFilter;
   /** By where the money stands (BEELINK-207); absent is every order. */
   payment?: OrderPaymentFilter;
   /** An order number, a customer's name, or digits of their phone. */

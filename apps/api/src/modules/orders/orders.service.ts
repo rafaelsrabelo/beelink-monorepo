@@ -15,6 +15,7 @@ import { agreeDeliveryFee } from './order-delivery-fee.js';
 import { placedAtOf } from './order-placed-at.js';
 import { OrderPlacement } from './order-placement.js';
 import { settleCancellation } from './order-cancellation.js';
+import { statusFilterOf } from './open-orders.js';
 import { oweStatusEmail } from './order-status-email.js';
 import { OrderStatusMailer } from './order-status-mailer.js';
 import { orderError, ORDERS_PAGE_SIZE, ORDERS_PAGE_SIZE_MAX } from './orders.constants.js';
@@ -100,7 +101,7 @@ export class OrdersService {
       // Both asked: an order waiting for money that is also in that status. The payment's own
       // condition on the status gives way to the one asked.
       ...(query.payment ? paymentFilterOf(query.payment) : {}),
-      ...(query.status ? { status: query.status } : {}),
+      ...(query.status ? statusFilterOf(query.status) : {}),
       ...(query.customerId ? { customerId: query.customerId } : {}),
       ...(term
         ? {

@@ -6,7 +6,6 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import { PATCH } from "./[reviewId]/route"
 import { GET } from "./route"
 import { POST as seen } from "./seen/route"
-import { GET as unseen } from "./unseen/route"
 
 const mocks = vi.hoisted(() => ({ revalidateStore: vi.fn() }))
 vi.mock("@/lib/revalidate", () => ({ revalidateStore: mocks.revalidateStore }))
@@ -27,16 +26,13 @@ afterEach(() => {
 })
 
 describe("the shop's reviews, for the panel", () => {
-  it("pages them at the API as the owner, the query as it came, and counts the new ones", async () => {
+  it("pages them at the API as the owner, the query as it came", async () => {
     const fetched = vi.fn<Fetched>(async () => Response.json({ reviews: [], total: 0, page: 1, pageSize: 20, counts: { ALL: 0, PUBLISHED: 0, HIDDEN: 0 } }))
     vi.stubGlobal("fetch", fetched)
 
     expect((await GET(request("/api/stores/loja/reviews?status=HIDDEN&rating=1"), { params: Promise.resolve({ slug: "loja" }) })).status).toBe(200)
     expect(String(fetched.mock.calls[0]?.[0])).toContain("/stores/loja/reviews?status=HIDDEN&rating=1")
     expect(new Headers(fetched.mock.calls[0]?.[1]?.headers).get("authorization")).toBe("Bearer owner-access")
-
-    vi.stubGlobal("fetch", vi.fn<Fetched>(async () => Response.json({ count: 3 })))
-    expect(await (await unseen(request("/api/stores/loja/reviews/unseen"), { params: Promise.resolve({ slug: "loja" }) })).json()).toEqual({ count: 3 })
   })
 
   it("marks the list seen, passing the 204 through", async () => {

@@ -20,7 +20,6 @@ import { AdminSearch } from "@harness-monorepo/ui/blocks/admin/admin-search"
 import { AdminShell } from "@harness-monorepo/ui/blocks/admin/admin-shell"
 import { AdminSidebar } from "@harness-monorepo/ui/blocks/admin/admin-sidebar"
 import { AdminStoreMenu } from "@harness-monorepo/ui/blocks/admin/admin-store-menu"
-import { format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Types
@@ -35,8 +34,8 @@ import { startOver } from "@/lib/start-over"
 import { useSignOut } from "@/services/auth/auth-hooks"
 import { useMyStores } from "@/services/stores/store-hooks"
 import { PanelNotifications } from "@/components/panel-notifications"
-import { useShopUnread } from "@/services/conversations/shop-conversation-hooks"
-import { useShopReviewsUnseen } from "@/services/reviews/shop-review-hooks"
+import { menuBadgeOf, type PanelMenuArea } from "@/lib/panel-menu-counts"
+import { usePanelCounts } from "@/services/panel/panel-counts-hooks"
 
 export interface AppShellProps {
   user: User
@@ -94,8 +93,13 @@ export function AppShell({ user, ui, web, locale, prefs, children }: AppShellPro
   // its page and its settings — is what the menu shows; leads arrive with their own entry.
   const site = (stores.data ?? []).find((store) => store.slug === menuSlug)?.type === "INSTITUTIONAL"
 
+  // What waits in each area, in one read the bell shares (BEELINK-309). A site has no such areas,
+  // and the doorway has no shop: neither asks.
+  const counts = usePanelCounts(shopSlug ?? "", shopSlug !== null && !site).data
+
   /**
    * `href` is unread while `disabled`; there is no address, which is why the item is disabled.
+   * `count` names the area whose live number the item carries (`PANEL_MENU_COUNTS`).
    *
    * The item type is read off the block rather than imported: the package's export map points
    * `./blocks/*` at `.tsx`, so a types-only `.ts` beside a block is not reachable from here — and
@@ -106,6 +110,7 @@ export function AppShell({ user, ui, web, locale, prefs, children }: AppShellPro
     path: string,
     icon: ReactNode,
     match?: "prefix",
+    count?: PanelMenuArea,
   ): ComponentProps<typeof AdminSidebar>["items"][number] {
     return {
       title,
@@ -113,17 +118,11 @@ export function AppShell({ user, ui, web, locale, prefs, children }: AppShellPro
       icon,
       disabled: !menuSlug,
       ...(match ? { match } : {}),
+      ...(count ? menuBadgeOf(count, counts, ui) : {}),
     }
   }
 
   const nav = web.stores.nav
-  // The conversations waiting for an answer, on their menu entry; the same read the bell makes.
-  const unread = useShopUnread(shopSlug ?? "", shopSlug !== null && !site).data?.conversations ?? 0
-  const unreadBadge = unread
-    ? { badge: unread, badgeLabel: unread === 1 ? ui.conversations.navUnreadOne : format(ui.conversations.navUnread, { count: String(unread) }) }
-    : {}
-  const unseen = useShopReviewsUnseen(shopSlug ?? "", shopSlug !== null && !site).data?.count ?? 0
-  const unseenBadge = unseen ? { badge: unseen, badgeLabel: unseen === 1 ? ui.reviews.navNewOne : format(ui.reviews.navNew, { count: String(unseen) }) } : {}
 
   return (
     <AdminShell
@@ -163,8 +162,8 @@ export function AppShell({ user, ui, web, locale, prefs, children }: AppShellPro
                 ]
               : [
                   item(nav.home, "", <HomeIcon />),
-                  item(nav.orders, "/orders", <ShoppingBagIcon />, "prefix"),
-                  { ...item(nav.conversations, "/conversations", <MessageCircleIcon />, "prefix"), ...unreadBadge },
+                  item(nav.orders, "/orders", <ShoppingBagIcon />, "prefix", "orders"),
+                  item(nav.conversations, "/conversations", <MessageCircleIcon />, "prefix", "conversations"),
                   item(nav.products, "/products", <PackageIcon />, "prefix"),
                   // Categories arrives here in the same change that took the home card away from
                   // it. That card was its only door in the whole panel, and a screen nobody can
@@ -183,7 +182,7 @@ export function AppShell({ user, ui, web, locale, prefs, children }: AppShellPro
                   // One report today, the sales by origin (BEELINK-275): `/reports` leads to it, and
                   // becomes the page of sales reports without this entry changing.
                   item(nav.reports, "/reports", <ChartColumnIcon />, "prefix"),
-                  { ...item(nav.reviews, "/reviews", <StarIcon />, "prefix"), ...unseenBadge },
+                  item(nav.reviews, "/reviews", <StarIcon />, "prefix", "reviews"),
                 ]
           }
           footerItems={[item(site ? nav.siteSettings : nav.settings, "/store", <SettingsIcon />)]}

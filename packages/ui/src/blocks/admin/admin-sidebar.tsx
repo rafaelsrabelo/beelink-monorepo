@@ -7,6 +7,7 @@ import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
+import { AdminNavBadge } from "./admin-nav-badge"
 import type { DashboardNavItem } from "../dashboard/dashboard-types"
 
 export interface AdminSidebarProps {
@@ -57,7 +58,8 @@ function NavList({
       {items.map((item) => {
         const current = isCurrent(item, activeHref)
         const shared = cn(
-          "flex items-center gap-2.5 rounded-lg px-2 py-[7px] text-[13px] transition-colors",
+          // `relative`: collapsed, the item's count sits on its icon's corner.
+          "relative flex items-center gap-2.5 rounded-lg px-2 py-[7px] text-[13px] transition-colors",
           "focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-2",
           collapsed && "lg:justify-center lg:px-0",
           current
@@ -78,11 +80,9 @@ function NavList({
               An `aria-label` on the link instead would be a second copy of the same string.
             */}
             <span className={cn("truncate", collapsed && "lg:sr-only")}>{item.title}</span>
-            {item.badge ? (
+            {item.badge && item.badge > 0 ? (
               <>
-                <span aria-hidden="true" className={cn("bg-primary text-primary-foreground ml-auto rounded-full px-1.5 text-[11px] leading-5 font-semibold", collapsed && "lg:hidden")}>
-                  {item.badge > 99 ? "99+" : item.badge}
-                </span>
+                <AdminNavBadge count={item.badge} collapsed={collapsed} />
                 {/* Outside what the rail hides, so the name reads the same collapsed or not. */}
                 {item.badgeLabel ? <span className="sr-only">, {item.badgeLabel}</span> : null}
               </>

@@ -28,7 +28,7 @@ const unread = {
 
 describe("the panel's bell", () => {
   it("counts the unread messages and the orders nobody accepted yet", () => {
-    expect(notificationCountOf({ messages: 3, conversations: 2 }, received)).toBe(5)
+    expect(notificationCountOf(3, received)).toBe(5)
     expect(notificationCountOf(undefined, undefined)).toBe(0)
   })
 
@@ -76,7 +76,7 @@ describe("the panel's bell", () => {
       orders: [{ number: 20, customer: { name: "Duda Reis" }, totalCents: 5990, deliveryFeeCents: 0, placedAt: "2026-09-29T12:00:00.000Z", payment: { status: "RECEIVED", expiresAt: null, paidAt: "2026-09-29T13:45:00.000Z" } }],
     } as unknown as OrderPage
 
-    expect(notificationCountOf({ messages: 3, conversations: 2 }, received, paid)).toBe(6)
+    expect(notificationCountOf(3, received, paid)).toBe(6)
     const items = notificationsOf(received, unread, { slug: "loja", locale: "pt-BR", messages: ptBR }, paid)
     // Paid at 13:45: between the order of 13:41 and the message of 13:50, though it was placed before both.
     expect(items.map((item) => item.title)).toEqual(["Mensagem no pedido nº 18", "Pedido nº 20 pago", "Novo pedido nº 21"])

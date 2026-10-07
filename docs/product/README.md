@@ -51,6 +51,8 @@ A shop window that is briefly out of date is acceptable; a shop window that is s
 
 The panel at `/admin/<slug>` is where the shopkeeper works: the catalogue, the orders as they arrive, the store's own settings, delivery rules, promotions, and what sold. It is signed in, it is used on a phone behind a counter as often as on a desk, and a new order has to become visible without the shopkeeper reloading anything.
 
+Two things in the panel's frame move by themselves, and they answer different questions. The **bell** is the general feed — news of any kind, as it arrives: today a new order, a payment approved, a customer's message. A **menu item's number** is specific to its area, and says how much is waiting there right now: "Pedidos" counts the orders **em aberto** — every order still asking something of the shop, which is every status but delivered and cancelled, whoever placed it — "Conversas" the conversations with a message nobody at the shop read, "Avaliações" the reviews written since the list was last opened. An item with nothing waiting shows no number, and the orders list's "Em aberto" filter is the same rule, so the menu's number is that list's total.
+
 ## Catalogue
 
 - A **product** belongs to a store. It has a name, a description, a price and images.

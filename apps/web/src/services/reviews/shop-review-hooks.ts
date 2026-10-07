@@ -4,32 +4,27 @@
 import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from "@tanstack/react-query"
 
 // Types
-import type { MarkReviewsSeenPayload, StoreReview, StoreReviewListQuery, StoreReviewPage, StoreReviewsUnseen } from "@harness-monorepo/contracts"
+import type { MarkReviewsSeenPayload, StoreReview, StoreReviewListQuery, StoreReviewPage } from "@harness-monorepo/contracts"
 
 // App
+import { panelCountsKeys } from "../panel/panel-counts-keys"
 import { shopReviewKeys } from "./shop-review-keys"
-import { fetchShopReviews, fetchShopReviewsUnseen, markShopReviewsSeen, setShopReviewVisibility } from "./shop-review-requests"
-
-/** No event tells the panel a review arrived: the menu's count is read again every minute, and on coming back to the tab. */
-const UNSEEN_EVERY_MS = 60_000
+import { fetchShopReviews, markShopReviewsSeen, setShopReviewVisibility } from "./shop-review-requests"
 
 export function useShopReviews(slug: string, query: StoreReviewListQuery): UseQueryResult<StoreReviewPage> {
   return useQuery({ queryKey: shopReviewKeys.list(slug, query), queryFn: () => fetchShopReviews(slug, query), placeholderData: (previous) => previous })
 }
 
-export function useShopReviewsUnseen(slug: string, enabled: boolean): UseQueryResult<StoreReviewsUnseen> {
-  return useQuery({ queryKey: shopReviewKeys.unseen(slug), queryFn: () => fetchShopReviewsUnseen(slug), enabled, refetchInterval: UNSEEN_EVERY_MS })
-}
-
 /**
- * The owner saw the list up to its newest review; the menu's count is read again. Invalidated, not
- * set to nothing: a read of it already in flight began before the mark, and would land over a zero.
+ * The owner saw the list up to its newest review; the menu's count — one of the panel's counts
+ * (BEELINK-309) — is read again. Invalidated, not set to nothing: a read of it already in flight
+ * began before the mark, and would land over a zero.
  */
 export function useMarkShopReviewsSeen(slug: string): UseMutationResult<void, Error, MarkReviewsSeenPayload> {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (payload: MarkReviewsSeenPayload) => markShopReviewsSeen(slug, payload),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: shopReviewKeys.unseen(slug) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: panelCountsKeys.shop(slug) }),
   })
 }
 

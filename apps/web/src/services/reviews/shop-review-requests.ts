@@ -1,5 +1,5 @@
 // Types
-import type { MarkReviewsSeenPayload, SetReviewVisibilityPayload, StoreReview, StoreReviewListQuery, StoreReviewPage, StoreReviewsUnseen } from "@harness-monorepo/contracts"
+import type { MarkReviewsSeenPayload, SetReviewVisibilityPayload, StoreReview, StoreReviewListQuery, StoreReviewPage } from "@harness-monorepo/contracts"
 
 /** What a failed call carries: the API's stable code, never a sentence (apps/web/AGENTS.md, rule 9). */
 export class ShopReviewError extends Error {
@@ -28,10 +28,6 @@ const base = (slug: string) => `/api/stores/${encodeURIComponent(slug)}/reviews`
 export function fetchShopReviews(slug: string, query: StoreReviewListQuery = {}): Promise<StoreReviewPage> {
   const search = new URLSearchParams(Object.entries(query).flatMap(([key, value]) => (value === undefined ? [] : [[key, String(value)]])))
   return ask(`${base(slug)}${search.size ? `?${search.toString()}` : ""}`)
-}
-
-export function fetchShopReviewsUnseen(slug: string): Promise<StoreReviewsUnseen> {
-  return ask(`${base(slug)}/unseen`)
 }
 
 export function markShopReviewsSeen(slug: string, payload: MarkReviewsSeenPayload): Promise<void> {

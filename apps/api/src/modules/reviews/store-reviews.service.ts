@@ -12,6 +12,7 @@ import { ratingOf } from '../catalog/product-rating.js';
 import { StoresService } from '../stores/stores.service.js';
 import type { MarkReviewsSeenDto, PublicReviewListDto, SetReviewVisibilityDto, StoreReviewListDto } from './dto/review.dto.js';
 import { countIn, countOut, lockReview } from './review-books.js';
+import { unseenReviewsOf } from './reviews-unseen.js';
 import { reviewInclude, toPublicReview, toStoreReview } from './reviews.mapper.js';
 import { PUBLIC_REVIEWS_PAGE_SIZE, REVIEW_RATINGS, reviewError, STORE_REVIEWS_PAGE_SIZE, UUID } from './reviews.constants.js';
 
@@ -83,10 +84,7 @@ export class StoreReviewsService {
 
   /** The reviews written since the owner last opened the list: the menu's "new". */
   async unseen(storeSlug: string, userId: string): Promise<StoreReviewsUnseen> {
-    const storeId = await this.stores.ownedStoreId(storeSlug, userId);
-    const store = await this.prisma.store.findUniqueOrThrow({ where: { id: storeId }, select: { reviewsSeenAt: true } });
-    const count = await this.prisma.productReview.count({ where: { storeId, ...(store.reviewsSeenAt ? { createdAt: { gt: store.reviewsSeenAt } } : {}) } });
-    return { count } satisfies StoreReviewsUnseen;
+    return { count: await unseenReviewsOf(this.prisma, await this.stores.ownedStoreId(storeSlug, userId)) } satisfies StoreReviewsUnseen;
   }
 
   /**

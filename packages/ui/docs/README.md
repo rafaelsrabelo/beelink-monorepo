@@ -35,6 +35,7 @@ Every block takes its data, its callbacks and its links through props, which is 
 | `blocks/auth/auth-photos` | `photos`, `label`, `position`, `pace` — the photos as a carousel that passes by itself: no arrows, a dot for each; still under a pointer, with the focus inside, and under reduced motion | Blocos/Autenticação/Fotos |
 | `blocks/auth/auth-link` | `href`, plus whatever a primitive injects | Blocos/Autenticação/Link injetado |
 | `blocks/dashboard/app-sidebar` | `user`, `onSignOut`, `navMain`, `activeHref` | Blocos/Painel/Barra lateral |
+| `blocks/admin/admin-nav-badge` | `count`, `collapsed` — the number beside an item of the panel's menu (`AdminSidebar` draws it from an item's `badge`; `badgeLabel` is the count in words, appended to the item's accessible name). Nothing at zero; the number to 99, then "99+"; a fixed box with tabular digits, so it never changes the row; on the icon's corner in the collapsed rail; `aria-hidden` and no live region | Blocos/Admin/Selo do menu · Blocos/Admin/Barra lateral (Com contagens) |
 | `blocks/dashboard/nav-main` | `items`, `activeHref`, `linkComponent` | Blocos/Painel/Navegação principal |
 | `blocks/dashboard/nav-secondary` | `items`, `linkComponent` | Blocos/Painel/Navegação secundária |
 | `blocks/dashboard/nav-user` | `user`, `onSignOut`, `signingOut` | Blocos/Painel/Conta |

@@ -20,6 +20,7 @@ import { IntegrationsModule } from './modules/integrations/integrations.module.j
 import { LeadsModule } from './modules/leads/leads.module.js';
 import { ConversationsModule } from './modules/conversations/conversations.module.js';
 import { OrdersModule } from './modules/orders/orders.module.js';
+import { PanelCountsModule } from './modules/panel-counts/panel-counts.module.js';
 import { PromotionsModule } from './modules/promotions/promotions.module.js';
 import { CarrierTrackingModule } from './modules/carrier-tracking/carrier-tracking.module.js';
 import { CashbackModule } from './modules/cashback/cashback.module.js';
@@ -62,6 +63,7 @@ import { PrismaModule } from './shared/prisma/prisma.module.js';
     ConversationsModule,
     RealtimeModule,
     ReviewsModule,
+    PanelCountsModule,
     PromotionsModule,
     CashbackModule,
     DeliveryModule,

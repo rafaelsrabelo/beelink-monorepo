@@ -33,6 +33,7 @@ import type {
   OrderPaymentFilter,
   OrderShippingChoice,
   OrderStatus,
+  OrderStatusFilter,
   PaymentMethod,
   UpdateOrderStatusPayload,
 } from '@harness-monorepo/contracts';
@@ -51,6 +52,7 @@ import {
   ORDER_ITEMS_MAX,
   ORDER_NOTE_MAX_LENGTH,
   ORDER_QUANTITY_MAX,
+  ORDER_STATUS_FILTERS,
   ORDER_STATUSES,
   ORDERS_PAGE_MAX,
   ORDERS_PAGE_SIZE,
@@ -218,11 +220,11 @@ export class UpdateOrderStatusDto implements UpdateOrderStatusPayload {
 
 /** How the panel asks for a page. Absent means all, so a bare `GET` is the first page of everything. */
 export class ListOrdersDto implements OrderListQuery {
-  @ApiPropertyOptional({ enum: ORDER_STATUSES })
+  @ApiPropertyOptional({ enum: ORDER_STATUS_FILTERS, description: 'One status, or OPEN: every order still asking something of the shop — the ones the panel menu counts (BEELINK-309).' })
   @IsOptional()
   @blankToNull
-  @IsIn(ORDER_STATUSES)
-  status?: OrderStatus;
+  @IsIn(ORDER_STATUS_FILTERS)
+  status?: OrderStatusFilter;
 
   @ApiPropertyOptional({
     enum: ORDER_PAYMENT_FILTERS,

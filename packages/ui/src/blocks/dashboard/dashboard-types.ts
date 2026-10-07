@@ -30,7 +30,11 @@ export interface DashboardNavItem {
    * the item is disabled.
    */
   disabled?: boolean
-  /** What waits there — unread conversations — drawn beside the title; hidden when the rail is icons only. */
+  /**
+   * What waits in the item's area — open orders, unread conversations — drawn beside the title, and
+   * on the icon's corner when the rail is icons only. Absent or zero draws nothing: an item whose
+   * count is not known yet has no badge, rather than a "0" that may be untrue.
+   */
   badge?: number
   /** The badge said in words, for the item's accessible name: a number alone says nothing. */
   badgeLabel?: string

@@ -2036,6 +2036,11 @@ export interface UiMessages {
     searchPlaceholder: string
     filterLabel: string
     all: string
+    /** The filter that holds every order still open — the ones the menu counts (BEELINK-309). */
+    openFilter: string
+    /** The menu's count, said in words after "Pedidos"; `{count}`. */
+    navOpen: string
+    navOpenOne: string
     /** The list's second filter, by where the money stands (BEELINK-207). */
     paymentFilterLabel: string
     paymentFilters: Record<"ALL" | "PAID" | "PENDING" | "STRAY" | "REFUNDED", string>
