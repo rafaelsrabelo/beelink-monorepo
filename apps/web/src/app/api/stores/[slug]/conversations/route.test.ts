@@ -4,7 +4,6 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 
 // App
 import { GET } from "./route"
-import { GET as unread } from "./unread/route"
 
 function request(path: string) {
   return new NextRequest(`http://localhost:3000${path}`, {
@@ -26,13 +25,5 @@ describe("the shop's conversations, for the panel", () => {
     expect(response.status).toBe(200)
     expect(String(fetched.mock.calls[0]?.[0])).toContain("/stores/loja/conversations?filter=UNREAD")
     expect(new Headers(fetched.mock.calls[0]?.[1]?.headers).get("authorization")).toBe("Bearer owner-access")
-  })
-
-  it("counts the unread for the bell", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ messages: 3, conversations: 2 })))
-
-    const response = await unread(request("/api/stores/loja/conversations/unread"), { params: Promise.resolve({ slug: "loja" }) })
-
-    expect(await response.json()).toEqual({ messages: 3, conversations: 2 })
   })
 })

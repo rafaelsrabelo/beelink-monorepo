@@ -4,13 +4,13 @@
 import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from "@tanstack/react-query"
 
 // Types
-import type { ShopConversation, ShopConversationPage, ShopConversationQuery, ShopConversationUnread } from "@harness-monorepo/contracts"
+import type { ShopConversation, ShopConversationPage, ShopConversationQuery } from "@harness-monorepo/contracts"
 
 // App
 import { REALTIME_URL } from "@/lib/realtime-config"
 import { panelCountsKeys } from "../panel/panel-counts-keys"
 import { conversationKeys } from "./conversation-keys"
-import { fetchShopConversation, fetchShopConversations, fetchShopUnread, markShopConversationRead, sendShopMessage } from "./shop-conversation-requests"
+import { fetchShopConversation, fetchShopConversations, markShopConversationRead, sendShopMessage } from "./shop-conversation-requests"
 
 /** The channel reads these again at every event; without it, every half minute instead. */
 const refetchInterval = REALTIME_URL ? false : 30_000
@@ -22,10 +22,6 @@ export function useShopConversations(slug: string, query: ShopConversationQuery 
     enabled,
     refetchInterval,
   })
-}
-
-export function useShopUnread(slug: string, enabled = true): UseQueryResult<ShopConversationUnread> {
-  return useQuery({ queryKey: conversationKeys.shopUnread(slug), queryFn: () => fetchShopUnread(slug), enabled, refetchInterval })
 }
 
 export function useShopConversation(slug: string, number: number | null): UseQueryResult<ShopConversation> {
@@ -51,7 +47,6 @@ function useSettleShopConversation(slug: string) {
       // Read again behind it: a message that came in while the answer went is in no reply but this.
       queryClient.invalidateQueries({ queryKey }),
       queryClient.invalidateQueries({ queryKey: [...conversationKeys.shop(slug), "list"] }),
-      queryClient.invalidateQueries({ queryKey: conversationKeys.shopUnread(slug) }),
       // The menu's and the bell's unread come from the panel's counts (BEELINK-309).
       queryClient.invalidateQueries({ queryKey: panelCountsKeys.shop(slug) }),
     ])
