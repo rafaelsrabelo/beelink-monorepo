@@ -19,7 +19,7 @@ describe("the pop-up cookie", () => {
     expect(popupCookieOf("loja-a", "CUSTOMER", 3, true)).not.toMatch(/httponly/i)
   })
 
-  // The published privacy policy: "guarda só o número da versão do aviso, e nada sobre você".
+  // The published privacy policy: "guarda só um número que identifica o aviso fechado, e nada sobre você".
   it("holds one whole number — a notice's version — and nothing about the person, for either notice", () => {
     for (const notice of ["VISITOR", "CUSTOMER"] as const) {
       const [pair, ...attributes] = popupCookieOf("loja", notice, 7, false).split("; ")
@@ -66,7 +66,7 @@ describe("the pop-up cookie", () => {
     const line = JSON.stringify(legalTexts.privacy).split('","').find((item) => item.startsWith(`${POPUP_COOKIE}: `))
 
     expect(line).toContain(`dura ${POPUP_MAX_AGE_SECONDS / 86_400} dias`)
-    expect(line).toContain("guarda só o número da versão do aviso, e nada sobre você")
+    expect(line).toContain("guarda só um número que identifica o aviso fechado, e nada sobre você")
     expect(line).toContain("vale só para aquela loja")
   })
 })
