@@ -32,6 +32,14 @@ src/
 │   ├── integrations/           # a shop's own accounts at Melhor Envio and Asaas: the sealed vault; Melhor Envio's OAuth flow and renewal routine; `asaas/` — the pasted key, checked and sealed, the shop's webhook, how the shop is paid through it, and its charges by the shop's id (`AsaasCharges`, the one place the key is opened to charge, which also remembers a 429 until the time Asaas named); whose webhook a request is (`AsaasWebhookDoor`) and the daily look that keeps a shop's webhook sending and its key in use (`AsaasWebhookKeeper`); `meta-pixel/` — the shop's Meta Pixel by its ID (BEELINK-269), digits only, public and so never sealed, served in the shop's public data; and its Conversions API token (BEELINK-274), sealed and opened there alone: `owePurchase` writes the purchase an order owes Meta, `MetaPurchases` sends it on its own clock through `MetaConversionsClient` (a port, bound to Meta over HTTP), and `meta-purchase-event.ts` builds the very event the browser tells
 │   ├── payments/               # an order charged online at the shop's own Asaas account: the claim that lets one request at a time talk to Asaas, the charge found again by the order's id before any is made, the status map, the due days and Asaas's least amounts — no key in sight (`integrations/asaas/` opens it); `PaymentSync`, the one way a payment is learned of: the order's charges listed at the shop's account and written by `applyCharge`, whoever asked — and money the order did not ask for kept as a stray payment; the news of a payment approved (BEELINK-207), owed once an order where the payment is written — its e-mail outbox (`OrderPaidMailer`), the line in the conversation, what the bell reads — and the list's filter by where the money stands; `OrderRefunds` (BEELINK-208), the one talk with Asaas about a refund — claimed under the shop's lock, asked once, read after a silence — with `order_refunds` as bee-link's own record of each, reconciled from Asaas's sums by `applyCharge` and the source of what `order_payments` says of money given back, and the refund's e-mail outbox (`OrderRefundMailer`)
 │   ├── payment-events/         # what Asaas tells of a payment, and what the clock does about one (BEELINK-206): the shop's webhook — each event written once, answered, then worked with retries — the reconciliation of waiting charges, the cancellation of an order nobody paid, and the one routine that runs them every minute. The only module that knows payments and orders both
+│   ├── backoffice/             # bee-link's own team administering the platform (BEELINK-226) — a third door, beside the panel's and a shop's
+│   │   ├── backoffice.decorators.ts  # @BackofficeController · @Audited · @Unaudited · @CurrentAdmin · @Trail
+│   │   ├── backoffice.guard.ts       # this door's token, a live two-step session, an administrator still — read on every request
+│   │   ├── backoffice.constants.ts   # 10-minute token · 30 minutes idle · 8 hours · the code's rules
+│   │   ├── auth/                     # sign-in in two steps (password, then an e-mailed code) · the session · /me
+│   │   ├── admins/                   # platform_admins: list, grant, revoke — and the command that makes the first
+│   │   ├── audit/                    # backoffice_audit_log: the one writer, the trail a request records through, the read
+│   │   └── backoffice-routes.spec.ts # walks every controller: guard, interceptor, @Audited on every write
 │   └── users/                  # GET /users/me
 └── shared/
     ├── config/env.ts           # the only reader of process.env
@@ -42,9 +50,11 @@ src/
 prisma/schema/                  # one *.prisma per domain — a new domain adds a file, never edits one
 ├── base.prisma                 # generator · datasource — the one pair Prisma allows
 ├── auth.prisma                 # users · sessions · refresh_tokens · email_tokens
+├── backoffice.prisma           # platform_admins · backoffice_sign_in_challenges · backoffice_sessions · backoffice_refresh_tokens · backoffice_audit_log
 └── store.prisma                # store_categories · stores, and the three enums they close over
 prisma/seed/                    # platform data, re-runnable — `migrations.seed` in prisma.config.ts
 └── store-categories.sql        # upserts the taxonomy on slug; `pnpm --filter api db:seed`
+src/commands/                   # run with node from dist/, where the API runs — grant-platform-admin.js (docs/repo/deploy.md)
 test/                           # e2e against real Postgres and Mailpit
 ```
 
@@ -138,12 +148,21 @@ Every route needs `Authorization: Bearer <access token>` unless it is marked pub
 | `GET` · `PUT` | `/api/stores/:slug/delivery` | no | pickup, the shop's own delivery by distance bands (the last band is the radius), free above, carriers — the defaults until first saved | `200 DeliverySettings` · `400 DELIVERY_SETTINGS_INVALID` |
 | `POST` | `/api/stores/:slug/delivery/quote` | no | the panel's quote for a sale it registers: drafts included | `200 ShippingQuote` · `400 SHIPPING_DESTINATION_INVALID` · `403 STORE_FORBIDDEN` |
 | `POST` | `/api/stores/:slug/shipping/quote` | yes | the shop window's ways to get a cart to an address — own delivery by straight-line distance to the geocoded address (MapTiler, else Nominatim; remembered by CEP and number), the carriers of the shop's Melhor Envio (its token, its services, its days to post; remembered ten minutes per cart; left out, never failing, when Melhor Envio does not answer in 4 s), then pickup | `200 ShippingQuote` · `400 SHIPPING_DESTINATION_INVALID` · `400 ORDER_VARIANT_INVALID` · `404 STORE_NOT_FOUND` · `429` |
+| `POST` | `/api/backoffice/auth/sign-in` | yes — rate-limited per IP | (BEELINK-227) step one of the backoffice's sign-in: `{ email, password }` of a platform administrator's own account. A code — six digits, 10 minutes, single use, 5 attempts, kept only as an HMAC — is e-mailed, at most 5 an account in 15 minutes. A wrong password, an unknown or unverified e-mail and an account that is no administrator are refused alike | `200 BackofficeSignInChallenge` · `401 BACKOFFICE_INVALID_CREDENTIALS` · `429 RATE_LIMITED` |
+| `POST` | `/api/backoffice/auth/verify` | yes — rate-limited per IP | step two: `{ challengeToken, code }`. Opens a backoffice session — its own tables and token kind, never the panel's: a 10-minute access token, a rotating refresh token, over after 30 minutes idle or 8 hours | `200 BackofficeSession` · `401 BACKOFFICE_CODE_INVALID` (wrong, expired, spent or out of attempts) |
+| `POST` | `/api/backoffice/auth/refresh` | yes | rotates the refresh token, never past the session's end; a spent one presented later ends the session | `200 BackofficeSession` · `401 BACKOFFICE_SESSION_INVALID` · `401 BACKOFFICE_REFRESH_REUSED` |
+| `POST` | `/api/backoffice/auth/sign-out` | no — a backoffice token | ends this backoffice session | `204` · `401 BACKOFFICE_UNAUTHENTICATED` |
+| `GET` | `/api/backoffice/me` | no — a backoffice token | the signed-in administrator and when the session ends | `200 BackofficeMe` |
+| `GET` · `POST` · `DELETE` | `/api/backoffice/admins` · `/api/backoffice/admins/:userId` | no — a backoffice token | the platform administrators: list; grant to `{ email }` of a verified bee-link account; revoke, which ends the account's backoffice sessions — never the last one | `200 BackofficeAdmin[]` · `201 BackofficeAdmin` · `204` · `404 BACKOFFICE_USER_NOT_FOUND` · `409 BACKOFFICE_USER_NOT_VERIFIED` · `409 BACKOFFICE_ADMIN_ALREADY` · `404 BACKOFFICE_ADMIN_NOT_FOUND` · `409 BACKOFFICE_LAST_ADMIN` |
+| `GET` | `/api/backoffice/audit` | no — a backoffice token | one page of the audit record, newest first: `?actorId=&actorKind=&action=&from=&to=&page=&pageSize=` (50 a page, 100 at most; `from` inclusive, `to` exclusive). Read-only: the record has no other verb | `200 BackofficeAuditPage` |
 
 `GET /api/stores/mine` is declared above `GET /api/stores/:slug`: Nest matches in declaration order, and `mine` is on the reserved-slug list so no shop can occupy it either.
 
 Ownership is explicit code, not a database policy: `StoresService.assertOwnership()` is the single gate every owner-facing read and every write passes through. A shop owned by somebody else answers **403**, not 404 — `/<slug>` is a public storefront, so its existence leaks nothing.
 
 Rate limited per IP, all answering `429 RATE_LIMITED`: register, login, forgot-password and resend-verification; `POST /api/stores` and `PUT /api/stores/:slug`, because each can drive an outbound geocoding call this API waits up to four seconds on; and `GET /api/stores/:slug/public`, generously — every browser reaches it through the web app's server, so the limit sees one address for the whole storefront. The key is the address only because `TRUST_PROXY` lets the web app forward it: the plugin runs in Fastify's `onRequest`, before `JwtAuthGuard` has decoded the token, so there is no owner to key on.
+
+The backoffice (`/api/backoffice/*`, BEELINK-227) is a third door. Its routes are `@Public()` to the global guard and stand behind `BackofficeGuard` instead, which takes only a token of kind `backoffice` and reads the session and the role on every request: a shopkeeper's or a shopper's token is `401 BACKOFFICE_UNAUTHENTICATED` there, and a backoffice token is `401 AUTH_UNAUTHENTICATED` everywhere else. Every write behind it leaves a line in `backoffice_audit_log` — who, what, on what, when, from where — and so does every sign-in, refused or not; a refused one never keeps the e-mail typed. Replacing an account's password ends its backoffice sessions with its panel ones.
 
 Nothing caps how many shops one owner may open. The rate limit bounds the rate, not the total.
 

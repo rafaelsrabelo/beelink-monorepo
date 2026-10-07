@@ -75,6 +75,30 @@ bee-link has **no app** at Meta either: each shop gives its own pixel's ID (BEEL
 - **A shop's token is a secret.** It is sealed with the key, never returned, and never written to a log: it travels in request bodies alone, which neither the API nor the web logs. Keep request bodies out of any access log in front of the web.
 - **What was sent, and what was not, is in the database:** `SELECT "outcome", "lastError", "processedAt" FROM order_meta_purchases WHERE "orderId" = …` — `SENT`, `SKIPPED` (no token then, the buyer's consent gone, the order cancelled) or `GIVEN_UP` (Meta's own words, or too old). No row is an order that owed nothing: no consent kept, or registered in the panel.
 
+## The first platform administrator
+
+The backoffice (BEELINK-226) is opened by platform administrators only, and an administrator is made by another one. The first is made by a command, run **inside the `api` container**, where the API's environment already is:
+
+```bash
+node dist/commands/grant-platform-admin.js <e-mail>
+```
+
+From the server, over SSH — the container's name carries the stack's, so with production and homologation both up, pick the right one:
+
+```bash
+docker ps --filter label=com.docker.compose.service=api --format '{{.Names}}'
+docker exec -it <that name> node dist/commands/grant-platform-admin.js <e-mail>
+```
+
+Dokploy's own terminal on the `api` container runs the same first line. The `migrate` container cannot: it has exited, and it is the `build` stage, not the image that runs.
+
+- **The account exists first.** The e-mail is of a bee-link account — a shopkeeper's, created at `/signup` — whose e-mail is **verified**. An unknown e-mail, an unverified one and a shop's customer are refused, exit code 1, and nothing is written.
+- **Safe to repeat.** Run again for an administrator, it says so, changes nothing and exits 0.
+- **It is recorded.** The grant is a line of `backoffice_audit_log` with the actor `COMMAND`: `SELECT "createdAt", "action", "targetLabel" FROM backoffice_audit_log WHERE "actorKind" = 'COMMAND'`.
+- **Everybody after the first** is granted from the backoffice, by an administrator. The backoffice refuses to revoke the last administrator, and nothing in the product deletes a bee-link account; the command stays the way back in should the last one be locked out of their e-mail, since any other verified account can be given the role with it.
+- **Signing in to the backoffice sends a code by e-mail**, so it needs the same working `SMTP_URL` everything else does. Nothing else is configured: the session's lifetimes are constants (`apps/api/src/modules/backoffice/backoffice.constants.ts`), and no variable was added.
+- **The audit record's address is the client's only if the web forwards it.** `TRUST_PROXY` is what makes `x-forwarded-for` believed; without it every line says the web container's address.
+
 ## Homologation
 
 A second Compose service in Dokploy, on the branch `homolog`, from the same file. It is a stack of its own, and **none of its Environment is copied from production**: a value pasted across is how one of the two stops working.
