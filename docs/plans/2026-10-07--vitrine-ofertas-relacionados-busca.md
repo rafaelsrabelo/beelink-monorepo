@@ -80,3 +80,33 @@ Causa, no código (`packages/ui/src/blocks/storefront/storefront-search-combobox
 - A página de resultados e a API de busca: o defeito não estava lá.
 - Textos legais: nenhum cookie novo, nada a mudar neles.
 - A "Buscando…" escrita dentro da lista de sugestões continua como está.
+
+## Acréscimo (07/10/2026, tarde): como ficou
+
+**Contrato e rotas.** `Coupon.shownInStore` / `CouponPayload.shownInStore` (migração `20261007155224_coupon_shown_in_store`, coluna `false` por omissão). `GET /stores/:slug/offers` → `StorefrontOffers`; `POST /stores/:slug/customer/offers` → `CustomerOffers`, com o BFF em `/<slug>/api/offers`. As formas estão em `packages/contracts/src/offers.ts`.
+
+**O que mudou em relação ao plano.**
+
+- O destaque público tem uma tag própria, `offers:<slug>`, além da tag da loja: salvar um cupom derruba só ele (`revalidateOffers`), e não o catálogo inteiro. Um pedido do cliente que levou cupom também derruba (pode ter sido o último uso).
+- A lista do carrinho vem servida com a página (`servedOffersAt`) e é perguntada de novo quando o carrinho muda: não há skeleton.
+- A lista de sugestões também fecha quando o campo é esvaziado: no Chrome, Escape limpa um campo de busca, e as sugestões do termo apagado reabriam por um instante (visto no navegador).
+- A lista de sugestões virou bloco próprio (`storefront-search-suggestions`), para o combobox ficar abaixo de 250 linhas.
+
+**Cobertura da Definição de Pronto** (arquivo → o que prova):
+
+1. `apps/api/test/shop-offers.e2e-spec.ts` › "the switch…"; `packages/ui/.../promotions/coupons.test.tsx` › "asks whether the shop may show the coupon…"; `apps/web/.../coupon-editor-screen.test.tsx` › "Mostrar este cupom na loja".
+2. `shop-offers.e2e-spec.ts` › "the headline anyone reads" (7 casos); `apps/web/src/lib/storefront-data.test.ts` › "offersAt"; `promotions/route.test.ts` (os handlers de cupom derrubam `offers:<slug>`).
+3. `shop-offers.e2e-spec.ts` › "a shopper's own offers" e "the coupons a cart may take"; `apps/web/src/app/[slug]/api/offers/route.test.ts`.
+4. `shop-offers.e2e-spec.ts` › "show no first-order benefit once an order stands, and show it again once none does", "count an order the shop registered for them".
+5. `shop-offers.e2e-spec.ts` › "agree with the quote about every shown coupon, on a pick-up and on a delivery"; `coupon-verdict.spec.ts` › "couponStandingRefusalOf".
+6–8. `apps/web/src/lib/offer-strip.test.ts`; `apps/web/.../storefront-offers.test.tsx`; `packages/ui/.../storefront-offer-strip.test.tsx`; `storefront-window.test.tsx` › "the notice under the header".
+9. `storefront-offers.test.tsx` › "closing it".
+10. `apps/web/.../storefront-cart-live.test.tsx` › "the cart's available coupons"; `packages/ui/.../storefront-cart-coupons.test.tsx`.
+11. `packages/ui/src/locales/locales.test.ts`; stories de cada bloco novo.
+12–13. `packages/ui/.../storefront-card-cart-button.test.tsx` › "as a compact card's round +"; `storefront-related-rail.test.tsx` › "with the shop's action on each card"; `apps/web/.../storefront-related.test.tsx` › "adding to the cart from the rail".
+14–16. `packages/ui/.../storefront-masthead.test.tsx`; `storefront-search-combobox.test.tsx`; `storefront-search.test.tsx`; `storefront-search-suggestions.test.tsx`.
+17. `pnpm ci-check` verde; e2e completo da API verde em `harness_offers_test` (79 arquivos, 1018 testes).
+
+**No navegador** (Chromium sem tela, 1280 e 390 px, web :4100 e API :4101, banco `harness_offers`): visitante com benefício ("Crie sua conta e ganhe 10% de desconto no primeiro pedido. Em compras a partir de R$ 30,00."), sem benefício (convite simples) e em loja com promoção (15%); nenhum código no HTML do visitante; nenhuma faixa em carrinho, entrar e conta; cliente sem pedido vê o cupom PRIMEIRA10 e "Usar no carrinho" cai em `/carrinho?cupom=PRIMEIRA10` com o cupom aplicado; cliente com pedido não vê faixa nem o cupom de primeira compra; cupons ocultos não aparecem em HTML nenhum; "Aplicar" em DEZ aplica e marca; abaixo do mínimo diz "Faltam R$ 450,10"; o "+" do trilho tem 44 × 44 px, fica dentro da foto, não muda a altura do cartão e soma no carrinho; com categoria de 60 caracteres a busca tem 480 px e o select 160 px a 1280, sem rolagem lateral; digitar + Enter leva a `/busca?categoria=…&q=creatina` e a lista não reabre; Enter com o ponteiro numa sugestão busca; clicar fora fecha. Com a faixa de cookies (loja com pixel), a ordem no celular é cookies, topo, faixa de oferta. A barra de compra fixa do celular fica embaixo e a faixa, no fluxo, em cima.
+
+**Não visto no navegador:** produto com opções no trilho ("Ver opções") — a carga de teste não tinha um; está coberto por teste.
