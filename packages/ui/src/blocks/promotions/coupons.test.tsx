@@ -47,6 +47,14 @@ describe("CouponList", () => {
     for (const button of screen.getAllByRole("button")) expect(button).toBeDisabled()
   })
 
+  it("marks the coupons the shop window shows, and no other", () => {
+    render(<CouponList rows={couponRows} empty="none" onEdit={() => {}} onToggle={() => {}} onUses={() => {}} />)
+
+    const marked = screen.getAllByText("Na loja")
+    expect(marked).toHaveLength(couponRows.filter((row) => row.shownInStore).length)
+    expect(marked[0]!.closest("li")).toHaveTextContent("BEMVINDO10")
+  })
+
   it("says why it is empty, and has no accessibility violations", async () => {
     const { rerender, container } = render(<CouponList rows={[]} empty="none" onEdit={() => {}} onToggle={() => {}} onUses={() => {}} />)
     expect(screen.getByText("Nenhum cupom ainda.")).toBeInTheDocument()
@@ -90,6 +98,23 @@ describe("CouponForm", () => {
 
     rerender(<CouponForm value={{ ...couponValues, audience: "FIRST_PURCHASE" }} onChange={onChange} onSubmit={() => {}} onCancel={() => {}} />)
     expect(screen.getByRole("button", { name: "Só na primeira compra" })).toHaveAccessibleDescription("Vale para quem ainda não tem nenhum pedido na loja. Pedido cancelado não conta.")
+    await expectNoA11yViolations(container)
+  })
+
+  /** A code is private unless its owner says otherwise: the switch is the saying, and it starts off. */
+  it("asks whether the shop may show the coupon, off until switched on, and says what that does", async () => {
+    const onChange = vi.fn()
+    const { container, rerender } = render(<CouponForm value={couponValues} onChange={onChange} onSubmit={() => {}} onCancel={() => {}} />)
+
+    const shown = screen.getByRole("switch", { name: "Mostrar este cupom na loja" })
+    expect(shown).not.toBeChecked()
+    expect(shown).toHaveAccessibleDescription("Clientes com conta veem o código na vitrine e no carrinho quando podem usá-lo. Desligado, só usa quem recebeu o código.")
+
+    await userEvent.click(shown)
+    expect(onChange).toHaveBeenLastCalledWith({ ...couponValues, shownInStore: true })
+
+    rerender(<CouponForm value={{ ...couponValues, shownInStore: true }} onChange={onChange} onSubmit={() => {}} onCancel={() => {}} />)
+    expect(screen.getByRole("switch", { name: "Mostrar este cupom na loja" })).toBeChecked()
     await expectNoA11yViolations(container)
   })
 

@@ -2431,6 +2431,11 @@ export interface UiMessages {
       maxUsesHelp: string
       maxUsesPerCustomerLabel: string
       maxUsesPerCustomerHelp: string
+      /** The switch that lets the shop window say the code to a customer it is for. */
+      shownInStoreLabel: string
+      shownInStoreHelp: string
+      /** On the list, beside a coupon the shop window shows. */
+      shownBadge: string
       /** `{amount}`. */
       minimum: string
       usesNone: string

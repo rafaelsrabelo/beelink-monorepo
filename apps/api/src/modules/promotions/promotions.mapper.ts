@@ -52,6 +52,7 @@ export function toCoupon(row: CouponModel, now: Date): Coupon {
     active: row.isActive,
     status: couponStatusOf(row, now),
     audience: row.audience,
+    shownInStore: row.shownInStore,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   } satisfies Coupon;

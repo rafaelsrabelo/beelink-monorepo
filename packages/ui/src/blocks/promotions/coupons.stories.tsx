@@ -60,6 +60,15 @@ export const FormularioPrimeiraCompra: Story = {
   ),
 }
 
+/** "Mostrar este cupom na loja" ligado: a vitrine e o carrinho dizem o código a quem pode usá-lo. */
+export const FormularioMostradoNaLoja: Story = {
+  render: () => (
+    <div className="max-w-2xl">
+      <CouponForm value={{ ...couponValues, shownInStore: true }} onChange={() => {}} onSubmit={() => {}} onCancel={() => {}} />
+    </div>
+  ),
+}
+
 /** Os usos: um pedido cancelado fica na lista, marcado. */
 export const Usos: Story = { render: () => <div className="max-w-2xl"><CouponRedemptions rows={redemptionRows} /></div> }
 

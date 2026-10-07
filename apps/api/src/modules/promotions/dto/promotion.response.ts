@@ -78,6 +78,7 @@ export class CouponResponse implements Coupon {
   @ApiProperty() active!: boolean;
   @ApiProperty({ enum: COUPON_STATUSES, description: 'Read from the clock when answered.' }) status!: CouponStatus;
   @ApiProperty({ enum: DISCOUNT_AUDIENCES, description: 'Who may use it: FIRST_PURCHASE is a customer with no order at the shop that stands.' }) audience!: DiscountAudience;
+  @ApiProperty({ description: 'Whether the shop window may say this code to a customer it is for.' }) shownInStore!: boolean;
   @ApiProperty({ format: 'date-time' }) createdAt!: string;
   @ApiProperty({ format: 'date-time' }) updatedAt!: string;
 }

@@ -104,12 +104,12 @@ describe("a percentage", () => {
 
 describe("a coupon's form", () => {
   it("starts as a percentage for everyone, with no minimum and no limits", () => {
-    expect(emptyCoupon(NOW)).toMatchObject({ kind: "PERCENT", audience: "EVERYONE", minSubtotal: "", maxUses: "", maxUsesPerCustomer: "" })
+    expect(emptyCoupon(NOW)).toMatchObject({ kind: "PERCENT", audience: "EVERYONE", shownInStore: false, minSubtotal: "", maxUses: "", maxUsesPerCustomer: "" })
   })
 
   it("sends the code as typed, the limits as numbers or none, and a blank minimum as zero", () => {
     expect(couponPayloadOf(coupon, text)).toEqual({
-      payload: { code: "bemvindo10", kind: "PERCENT", percentBps: 1000, amountCents: null, minSubtotalCents: 0, audience: "EVERYONE", startsAt: "2026-10-01T12:00:00.000Z", endsAt: null, maxUses: null, maxUsesPerCustomer: null },
+      payload: { code: "bemvindo10", kind: "PERCENT", percentBps: 1000, amountCents: null, minSubtotalCents: 0, audience: "EVERYONE", shownInStore: false, startsAt: "2026-10-01T12:00:00.000Z", endsAt: null, maxUses: null, maxUsesPerCustomer: null },
     })
     expect(couponPayloadOf({ ...coupon, minSubtotal: "50", maxUses: "100", maxUsesPerCustomer: " 1 " }, text)).toEqual({
       payload: expect.objectContaining({ minSubtotalCents: 5000, maxUses: 100, maxUsesPerCustomer: 1 }),
@@ -119,6 +119,12 @@ describe("a coupon's form", () => {
   /** BEELINK-245. */
   it("sends who it is for: a coupon kept for the first purchase says so", () => {
     expect(couponPayloadOf({ ...coupon, audience: "FIRST_PURCHASE" }, text)).toEqual({ payload: expect.objectContaining({ audience: "FIRST_PURCHASE" }) })
+  })
+
+  // Always sent, on or off: the API reads a switch left out as off, and a save must say which it meant.
+  it("sends whether the shop window may show it", () => {
+    expect(couponPayloadOf({ ...coupon, shownInStore: true }, text)).toEqual({ payload: expect.objectContaining({ shownInStore: true }) })
+    expect(couponPayloadOf({ ...coupon, shownInStore: false }, text)).toEqual({ payload: expect.objectContaining({ shownInStore: false }) })
   })
 
   it("sends no value for a free delivery, whatever was typed before the kind changed", () => {
@@ -157,9 +163,10 @@ describe("a coupon's form", () => {
       active: true,
       status: "ACTIVE",
       audience: "FIRST_PURCHASE",
+      shownInStore: true,
       createdAt: "2026-10-01T12:00:00.000Z",
       updatedAt: "2026-10-01T12:00:00.000Z",
     }
-    expect(couponFormOf(stored)).toEqual({ code: "BEMVINDO10", kind: "PERCENT", percent: "10", amount: "", minSubtotal: "", audience: "FIRST_PURCHASE", startsAt: "2026-10-01T09:00", endsAt: "", maxUses: "", maxUsesPerCustomer: "2" })
+    expect(couponFormOf(stored)).toEqual({ code: "BEMVINDO10", kind: "PERCENT", percent: "10", amount: "", minSubtotal: "", audience: "FIRST_PURCHASE", shownInStore: true, startsAt: "2026-10-01T09:00", endsAt: "", maxUses: "", maxUsesPerCustomer: "2" })
   })
 })

@@ -134,6 +134,11 @@ model Coupon {
   /// that stands, whatever its limits say.
   audience DiscountAudience @default(EVERYONE)
 
+  /// "Mostrar este cupom na loja": the shop window may say this code to a customer it is for. Off
+  /// unless the shopkeeper says so — a code is private by default, and some are one customer's or one
+  /// influencer's. The storefront's offers read only rows with it on; nothing else reads it.
+  shownInStore Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

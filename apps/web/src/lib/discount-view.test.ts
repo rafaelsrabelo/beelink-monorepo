@@ -47,6 +47,7 @@ const coupon: Coupon = {
   active: true,
   status: "ACTIVE",
   audience: "EVERYONE",
+  shownInStore: false,
   createdAt: "2026-10-01T12:00:00.000Z",
   updatedAt: "2026-10-01T12:00:00.000Z",
 }
@@ -117,6 +118,11 @@ describe("a coupon's row", () => {
   it("says who it is for", () => {
     expect(rowOf({}).audience).toBe("EVERYONE")
     expect(rowOf({ audience: "FIRST_PURCHASE" }).audience).toBe("FIRST_PURCHASE")
+  })
+
+  it("says whether the shop window shows it", () => {
+    expect(rowOf({}).shownInStore).toBe(false)
+    expect(rowOf({ shownInStore: true }).shownInStore).toBe(true)
   })
 
   it("writes a percentage as its reader does", () => {

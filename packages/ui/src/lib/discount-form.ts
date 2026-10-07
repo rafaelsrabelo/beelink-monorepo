@@ -46,6 +46,8 @@ export interface CouponFormValues {
   /** Reais; empty asks for none. */
   minSubtotal: string
   audience: DiscountAudienceValue
+  /** "Mostrar este cupom na loja": off, the code is only for whoever was given it. */
+  shownInStore: boolean
   startsAt: string
   endsAt: string
   /** Whole numbers, as typed; empty is no limit. */
