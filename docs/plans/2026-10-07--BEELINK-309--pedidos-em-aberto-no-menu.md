@@ -73,3 +73,52 @@ O princípio: **o sino é geral** (qualquer novidade), **cada item do menu é es
 - **Linha 13 da Definição de Pronto, "sem a chamada", estava errada.** O sino é montado para qualquer painel com endereço de loja, inclusive o de um site institucional, e já fazia ali as leituras dele (pedidos recebidos, pagos não vistos, conversas não lidas e `conversations/unread`). Como o sino passou a ler as mensagens não lidas das contagens, a chamada `panel-counts` acontece num site também — no lugar de `conversations/unread`, não a mais. O que vale para o site é: **o menu dele não tem item com número** (não tem Pedidos, Conversas nem Avaliações), e a leitura da casca fica desligada assim que as lojas são conhecidas. Desligar o sino num site é mudar o sino, e fica fora deste ticket (anotado em "não coberto" no PR).
 - **Ambiente.** O Postgres de `localhost:5432` deixou de ser o `asaas-db-1` durante o trabalho (outra pilha, de outro projeto, ocupou a porta). Os bancos `harness_meta_pixel` e `harness_meta_pixel_test` foram criados num Postgres próprio deste ticket, noutra porta, com um Mailpit próprio; os dois contêineres são removidos ao fim. Nada disso entra no repositório.
 - **Chave de texto.** `orders.open` já existia (o nome acessível do link de um pedido); o filtro ficou `orders.openFilter`.
+
+## Como ficou — 07/10/2026
+
+### Mudança em relação ao plano
+
+- As leituras antigas saíram do web por inteiro (hooks `useShopUnread` e `useShopReviewsUnseen`, as funções de requisição, as chaves e os handlers `conversations/unread` e `reviews/unseen` do BFF): nada mais as chamava. A API continua respondendo as duas rotas.
+
+### Cobertura da Definição de Pronto
+
+| # | Evidência |
+|---|---|
+| 1 | `apps/api/test/panel-counts.e2e-spec.ts` — "answers nothing waiting for a shop with nothing in it"; "is the owner's alone: no session, a stranger, a shopper and a shop that is not there are all refused". Contrato: `packages/contracts/src/panel.ts` |
+| 2 | idem — "counts an order that is %s as %i open" (os seis status); "goes up with each order placed, down as one is delivered or cancelled — by the shop or by its customer"; "counts an order the shop registered itself"; "never counts another shop's orders, messages or reviews" |
+| 3 | `apps/api/src/modules/orders/open-orders.ts` (`countOpenOrders`: um `count` em `storeId` + `status in`), índice `@@index([storeId, status])` em `prisma/schema/order.prisma`; nenhuma migração no diff |
+| 4 | `conversations/shop-unread.ts` e `reviews/reviews-unseen.ts` são chamados pelos serviços antigos e pelo novo; e2e "counts unread conversations and their messages exactly as the conversations' own count does" e "counts the reviews written since the owner last opened their list, as the reviews' own count does" |
+| 5 | e2e "is the total of the list filtered by OPEN"; `apps/web/src/components/orders/orders-screen.test.tsx` — "filters by the open orders, in the address, and asks the API for them by its own word" |
+| 6 | `apps/web/src/components/app-shell.test.tsx` — "puts each area's number on its item…"; "makes one request for the counts — the bell's too — and none to the reads it replaced"; `services/panel/panel-counts-hooks.test.tsx` — "asks once for the menu and the bell together" |
+| 7 | `services/realtime/realtime-invalidation.test.ts` — "in the panel: the menu's counts again on $type" (8 eventos) e "a payment moves no count of the menu"; `panel-counts-hooks.test.tsx` — "reads again, once, when the channel tells of $type"; e2e da API — "has an event told to the shop for every change of the open count, each after its write" |
+| 8 | `panel-counts-hooks.test.tsx` — "reads again when the window is looked at again…", "…when the network comes back", "…on a slow clock, so the number is right with the socket down"; `services/panel/panel-counts-mutations.test.tsx` (as seis mutações) |
+| 9 | `panel-counts-hooks.test.tsx` — "stops at an ended session: one refusal, no retry, no more clock — and the panel goes to sign in"; "keeps the last number through a failure that is not the session's, and recovers on the next read"; `app/api/stores/[slug]/panel-counts/route.test.ts` |
+| 10 | `packages/ui/src/blocks/admin/admin-nav-badge.test.tsx` (0, 1, 99, 100+, caixa fixa, recolhido, axe); `admin-sidebar.test.tsx` — "an item with a count (BEELINK-309)"; stories "Blocos/Admin/Selo do menu" e "Barra lateral → Com contagens / Contagens recolhido" |
+| 11 | `app-shell.test.tsx` — "draws no badge, no zero and no skeleton in the menu while the counts are on their way"; `lib/panel-menu-counts.test.ts` — "is nothing while the counts have not arrived" |
+| 12 | `apps/web/src/lib/panel-menu-counts.ts` (`PANEL_MENU_COUNTS`) + o quinto argumento de `item()` em `app-shell.tsx` |
+| 13 | `app-shell.test.tsx` — "has no counted item for an institutional site" (ver a correção acima) |
+| 14 | `docs/product/README.md` (O painel), `apps/api/docs/README.md`, `apps/web/docs/README.md`, `packages/ui/docs/README.md` |
+| 15 | `pnpm ci-check` verde; e2e completo da API: 82 arquivos, 1045 testes, verde; navegador abaixo |
+
+### No navegador (Chromium sem tela, web `:3800` em `next dev`, API `:3801`, banco próprio)
+
+Painel aberto num contexto (1280 px) e nunca recarregado; cliente em outro contexto; um terceiro contexto como "outro aparelho" da loja.
+
+1. Abrir `/orders`: a casca fez **1** `GET panel-counts` e 1 `POST realtime/ticket`; nenhum `conversations/unread`, nenhum `reviews/unseen`. "Pedidos" sem selo.
+2. Cliente faz 3 pedidos: **1 → 2 → 3**, cada um ~110 ms depois da resposta do pedido. Nome do item: "Pedidos, 3 em aberto". Altura da linha 33,5 px antes e depois; o item seguinte continua em y = 139.
+3. Pedido #1 movido do outro aparelho: Aceito **3**, Em preparo **3**, Saiu para entrega **3**, Entregue **2**.
+4. Cliente cancela o #2: **1**.
+5. Cliente escreve no pedido #3: "Conversas" **1** ("1 conversa com mensagens não lidas"); sino "Notificações (2 não lidas)" (1 mensagem + 1 pedido recebido). Abrir a conversa no painel: "Conversas" **sem selo**; "Pedidos" continua 1.
+6. `/orders?status=OPEN` lista 1 pedido; o menu diz 1.
+7. Trilho recolhido (56 px): selo "1" visível no canto do ícone (x 30–46 dentro do item 6–50).
+8. Mais 10 pedidos: **11**, mesma altura de linha, item seguinte ainda em y = 139.
+9. Painel com o caminho do socket bloqueado: aberto lendo 11; novo pedido → 6 s depois ainda **11** (o painel com socket já lia 12); `visibilitychange` → **12** em ~110 ms; outro pedido, sem tocar em nada → **13** depois de 60 s (o relógio).
+10. Celular (390 px): gaveta aberta, selo "13" dentro do item, sem rolagem lateral (390 de 390).
+
+Todas as respostas de `panel-counts` foram 200.
+
+### Não verificado
+
+- Sessão expirada de verdade no navegador (esperar 15 min ou revogar): coberto só por teste (`panel-counts-hooks.test.tsx`).
+- Build de produção do web: `next build` falhou neste computador ao baixar a fonte Figtree do Google (com e sem a caixa de areia; `curl` baixa a mesma fonte). O navegador foi rodado em `next dev`. O arquivo que pede a fonte (`shop-font.ts`) não foi tocado por este ticket.
+- Storybook não foi construído nem aberto; as stories passam no type-check e os blocos nos testes com axe.
