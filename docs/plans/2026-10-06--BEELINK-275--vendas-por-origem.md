@@ -95,3 +95,53 @@ O que o Épico P deve fazer com isso está no fim deste plano.
 - Agrupar por `utm_content`/`utm_term`; "dias entre o clique e a compra" (`originAt`).
 - O texto legal.
 - e2e de Playwright novo no CI, como no resto do épico: a página é vista uma vez no navegador e o que foi visto é contado abaixo.
+
+## 06/10, depois do código — o que mudou ao escrever
+
+- **No celular são cartões, não a tabela espremida** (a decisão 20 dizia "cartão empilhado"; a primeira versão tentou uma tabela só, e a 390 px a coluna da origem ficou com 73 px — "Venda registrad…"). Ficou como a lista de pedidos: `SalesByOriginList` desenha a tabela a partir de `@xl/main` (a largura da coluna principal do painel) e, abaixo disso, um cartão por origem (`SalesByOriginCards`), com o nome na largura toda e os três números embaixo, cada um com o seu rótulo. Os dois estão no documento; o CSS mostra um.
+- **Na tabela o nome é cortado em duas linhas com `title`; no cartão ele aparece inteiro**, quebrando em qualquer ponto: no toque não existe `title` para mostrar o resto.
+- **O seletor de período é uma lista de links** (`ReportPeriodPicker`), não botões: o período é o endereço, então cada escolha é um lugar para ir, o Voltar desfaz e o link pode ser enviado. O atual é dito por `aria-current`.
+- **Trocar de período mostra o esqueleto de novo**, e não os números do período anterior por baixo do novo rótulo (`useSalesByOrigin` não usa `placeholderData`).
+- **A API não limita o tamanho de `from`/`to` no DTO**: um texto longo cairia num 400 genérico; assim tudo o que não é um período responde `REPORT_PERIOD_INVALID`, por `reportPeriodOf`.
+- **Uma venda do painel nunca mostra rótulos**, mesmo que as colunas `utm*` dela fossem preenchidas à mão: a consulta só lê as UTMs de pedido cujo primeiro evento é do cliente.
+- **O exemplo de link** usa `siteOrigin()` (`lib/site-origin.ts`, o que as páginas já usam para endereços absolutos), não `publicOriginOf`, que precisa de um `NextRequest` e é dos handlers.
+- **Um erro de leitura** (rede, 403 de outra loja) mostra "Não foi possível carregar as vendas por origem." e "Tentar de novo". O cliente de consultas do painel tenta três vezes antes, como em toda leitura.
+- **Sem migração**: o índice da primeira metade basta.
+
+## Como cada linha da Definição de Pronto está coberta
+
+| # | Evidência |
+|---|---|
+| 1 | `apps/api/test/sales-by-origin.e2e-spec.ts` › "groups by source, medium and campaign, counts the ad clicks kept, and adds up to the totals — highest revenue first"; "answers an empty period with no line and zeros" |
+| 2 | `apps/api/src/modules/reports/sales-reports.service.ts`: um `$queryRaw` com `GROUP BY`; os totais somam as linhas agrupadas. Nenhum `findMany` de pedidos |
+| 3 | mesmo e2e › "leaves out a cancelled order, by the customer or by the shop"; "counts an order settled with the shop in every status but cancelled"; "counts an order charged online only once it is paid — on the day it was placed"; "reads a charge that is %s as %i sale, for the whole total" (oito status); "counts an order charged online with nothing to pay as it is placed, and one with no charge yet not at all"; "says nothing of a sale registered in the panel but that it is one, even were labels written on it" |
+| 4 | os mesmos testes conferem `revenueCents` contra o `totalCents` dos pedidos; a regra está em `sale-rule.ts` e na descrição do Swagger |
+| 5 | `apps/api/src/modules/reports/report-period.spec.ts` (14 testes: as duas pontas, o padrão de 30 dias em Brasília e não em UTC, o teto, cada recusa); e2e › "counts both days whole on the shop's clock: midnight in Brasília is 03:00 UTC"; "reads no period as the thirty days ending today, and says which it used"; "refuses %s" (dez consultas); "refuses a query it does not declare, and takes a whole leap year" |
+| 6 | e2e › "is the owner's alone: no token, a shopper's and another shopkeeper's are refused"; "never counts another shop's orders, whatever their campaign" |
+| 7 | `packages/contracts/src/report.ts`; `dto/sales-by-origin.dto.ts` (`implements` dos tipos do contrato); `/api/docs-json` lista a rota (conferido com a API de pé) |
+| 8 | `apps/web/src/components/reports/sales-by-origin-screen.test.tsx`; `apps/web/src/components/integrations/meta-pixel-screen.test.tsx` › "leads to the sales by origin, with or without a pixel saved"; `packages/ui/.../meta-pixel-report-link.test.tsx`; o item do menu e o redirecionamento de `/reports` foram vistos no navegador (abaixo) — não têm teste automático |
+| 9 | `apps/web/src/lib/report-period.test.ts`; tela › "reads thirty days ending today on a bare address…", "reads the period the address names, and offers the others as addresses", "reads a period it cannot mean as thirty days…" |
+| 10 | `packages/ui/src/blocks/reports/sales-by-origin-table.test.tsx`; `sales-origin-label.test.ts` › "names a campaign exactly as its order's page does"; tela › "draws the period's sales by origin with their share, the total, and the days the API answered with". A ordem é a da API (e2e do item 1) |
+| 11 | tela › "holds the table's place with a skeleton while it reads — no spinner, no table, no days"; "says a period with no sale is empty, and how an origin gets recorded…"; "says under the table how an origin gets recorded, that older orders read as direct, and that spend and ROAS stay at Meta"; `sales-by-origin-parts.test.tsx` |
+| 12 | `sales-by-origin-table.test.tsx` › "draws a campaign's name as text, never as markup, with the whole of it in the title"; `sales-by-origin-cards.test.tsx` › "draws a campaign's name as text, whole, breaking anywhere"; e2e › "hands a label back as it was written, as text"; a largura a 390 px foi medida no navegador (abaixo) |
+| 13 | `packages/ui/src/locales/{messages,pt-BR,en}.ts` (`reports.salesByOrigin`, `integrations.metaPixel.salesByOrigin`), `apps/web/src/locales/*` (`stores.nav.reports`); cada bloco tem teste com axe e story em `sales-by-origin.stories.tsx` / `meta-pixel.stories.tsx`; "speaks the language it is handed" em cada um |
+| 14 | `apps/api/docs/README.md`, `apps/web/docs/README.md`, `packages/ui/docs/README.md`, `docs/product/README.md`; `pnpm docs-gate` verde |
+| 15 | dito no PR, com o commit em que foi rodado |
+
+Web: `apps/web/src/app/api/stores/[slug]/reports/sales-by-origin/route.test.ts` (o handler: repassa a consulta e o token do dono, devolve as recusas da API como vieram, recusa outra origem, corpo que não é JSON e falta de sessão antes de chamar) e `apps/web/src/services/reports/report-hooks.test.tsx` (a chave por loja e período, o código do erro, nada sem loja).
+
+## 06/10 — o que foi visto no navegador
+
+A página foi aberta de verdade (`next dev` na 3800, a API compilada na 3801, banco `harness_meta_pixel`) e percorrida por um Chromium sem janela do Playwright, a 1280 px e a 390 px, com **toda requisição a `facebook.com` e `connect.facebook.net` abortada** (nenhuma foi tentada). Duas lojas e dois lojistas novos foram criados pela API para isso — `loja-relatorio` (11 pedidos) e `loja-relatorio-vazia` (nenhum) — e ficaram no banco; os servidores foram parados depois.
+
+- **Com dados** (`loja-relatorio`): três pedidos de `facebook / cpc / Black Friday 2026` (dois com clique guardado), um de `instagram / social / bio`, um só com clique de anúncio, dois diretos, uma venda de quatro unidades registrada no painel, um de campanha de 80 caracteres, um de campanha `<img src=x onerror=alert(1)>` e um cancelado. A página mostrou "De 07/09/2026 a 06/10/2026" e, em ordem: `facebook / cpc · campanha Black Friday 2026` — "2 de 3 pedidos com clique em anúncio da Meta" — 3 · R$ 359,40 · 33,3%; `Venda registrada no painel` 1 · R$ 239,60 · 22,2%; `Direto / sem campanha` 2 · R$ 119,80 · 11,1%; `instagram / social · campanha bio`; `Anúncio da Meta`; a campanha longa; a do `<img>`, escrita como texto (nenhum `<img>` no `main`); **Total 10 · R$ 1.078,20 · 100%**. O cancelado não entrou.
+- **1280 px:** a tabela; a campanha longa em duas linhas, com o `title` inteiro. Página 1280/1280, tabela 942/942: nada rola para o lado.
+- **390 px:** os cartões, a tabela escondida; a campanha longa inteira em quatro linhas, a 300 px de largura. Página 390/390.
+- **Carregando** (a leitura do BFF segurada por 2,5 s): o esqueleto no lugar da tabela, os atalhos de período e as notas já na tela, nenhum `role=status` nem ícone girando.
+- **Vazio** (`loja-relatorio-vazia`): "Nenhuma venda neste período.", a explicação e `http://localhost:3800/loja-relatorio-vazia?utm_source=instagram&utm_medium=social&utm_campaign=minha-campanha` como texto para copiar; as notas sem repetir o exemplo.
+- **Período:** "7 dias" leva a `?period=7` e mostra "De 30/09/2026 a 06/10/2026", com `aria-current`; o Voltar retorna ao endereço sem período, com "30 dias" marcado; `?period=banana` lê 30 dias.
+- **Chegada:** `/admin/loja-relatorio/reports` redireciona para `/reports/origins`; o item "Relatórios" do menu aponta para `/reports` e fica marcado na página; o cartão "Vendas por campanha" da página do Pixel da Meta (loja sem pixel) leva à página.
+- **Outro lojista** abrindo o relatório de uma loja que não é dele: "Não foi possível carregar as vendas por origem." e "Tentar de novo"; nenhuma tabela.
+- Console sem erros no percurso.
+
+**Não visto / não rodado:** o build de produção e o site atrás do Traefik (o endereço do exemplo vem de `siteOrigin()`, que lá lê `x-forwarded-host`); um pedido cobrado no site, pago ou não, na tela (só no e2e da API, com o Asaas de mentira); o plano da consulta com volume — nos bancos desta árvore as tabelas são pequenas e o Postgres escolhe leitura sequencial, então "a consulta entra por `(storeId, placedAt)`" é o esperado, não o medido; o tema escuro; um leitor de tela real (só axe nos testes).
