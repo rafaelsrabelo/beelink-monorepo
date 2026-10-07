@@ -223,6 +223,7 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
             productId={product.id}
             productHref={(productSlug) => routes.product(productSlug)}
             showPrice={layout.showProductPrice ?? true}
+            quickAdd={layout.showQuickAdd ?? true}
             messages={ui}
           />
         </Suspense>

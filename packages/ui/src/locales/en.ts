@@ -199,6 +199,7 @@ export const en: UiMessages = {
     addedToCart: "Added",
     addedToCartStatus: "{name} was added to the cart.",
     seeOptions: "See options",
+    addNamedToCart: "Add {name} to the cart",
     buyNow: "Buy now",
     seeProduct: "See product",
     deliverTo: {

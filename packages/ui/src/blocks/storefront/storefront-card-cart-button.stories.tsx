@@ -21,3 +21,9 @@ export const Adicionar: Story = { args: { hasOptions: false } }
 
 /** Produto com opções: a escolha é na página do produto. */
 export const ComOpcoes: Story = { args: { hasOptions: true } }
+
+/** No cartão compacto ("Você também pode gostar"): um "+" redondo de 44 px, sobre a foto. */
+export const Redondo: Story = { args: { hasOptions: false, size: "icon" } }
+
+/** No cartão compacto, produto com opções: "Ver opções" desenhado, nunca um "+" que abriria a página. */
+export const RedondoComOpcoes: Story = { args: { hasOptions: true, size: "icon" } }

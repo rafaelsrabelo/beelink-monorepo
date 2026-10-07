@@ -199,6 +199,7 @@ export const ptBR: UiMessages = {
     addedToCart: "Adicionado",
     addedToCartStatus: "{name} foi adicionado ao carrinho.",
     seeOptions: "Ver opções",
+    addNamedToCart: "Adicionar {name} ao carrinho",
     buyNow: "Comprar agora",
     seeProduct: "Ver produto",
     deliverTo: {

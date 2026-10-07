@@ -25,6 +25,48 @@ describe("StorefrontRelatedRail", () => {
     expect(screen.getByRole("link", { name: /Produto 3/ })).toHaveAttribute("href", "/loja/produtos/produto-3")
   })
 
+  describe("with the shop's action on each card", () => {
+    const withAction = () =>
+      render(
+        <StorefrontRelatedRail
+          products={products}
+          productHref={(slug) => `/loja/produtos/${slug}`}
+          locale="pt-BR"
+          cardAction={(product) => <button type="button">{`Adicionar ${product.name} ao carrinho`}</button>}
+        />,
+      )
+
+    it("draws one per product, named for it", () => {
+      withAction()
+
+      expect(screen.getAllByRole("button", { name: /^Adicionar Produto \d ao carrinho$/ })).toHaveLength(8)
+    })
+
+    // A button inside an anchor is one control inside another: a press would be both, and axe fails it.
+    it("keeps the action beside the card's link, never inside it", () => {
+      withAction()
+
+      const plus = screen.getByRole("button", { name: "Adicionar Produto 3 ao carrinho" })
+      const link = screen.getByRole("link", { name: /Produto 3/ })
+      expect(link).not.toContainElement(plus)
+      expect(plus.closest("li")).toBe(link.closest("li"))
+    })
+
+    // Over the photo, in a layer of the photo's own height: the card is as tall as it was without it.
+    it("stands the action on the photo's lower corner, in a layer that lets every other press through", () => {
+      withAction()
+
+      const layer = screen.getByRole("button", { name: "Adicionar Produto 0 ao carrinho" }).parentElement!
+      expect(layer).toHaveClass("absolute", "top-0", "h-[180px]", "items-end", "justify-end", "pointer-events-none")
+    })
+
+    it("has no accessibility violations", async () => {
+      const { container } = withAction()
+
+      await expectNoA11yViolations(container)
+    })
+  })
+
   it("draws nothing without products", () => {
     const { container } = render(<StorefrontRelatedRail products={[]} productHref={(slug) => slug} locale="pt-BR" />)
 

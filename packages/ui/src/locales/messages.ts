@@ -271,6 +271,8 @@ export interface UiMessages {
     addedToCartStatus: string
     /** A card whose product has options: the page is where one is chosen. */
     seeOptions: string
+    /** `{name}` — the name of a card's "+", which draws no word of its own. */
+    addNamedToCart: string
     buyNow: string
     /** "Entregar em" in the header: the visitor's CEP, kept for the shipping quote to come. */
     deliverTo: { label: string; ask: string; field: string; save: string; note: string }
