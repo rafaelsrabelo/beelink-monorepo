@@ -1,7 +1,7 @@
 "use client"
 
 // React
-import { useState } from "react"
+import { useMemo, useState } from "react"
 
 // Next
 import { useRouter } from "next/navigation"
@@ -12,7 +12,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import { usePurchaseTold } from "./tracking/use-purchase-told"
-import { purchaseOf, purchaseOrderOf, type Purchase } from "@/lib/purchase"
+import { purchaseOf, purchaseOrderOf } from "@/lib/purchase"
 import { storefrontRoutes } from "@/lib/storefront-routes"
 import { orderMessageOf, whatsappOrderHref } from "@/lib/whatsapp-order"
 import { usePlaceShopperOrder } from "@/services/storefront/storefront-hooks"
@@ -62,7 +62,8 @@ export function useCartOrder({ slug, routeWords, shopName, whatsapp, shopper, lo
   const router = useRouter()
   const placing = usePlaceShopperOrder(slug)
   const [sent, setSent] = useState<SentCartOrder | null>(null)
-  const [purchase, setPurchase] = useState<Purchase | null>(null)
+  // Read from the answer the order came in, at the moment it came: an order just placed is inside its day.
+  const purchase = useMemo(() => (placing.data ? purchaseOf(purchaseOrderOf(placing.data), new Date()) : null), [placing.data])
   usePurchaseTold(slug, purchase)
 
   function send(payload: PlaceCustomerOrderPayload, { placed, refused }: { placed: () => void; refused: (errorCode: string) => void }) {
@@ -73,7 +74,6 @@ export function useCartOrder({ slug, routeWords, shopName, whatsapp, shopper, lo
 
     placing.mutate(payload, {
       onSuccess: (order) => {
-        setPurchase(purchaseOf(purchaseOrderOf(order), new Date()))
         if (order.paymentChannel === "ONLINE") {
           const payHref = storefrontRoutes({ slug, routeWords }).accountOrder(order.number, { payment: true })
           setSent({ number: order.number, href: null, payHref })
