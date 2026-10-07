@@ -10,11 +10,12 @@ import type { IntegrationCardMessages, IntegrationProviderMessages, UiMessages }
  * entry in the map.
  *
  * What only an account at a third party says — not set up here, a sandbox, a connection to mend — is
- * there for those that are one. The Meta Pixel is not, and its card never stands in any of those.
+ * there for those that are one. The Meta Pixel and Google Analytics are not, and their cards never
+ * stand in any of those.
  */
 export type ProviderText = IntegrationCardMessages & Partial<IntegrationProviderMessages>
 
 export function providerTextOf(messages: UiMessages, provider: IntegrationProviderValue): ProviderText {
-  const texts: Record<IntegrationProviderValue, ProviderText> = { MELHOR_ENVIO: messages.integrations.melhorEnvio, ASAAS: messages.integrations.asaas, META_PIXEL: messages.integrations.metaPixel }
+  const texts: Record<IntegrationProviderValue, ProviderText> = { MELHOR_ENVIO: messages.integrations.melhorEnvio, ASAAS: messages.integrations.asaas, META_PIXEL: messages.integrations.metaPixel, GOOGLE_ANALYTICS: messages.integrations.googleAnalytics }
   return texts[provider]
 }

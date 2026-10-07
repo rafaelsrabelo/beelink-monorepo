@@ -1,6 +1,6 @@
 /**
  * The panel's integrations query keys: one shop's Melhor Envio connection, its wallet and its
- * settings, its Asaas connection and the ways it is paid, and its Meta Pixel.
+ * settings, its Asaas connection and the ways it is paid, its Meta Pixel and its Google Analytics.
  */
 export const integrationKeys = {
   all: ["integrations"] as const,
@@ -12,4 +12,5 @@ export const integrationKeys = {
   asaasConnection: (slug: string) => [...integrationKeys.asaas(slug), "connection"] as const,
   asaasSettings: (slug: string) => [...integrationKeys.asaas(slug), "settings"] as const,
   metaPixel: (slug: string) => [...integrationKeys.all, slug, "meta-pixel"] as const,
+  googleAnalytics: (slug: string) => [...integrationKeys.all, slug, "google-analytics"] as const,
 }

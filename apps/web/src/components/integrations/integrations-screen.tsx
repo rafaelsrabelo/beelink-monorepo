@@ -8,6 +8,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { AppLink } from "@/components/app-link"
 import { UPCOMING_INTEGRATIONS, connectionReadOf, integrationCardsOf, integrationPagesOf } from "@/lib/integration-pages"
 import { useAsaasConnection } from "@/services/integrations/asaas-hooks"
+import { useGoogleAnalyticsConnection } from "@/services/integrations/google-analytics-hooks"
 import { useMelhorEnvioConnection } from "@/services/integrations/integration-hooks"
 import { melhorEnvioConnectHref } from "@/services/integrations/integration-requests"
 import { useMetaPixelConnection } from "@/services/integrations/meta-pixel-hooks"
@@ -30,7 +31,9 @@ export function IntegrationsScreen({ slug, messages }: IntegrationsScreenProps) 
   const melhorEnvio = useMelhorEnvioConnection(slug)
   const asaas = useAsaasConnection(slug)
   const metaPixel = useMetaPixelConnection(slug)
-  const cards = integrationCardsOf({ melhorEnvio: connectionReadOf(melhorEnvio), asaas: connectionReadOf(asaas), metaPixel: connectionReadOf(metaPixel) }, integrationPagesOf(slug), melhorEnvioConnectHref(slug))
+  const googleAnalytics = useGoogleAnalyticsConnection(slug)
+  const reads = { melhorEnvio: connectionReadOf(melhorEnvio), asaas: connectionReadOf(asaas), metaPixel: connectionReadOf(metaPixel), googleAnalytics: connectionReadOf(googleAnalytics) }
+  const cards = integrationCardsOf(reads, integrationPagesOf(slug), melhorEnvioConnectHref(slug))
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 lg:px-6">
@@ -39,7 +42,7 @@ export function IntegrationsScreen({ slug, messages }: IntegrationsScreenProps) 
         <p className="text-muted-foreground text-sm">{text.intro}</p>
       </header>
 
-      <IntegrationCards cards={cards} onRetry={(provider) => void { MELHOR_ENVIO: melhorEnvio, ASAAS: asaas, META_PIXEL: metaPixel }[provider].refetch()} upcoming={UPCOMING_INTEGRATIONS} linkComponent={AppLink} messages={messages} />
+      <IntegrationCards cards={cards} onRetry={(provider) => void { MELHOR_ENVIO: melhorEnvio, ASAAS: asaas, META_PIXEL: metaPixel, GOOGLE_ANALYTICS: googleAnalytics }[provider].refetch()} upcoming={UPCOMING_INTEGRATIONS} linkComponent={AppLink} messages={messages} />
     </div>
   )
 }

@@ -3668,6 +3668,48 @@ export interface UiMessages {
       }
     }
     /**
+     * The shop's Google Analytics (BEELINK-302): named by its GA4 measurement ID, and by nothing else.
+     * No sentence here says that anything is being sent — what the shop window sends, and when, is
+     * said by what sends it.
+     */
+    googleAnalytics: IntegrationCardMessages & {
+      idLabel: string
+      idPlaceholder: string
+      /** What an ID is, what Google calls it, and that a pasted tag is not one. */
+      idHint: string
+      connectSubmit: string
+      connecting: string
+      /** When the ID in hand was saved. */
+      savedAt: string
+      replaceId: string
+      replaceLabel: string
+      replaceSubmit: string
+      replaceCancel: string
+      /** Over the page once an ID was saved, there and then. */
+      connectedNotice: string
+      disconnect: string
+      disconnectTitle: string
+      disconnectBody: string
+      disconnectConfirm: string
+      disconnectCancel: string
+      disconnectFailed: string
+      /** By the API's code; `UNKNOWN` for any other. The first is also what the form says of an ID it would not send. */
+      errors: Record<"GOOGLE_ANALYTICS_ID_INVALID" | "UNKNOWN", string>
+      /** Where the ID is copied from at Google Analytics. */
+      guide: {
+        title: string
+        steps: Record<"open" | "admin" | "streams" | "pick" | "copy", string>
+        openLink: string
+        /** Read out after a link that opens another tab. */
+        newTab: string
+        notesTitle: string
+        /** Only a GA4 ID serves, and nothing checks the ID against Google. */
+        notes: Record<"ga4Only" | "unchecked", string>
+      }
+      /** The reports stay at Google Analytics: the panel repeats none of its numbers, and leads there. */
+      reports: { title: string; text: string; link: string; newTab: string }
+    }
+    /**
      * The purchases told to Meta from the server (BEELINK-274): the Conversions API token, where
      * it is generated, and the test event. Apart from `metaPixel`, whose sentences are held to
      * their own rule about what is sent; these are held to theirs (`meta-pixel-screen.test.tsx`).

@@ -13,7 +13,7 @@ import { en } from "@harness-monorepo/ui/locales/index"
 import { expectNoA11yViolations } from "../../test/a11y"
 import type { LinkComponent } from "../auth/auth-link"
 import { IntegrationCards } from "./integration-cards"
-import { ASAAS_LOGO, BEEFLOW_LOGO, MELHOR_ENVIO_LOGO, META_LOGO, asaasCard, beeflowUpcoming, melhorEnvioCard, metaPixelCard } from "./integrations.fixtures"
+import { ASAAS_LOGO, BEEFLOW_LOGO, GOOGLE_ANALYTICS_LOGO, MELHOR_ENVIO_LOGO, META_LOGO, asaasCard, beeflowUpcoming, googleAnalyticsCard, melhorEnvioCard, metaPixelCard } from "./integrations.fixtures"
 
 /** The app's link, as a test can tell it from a plain anchor. */
 const AppLink: LinkComponent = ({ href, ...props }) => <a href={href} data-app-link="" {...props} />
@@ -194,6 +194,34 @@ describe("IntegrationCards", () => {
     expect(pixel().queryByRole("alert")).toBeNull()
     expect(pixel().getAllByRole("link")).toHaveLength(1)
     expect(pixel().getByRole("link", { name: "Configurar Pixel da Meta" })).toHaveAttribute("href", "/admin/lessari/integrations/meta-pixel")
+  })
+
+  /** BEELINK-302: as the pixel, Google Analytics is an ID saved or not — no account, no sandbox, nothing to mend. */
+  it("shows Google Analytics among them: under its own mark, to connect on its own page, and in green once an ID is saved", async () => {
+    const { container, rerender } = show([melhorEnvioCard, asaasCard, metaPixelCard, googleAnalyticsCard])
+    const analytics = () => within(card("Google Analytics"))
+
+    expect(screen.getAllByRole("listitem")).toHaveLength(4)
+    expect(container.querySelector(`img[src="${GOOGLE_ANALYTICS_LOGO}"]`)).toHaveAttribute("alt", "")
+    expect(analytics().getByText("As visitas e as compras da loja na sua propriedade do Google Analytics, informada pelo ID de medição. Os relatórios ficam no Google.")).toBeInTheDocument()
+    expect(analytics().getByText("Não conectado")).toHaveAttribute("data-variant", "outline")
+    const wayIn = analytics().getByRole("link", { name: "Conectar Google Analytics" })
+    expect(wayIn).toHaveTextContent(/^Conectar$/)
+    expect(wayIn).toHaveAttribute("href", "/admin/lessari/integrations/google-analytics")
+    expect(wayIn).toHaveAttribute("data-app-link")
+    // The ID is typed on the integration's own page, never on the list.
+    expect(screen.queryByRole("textbox")).toBeNull()
+    await expectNoA11yViolations(container)
+
+    rerender(<IntegrationCards cards={[melhorEnvioCard, asaasCard, metaPixelCard, { ...googleAnalyticsCard, connection: { state: "connected", account: null, sandbox: false } }]} onRetry={() => {}} linkComponent={AppLink} />)
+    expect(analytics().getByText("Conectado")).toHaveAttribute("data-variant", "success")
+    expect(analytics().queryByText(/^Conta:/)).toBeNull()
+    expect(analytics().queryByText("Sandbox")).toBeNull()
+    expect(analytics().queryByRole("alert")).toBeNull()
+    expect(analytics().getAllByRole("link")).toHaveLength(1)
+    expect(analytics().getByRole("link", { name: "Configurar Google Analytics" })).toHaveAttribute("href", "/admin/lessari/integrations/google-analytics")
+    // The pixel's card beside it stays as it was: one is connected without the other.
+    expect(within(card("Pixel da Meta")).getByText("Não conectado")).toBeInTheDocument()
   })
 
   it("speaks the language it is handed", () => {

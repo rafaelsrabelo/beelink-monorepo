@@ -4,6 +4,8 @@ import type {
   AsaasConnection,
   AsaasSettings,
   AsaasSettingsPayload,
+  GoogleAnalyticsConnectPayload,
+  GoogleAnalyticsConnection,
   MelhorEnvioAccountOverview,
   MelhorEnvioConnection,
   MelhorEnvioSettings,
@@ -115,4 +117,19 @@ export function removeMetaPixelToken(slug: string): Promise<object> {
 /** One test event sent to the shop's pixel with its token: what Meta said of it. */
 export function sendMetaPixelTestEvent(slug: string, payload: MetaPixelTestEventPayload): Promise<MetaPixelTestEventResult> {
   return ask(`${metaPixel(slug)}/test-event`, "POST", payload)
+}
+
+const googleAnalytics = (slug: string) => `/api/stores/${encodeURIComponent(slug)}/integrations/google-analytics`
+
+export function fetchGoogleAnalyticsConnection(slug: string): Promise<GoogleAnalyticsConnection> {
+  return ask(googleAnalytics(slug))
+}
+
+/** Saves the shop's measurement ID, or replaces the one saved: the answer is the connection as it then stands. */
+export function saveGoogleAnalytics(slug: string, payload: GoogleAnalyticsConnectPayload): Promise<GoogleAnalyticsConnection> {
+  return ask(googleAnalytics(slug), "POST", payload)
+}
+
+export function removeGoogleAnalytics(slug: string): Promise<object> {
+  return ask(googleAnalytics(slug), "DELETE")
 }
