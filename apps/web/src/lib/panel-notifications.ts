@@ -1,5 +1,5 @@
 // Types
-import type { OrderPage, RealtimeEvent, ShopConversationPage, ShopConversationUnread } from "@harness-monorepo/contracts"
+import type { OrderPage, RealtimeEvent, ShopConversationPage } from "@harness-monorepo/contracts"
 import type { AdminNotification } from "@harness-monorepo/ui/blocks/admin/admin-notifications"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
@@ -27,8 +27,8 @@ export function panelNewOrdersHrefOf(slug: string): string {
 export const PAID_UNSEEN_QUERY = { payment: "PAID_UNSEEN", pageSize: 5 } as const
 
 /** What the bell counts: messages from customers not read, orders nobody accepted yet, and paid orders nobody opened since. */
-export function notificationCountOf(unread: ShopConversationUnread | undefined, received: OrderPage | undefined, paid?: OrderPage): number {
-  return (unread?.messages ?? 0) + (received?.total ?? 0) + (paid?.total ?? 0)
+export function notificationCountOf(unreadMessages: number | undefined, received: OrderPage | undefined, paid?: OrderPage): number {
+  return (unreadMessages ?? 0) + (received?.total ?? 0) + (paid?.total ?? 0)
 }
 
 interface NotificationContext {

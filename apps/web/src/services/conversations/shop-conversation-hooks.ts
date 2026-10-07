@@ -8,6 +8,7 @@ import type { ShopConversation, ShopConversationPage, ShopConversationQuery, Sho
 
 // App
 import { REALTIME_URL } from "@/lib/realtime-config"
+import { panelCountsKeys } from "../panel/panel-counts-keys"
 import { conversationKeys } from "./conversation-keys"
 import { fetchShopConversation, fetchShopConversations, fetchShopUnread, markShopConversationRead, sendShopMessage } from "./shop-conversation-requests"
 
@@ -38,7 +39,7 @@ export function useShopConversation(slug: string, number: number | null): UseQue
 
 /**
  * The answer becomes the conversation on screen — after cancelling a read already in flight, which
- * began before it and would land over it — and the lists and the bell read their counts again.
+ * began before it and would land over it — and the lists, the menu and the bell read their counts again.
  */
 function useSettleShopConversation(slug: string) {
   const queryClient = useQueryClient()
@@ -51,6 +52,8 @@ function useSettleShopConversation(slug: string) {
       queryClient.invalidateQueries({ queryKey }),
       queryClient.invalidateQueries({ queryKey: [...conversationKeys.shop(slug), "list"] }),
       queryClient.invalidateQueries({ queryKey: conversationKeys.shopUnread(slug) }),
+      // The menu's and the bell's unread come from the panel's counts (BEELINK-309).
+      queryClient.invalidateQueries({ queryKey: panelCountsKeys.shop(slug) }),
     ])
   }
 }

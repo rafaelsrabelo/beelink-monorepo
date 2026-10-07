@@ -14,8 +14,9 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { AppLink } from "@/components/app-link"
 import { REALTIME_URL } from "@/lib/realtime-config"
 import { notificationCountOf, notificationsOf, PAID_UNSEEN_QUERY, panelNewOrdersHrefOf, titledWith } from "@/lib/panel-notifications"
-import { useShopConversations, useShopUnread } from "@/services/conversations/shop-conversation-hooks"
+import { useShopConversations } from "@/services/conversations/shop-conversation-hooks"
 import { useOrders } from "@/services/orders/order-hooks"
+import { usePanelCounts } from "@/services/panel/panel-counts-hooks"
 
 export interface PanelNotificationsProps {
   slug: string
@@ -33,14 +34,18 @@ const WITHOUT_CHANNEL = { refetchInterval: REALTIME_URL ? (false as const) : 30_
  * orders paid online that nobody opened since, counted and listed.
  * Every read here is one the real-time channel reads again at each event, so the count moves on its
  * own; the tab's title carries it too, for a panel left behind another tab.
+ *
+ * It is the general feed. What waits in one area is that area's number in the menu (BEELINK-309);
+ * the two share the counts' read and nothing else — the lists here are the bell's own.
  */
 export function PanelNotifications({ slug, locale, messages }: PanelNotificationsProps) {
   const pathname = usePathname()
-  const unread = useShopUnread(slug)
+  // The menu's own read (BEELINK-309): one request serves both, and the bell takes its messages from it.
+  const counts = usePanelCounts(slug)
   const received = useOrders(slug, RECEIVED, WITHOUT_CHANNEL)
   const paid = useOrders(slug, PAID_UNSEEN_QUERY, WITHOUT_CHANNEL)
   const conversations = useShopConversations(slug, UNREAD)
-  const count = notificationCountOf(unread.data, received.data, paid.data)
+  const count = notificationCountOf(counts.data?.unreadMessages, received.data, paid.data)
 
   // Again at every page and language: a page with a title of its own writes it bare. Taken off when
   // the bell goes — the dashboard shares the panel's title and would keep the count for good.

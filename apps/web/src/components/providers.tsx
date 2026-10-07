@@ -21,7 +21,8 @@ function signInWhenSignedOut(error: unknown): void {
   window.location.assign(sessionEndedHrefOf(window.location.pathname + window.location.search))
 }
 
-function makeQueryClient(): QueryClient {
+/** Exported for the tests of what an ended session does to a query that reads on a clock. */
+export function makeQueryClient(): QueryClient {
   return new QueryClient({
     queryCache: new QueryCache({ onError: signInWhenSignedOut }),
     mutationCache: new MutationCache({ onError: signInWhenSignedOut }),

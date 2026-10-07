@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient, type UseMutationResult, type Use
 import type { MarkReviewsSeenPayload, StoreReview, StoreReviewListQuery, StoreReviewPage, StoreReviewsUnseen } from "@harness-monorepo/contracts"
 
 // App
+import { panelCountsKeys } from "../panel/panel-counts-keys"
 import { shopReviewKeys } from "./shop-review-keys"
 import { fetchShopReviews, fetchShopReviewsUnseen, markShopReviewsSeen, setShopReviewVisibility } from "./shop-review-requests"
 
@@ -29,7 +30,8 @@ export function useMarkShopReviewsSeen(slug: string): UseMutationResult<void, Er
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (payload: MarkReviewsSeenPayload) => markShopReviewsSeen(slug, payload),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: shopReviewKeys.unseen(slug) }),
+    // The menu reads its count from the panel's counts (BEELINK-309); the old read is kept in step for whoever still asks it.
+    onSuccess: () => Promise.all([queryClient.invalidateQueries({ queryKey: panelCountsKeys.shop(slug) }), queryClient.invalidateQueries({ queryKey: shopReviewKeys.unseen(slug) })]),
   })
 }
 

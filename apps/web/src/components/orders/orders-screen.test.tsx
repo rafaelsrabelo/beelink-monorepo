@@ -86,6 +86,18 @@ describe("OrdersScreen", () => {
     expect(mocks.replace).toHaveBeenLastCalledWith("/admin/loja/orders?status=DELIVERED&payment=STRAY")
   })
 
+  /** BEELINK-309: the filter whose total is the number beside "Pedidos" in the menu. */
+  it("filters by the open orders, in the address, and asks the API for them by its own word", async () => {
+    renderScreen()
+    await userEvent.click(within(screen.getByRole("group", { name: "Filtrar por status" })).getByRole("button", { name: "Em aberto" }))
+    expect(mocks.replace).toHaveBeenLastCalledWith("/admin/loja/orders?status=OPEN")
+
+    mocks.search = new URLSearchParams("status=OPEN")
+    renderScreen()
+    expect(mocks.orders).toHaveBeenLastCalledWith("loja", { status: "OPEN", page: 1 })
+    expect(within(screen.getAllByRole("group", { name: "Filtrar por status" })[1]!).getByRole("button", { name: "Em aberto" })).toHaveAttribute("aria-pressed", "true")
+  })
+
   it("reads an unknown payment in the address as none, and never asks for the bell's own filter", () => {
     mocks.search = new URLSearchParams("payment=PAID_UNSEEN")
     renderScreen()

@@ -7,7 +7,7 @@ import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 
 // Types
-import type { OrderPaymentFilter, OrderStatus } from "@harness-monorepo/contracts"
+import type { OrderPaymentFilter, OrderStatus, OrderStatusFilter } from "@harness-monorepo/contracts"
 
 // UI
 import { TablePager } from "@harness-monorepo/ui/blocks/catalog/table-pager"
@@ -37,8 +37,14 @@ const SEARCH_DEBOUNCE_MS = 350
 /** The primitive's pressed grey is lost against the panel's surface; the filter on has to read as on. */
 const PRESSED = "aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground"
 
-function statusOf(raw: string | null): OrderStatus | null {
-  return STATUSES.find((status) => status === raw) ?? null
+/**
+ * Every order still on the shop's hands (BEELINK-309): the filter whose total is the number beside
+ * "Pedidos" in the menu. Which statuses it holds is the API's rule alone — the screen only names it.
+ */
+const OPEN = "OPEN" satisfies OrderStatusFilter
+
+function statusOf(raw: string | null): OrderStatusFilter | null {
+  return raw === OPEN ? OPEN : (STATUSES.find((status) => status === raw) ?? null)
 }
 
 function paymentOf(raw: string | null): PaymentChoice | null {
@@ -46,7 +52,7 @@ function paymentOf(raw: string | null): PaymentChoice | null {
 }
 
 interface Filters {
-  status: OrderStatus | null
+  status: OrderStatusFilter | null
   payment: PaymentChoice | null
   q: string
 }
@@ -136,6 +142,9 @@ export function OrdersScreen({ slug, messages, web }: OrdersScreenProps) {
         >
           <ToggleGroupItem value="ALL" variant="outline" className={PRESSED}>
             {text.all}
+          </ToggleGroupItem>
+          <ToggleGroupItem value={OPEN} variant="outline" className={PRESSED}>
+            {text.openFilter}
           </ToggleGroupItem>
           {STATUSES.map((option) => (
             <ToggleGroupItem key={option} value={option} variant="outline" className={PRESSED}>

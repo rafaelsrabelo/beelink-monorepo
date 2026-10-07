@@ -11,6 +11,7 @@ import type { CreateOrderPayload, Order, OrderDeliveryPayload, OrderListQuery, O
 import { cashbackKeys } from "../cashback/cashback-keys"
 import { catalogKeys } from "../catalog/catalog-hooks"
 import { customerKeys } from "../customers/customer-hooks"
+import { panelCountsKeys } from "../panel/panel-counts-keys"
 import { clearOrderDelivery, createOrder, fetchOrder, fetchOrders, markOrderPaymentSeen, quoteOrder, refundOrder, setOrderDelivery, setOrderDeliveryFee, updateOrderStatus } from "./order-requests"
 
 /** Built from their inputs, never spelled at a call site (docs/ai-rules/state-and-data.md). */
@@ -80,6 +81,9 @@ export function useUpdateOrderStatus(slug: string, number: number): UseMutationR
       return Promise.all([
         queryClient.invalidateQueries({ queryKey: orderKeys.lists(slug) }),
         queryClient.invalidateQueries({ queryKey: customerKeys.store(slug) }),
+        // A move may take the order into or out of the open ones the menu counts (BEELINK-309) —
+        // read here too, not only at the channel's echo, which a panel without the channel never hears.
+        queryClient.invalidateQueries({ queryKey: panelCountsKeys.shop(slug) }),
         // A delivery makes its cashback usable, and leaving it or cancelling takes it back (BEELINK-239).
         queryClient.invalidateQueries({ queryKey: cashbackKeys.shop(slug) }),
         // A cancelled order gives its counted lines back to the stock the catalogue shows.
@@ -112,6 +116,8 @@ export function useRefundOrder(slug: string, number: number): UseMutationResult<
         queryClient.invalidateQueries({ queryKey: orderKeys.lists(slug) }),
         ...(order.status === "CANCELLED"
           ? [
+              // One open order fewer in the menu (BEELINK-309).
+              queryClient.invalidateQueries({ queryKey: panelCountsKeys.shop(slug) }),
               queryClient.invalidateQueries({ queryKey: customerKeys.store(slug) }),
               queryClient.invalidateQueries({ queryKey: cashbackKeys.shop(slug) }),
               queryClient.invalidateQueries({ queryKey: catalogKeys.products(slug) }),
@@ -132,6 +138,8 @@ export function useCreateOrder(slug: string): UseMutationResult<Order, Error, Cr
       Promise.all([
         queryClient.invalidateQueries({ queryKey: orderKeys.store(slug) }),
         queryClient.invalidateQueries({ queryKey: customerKeys.store(slug) }),
+        // It starts accepted: one more open order in the menu (BEELINK-309).
+        queryClient.invalidateQueries({ queryKey: panelCountsKeys.shop(slug) }),
         // What it will earn is pending on its customer's cashback, and on what the shop owes.
         queryClient.invalidateQueries({ queryKey: cashbackKeys.shop(slug) }),
         // Placing it took its counted lines off the stock the catalogue shows.
