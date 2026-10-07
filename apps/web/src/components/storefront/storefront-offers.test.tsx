@@ -12,6 +12,7 @@ import type { CustomerOffers, StorefrontOffers as Headline, StorefrontPopup } fr
 import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 
 // App
+import type { PopupVisitor as Visitor } from "@/lib/popup"
 import { useOfferStrip } from "@/stores/offer-strip"
 import { useShopPopup } from "@/stores/shop-popup"
 
@@ -34,11 +35,15 @@ const COUPON: Headline = { firstPurchase: { ...benefit, source: "COUPON", wholeC
 const never: CustomerOffers = { hasOrder: false, firstPurchase: null, coupons: [] }
 const bia = { id: "c1", name: "Bia" }
 
-const POPUP: StorefrontPopup = { revision: 3, imageUrl: null, title: null, text: null, buttonLabel: null, trigger: "ON_ARRIVAL", delaySeconds: 5, benefit: COUPON.firstPurchase }
-const NEW_HERE = { seen: null, holdsSession: false }
+const POPUP: StorefrontPopup = { revision: 3, imageUrl: null, title: null, text: null, buttonLabel: null, trigger: "ON_ARRIVAL", delaySeconds: 5, benefit: COUPON.firstPurchase, keepReminder: true }
+const NEW_HERE: Visitor = { seen: null, holdsSession: false }
+const closedInvitation = (revision: number): Visitor => ({ seen: { notice: "VISITOR", revision }, holdsSession: false })
+const closedCoupon = (revision: number): Visitor => ({ seen: { notice: "CUSTOMER", revision }, holdsSession: false })
+const withCoupon: CustomerOffers = { hasOrder: false, firstPurchase: { ...benefit, source: "COUPON", code: "PRIMEIRA10" }, coupons: [] }
+const withPromotion: CustomerOffers = { hasOrder: false, firstPurchase: { ...benefit, source: "PROMOTION", wholeCart: true }, coupons: [] }
 
 /** The page's strip for whoever it is drawn for, and what the shop offers. */
-async function strip({ shopper = null as typeof bia | null, headline = NOTHING, offers = null as CustomerOffers | null, store = shop, back = "/loja/produtos/magnesio-360", visitor = NEW_HERE as { seen: number | null; holdsSession: boolean } } = {}) {
+async function strip({ shopper = null as typeof bia | null, headline = NOTHING, offers = null as CustomerOffers | null, store = shop, back = "/loja/produtos/magnesio-360", visitor = NEW_HERE } = {}) {
   mocks.popupVisitorAt.mockResolvedValue(visitor)
   mocks.shopperAt.mockResolvedValue(shopper)
   mocks.offersAt.mockResolvedValue(headline)
@@ -219,14 +224,6 @@ describe("StorefrontOffers", () => {
       expect(popup()).toBeNull()
     })
 
-    it("is not for a signed-in shopper, whether or not they ordered", async () => {
-      await strip({ shopper: bia, headline: withPopup(COUPON), offers: { ...never, firstPurchase: { ...benefit, source: "COUPON", code: "PRIMEIRA10" } } })
-      act(() => vi.advanceTimersByTime(600_000))
-      expect(popup()).toBeNull()
-      // Their own strip is what they see.
-      expect(screen.getByRole("link", { name: "Usar no carrinho" })).toBeInTheDocument()
-    })
-
     it("is not for a browser that holds a shopper's session whose token ran out", async () => {
       await strip({ headline: withPopup(COUPON), visitor: { seen: null, holdsSession: true } })
 
@@ -235,14 +232,14 @@ describe("StorefrontOffers", () => {
     })
 
     it("is not for a visitor who closed it as it stands — and is again once the shopkeeper changed it", async () => {
-      const closed = await strip({ headline: withPopup(COUPON), visitor: { seen: 3, holdsSession: false } })
+      const closed = await strip({ headline: withPopup(COUPON), visitor: closedInvitation(3) })
       act(() => vi.advanceTimersByTime(600_000))
       expect(popup()).toBeNull()
-      // The strip stays: the calm reminder.
+      // The strip is what remains: the calm reminder.
       expect(screen.getByRole("region", { name: "Oferta da loja" })).toBeInTheDocument()
       closed.unmount()
 
-      await strip({ headline: withPopup(COUPON, { revision: 4 }), visitor: { seen: 3, holdsSession: false } })
+      await strip({ headline: withPopup(COUPON, { revision: 4 }), visitor: closedInvitation(3) })
       afterItsDelay()
       expect(popup()).toBeInTheDocument()
     })
@@ -266,6 +263,242 @@ describe("StorefrontOffers", () => {
       expect(naming(/<StorefrontOffers store=/)).toEqual(["app/[slug]/[section]/[item]/page.tsx", "app/[slug]/[section]/page.tsx", "app/[slug]/page.tsx"])
       // The panel and its design preview are another tree altogether.
       expect(naming(/StorefrontPopupLive|<StorefrontOffers store=/).filter((file) => file.startsWith("app/(admin)") || file.startsWith("components/design"))).toEqual([])
+    })
+  })
+
+  describe("the pop-up for a signed-in customer who never ordered (BEELINK-310)", () => {
+    const popup = () => screen.queryByRole("dialog")
+    const afterItsDelay = () => act(() => vi.advanceTimersByTime(POPUP.delaySeconds * 1000))
+    const forever = () => act(() => vi.advanceTimersByTime(600_000))
+    const withPopup = (headline: Headline, popup: Partial<StorefrontPopup> = {}): Headline => ({ ...headline, popup: { ...POPUP, ...popup } })
+
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
+    it("opens the same dialog with their coupon: the benefit, the code, a way to copy it and the cart that applies it", async () => {
+      await strip({ shopper: bia, headline: withPopup(COUPON), offers: withCoupon })
+      expect(popup()).toBeNull()
+
+      afterItsDelay()
+      const dialog = screen.getByRole("dialog", { name: "Seu primeiro pedido tem 10% de desconto" })
+      expect(dialog).toHaveAttribute("aria-modal", "true")
+      expect(dialog).toHaveAccessibleDescription("Use este cupom no carrinho:")
+      expect(dialog.querySelector("[data-popup-code]")).toHaveTextContent("PRIMEIRA10")
+      expect(screen.getByRole("button", { name: "Copiar" })).toHaveAccessibleDescription("PRIMEIRA10")
+      expect(screen.getByRole("link", { name: "Usar no carrinho" })).toHaveAttribute("href", "/loja/carrinho?cupom=PRIMEIRA10")
+    })
+
+    it("says a promotion applies by itself, with no code and one button that only closes", async () => {
+      await strip({ shopper: bia, headline: withPopup(PROMOTION), offers: withPromotion })
+      afterItsDelay()
+
+      const dialog = screen.getByRole("dialog", { name: "Seu primeiro pedido tem 10% de desconto" })
+      expect(dialog).toHaveAccessibleDescription("Aplicado automaticamente no seu primeiro pedido. Não precisa de código.")
+      expect(dialog.querySelector("[data-popup-code]")).toBeNull()
+      expect(dialog.querySelector("a")).toBeNull()
+
+      act(() => screen.getByRole("button", { name: "Continuar comprando" }).click())
+      expect(popup()).toBeNull()
+    })
+
+    // The shopkeeper's title, text and button were written to somebody with no account.
+    it("never says the shopkeeper's sentences, nor leads to the sign-up", async () => {
+      await strip({ shopper: bia, headline: withPopup(COUPON, { title: "Crie sua conta e ganhe {beneficio}", text: "Cadastre-se agora", buttonLabel: "Quero me cadastrar" }), offers: withCoupon })
+      afterItsDelay()
+
+      const dialog = screen.getByRole("dialog")
+      expect(dialog).not.toHaveTextContent(/Crie sua conta|Cadastre-se|Quero me cadastrar/)
+      expect(dialog.querySelector('a[href*="entrar"]')).toBeNull()
+    })
+
+    // One rule, the strip's: what the customer's own offers answer, not what the pop-up names for visitors.
+    it("tells what the strip would tell them — their coupon — even where the pop-up announces a promotion to visitors", async () => {
+      await strip({ shopper: bia, headline: withPopup(PROMOTION, { benefit: { ...benefit, percentBps: 2000, source: "PROMOTION", wholeCart: true } }), offers: withCoupon })
+      afterItsDelay()
+
+      expect(screen.getByRole("dialog", { name: "Seu primeiro pedido tem 10% de desconto" })).toBeInTheDocument()
+      expect(screen.getByRole("dialog")).not.toHaveTextContent("20%")
+    })
+
+    it("reuses the picture the shopkeeper configured, and the shop's colours", async () => {
+      await strip({ shopper: bia, headline: withPopup(COUPON, { imageUrl: "https://img.test/popup.jpg" }), offers: withCoupon })
+      afterItsDelay()
+
+      const dialog = screen.getByRole("dialog")
+      expect(dialog.querySelector("img")).toHaveAttribute("src", "https://img.test/popup.jpg")
+      expect(dialog.style.getPropertyValue("--shop-primary")).toBe(colors.primary)
+    })
+
+    it("is never opened for a customer with an order that stands", async () => {
+      const { container } = await strip({ shopper: bia, headline: withPopup(COUPON), offers: { hasOrder: true, firstPurchase: null, coupons: [] } })
+
+      forever()
+      expect(popup()).toBeNull()
+      expect(container).toBeEmptyDOMElement()
+    })
+
+    it("is not opened for a customer with no benefit to be told: the invitation is for somebody with no account", async () => {
+      const { container } = await strip({ shopper: bia, headline: withPopup(COUPON), offers: never })
+
+      forever()
+      expect(popup()).toBeNull()
+      expect(container).toBeEmptyDOMElement()
+    })
+
+    it("is not opened, and nothing is said, when the customer's offers could not be read", async () => {
+      const { container } = await strip({ shopper: bia, headline: withPopup(COUPON), offers: null })
+
+      forever()
+      expect(container).toBeEmptyDOMElement()
+    })
+
+    it("asks the API nothing more than the strip did: one read of their offers, about no cart", async () => {
+      await strip({ shopper: bia, headline: withPopup(COUPON), offers: withCoupon })
+
+      expect(mocks.customerOffersAt).toHaveBeenCalledTimes(1)
+      expect(mocks.customerOffersAt).toHaveBeenCalledWith("loja")
+    })
+
+    describe("once per person, in the one cookie", () => {
+      it("is still shown to somebody who closed the invitation as a visitor and then signed in: the code is news", async () => {
+        await strip({ shopper: bia, headline: withPopup(COUPON), offers: withCoupon, visitor: closedInvitation(3) })
+
+        afterItsDelay()
+        expect(screen.getByRole("dialog", { name: "Seu primeiro pedido tem 10% de desconto" })).toBeInTheDocument()
+      })
+
+      it("is not shown again to a customer who closed it — and is, once, when the shopkeeper changes the pop-up", async () => {
+        const closed = await strip({ shopper: bia, headline: withPopup(COUPON), offers: withCoupon, visitor: closedCoupon(3) })
+        forever()
+        expect(popup()).toBeNull()
+        closed.unmount()
+
+        await strip({ shopper: bia, headline: withPopup(COUPON, { revision: 4 }), offers: withCoupon, visitor: closedCoupon(3) })
+        afterItsDelay()
+        expect(popup()).toBeInTheDocument()
+      })
+
+      it("does not invite again, signed out, a browser that closed the coupon's notice", async () => {
+        await strip({ headline: withPopup(COUPON), visitor: closedCoupon(3) })
+
+        forever()
+        expect(popup()).toBeNull()
+      })
+
+      it("writes the customer notice's version when closed, and the visitor's when the invitation is", async () => {
+        const written: string[] = []
+        vi.spyOn(document, "cookie", "set").mockImplementation((value) => void written.push(value))
+
+        const customer = await strip({ shopper: bia, headline: withPopup(COUPON), offers: withCoupon })
+        afterItsDelay()
+        act(() => screen.getByRole("button", { name: "Fechar" }).click())
+        customer.unmount()
+        useShopPopup.setState({ open: {}, shown: {} })
+
+        await strip({ headline: withPopup(COUPON) })
+        afterItsDelay()
+        act(() => screen.getByRole("button", { name: "Fechar" }).click())
+
+        expect(written.map((cookie) => cookie.split(";")[0])).toEqual(["bl_popup=1000000003", "bl_popup=3"])
+        vi.restoreAllMocks()
+      })
+    })
+  })
+
+  describe("the strip beside the pop-up (BEELINK-310)", () => {
+    const stripRegion = () => screen.queryByRole("region", { name: "Oferta da loja" })
+    const withPopup = (headline: Headline, popup: Partial<StorefrontPopup> = {}): Headline => ({ ...headline, popup: { ...POPUP, ...popup } })
+
+    // The pin: a shop that never touched its pop-up sees no change at all.
+    describe("at a shop whose pop-up is off", () => {
+      it("draws the strip for a visitor and for a customer who never ordered, exactly as before, whatever the cookie says", async () => {
+        for (const visitor of [NEW_HERE, closedInvitation(3), closedCoupon(9), { seen: null, holdsSession: true }]) {
+          const asVisitor = await strip({ headline: COUPON, visitor })
+          expect(stripRegion()).toHaveTextContent("Crie sua conta e ganhe 10% de desconto no primeiro pedido.")
+          expect(screen.getByRole("link", { name: "Criar conta" })).toBeInTheDocument()
+          expect(document.querySelector("[data-offer-strip]")).not.toHaveClass("invisible")
+          asVisitor.unmount()
+
+          const asCustomer = await strip({ shopper: bia, headline: COUPON, offers: withCoupon, visitor })
+          expect(stripRegion()).toHaveTextContent("Seu primeiro pedido tem 10% de desconto com o cupom PRIMEIRA10")
+          expect(screen.getByRole("link", { name: "Usar no carrinho" })).toHaveAttribute("href", "/loja/carrinho?cupom=PRIMEIRA10")
+          asCustomer.unmount()
+        }
+        expect(screen.queryByRole("dialog")).toBeNull()
+      })
+    })
+
+    describe("while the dialog is still due", () => {
+      it("is not drawn for a visitor: the dialog comes first, and the HTML holds no strip under it", async () => {
+        const { container } = await strip({ headline: withPopup(COUPON) })
+
+        // Before the dialog even opens: nothing was served to flash.
+        expect(stripRegion()).toBeNull()
+        expect(container.querySelector("[data-offer-strip]")).toBeNull()
+      })
+
+      it("is not drawn for a customer who never ordered, and their code is not on the page before the dialog says it", async () => {
+        const { container } = await strip({ shopper: bia, headline: withPopup(COUPON), offers: withCoupon })
+
+        expect(stripRegion()).toBeNull()
+        expect(container).not.toHaveTextContent("PRIMEIRA10")
+      })
+
+      it("does not arrive at the click that closes the dialog: nothing moves under the pointer", async () => {
+        vi.useFakeTimers()
+        await strip({ headline: withPopup(COUPON) })
+        act(() => vi.advanceTimersByTime(POPUP.delaySeconds * 1000))
+
+        act(() => screen.getByRole("button", { name: "Fechar" }).click())
+        expect(screen.queryByRole("dialog")).toBeNull()
+        expect(stripRegion()).toBeNull()
+      })
+    })
+
+    describe("once the dialog was closed, with the reminder kept", () => {
+      it("is the visitor's invitation on the next page", async () => {
+        await strip({ headline: withPopup(COUPON), visitor: closedInvitation(3) })
+
+        expect(stripRegion()).toHaveTextContent("Crie sua conta e ganhe 10% de desconto no primeiro pedido.")
+      })
+
+      it("is the customer's coupon, with its code within reach", async () => {
+        await strip({ shopper: bia, headline: withPopup(COUPON), offers: withCoupon, visitor: closedCoupon(3) })
+
+        expect(stripRegion()).toHaveTextContent("Seu primeiro pedido tem 10% de desconto com o cupom PRIMEIRA10")
+        expect(screen.getByRole("button", { name: "Copiar" })).toBeInTheDocument()
+      })
+
+      it("is drawn for a browser the dialog does not speak to — a session whose token ran out", async () => {
+        await strip({ headline: withPopup(COUPON), visitor: { seen: null, holdsSession: true } })
+
+        expect(stripRegion()).toBeInTheDocument()
+      })
+    })
+
+    describe("with the reminder switched off", () => {
+      const off = (headline: Headline) => withPopup(headline, { keepReminder: false })
+
+      it("is never drawn at that shop: not before the dialog, not after it was closed, to nobody", async () => {
+        for (const visitor of [NEW_HERE, closedInvitation(3), closedCoupon(3), { seen: null, holdsSession: true }]) {
+          const asVisitor = await strip({ headline: off(COUPON), visitor })
+          expect(stripRegion()).toBeNull()
+          asVisitor.unmount()
+
+          const asCustomer = await strip({ shopper: bia, headline: off(COUPON), offers: withCoupon, visitor })
+          expect(stripRegion()).toBeNull()
+          asCustomer.unmount()
+        }
+      })
+
+      it("still opens the dialog for whoever it is due to", async () => {
+        vi.useFakeTimers()
+        await strip({ shopper: bia, headline: off(COUPON), offers: withCoupon })
+
+        act(() => vi.advanceTimersByTime(POPUP.delaySeconds * 1000))
+        expect(screen.getByRole("dialog", { name: "Seu primeiro pedido tem 10% de desconto" })).toBeInTheDocument()
+      })
     })
   })
 })

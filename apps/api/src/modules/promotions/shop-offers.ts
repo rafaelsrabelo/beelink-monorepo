@@ -1,5 +1,5 @@
 // Types
-import type { FirstPurchaseHeadline, OfferBenefit } from '@harness-monorepo/contracts';
+import type { CustomerFirstPurchaseOffer, FirstPurchaseHeadline, OfferBenefit } from '@harness-monorepo/contracts';
 import type { Prisma } from '../../generated/prisma/client.js';
 import type { CouponModel } from '../../generated/prisma/models.js';
 
@@ -80,6 +80,20 @@ export function firstPurchaseHeadlineOf(promotions: readonly OfferPromotion[], c
   const promotion = firstPurchasePromotionOf(promotions);
   if (promotion) return { source: 'PROMOTION', ...promotion };
   return coupon ? { source: 'COUPON', ...couponBenefitOf(coupon), wholeCart: true } : null;
+}
+
+/**
+ * What a customer with no order that stands is shown for their first order: the coupon when there
+ * is one — a code is worth nothing to a customer who never saw it — else the promotion, which
+ * applies by itself. The two add up, the coupon after the promotion. `coupon` is the newest shown
+ * first-purchase coupon that is theirs to use; the strip, the pop-up's customer notice (BEELINK-310)
+ * and the panel's preview of it all read this.
+ */
+export function firstOrderOfferOf(coupon: CouponModel | null | undefined, promotions: readonly OfferPromotion[]): CustomerFirstPurchaseOffer | null {
+  if (coupon) return { source: 'COUPON', code: coupon.code, ...couponBenefitOf(coupon) };
+
+  const promotion = firstPurchasePromotionOf(promotions);
+  return promotion && { source: 'PROMOTION', ...promotion };
 }
 
 /**

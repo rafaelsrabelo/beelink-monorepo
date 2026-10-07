@@ -19,7 +19,7 @@ function request(init: { method?: string; body?: object; origin?: string; conten
 }
 
 const shop = { params: Promise.resolve({ slug: "loja" }) }
-const form = { enabled: true, imageUrl: null, title: "Ganhe {beneficio}", text: null, buttonLabel: null, trigger: "ON_ARRIVAL", delaySeconds: 5, benefitSource: "AUTO", benefitId: null }
+const form = { enabled: true, imageUrl: null, title: "Ganhe {beneficio}", text: null, buttonLabel: null, trigger: "ON_ARRIVAL", delaySeconds: 5, benefitSource: "AUTO", benefitId: null, keepReminder: true }
 
 afterEach(() => {
   vi.unstubAllGlobals()

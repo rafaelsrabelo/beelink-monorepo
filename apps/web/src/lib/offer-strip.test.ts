@@ -8,7 +8,7 @@ import type { CustomerOffers, FirstPurchaseHeadline } from "@harness-monorepo/co
 import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 
 // App
-import { offerStripOf, pathWithQuery, type OfferStripAsk } from "./offer-strip"
+import { firstOrderOfferOf, offerStripOf, pathWithQuery, type OfferStripAsk } from "./offer-strip"
 
 const benefit = { kind: "PERCENT", percentBps: 1000, amountCents: null, minSubtotalCents: 0, endsAt: null } as const
 const promotion: FirstPurchaseHeadline = { ...benefit, source: "PROMOTION", wholeCart: true }
@@ -85,6 +85,28 @@ describe("offerStripOf", () => {
   // Nothing is said of a first order to somebody who may already have ordered.
   it("shows nothing to a shopper whose offers could not be read — never the visitor's invitation", () => {
     expect(stripOf({ headline: promotion, viewer: { offers: null } })).toBeNull()
+  })
+})
+
+/** BEELINK-310: the one rule the strip and the pop-up's customer notice both ask. */
+describe("firstOrderOfferOf", () => {
+  const theirs = { source: "COUPON", code: "PRIMEIRA10", kind: "PERCENT", percentBps: 1000, amountCents: null, minSubtotalCents: 0, endsAt: null } as const
+
+  it("is the shopper's first-order benefit while no order of theirs stands", () => {
+    expect(firstOrderOfferOf({ hasOrder: false, firstPurchase: theirs, coupons: [] })).toEqual(theirs)
+  })
+
+  it("is nothing once an order stands, at a shop with nothing for a first order, and when their offers could not be read", () => {
+    expect(firstOrderOfferOf({ hasOrder: true, firstPurchase: theirs, coupons: [] })).toBeNull()
+    expect(firstOrderOfferOf({ hasOrder: false, firstPurchase: null, coupons: [] })).toBeNull()
+    expect(firstOrderOfferOf(null)).toBeNull()
+  })
+
+  it("agrees with the strip, always: an offer exactly where the strip says something to a shopper", () => {
+    const ask = { headline: null, signUpHref: "/loja/entrar", cartHref: "/loja/carrinho", locale: "pt-BR", messages: ptBR }
+    for (const offers of [{ hasOrder: false, firstPurchase: theirs, coupons: [] }, { hasOrder: true, firstPurchase: theirs, coupons: [] }, { hasOrder: false, firstPurchase: null, coupons: [] }, null]) {
+      expect(firstOrderOfferOf(offers) !== null).toBe(offerStripOf({ ...ask, viewer: { offers } }) !== null)
+    }
   })
 })
 

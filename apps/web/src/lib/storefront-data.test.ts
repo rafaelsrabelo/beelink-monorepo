@@ -208,13 +208,20 @@ describe("offersAt — what the shop says of its offers to anyone", () => {
   })
 
   it("reads the shop's pop-up with the headline, in the same kept answer", async () => {
-    const popup = { revision: 2, imageUrl: null, title: null, text: null, buttonLabel: null, trigger: "ON_ARRIVAL", delaySeconds: 5, benefit: HEADLINE.firstPurchase }
+    const popup = { revision: 2, imageUrl: null, title: null, text: null, buttonLabel: null, trigger: "ON_ARRIVAL", delaySeconds: 5, benefit: HEADLINE.firstPurchase, keepReminder: false }
     const asked = stubApi(() => ({ ...HEADLINE, popup }))
 
     expect((await offersAt("loja")).popup).toEqual(popup)
     // One read for both: saving the pop-up drops the offers' tag, and the headline with it.
     expect(asked).toHaveLength(1)
     expect(asked[0]?.tags).toContain(offersTag("loja"))
+  })
+
+  // BEELINK-310: an answer kept across the deploy must not take the strip away from a shop that never chose to.
+  it("reads a pop-up kept from before its reminder could be switched as keeping it", async () => {
+    stubApi(() => ({ ...HEADLINE, popup: { revision: 2, imageUrl: null, title: null, text: null, buttonLabel: null, trigger: "ON_ARRIVAL", delaySeconds: 5, benefit: null } }))
+
+    expect((await offersAt("loja")).popup?.keepReminder).toBe(true)
   })
 
   it("is no offer when the read fails: the strip then promises nothing", async () => {

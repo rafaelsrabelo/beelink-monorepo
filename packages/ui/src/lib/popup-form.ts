@@ -20,6 +20,8 @@ export interface PopupFormValues {
   /** Seconds, as typed. */
   delay: string
   benefit: string
+  /** Whether the offer strip stays under the header once the pop-up was closed (BEELINK-310). */
+  keepReminder: boolean
 }
 
 export type PopupFormIssues = Partial<Record<"title" | "text" | "buttonLabel" | "delay", string>>

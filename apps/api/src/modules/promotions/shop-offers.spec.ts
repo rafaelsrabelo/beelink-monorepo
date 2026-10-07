@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import type { CouponModel } from '../../generated/prisma/models.js';
 
 // App
-import { couponBenefitOf, firstPurchaseHeadlineOf, firstPurchasePromotionOf, type OfferPromotion } from './shop-offers.js';
+import { couponBenefitOf, firstOrderOfferOf, firstPurchaseHeadlineOf, firstPurchasePromotionOf, type OfferPromotion } from './shop-offers.js';
 
 const promotion = (given: Partial<OfferPromotion>): OfferPromotion => ({
   id: 'p',
@@ -61,5 +61,23 @@ describe('firstPurchaseHeadlineOf', () => {
   // Anyone reads it: a crawler too.
   it('never carries the coupon\'s code', () => {
     expect(JSON.stringify(firstPurchaseHeadlineOf([], coupon))).not.toContain('PRIMEIRA10');
+  });
+});
+
+describe('firstOrderOfferOf', () => {
+  it('is the coupon with its code when the customer has one, even beside a promotion', () => {
+    expect(firstOrderOfferOf(coupon, [promotion({})])).toEqual({ source: 'COUPON', code: 'PRIMEIRA10', ...couponBenefitOf(coupon) });
+  });
+
+  it('is the first-purchase promotion, with no code, when there is no coupon', () => {
+    const offer = firstOrderOfferOf(null, [promotion({ scope: 'PRODUCTS', productIds: ['a'] })]);
+
+    expect(offer).toMatchObject({ source: 'PROMOTION', percentBps: 1000, wholeCart: false });
+    expect(offer).not.toHaveProperty('code');
+  });
+
+  it('is nothing with neither: a promotion for everyone is no first-order benefit', () => {
+    expect(firstOrderOfferOf(undefined, [promotion({ audience: 'EVERYONE' })])).toBeNull();
+    expect(firstOrderOfferOf(null, [])).toBeNull();
   });
 });

@@ -1,10 +1,14 @@
-import type { FirstPurchaseHeadline } from "./offers.js";
+import type { CustomerFirstPurchaseOffer, FirstPurchaseHeadline } from "./offers.js";
 
 /**
  * A shop's first-purchase pop-up (BEELINK-306): a dialog that calls a visitor with no account to
  * open one, as its shopkeeper configures it. It collects nothing — its button leads to the shop's
  * own sign-up — and what it says of a discount is never typed: the number comes from the benefit
  * the API read, through the `{beneficio}` placeholder.
+ *
+ * It speaks to a signed-in customer who never ordered too (BEELINK-310), in words that are not the
+ * shopkeeper's: their first-order benefit as their own offers read it (`CustomerOffers`), with the
+ * coupon's code. Nothing of that is in the pop-up's public shape — a code is never served to anyone.
  */
 
 /** When it opens: some seconds after the page arrives, or when the visitor is about to leave it. */
@@ -36,6 +40,13 @@ export interface StorePopupSettings {
   benefitSource: PopupBenefitSource;
   /** The promotion's or the coupon's id; null on `AUTO`. */
   benefitId: string | null;
+  /**
+   * Whether the offer strip under the header stays, as a reminder, for whoever already closed the
+   * pop-up (BEELINK-310). Read only while the pop-up is switched on: on, the strip is drawn once the
+   * dialog is no longer due to whoever is looking; off, the shop draws no strip at all. A shop that
+   * never saved reads true.
+   */
+  keepReminder: boolean;
 }
 
 /** What `PUT /stores/:slug/popup` takes: the whole of the form. */
@@ -68,6 +79,12 @@ export interface StorePopupOverview {
   headline: FirstPurchaseHeadline | null;
   /** What the form may name: the first-purchase promotions running and the shown first-purchase coupons in force. */
   options: PopupBenefitOption[];
+  /**
+   * What a signed-in customer who never ordered is told now (BEELINK-310), code included — this is
+   * the owner's own read: the shop's newest shown first-purchase coupon, else its first-purchase
+   * promotion, whatever the form names. Null with neither: such a customer is shown no pop-up.
+   */
+  customerOffer: CustomerFirstPurchaseOffer | null;
 }
 
 /**
@@ -84,6 +101,8 @@ export interface StorefrontPopup {
   delaySeconds: number;
   /** Null: nothing for a first purchase is in force, or the one the shop named is not. */
   benefit: FirstPurchaseHeadline | null;
+  /** As `StorePopupSettings.keepReminder`: whether the offer strip is drawn once the pop-up is no longer due. */
+  keepReminder: boolean;
 }
 
 /**

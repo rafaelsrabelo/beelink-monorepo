@@ -2,7 +2,7 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 
 // Types
-import type { ApiErrorBody, AuthSession, Coupon, Promotion, StorefrontOffers, StorePopupOverview, StorePopupPayload } from '@harness-monorepo/contracts';
+import type { ApiErrorBody, AuthSession, Coupon, CustomerOffers, Promotion, StorefrontOffers, StorePopupOverview, StorePopupPayload } from '@harness-monorepo/contracts';
 
 // App
 import { PrismaService } from '../src/shared/prisma/prisma.service.js';
@@ -19,7 +19,7 @@ const DAY = 24 * 60 * 60 * 1000;
 const daysFromNow = (days: number) => new Date(Date.now() + days * DAY).toISOString();
 
 /** The form as a shopkeeper who only switched it on would send it. */
-const FORM = { enabled: true, imageUrl: null, title: null, text: null, buttonLabel: null, trigger: 'ON_ARRIVAL', delaySeconds: 5, benefitSource: 'AUTO', benefitId: null } as const satisfies StorePopupPayload;
+const FORM = { enabled: true, imageUrl: null, title: null, text: null, buttonLabel: null, trigger: 'ON_ARRIVAL', delaySeconds: 5, benefitSource: 'AUTO', benefitId: null, keepReminder: true } as const satisfies StorePopupPayload;
 
 /**
  * A shop's first-purchase pop-up (BEELINK-306): the owner's form, what it refuses, and what anyone
@@ -85,10 +85,11 @@ describe("a shop's first-purchase pop-up", () => {
 
       expect(response.statusCode).toBe(200);
       expect(response.json<StorePopupOverview>()).toEqual({
-        settings: { enabled: false, imageUrl: null, title: null, text: null, buttonLabel: null, trigger: 'ON_ARRIVAL', delaySeconds: 5, benefitSource: 'AUTO', benefitId: null, revision: 1, updatedAt: null },
+        settings: { enabled: false, imageUrl: null, title: null, text: null, buttonLabel: null, trigger: 'ON_ARRIVAL', delaySeconds: 5, benefitSource: 'AUTO', benefitId: null, keepReminder: true, revision: 1, updatedAt: null },
         benefit: null,
         headline: null,
         options: [],
+        customerOffer: null,
       });
       expect(await prisma.storePopup.count()).toBe(0);
     });
@@ -131,6 +132,8 @@ describe("a shop's first-purchase pop-up", () => {
       expect(await refusal({ delaySeconds: '5' })).toEqual(INVALID);
       expect(await refusal({ trigger: 'ON_SCROLL' })).toEqual(INVALID);
       expect(await refusal({ enabled: 'sim' })).toEqual(INVALID);
+      expect(await refusal({ keepReminder: 'sim' })).toEqual(INVALID);
+      expect(await refusal({ keepReminder: null })).toEqual(INVALID);
       expect(await refusal({ benefitSource: 'BEST' })).toEqual(INVALID);
       expect(await refusal({ title: 12 })).toEqual(INVALID);
       // A picture is drawn in `src`: nothing but http(s).
@@ -279,6 +282,7 @@ describe("a shop's first-purchase pop-up", () => {
         trigger: 'ON_LEAVE',
         delaySeconds: 9,
         benefit: { source: 'COUPON', kind: 'PERCENT', percentBps: 1500, amountCents: null, minSubtotalCents: 5000, endsAt: null, wholeCart: true },
+        keepReminder: true,
       });
       expect(raw).not.toContain('SEGREDO15');
       expect(raw).not.toContain(first.id);
@@ -307,8 +311,92 @@ describe("a shop's first-purchase pop-up", () => {
     });
   });
 
+  describe("the strip's reminder (BEELINK-310)", () => {
+    it('is on for a shop that never said, and for a pop-up saved before the switch existed', async () => {
+      expect((await overview()).settings.keepReminder).toBe(true);
+
+      // A row as the first migration wrote it: the column's own default answers.
+      const { id: storeId } = await prisma.store.findUniqueOrThrow({ where: { slug: 'lessari' }, select: { id: true } });
+      await prisma.storePopup.create({ data: { storeId, enabled: true } });
+      expect((await overview()).settings.keepReminder).toBe(true);
+      expect((await served()).popup?.keepReminder).toBe(true);
+    });
+
+    it('is saved, read back and served as saved', async () => {
+      expect((await saved({ keepReminder: false })).settings.keepReminder).toBe(false);
+      expect((await overview()).settings.keepReminder).toBe(false);
+      expect((await served()).popup?.keepReminder).toBe(false);
+
+      expect((await saved({ keepReminder: true })).settings.keepReminder).toBe(true);
+      expect((await served()).popup?.keepReminder).toBe(true);
+    });
+
+    it("is the owner's to change, and nobody else's", async () => {
+      const stranger = await signUpAndSignIn(app, newEmail('outra'));
+      await saved({ keepReminder: true });
+
+      expect((await save({ keepReminder: false }, stranger)).statusCode).toBe(403);
+      expect((await call('PUT', '/api/stores/lessari/popup', undefined, { ...FORM, keepReminder: false })).statusCode).toBe(401);
+      expect((await served()).popup?.keepReminder).toBe(true);
+    });
+
+    it('is served to nobody while the pop-up is switched off: the strip is then as it always was', async () => {
+      await saved({ enabled: false, keepReminder: false });
+
+      expect((await served()).popup).toBeNull();
+    });
+  });
+
+  describe('what a signed-in customer who never ordered is told (BEELINK-310)', () => {
+    async function shopperOf(name: string) {
+      const email = newEmail(name);
+      await call('POST', '/api/stores/lessari/customer/register', undefined, { name: 'Bia Cliente', email, password: PASSWORD });
+      await verifyEmailOf(app, email);
+      return (await call('POST', '/api/stores/lessari/customer/login', undefined, { email, password: PASSWORD })).json<AuthSession>();
+    }
+    const theirOffers = async (shopper: AuthSession) => (await call('POST', '/api/stores/lessari/customer/offers', shopper, {})).json<CustomerOffers>();
+
+    it("is, in the owner's preview, the very offer that customer's own read answers — the coupon with its code, whatever the pop-up names", async () => {
+      const deal = await promotion();
+      await coupon({ code: 'ANTIGO5', percentBps: 500 });
+      await coupon({ code: 'PRIMEIRA10', minSubtotalCents: 5000 });
+      // The pop-up names the promotion for its visitors; a customer is still told their coupon.
+      const read = await saved({ benefitSource: 'PROMOTION', benefitId: deal.id });
+
+      expect(read.customerOffer).toEqual({ source: 'COUPON', code: 'PRIMEIRA10', kind: 'PERCENT', percentBps: 1000, amountCents: null, minSubtotalCents: 5000, endsAt: null });
+      expect((await theirOffers(await shopperOf('cliente'))).firstPurchase).toEqual(read.customerOffer);
+    });
+
+    it('is the promotion, with no code, at a shop whose first-purchase coupons are hidden — and the same to the customer', async () => {
+      await promotion({ scope: 'CART' });
+      await coupon({ code: 'OCULTO20', shownInStore: false });
+
+      const read = await saved();
+      expect(read.customerOffer).toEqual({ source: 'PROMOTION', kind: 'PERCENT', percentBps: 1500, amountCents: null, minSubtotalCents: 0, endsAt: null, wholeCart: true });
+      expect(JSON.stringify(read.customerOffer)).not.toContain('OCULTO20');
+      expect((await theirOffers(await shopperOf('cliente'))).firstPurchase).toEqual(read.customerOffer);
+    });
+
+    it('is nothing at a shop with nothing for a first purchase', async () => {
+      await coupon({ code: 'TODOS5', audience: 'EVERYONE' });
+      await coupon({ code: 'OCULTO20', shownInStore: false });
+
+      expect((await saved()).customerOffer).toBeNull();
+      expect((await theirOffers(await shopperOf('cliente'))).firstPurchase).toBeNull();
+    });
+
+    it('never reaches what anyone is served: the public pop-up carries no code', async () => {
+      await coupon({ code: 'SEGREDO15', percentBps: 1500 });
+      await saved();
+
+      const { popup, raw } = await served();
+      expect(popup).not.toHaveProperty('customerOffer');
+      expect(raw).not.toContain('SEGREDO15');
+    });
+  });
+
   describe('its revision', () => {
-    it('goes up when what a visitor reads changes, and stays when the switch or the trigger does', async () => {
+    it("goes up when what a visitor reads changes, and stays when the switch, the trigger or the strip's reminder does", async () => {
       const first = await coupon({ code: 'PRIMEIRA10' });
       const revisionAfter = async (body: object) => (await saved(body)).settings.revision;
       let form: object = {};
@@ -327,6 +415,7 @@ describe("a shop's first-purchase pop-up", () => {
       expect(await change({ benefitSource: 'COUPON', benefitId: first.id })).toBe(6);
       expect(await change({ benefitSource: 'AUTO', benefitId: null })).toBe(7);
       expect(await change({ trigger: 'ON_ARRIVAL' })).toBe(7);
+      expect(await change({ keepReminder: false })).toBe(7);
       expect((await served()).popup?.revision).toBe(7);
     });
   });

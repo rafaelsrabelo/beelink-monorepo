@@ -2,12 +2,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 // Types
-import type { PopupBenefitOption, PopupBenefitSource, StorePopupOverview } from '@harness-monorepo/contracts';
+import type { CustomerFirstPurchaseOffer, PopupBenefitOption, PopupBenefitSource, StorePopupOverview } from '@harness-monorepo/contracts';
 
 // App
 import { POPUP_BENEFIT_SOURCES } from '../shop-popup.js';
 // One way only: `offers.response.ts` holds what anyone is served, the pop-up's public shape among it, and imports nothing from here.
-import { FirstPurchaseHeadlineResponse, PopupCopyResponse } from './offers.response.js';
+import { CustomerFirstPurchaseOfferResponse, FirstPurchaseHeadlineResponse, PopupCopyResponse } from './offers.response.js';
 
 const NAMED_SOURCES = ['PROMOTION', 'COUPON'] as const satisfies readonly PopupBenefitOption['source'][];
 
@@ -30,4 +30,6 @@ export class StorePopupOverviewResponse implements StorePopupOverview {
   @ApiProperty({ type: FirstPurchaseHeadlineResponse, nullable: true, description: 'What the pop-up as saved announces now.' }) benefit!: FirstPurchaseHeadlineResponse | null;
   @ApiProperty({ type: FirstPurchaseHeadlineResponse, nullable: true, description: "What following the shop's headline announces now, whatever is saved." }) headline!: FirstPurchaseHeadlineResponse | null;
   @ApiProperty({ type: [PopupBenefitOptionResponse], description: 'The first-purchase promotions running and shown coupons in force.' }) options!: PopupBenefitOptionResponse[];
+  @ApiProperty({ type: CustomerFirstPurchaseOfferResponse, nullable: true, description: 'What a signed-in customer who never ordered is told now, code included; null shows them no pop-up.' })
+  customerOffer!: CustomerFirstPurchaseOffer | null;
 }

@@ -9,14 +9,15 @@ import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 
 // App
 import { ConsentProvider, useConsent } from "./consent-provider"
-import { StorefrontOfferStripLive } from "./storefront-offer-strip-live"
 import { StorefrontPopupLive, type StorefrontPopupLiveProps } from "./storefront-popup-live"
 import { POPUP_MAX_AGE_SECONDS } from "@/lib/popup-cookie"
 import { useShopPopup } from "@/stores/shop-popup"
 
 const words = { title: "Ganhe 5% de desconto na primeira compra", text: "Crie sua conta e o desconto é seu.", detail: null, buttonLabel: "Ganhar cupom" }
-const props: StorefrontPopupLiveProps = { slug: "loja", revision: 3, trigger: "ON_ARRIVAL", delaySeconds: 5, words, imageUrl: null, signUpHref: "/loja/entrar?modo=criar&voltar=%2Floja", style: {}, messages: ptBR }
-const strip = { message: "Crie sua conta e ganhe 5% de desconto no primeiro pedido.", detail: null, code: null, action: { label: "Criar conta", href: "/loja/entrar?modo=criar" } }
+const props: StorefrontPopupLiveProps = { slug: "loja", notice: "VISITOR", revision: 3, trigger: "ON_ARRIVAL", delaySeconds: 5, words, imageUrl: null, actionHref: "/loja/entrar?modo=criar&voltar=%2Floja", style: {}, messages: ptBR }
+const couponWords = { title: "Seu primeiro pedido tem 15% de desconto", text: "Use este cupom no carrinho:", detail: null, buttonLabel: "Usar no carrinho" }
+const coupon: StorefrontPopupLiveProps = { ...props, notice: "CUSTOMER", words: couponWords, code: "SEJAMUTANTE", actionHref: "/loja/carrinho?cupom=SEJAMUTANTE" }
+const promotion: StorefrontPopupLiveProps = { ...props, notice: "CUSTOMER", words: { ...couponWords, text: "Aplicado automaticamente no seu primeiro pedido. Não precisa de código.", buttonLabel: "Continuar comprando" }, code: null, actionHref: null }
 
 /** Every `document.cookie = …` the page made, as written. */
 const written: string[] = []
@@ -93,7 +94,7 @@ describe("StorefrontPopupLive", () => {
 
       // The next page of the shop mounts its own, in the same tab.
       view.unmount()
-      render(<StorefrontPopupLive {...props} signUpHref="/loja/entrar?modo=criar&voltar=%2Floja%2Fbusca" />)
+      render(<StorefrontPopupLive {...props} actionHref="/loja/entrar?modo=criar&voltar=%2Floja%2Fbusca" />)
       wait(120)
       expect(dialog()).toBeNull()
       expect(written).toHaveLength(1)
@@ -169,36 +170,89 @@ describe("StorefrontPopupLive", () => {
     })
   })
 
-  describe("with the offer strip on the same page", () => {
-    const page = () =>
-      render(
-        <>
-          <StorefrontOfferStripLive slug="loja" strip={strip} messages={ptBR} />
-          <StorefrontPopupLive {...props} />
-        </>,
-      )
-    const stripBox = () => document.querySelector("[data-offer-strip]")
+  it("is not left marked open when the page takes it away while it is open", () => {
+    const view = render(<StorefrontPopupLive {...props} />)
+    wait(5)
 
-    it("has the strip step aside while it is open, keeping its place, and gives it back when closed", () => {
-      page()
-      expect(stripBox()).not.toHaveClass("invisible")
+    view.unmount()
+    expect(useShopPopup.getState().open).toEqual({})
+  })
 
-      wait(5)
-      // Hidden, not removed: the page under the pop-up does not move.
-      expect(stripBox()).toBeInTheDocument()
-      expect(stripBox()).toHaveClass("invisible")
+  describe("as the coupon of a customer who never ordered (BEELINK-310)", () => {
+    const couponDialog = () => screen.queryByRole("dialog", { name: couponWords.title })
 
-      press("Fechar")
-      expect(stripBox()).not.toHaveClass("invisible")
-      expect(screen.getByRole("region", { name: "Oferta da loja" })).toBeInTheDocument()
+    it("opens after the shop's delay, by the same trigger, with the code and the cart that applies it", () => {
+      render(<StorefrontPopupLive {...coupon} />)
+      wait(4)
+      expect(couponDialog()).toBeNull()
+
+      wait(1)
+      expect(couponDialog()).toBeInTheDocument()
+      expect(document.querySelector("[data-popup-code]")).toHaveTextContent("SEJAMUTANTE")
+      expect(screen.getByRole("link", { name: "Usar no carrinho" })).toHaveAttribute("href", "/loja/carrinho?cupom=SEJAMUTANTE")
+      expect(written).toEqual([])
     })
 
-    it("does not leave the strip aside when the page takes the pop-up away while it is open", () => {
-      const view = render(<StorefrontPopupLive {...props} />)
+    it("closed, remembers the customer notice's version — a number, and nothing about the person", () => {
+      render(<StorefrontPopupLive {...coupon} />)
       wait(5)
 
-      view.unmount()
-      expect(useShopPopup.getState().open).toEqual({})
+      press("Fechar")
+      expect(written).toEqual([`bl_popup=1000000003; Path=/loja; Max-Age=${POPUP_MAX_AGE_SECONDS}; SameSite=Lax`])
+      expect(couponDialog()).toBeNull()
+    })
+
+    it("remembers on Escape, and when the way to the cart is pressed", () => {
+      const first = render(<StorefrontPopupLive {...coupon} />)
+      wait(5)
+      fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" })
+      expect(written).toHaveLength(1)
+      first.unmount()
+
+      useShopPopup.setState({ open: {}, shown: {} })
+      render(<StorefrontPopupLive {...coupon} revision={8} />)
+      wait(5)
+      const link = screen.getByRole("link", { name: "Usar no carrinho" })
+      link.addEventListener("click", (event) => event.preventDefault())
+      fireEvent.click(link)
+      expect(written[1]).toBe(`bl_popup=1000000008; Path=/loja; Max-Age=${POPUP_MAX_AGE_SECONDS}; SameSite=Lax`)
+    })
+
+    it("for a promotion, its one button closes it and is remembered the same way", () => {
+      render(<StorefrontPopupLive {...promotion} />)
+      wait(5)
+      expect(screen.queryByRole("link")).toBeNull()
+
+      press("Continuar comprando")
+      expect(couponDialog()).toBeNull()
+      expect(written).toEqual([`bl_popup=1000000003; Path=/loja; Max-Age=${POPUP_MAX_AGE_SECONDS}; SameSite=Lax`])
+    })
+
+    it("opens once in a page's life", () => {
+      render(<StorefrontPopupLive {...coupon} />)
+      wait(5)
+      press("Fechar")
+
+      wait(600)
+      expect(couponDialog()).toBeNull()
+      expect(written).toHaveLength(1)
+    })
+
+    it("waits behind an unanswered cookie question, and starts its wait whole once it is answered", () => {
+      render(
+        <ConsentProvider slug="loja" choice={null}>
+          <Answer />
+          <StorefrontPopupLive {...coupon} />
+        </ConsentProvider>,
+      )
+      wait(600)
+      expect(couponDialog()).toBeNull()
+
+      press("recusar")
+      wait(4)
+      expect(couponDialog()).toBeNull()
+      wait(1)
+      expect(couponDialog()).toBeInTheDocument()
     })
   })
 

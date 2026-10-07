@@ -15,9 +15,9 @@ export interface ShopPopupState {
  * (BEELINK-306). In memory: what outlives the page is the visitor's `bl_popup` cookie, written
  * where the pop-up is closed.
  *
- * A module store so the offer strip — drawn elsewhere in the page — can step aside while the pop-up
- * says the same thing. It holds nothing of a visitor, and nothing sets it on the server, where every
- * request reads it closed.
+ * A module store, keyed by shop, so "already opened" outlives the component: a page that draws the
+ * pop-up again within one load does not open it twice. It holds nothing of a visitor, and nothing
+ * sets it on the server, where every request reads it closed.
  */
 export const useShopPopup = create<ShopPopupState>()((set) => ({
   open: {},

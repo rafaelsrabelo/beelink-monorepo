@@ -25,7 +25,7 @@ const promotion = (given: Partial<OfferPromotion>): OfferPromotion => ({
 const coupon = (given: Partial<CouponModel> = {}) => ({ id: 'c1', code: 'PRIMEIRA10', kind: 'PERCENT', percentBps: 1000, amountCents: null, minSubtotalCents: 5000, endsAt: null, ...given }) as CouponModel;
 
 const row = (given: Partial<StorePopupModel> = {}) =>
-  ({ storeId: 's', enabled: true, imageUrl: null, title: null, text: null, buttonLabel: null, trigger: 'ON_ARRIVAL', delaySeconds: 5, promotionId: null, couponId: null, revision: 3, createdAt: new Date(0), updatedAt: new Date('2026-10-07T12:00:00.000Z'), ...given }) as StorePopupModel;
+  ({ storeId: 's', enabled: true, imageUrl: null, title: null, text: null, buttonLabel: null, trigger: 'ON_ARRIVAL', delaySeconds: 5, promotionId: null, couponId: null, revision: 3, keepReminder: true, createdAt: new Date(0), updatedAt: new Date('2026-10-07T12:00:00.000Z'), ...given }) as StorePopupModel;
 
 describe('plainTextOf', () => {
   it('turns what cannot be printed into a space, collapses blanks, and reads nothing left as null', () => {
@@ -87,8 +87,8 @@ describe('popupBenefitOf', () => {
 describe('visitorsReadAnother', () => {
   const same = { imageUrl: null, title: null, text: null, buttonLabel: null, promotionId: null, couponId: null };
 
-  it('is false for the same pop-up, whatever its switch and trigger', () => {
-    expect(visitorsReadAnother(row({ enabled: false, trigger: 'ON_LEAVE', delaySeconds: 40 }), same)).toBe(false);
+  it("is false for the same pop-up, whatever its switch, its trigger and the strip's reminder", () => {
+    expect(visitorsReadAnother(row({ enabled: false, trigger: 'ON_LEAVE', delaySeconds: 40, keepReminder: false }), same)).toBe(false);
   });
 
   it.each([{ imageUrl: 'https://a/b.jpg' }, { title: 'Outro' }, { text: 'Outro' }, { buttonLabel: 'Outro' }, { promotionId: 'p1' }, { couponId: 'c1' }])('is true once %o changes', (patch) => {
@@ -98,12 +98,17 @@ describe('visitorsReadAnother', () => {
 
 describe('toPopupSettings', () => {
   it('reads the defaults, switched off, for a shop that never saved', () => {
-    expect(toPopupSettings(null)).toEqual({ enabled: false, imageUrl: null, title: null, text: null, buttonLabel: null, trigger: 'ON_ARRIVAL', delaySeconds: 5, benefitSource: 'AUTO', benefitId: null, revision: 1, updatedAt: null });
+    expect(toPopupSettings(null)).toEqual({ enabled: false, imageUrl: null, title: null, text: null, buttonLabel: null, trigger: 'ON_ARRIVAL', delaySeconds: 5, benefitSource: 'AUTO', benefitId: null, keepReminder: true, revision: 1, updatedAt: null });
   });
 
   it('says which of the two columns names the benefit', () => {
     expect(toPopupSettings(row({ promotionId: 'p1' }))).toMatchObject({ benefitSource: 'PROMOTION', benefitId: 'p1', revision: 3, updatedAt: '2026-10-07T12:00:00.000Z' });
     expect(toPopupSettings(row({ couponId: 'c1' }))).toMatchObject({ benefitSource: 'COUPON', benefitId: 'c1' });
     expect(toPopupSettings(row())).toMatchObject({ benefitSource: 'AUTO', benefitId: null });
+  });
+
+  it("reads the strip's reminder as saved", () => {
+    expect(toPopupSettings(row({ keepReminder: false })).keepReminder).toBe(false);
+    expect(toPopupSettings(row()).keepReminder).toBe(true);
   });
 });
