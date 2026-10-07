@@ -3012,6 +3012,11 @@ export interface UiMessages {
       descriptionLabel: string
       descriptionHelp: string
       imageLabel: string
+      bannerLabel: string
+      /** Under the banner field: what it is and where it shows. */
+      bannerHelp: string
+      /** The same, on a subcategory's form: with none of its own it shows its parent's. */
+      bannerHelpChild: string
       /** The select that puts a category under another. Two levels, so a child cannot be chosen. */
       parentLabel: string
       parentNone: string

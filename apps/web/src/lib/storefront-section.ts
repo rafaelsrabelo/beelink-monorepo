@@ -113,6 +113,20 @@ export function listingAskOf(place: SectionPlace): CatalogueAsk {
   }
 }
 
+/**
+ * The banner a category's own page opens with: its own, else its parent's — a subcategory with none
+ * is drawn under the one of the category it sits in. Null on every other page, the search and the
+ * whole catalogue among them, even narrowed to a category: the banner is the page's, not the filter's.
+ *
+ * A hidden parent lends none: it is not among the categories a visitor is served, so it is no
+ * `parentCategory` here — the same reason the trail leaves it out.
+ */
+export function bannerOf({ section, category, parentCategory }: Pick<SectionPlace, "section" | "category" | "parentCategory">): string | null {
+  if (section.kind !== "category" || !category) return null
+
+  return category.bannerUrl ?? parentCategory?.bannerUrl ?? null
+}
+
 /** The page's own title, which is also its `h1`. A search narrowed to a category is titled by it, as in 5a. */
 export function headingOf({ section, category, navigation, scope, signInMode, messages }: SectionPlace): string {
   const text = messages.storefront
