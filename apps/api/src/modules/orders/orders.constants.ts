@@ -1,5 +1,5 @@
 // Types
-import type { CustomerOrderSituation, OrderDeliveryKind, OrderErrorCode, OrderFulfillment, OrderShippingChoice, OrderStatus } from '@harness-monorepo/contracts';
+import type { CustomerOrderSituation, OrderDeliveryKind, OrderErrorCode, OrderFulfillment, OrderShippingChoice, OrderStatus, OrderStatusFilter } from '@harness-monorepo/contracts';
 
 export const ORDER_STATUSES = [
   'RECEIVED',
@@ -26,6 +26,16 @@ export const CUSTOMER_ORDER_SITUATIONS = {
   DELIVERED: ['DELIVERED'],
   CANCELLED: ['CANCELLED'],
 } as const satisfies Record<CustomerOrderSituation, readonly OrderStatus[]>;
+
+/**
+ * The orders still asking something of the shop: every status but delivered and cancelled. The one
+ * rule of "open" (BEELINK-309) — the panel menu's count, the list's `OPEN` filter, the customer's
+ * "active" tab and whether a conversation still takes messages all read it here.
+ */
+export const OPEN_ORDER_STATUSES: readonly OrderStatus[] = CUSTOMER_ORDER_SITUATIONS.ACTIVE;
+
+/** What the shop's list is filtered by: a status, or all the open ones. */
+export const ORDER_STATUS_FILTERS = [...ORDER_STATUSES, 'OPEN'] as const satisfies readonly OrderStatusFilter[];
 export const ORDERS_PAGE_SIZE_MAX = 100;
 /** Far past any shop's history; past it, an offset that would only strain the database. */
 export const ORDERS_PAGE_MAX = 10_000;

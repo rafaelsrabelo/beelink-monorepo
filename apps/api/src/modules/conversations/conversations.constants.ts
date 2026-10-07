@@ -2,7 +2,7 @@
 import type { ConversationErrorCode, OrderErrorCode, OrderStatus, ShopConversationFilter } from '@harness-monorepo/contracts';
 
 // App
-import { CUSTOMER_ORDER_SITUATIONS } from '../orders/orders.constants.js';
+import { OPEN_ORDER_STATUSES } from '../orders/orders.constants.js';
 
 /** A message's text, at most: the column's length, counted as Postgres counts it. */
 export const MESSAGE_MAX_LENGTH = 2000;
@@ -15,9 +15,7 @@ export const CUSTOMER_CONVERSATIONS_MAX = 50;
 
 export const SHOP_CONVERSATION_FILTERS = ['OPEN', 'UNREAD', 'ALL'] as const satisfies readonly ShopConversationFilter[];
 
-/** The statuses a conversation takes messages in: the order on its way. Delivered or cancelled, it is history. */
-export const OPEN_ORDER_STATUSES: readonly OrderStatus[] = CUSTOMER_ORDER_SITUATIONS.ACTIVE;
-
+/** A conversation takes messages while its order is open: on its way. Delivered or cancelled, it is history. */
 export function isOpen(status: OrderStatus): boolean {
   return OPEN_ORDER_STATUSES.includes(status);
 }

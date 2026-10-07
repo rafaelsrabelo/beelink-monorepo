@@ -15,18 +15,19 @@ import type { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { CustomersService } from '../customers/customers.service.js';
 import { RealtimePublisher, type RealtimeAudienceOf } from '../realtime/realtime-publisher.js';
+import { OPEN_ORDER_STATUSES } from '../orders/orders.constants.js';
 import { StoresService } from '../stores/stores.service.js';
 import {
   conversationError,
   CUSTOMER_CONVERSATIONS_MAX,
   isOpen,
-  OPEN_ORDER_STATUSES,
   SHOP_CONVERSATIONS_PAGE_SIZE,
   UNREAD_AUTHORS,
   WRITTEN_AUTHORS,
   type ConversationReader,
 } from './conversations.constants.js';
 import { summariesOf } from './conversation-summaries.js';
+import { shopUnreadOf } from './shop-unread.js';
 import { summarySelect, toCustomerConversation, toCustomerSummary, toShopConversation, toShopSummary } from './conversations.mapper.js';
 import type { ListShopConversationsDto, SendConversationMessageDto } from './dto/conversation.dto.js';
 
@@ -211,13 +212,7 @@ export class ConversationsService {
 
   /** What the panel's bell counts: the customers' messages the shop has not read, and the conversations they are in. */
   async shopUnread(storeSlug: string, userId: string): Promise<ShopConversationUnread> {
-    const storeId = await this.stores.ownedStoreId(storeSlug, userId);
-    const unread = { author: 'CUSTOMER', readAt: null } as const;
-    const [messages, conversations] = await this.prisma.$transaction([
-      this.prisma.orderMessage.count({ where: { ...unread, conversation: { order: { storeId } } } }),
-      this.prisma.orderConversation.count({ where: { order: { storeId }, messages: { some: unread } } }),
-    ]);
-    return { messages, conversations };
+    return shopUnreadOf(this.prisma, await this.stores.ownedStoreId(storeSlug, userId));
   }
 
   /**
