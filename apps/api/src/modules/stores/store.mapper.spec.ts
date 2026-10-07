@@ -131,13 +131,30 @@ describe('toPublicStore', () => {
 
   it("carries the shop's Meta Pixel ID, and null while the shop saved none (BEELINK-269)", () => {
     expect(toPublicStore(row).metaPixelId).toBeNull();
-    expect(toPublicStore({ ...row, integrations: [{ pixelId: '1234567890123456' }] } as unknown as StoreRow).metaPixelId).toBe('1234567890123456');
-    expect(toPublicStore({ ...row, integrations: [{ pixelId: null }] } as unknown as StoreRow).metaPixelId).toBeNull();
+    expect(toPublicStore({ ...row, integrations: [{ provider: 'META_PIXEL', pixelId: '1234567890123456', measurementId: null }] }).metaPixelId).toBe('1234567890123456');
+    expect(toPublicStore({ ...row, integrations: [{ provider: 'META_PIXEL', pixelId: null, measurementId: null }] }).metaPixelId).toBeNull();
   });
 
-  /** What Melhor Envio or Asaas gave the shop is sealed: the public read asks for the pixel's row, and for its ID alone. */
-  it("reads the pixel's ID and nothing else of an integration's row", () => {
-    expect(storeInclude.integrations).toEqual({ where: { provider: 'META_PIXEL' }, select: { pixelId: true } });
+  it("carries the shop's Google Analytics measurement ID, and null while the shop saved none (BEELINK-301)", () => {
+    expect(toPublicStore(row).googleAnalyticsId).toBeNull();
+    expect(toPublicStore({ ...row, integrations: [{ provider: 'GOOGLE_ANALYTICS', pixelId: null, measurementId: 'G-AB12CD34EF' }] })).toMatchObject({ googleAnalyticsId: 'G-AB12CD34EF', metaPixelId: null });
+    expect(toPublicStore({ ...row, integrations: [{ provider: 'GOOGLE_ANALYTICS', pixelId: null, measurementId: null }] }).googleAnalyticsId).toBeNull();
+  });
+
+  /** The rows come in no promised order, and a column filled on the wrong party's row is not that party's ID. */
+  it("reads each ID from its own party's row, whichever comes first", () => {
+    const pixel = { provider: 'META_PIXEL', pixelId: '1234567890123456', measurementId: null } as const;
+    const analytics = { provider: 'GOOGLE_ANALYTICS', pixelId: null, measurementId: 'G-AB12CD34EF' } as const;
+    const both = { metaPixelId: '1234567890123456', googleAnalyticsId: 'G-AB12CD34EF' };
+
+    expect(toPublicStore({ ...row, integrations: [pixel, analytics] })).toMatchObject(both);
+    expect(toPublicStore({ ...row, integrations: [analytics, pixel] })).toMatchObject(both);
+    expect(toPublicStore({ ...row, integrations: [{ provider: 'GOOGLE_ANALYTICS', pixelId: '9999999999', measurementId: null }, { provider: 'META_PIXEL', pixelId: null, measurementId: 'G-ZZ99ZZ99ZZ' }] })).toMatchObject({ metaPixelId: null, googleAnalyticsId: null });
+  });
+
+  /** What Melhor Envio or Asaas gave the shop is sealed: the public read asks for the two public parties' rows, and for their IDs alone. */
+  it("reads the two public IDs and nothing else of an integration's row", () => {
+    expect(storeInclude.integrations).toEqual({ where: { provider: { in: ['META_PIXEL', 'GOOGLE_ANALYTICS'] } }, select: { provider: true, pixelId: true, measurementId: true } });
   });
 
   it('keeps the owner, the address, the coordinates and the timestamps off the storefront', () => {

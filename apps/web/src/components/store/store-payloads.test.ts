@@ -26,6 +26,7 @@ const STORE: Store = {
   paymentMethods: ["MONEY", "PIX"],
   cashback: null,
   metaPixelId: null,
+  googleAnalyticsId: null,
   address: {
     street: null,
     number: null,
