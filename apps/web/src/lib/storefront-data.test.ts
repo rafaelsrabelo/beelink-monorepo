@@ -19,6 +19,7 @@ function category(slug: string): PublicProductCategory {
     name: slug,
     description: null,
     imageUrl: null,
+    bannerUrl: null,
     parentSlug: null,
     productCount: 1,
   }

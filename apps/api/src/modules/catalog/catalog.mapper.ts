@@ -139,6 +139,7 @@ export function toPublicProductCategory(row: ProductCategoryRow): PublicProductC
     name: row.name,
     description: row.description,
     imageUrl: row.imageUrl,
+    bannerUrl: row.bannerUrl,
     parentSlug: row.parent?.slug ?? null,
     // Direct children only. A parent's real total is rolled up in the service, which is the one
     // place that has the whole tree in hand — a mapper sees one row and cannot count a subtree.

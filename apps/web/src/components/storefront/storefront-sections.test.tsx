@@ -351,6 +351,7 @@ describe("StorefrontSections — the categories are a rail or a grid", () => {
     name: "Blusas",
     description: null,
     imageUrl: null,
+    bannerUrl: null,
     parentSlug: null,
     productCount: 3,
   }
