@@ -67,3 +67,9 @@ O princípio: **o sino é geral** (qualquer novidade), **cada item do menu é es
 - Números em outros itens do menu (Produtos sem estoque, Leads…): a base fica pronta, nenhum é ligado agora.
 - Mudar status de pedidos ou a tela de pedidos além do filtro.
 - Evento em tempo real para avaliação nova (continua por relógio).
+
+## Correção — 07/10/2026, durante a implementação
+
+- **Linha 13 da Definição de Pronto, "sem a chamada", estava errada.** O sino é montado para qualquer painel com endereço de loja, inclusive o de um site institucional, e já fazia ali as leituras dele (pedidos recebidos, pagos não vistos, conversas não lidas e `conversations/unread`). Como o sino passou a ler as mensagens não lidas das contagens, a chamada `panel-counts` acontece num site também — no lugar de `conversations/unread`, não a mais. O que vale para o site é: **o menu dele não tem item com número** (não tem Pedidos, Conversas nem Avaliações), e a leitura da casca fica desligada assim que as lojas são conhecidas. Desligar o sino num site é mudar o sino, e fica fora deste ticket (anotado em "não coberto" no PR).
+- **Ambiente.** O Postgres de `localhost:5432` deixou de ser o `asaas-db-1` durante o trabalho (outra pilha, de outro projeto, ocupou a porta). Os bancos `harness_meta_pixel` e `harness_meta_pixel_test` foram criados num Postgres próprio deste ticket, noutra porta, com um Mailpit próprio; os dois contêineres são removidos ao fim. Nada disso entra no repositório.
+- **Chave de texto.** `orders.open` já existia (o nome acessível do link de um pedido); o filtro ficou `orders.openFilter`.
