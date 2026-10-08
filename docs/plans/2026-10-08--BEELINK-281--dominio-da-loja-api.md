@@ -122,3 +122,5 @@ As do épico estão no plano do BEELINK-280. As abaixo são deste ticket, tomada
 - **Não conferido: nada no servidor de produção.** Em especial, se o container da API alcança o IP público do próprio servidor na 443, e o que o DNS de dentro do container responde.
 - **Não conferido: o adaptador de DNS em teste automatizado.** Ele consulta um servidor de DNS de verdade, então nenhum teste o chama; o que tem teste é a leitura dos erros dele. Foi exercitado só à mão, como acima.
 - **Não conferido: o limite de taxa** de salvar e conferir, e a `CHECK` e o índice único contra dados de produção (a migration só foi aplicada em bancos sem domínio nenhum).
+
+**Correção às notas acima (08/10).** No achado 1, não são cinco os specs que chamam `clearInbox()`: são 50 arquivos de `apps/api/test/`. A primeira contagem foi lida de uma busca cortada. O achado fica mais grave, não diferente: quase toda a suíte apaga a caixa inteira do Mailpit para onde aponta.
