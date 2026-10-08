@@ -1,0 +1,104 @@
+# BEELINK-283 (Y4) — Web: a loja abre no domínio dela
+
+> Épico Y (BEELINK-279). O desenho é o do [BEELINK-280](2026-10-08--BEELINK-280--dominio-proprio.md), decisões 3 a 8 e 11; o que a API entrega está no [BEELINK-281](2026-10-08--BEELINK-281--dominio-da-loja-api.md). A pilha fica `main` → Y1 → Y2 → **Y4** → Y6 → Y5 → Y3 → Y7. Escrito em 08/10/2026. Só recebe acréscimos.
+
+## O problema
+
+A API já guarda o domínio da loja e diz ao web qual host é de qual loja, e o web ainda não lê nada disso: todo endereço da vitrine começa por `/<slug>`, todo cookie do cliente mora em `Path=/<slug>`, e o `proxy.ts` só é chamado nos caminhos que o `matcher` lista, sem saber o host. Com um domínio `ACTIVE`, `http://<domínio>/` precisa mostrar a home da loja, a navegação inteira precisa acontecer sem o slug, e `beelink.biz/<slug>/…` precisa levar ao domínio.
+
+## Definição de Pronto
+
+1. **A cópia da tabela de hosts**, num módulo do web: lê `GET /custom-domains` com `callApi`, vale 60 s na memória do processo, uma leitura em voo por vez, mantém a última cópia quando a API falha, só conhece os domínios `ACTIVE` e compara hosts sem a porta e em minúsculas.
+2. **O `proxy.ts` é chamado em todo pedido que renderiza página ou roda handler.** Fora do `matcher` fica só o que não chega a código nenhum do app.
+3. **No host da plataforma o comportamento é o de hoje.** As condições do `matcher` antigo viram uma função com teste; os 21 testes de `proxy.test.ts` passam com os blocos `it` intactos; visitante anônimo e robô numa vitrine passam direto, sem redirecionamento e sem chamada à API.
+4. **`WEB_DOMAIN` no web:** pedido nesse host não consulta a tabela por host. Sem a variável, todo host consulta a cópia.
+5. **`/favicon.ico` responde em qualquer host**, sem reescrita.
+6. **Host da plataforma, página `/<slug>/…` de loja com domínio `ACTIVE`:** 308 para o domínio, com o resto do caminho e a query. Nunca `/<slug>/api/…`.
+7. **Host de loja com domínio `ACTIVE`:** `www.<domínio>` → 308 para o domínio; `/_next/…`, arquivos e `/api/…` passam; `/<slug>/api/…` passa; a página `/<slug>` ou `/<slug>/…` → 308 para a mesma sem o slug; qualquer outro caminho é reescrito para `/<slug><caminho>`. A sessão do cliente é renovada ali, com o slug vindo do host. Um domínio `PENDING` não muda nada.
+8. **O pedido leva um carimbo** dizendo que chegou pelo domínio da loja; um pedido que já chega com ele é recusado (400) em qualquer host; quem lê a loja só aceita o carimbo com o slug dela.
+9. **O prefixo viaja no objeto da loja:** `storefrontRoutes(store)` monta os endereços sem o slug, a home é `/`; `safeBackOf`, `quietPathsOf`, `order-origin.ts`, os redirecionamentos dos handlers e o `returnTo` mandado à API seguem a mesma regra.
+10. **Cookies:** no domínio da loja os sete cookies da vitrine ficam em `Path=/`; gravar ou limpar a sessão ali limpa também `/<slug>`.
+11. **O botão do Google não aparece** no domínio da loja.
+12. **`PublicStore.customDomain` é obrigatório** no contrato, com o fixture do web ajustado.
+13. **API:** `termos` e `privacidade` entram em `RESERVED_PATH_SEGMENTS`, com teste.
+14. **Testes de unidade:** a tabela, o proxy (cada regra acima), as rotas com e sem prefixo, os cookies.
+15. **Spec de Playwright:** guarda um domínio `ACTIVE` direto no banco, abre `http://<algo>.localhost:3100/`, navega sem que nenhum endereço leve o slug, cria conta e entra por e-mail, põe um produto no carrinho, recarrega e ainda o vê, e confere que `http://localhost:3100/<slug>` leva ao domínio.
+16. **No navegador**, em `http://<algo>.localhost:3800`: home, categoria, produto, busca, carrinho, entrar, conta, sair.
+17. **Documentos:** `apps/web/AGENTS.md`, `apps/web/docs/README.md`, `apps/web/.env.example`, `docs/repo/deploy.md`, e `WEB_DOMAIN` no serviço `web` do compose.
+18. **Nenhuma página da vitrine deixou de ser estática** por causa deste ticket (saída do `next build`).
+19. `pnpm ci-check` verde.
+
+## Decisões
+
+As do épico estão no plano do BEELINK-280. As abaixo são deste ticket. As marcadas "orquestrador" foram confirmadas por ele em 08/10, antes de qualquer código; as outras são do desenvolvedor. O Rafael pode mudar qualquer uma.
+
+### O carimbo: como a página sabe por onde o pedido chegou
+
+1. **O proxy carimba o pedido** (orquestrador). Quando o host é de uma loja `ACTIVE`, o proxy põe no pedido o header `x-bl-shop-domain: <slug>` e o manda adiante (reescrito ou não). `shopAt`, os handlers de `/<slug>/api/…` e mais ninguém leem o header. O briefing sugeria comparar o host do pedido com `PublicStore.customDomain`; ficou o carimbo por dois motivos:
+   - **os handlers precisam da resposta sem ler a loja.** Catorze arquivos de `app/[slug]/api/…` e `lib/shopper-forward.ts` gravam ou limpam o cookie da sessão, e nove montam redirecionamentos: o `Path` do cookie e o destino dependem de por onde o pedido chegou. Comparar com a loja custaria uma leitura por pedido em cada um;
+   - **a página fica coerente com a rota que a serviu** (ver o acréscimo à decisão 6, abaixo).
+2. **Um pedido que já chega com o header é recusado com 400**, em qualquer host e antes de qualquer outra regra. Nenhum navegador o manda; quem manda está dizendo que chegou pelo domínio de uma loja. Recusar é uma linha; limpar o header exigiria que toda resposta do proxy sobrescrevesse os headers do pedido.
+3. **`shopAt` só aceita o carimbo cujo slug é o da loja que está lendo** (orquestrador), e o handler só o aceita igual ao slug do próprio caminho. No host de uma loja, `/<outra>/api/…` não chega a handler nenhum: é reescrito como página e dá 404.
+4. **O que fica fora do `matcher`**, e por que nada ali lê o carimbo (orquestrador pediu a lista):
+   - `/_next/static/…`: os arquivos do build, servidos do disco;
+   - `/_next/image…`: o otimizador de imagens do Next.
+
+   Nenhum dos dois executa página, layout ou handler do app. **Os arquivos com extensão ficam dentro do `matcher`**, ao contrário do que o briefing dizia: um segmento dinâmico aceita ponto, então `/<slug>/produtos/a.b` e `/<slug>/api/customer/a.b` chegam ao código da página e do handler, e ficariam fora do proxy se o `matcher` excluísse "o que tem extensão". Arquivo passa direto **dentro** da função, depois da recusa do carimbo forjado. O custo é o proxy rodar também para `public/` e para `/favicon.ico`: uma chamada sem leitura nenhuma.
+5. **O carimbo nunca vai na resposta**, só no pedido que segue para a página.
+
+### Acréscimo à decisão 6 do épico (08/10)
+
+A decisão 6 do BEELINK-280 diz que "o prefixo vem do pedido": sem prefixo quando o host do pedido é o domínio da loja, com `/<slug>` em qualquer outro host. **O que este ticket fixa: o prefixo segue o que o proxy fez naquele pedido**, e não uma segunda comparação de host feita pela página. A cópia da tabela que o proxy guarda e o cache da loja que a página lê vencem em horas diferentes; no minuto em que discordam, uma página que comparasse o host por conta própria montaria endereços sem slug num host que o proxy ainda não reescreve, e o clique seguinte daria 404. Com o carimbo, a página serve endereços sem slug exatamente quando o proxy a serviu sem slug. `PublicStore.customDomain` continua no contrato, obrigatório, e o web não precisa dele para o prefixo.
+
+### O proxy
+
+6. **O `matcher` é uma entrada só:** tudo, menos `/_next/static` e `/_next/image`.
+7. **As condições do `matcher` antigo viram `wasHandedOver()`** (`lib/proxy-scope.ts`): os dez caminhos do painel, os handlers de `/api` com `bl_refresh` (fora `session`, `auth`, `customer`, `storefront`), e a vitrine com `bl_shopper_refresh` e sem `bl_shopper_access`. No host da plataforma, o que essa função não entrega passa direto, como passava quando o `matcher` não chamava o proxy.
+8. **Um defeito conhecido é reproduzido, não consertado** (orquestrador). O `matcher` antigo testava `(?!_next|api)` como prefixo do primeiro segmento: a loja cujo slug começa por `api` (`apiario`) ou por `_next` nunca teve a sessão do cliente renovada pelo proxy no host da plataforma. A função faz o mesmo. No domínio próprio isso não acontece, porque o slug vem do host.
+9. **`proxy.test.ts`: os 21 blocos `it` ficam byte a byte iguais** (orquestrador). Mudam duas coisas do arquivo, fora deles:
+   - o helper `selects()` lia `config.matcher`; como o `matcher` deixou de ser a lista, ele passa a perguntar a `wasHandedOver()`, a função que herdou as condições. Sem isso o teste "never selects a storefront path" falharia, e com razão: ele existe para falhar quando o `matcher` vira pega-tudo;
+   - entra um `vi.mock` do módulo da tabela de hosts, vazia por padrão. Sem ele, o teste "renews an expired session in place" veria a leitura da tabela como a primeira chamada de `fetch`.
+10. **Ordem das regras.** Primeiro a recusa do carimbo forjado. Depois, pelo host: se `WEB_DOMAIN` está definida e o host é ela, vai direto para as regras da plataforma; senão consulta a cópia pelo host (e por `www.` + host).
+    - **Host de loja:** `www` → 308; `/_next/…` e `/api/…` passam; `/<slug>/api/…` passa com o carimbo e a renovação da sessão; arquivo (último segmento com ponto) passa; `/termos` e `/privacidade` passam (decisão 14); `/<slug>` e `/<slug>/…` → 308 sem o slug; o resto é reescrito para `/<slug><caminho>` com o carimbo e a renovação da sessão.
+    - **Host da plataforma:** a página `/<slug>/…` cujo slug tem domínio `ACTIVE` → 308 para o domínio. Só é consultado o que tem forma de página de loja: não é arquivo, não é `/api/…`, não é caminho do painel, e o segundo segmento não é `api`. Depois, `wasHandedOver()` e o código de hoje.
+11. **O destino do 308 para o domínio** (orquestrador): quando o host do pedido é local (`localhost`, `*.localhost`, `127.0.0.1`, `[::1]`), o esquema e a porta são os do pedido, porque não existe https em desenvolvimento nem no e2e; em qualquer outro host, `https://<domínio>` sem porta. Os redirecionamentos dentro do mesmo site (o `www`, o slug a mais) saem de `publicOriginOf()`, nunca de `request.url`.
+12. **A reescrita sai de `request.nextUrl`**, não de `publicOriginOf()`: ela é interna, e o Next só a trata como interna quando a origem é a do próprio servidor.
+13. **A renovação da sessão do cliente no domínio da loja** vale nas mesmas condições de hoje (há `bl_shopper_refresh`, falta `bl_shopper_access`), nas páginas reescritas e em `/<slug>/api/…`.
+14. **`/termos` e `/privacidade` passam direto no host da loja** (orquestrador). O rodapé da vitrine, a faixa de cookies e o cadastro apontam para lá; reescritos virariam `/<slug>/termos` e dariam 404. As duas palavras já são slugs de loja reservados, e passam a ser também segmentos reservados de categoria (`RESERVED_PATH_SEGMENTS`, na API, neste PR): sem isso, uma categoria com esse nome sumiria no domínio próprio.
+
+### A cópia da tabela
+
+15. **`lib/shop-hosts.ts`.** Uma leitura vale 60 s. Vencida, o próximo pedido espera a leitura nova (uma só em voo, para todos os que chegarem juntos); se ela falhar, vale a cópia anterior e a próxima tentativa é em 5 s, não a cada pedido. Servir a cópia vencida enquanto a nova é lida seria mais rápido, e numa loja sem visitas a primeira visita depois de horas receberia a tabela de horas atrás.
+16. **Só os `ACTIVE` entram na cópia.** Um `PENDING` não existe para o proxy, que é o que "não muda nada" quer dizer.
+17. **Não há função exportada para derrubar a cópia** (orquestrador). O Next avisa que o proxy pode não dividir módulos nem globais com o resto do app; uma função que o handler do Y6 chamasse e que não alcançasse a cópia do proxy seria uma promessa falsa. **Uma mudança de domínio leva até um minuto para o proxy ver.** A medição (o proxy e os handlers dividem memória em `next dev` e em `next start`?) fica para quando o ambiente voltar.
+
+### Endereços
+
+18. **`ShopAddress`** (`lib/shop-address.ts`): `{ slug, ownDomain? }`. `shopBaseOf()` é `/<slug>` ou vazio; `shopHomeOf()` é `/<slug>` ou `/`, e é também o `Path` dos cookies. `storefrontRoutes()` continua sendo chamado com a loja; a loja que `shopAt` devolve leva `ownDomain`.
+19. **`safeBackOf(shop, raw)` passa a receber o endereço, não o slug.** No domínio da loja o site inteiro é a loja: vale qualquer caminho dele, e um `/<slug>/…` é descascado, porque é assim que a API ainda escreve o `voltar` dos e-mails.
+20. **O `returnTo` vai para a API na forma `/<slug>/…`** (`platformPathOf`). A API reduz à frente da loja o que não começa por `/<slug>` (`shopReturnOf`), e os e-mails só passam a ser escritos com o domínio no Y7.
+21. **Os componentes de cliente leem `ownDomain` de um contexto** (orquestrador), posto pelo layout da vitrine. Seis deles montam rotas com `{ slug, routeWords }` soltos e sete escrevem cookies. Fora do layout (a prévia do modo design) o contexto diz que não, e os endereços saem com `/<slug>`, que é o certo no painel.
+22. **O canonical da home deixa de ser o literal `/${slug}`** e passa a sair de `storefrontRoutes()`, como o das outras páginas. Só para as páginas não discordarem entre si; a política de canonical é do Y7.
+
+### Cookies
+
+23. **São sete, não três** (orquestrador): a sessão (`bl_shopper_access`, `bl_shopper_refresh`), `bl_cart`, `bl_consent`, `bl_origin`, `bl_popup`, `bl_purchases` e `bl_shop`. No domínio da loja a página está em `/produtos`, e um cookie em `Path=/<slug>` não é lido ali.
+24. **O gêmeo em `/<slug>` é limpo com um `Set-Cookie` cru** (orquestrador). O jar de cookies do Next guarda um cookie por nome: um segundo `set` com outro `path` substitui o primeiro (conferido). Por isso `setCustomerSessionCookies` e `clearCustomerSessionCookies` recebem a resposta, e não o jar, e acrescentam o header depois das escritas do jar.
+25. **Só a sessão limpa o gêmeo.** Um cookie em `/<slug>` só nasce no domínio da loja no minuto em que a cópia do proxy ainda não conhece o domínio; os seis que o navegador escreve vencem sozinhos, e o Next lê o de `Path=/` quando os dois chegam (conferido: `RequestCookies.get` devolve o último, e o navegador manda o caminho mais longo primeiro).
+26. **O isolamento dos cookies do Google Analytics (BEELINK-303) não está nesta branch.** Quando entrar, o `cookie_path` dele segue `shopHomeOf()`.
+
+## Fora do escopo
+
+- O painel e os handlers de `/api/stores/:slug/custom-domain` (Y6).
+- Login com Google e o chat do pedido no domínio da loja (Y5). O botão do Google só some; o socket continua apontando para `NEXT_PUBLIC_REALTIME_URL`.
+- Traefik: roteador e certificado por domínio (Y3).
+- Canonical absoluto, `sitemap.xml`, `robots.txt` e e-mails escritos com o domínio (Y7).
+- Consertar o defeito do slug que começa por `api` (decisão 8).
+
+## Riscos
+
+- **Trocar o `matcher`** é a mudança que o comentário do arquivo avisava que quebra a vitrine em silêncio. O que a segura agora é `wasHandedOver()` e os testes dela.
+- **Uma categoria com o slug da própria loja** some no domínio próprio: `/<slug>` ali redireciona para `/`.
+- **Uma mudança de domínio leva até um minuto** para o proxy ver (decisão 17), e durante esse minuto a loja pode responder nos dois endereços.
+- **O proxy passa a rodar em todo pedido**, inclusive nos arquivos de `public/`. No host da plataforma com `WEB_DOMAIN` definida isso não lê nada; sem ela, ou em outro host, lê a cópia em memória.
+- **A tabela é lida pelo web a cada minuto.** Com a API fora no arranque, a cópia é vazia e todo host é tratado como o da plataforma até a primeira leitura que der certo.
