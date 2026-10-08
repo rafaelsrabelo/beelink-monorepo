@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import type { CustomDomainEntry } from "@harness-monorepo/contracts"
 
 // App
-import { createShopHosts, hostNameOf, SHOP_HOSTS_FRESH_MS, SHOP_HOSTS_RETRY_MS, shopHosts } from "./shop-hosts"
+import { createShopHosts, hostNameOf, settledWithin, SHOP_HOSTS_FRESH_MS, SHOP_HOSTS_READ_TIMEOUT_MS, SHOP_HOSTS_RETRY_MS, shopHosts } from "./shop-hosts"
 
 const LOJA: CustomDomainEntry = { host: "minhaloja.com.br", slug: "loja", status: "ACTIVE" }
 const PENDING: CustomDomainEntry = { host: "aindanao.com.br", slug: "pendente", status: "PENDING" }
@@ -20,6 +20,23 @@ function copy(answer: () => Promise<CustomDomainEntry[]>) {
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  vi.useRealTimers()
+})
+
+describe("a read that may take only so long", () => {
+  it("is what the work settled to, when it settled in time", async () => {
+    await expect(settledWithin(Promise.resolve("table"), 50)).resolves.toBe("table")
+    await expect(settledWithin(Promise.reject(new Error("refused")), 50)).rejects.toThrow("refused")
+  })
+
+  it("fails once the time is up, though the work never settles", async () => {
+    vi.useFakeTimers()
+    const read = settledWithin(new Promise<string>(() => {}), SHOP_HOSTS_READ_TIMEOUT_MS)
+    const outcome = expect(read).rejects.toThrow(`No answer in ${SHOP_HOSTS_READ_TIMEOUT_MS} ms`)
+
+    await vi.advanceTimersByTimeAsync(SHOP_HOSTS_READ_TIMEOUT_MS)
+    await outcome
+  })
 })
 
 describe("a host as the table spells one", () => {

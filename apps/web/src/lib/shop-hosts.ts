@@ -23,6 +23,13 @@ export const SHOP_HOSTS_FRESH_MS = 60_000
  */
 export const SHOP_HOSTS_RETRY_MS = 5_000
 
+/**
+ * How long a read may take. Every request to a shop's page waits on the one in flight, and `fetch`
+ * gives an API that accepts the connection and never answers five minutes of its own: a read this
+ * late is a read that failed, and the last copy goes on standing.
+ */
+export const SHOP_HOSTS_READ_TIMEOUT_MS = 3_000
+
 export interface ShopHosts {
   /** The shop whose own, active domain this host is; null for any other host. */
   slugOf(host: string): string | null
@@ -93,9 +100,19 @@ export function createShopHosts(read: () => Promise<CustomDomainEntry[]>, now: (
   }
 }
 
+/** What `work` settles to, or a rejection once `ms` have passed without it. */
+export function settledWithin<T>(work: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const late = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`No answer in ${ms} ms`)), ms)
+  })
+
+  return Promise.race([work, late]).finally(() => clearTimeout(timer))
+}
+
 /** `GET /custom-domains`, over the internal network, with no session: every saved domain, the pending ones too. */
 async function readFromApi(): Promise<CustomDomainEntry[]> {
-  const response = await callApi({ path: "/custom-domains", method: "GET" })
+  const response = await settledWithin(callApi({ path: "/custom-domains", method: "GET" }), SHOP_HOSTS_READ_TIMEOUT_MS)
   if (!response.ok) throw new Error(`The table of shop hosts answered ${response.status}`)
 
   const entries: unknown = await response.json()
