@@ -30,6 +30,21 @@ const schema = z.object({
    * environment alone, with nothing baked into a bundle.
    */
   APP_ENVIRONMENT: z.preprocess((value) => (value === "" ? undefined : value), z.enum(["production", "homolog"]).default("production")),
+  /**
+   * The platform's own host (BEELINK-283) — the host only, as the stack already names it for the
+   * API: no scheme, no path. A request that arrives by it is the platform's without the table of
+   * shop hosts being asked, which is every request but the ones to a shop's own domain.
+   *
+   * Optional: unset — development, the e2e — every host is looked up in the table, which costs one
+   * read of it a minute. Blank counts as unset, as compose hands an unset variable over.
+   */
+  WEB_DOMAIN: z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    z
+      .string()
+      .regex(/^[a-z0-9]([a-z0-9.-]*[a-z0-9])?(:\d+)?$/i)
+      .optional(),
+  ),
 })
 
 const parsed = schema.safeParse(process.env)
