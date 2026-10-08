@@ -124,3 +124,10 @@ As do épico estão no plano do BEELINK-280. As abaixo são deste ticket, tomada
 - **Não conferido: o limite de taxa** de salvar e conferir, e a `CHECK` e o índice único contra dados de produção (a migration só foi aplicada em bancos sem domínio nenhum).
 
 **Correção às notas acima (08/10).** No achado 1, não são cinco os specs que chamam `clearInbox()`: são 50 arquivos de `apps/api/test/`. A primeira contagem foi lida de uma busca cortada. O achado fica mais grave, não diferente: quase toda a suíte apaga a caixa inteira do Mailpit para onde aponta.
+
+## Acréscimo do orquestrador (08/10, na revisão)
+
+Dois ajustes entraram na branch depois do relatório do agente, cada um no seu commit:
+
+1. **`SHOP_DOMAIN_RESERVED_HOSTS`.** A recusa "é o host da plataforma" só conhecia o host de `WEB_URL`. `link.beecoders.net`, o primeiro endereço da produção, ainda aponta para o servidor e ainda responde 200 com certificado válido (conferido em 08/10): passaria na validação, no DNS e na sonda, e ficaria `ACTIVE` na hora para a primeira loja que o salvasse; com o BEELINK-283 no ar, o web abriria essa loja ali. A variável lista os outros hosts em que o web desta instalação responde; cada um é recusado como o da plataforma, com os subdomínios. Em produção: `link.beecoders.net`. Não é prova de posse: um domínio de terceiro que aponte para o servidor continua sendo de quem o salvar primeiro. A prova por registro `TXT` fica como condição do BEELINK-282, que é quando o roteador e o certificado deixam de passar pela mão do Rafael.
+2. **`TEST_SMTP_URL` na suíte e2e.** `vitest.config.e2e.ts` fixava `SMTP_URL` na porta 1025, e um valor fixado ali ganha do ambiente do shell. Numa máquina em que a 1025 é o Mailpit de outro projeto, a suíte escrevia nele e, com `MAILPIT_URL` no padrão, esvaziava a caixa dele. O padrão não muda (a CI segue igual); `TEST_SMTP_URL` e `MAILPIT_URL` apontam a suíte para outro Mailpit: `TEST_SMTP_URL=smtp://localhost:1027 MAILPIT_URL=http://localhost:8027`.
