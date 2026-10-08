@@ -121,6 +121,15 @@ describe('customDomainHostOf', () => {
     expect(customDomainHostOf('loja.beelink.biz', 'www.beelink.biz')).toEqual({ refusal: 'PLATFORM' });
   });
 
+  it('refuses every host the platform answers on, and what is under each, when it answers on more than one', () => {
+    const hosts = ['beelink.biz', 'link.beecoders.net'];
+
+    expect(customDomainHostOf('link.beecoders.net', hosts)).toEqual({ refusal: 'PLATFORM' });
+    expect(customDomainHostOf('loja.link.beecoders.net', hosts)).toEqual({ refusal: 'PLATFORM' });
+    expect(customDomainHostOf('loja.beelink.biz', hosts)).toEqual({ refusal: 'PLATFORM' });
+    expect(customDomainHostOf('beecoders.net', hosts)).toEqual({ host: 'beecoders.net' });
+  });
+
   it('refuses nothing as the platform when the platform has no host to name', () => {
     expect(customDomainHostOf('minhaloja.com.br', '')).toEqual({ host: 'minhaloja.com.br' });
   });

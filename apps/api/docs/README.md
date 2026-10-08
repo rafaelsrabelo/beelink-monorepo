@@ -81,6 +81,7 @@ Every variable is declared in [../.env.example](../.env.example) and validated i
 | `INTEGRATIONS_SECRET_KEY` | — | 32 bytes in base64; seals each shop's third-party access (`modules/integrations/secret-vault.ts`) |
 | `SHOP_DOMAIN_TARGET_IPS` | — | the server's public IPv4 addresses, comma-separated: what a shop's own domain must resolve to, and what its shopkeeper is told to point it at. Unset, no domain can be saved or checked (`CUSTOM_DOMAIN_UNAVAILABLE`) |
 | `SHOP_DOMAIN_PROBE` | `true` | `true` · `false` — whether a check of a shop's domain also asks `https://<domain>` once its DNS is right. `false` where the API cannot reach the server's own public address |
+| `SHOP_DOMAIN_RESERVED_HOSTS` | — | every other host this deployment's web answers on, comma-separated (an earlier address, an alias): refused as a shop's domain like the platform's own (`CUSTOM_DOMAIN_PLATFORM`), with its subdomains |
 
 ## Endpoints
 

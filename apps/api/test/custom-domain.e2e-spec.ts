@@ -341,7 +341,7 @@ describe("a shop's own domain on a deployment with its own host and no probe (BE
         .overrideProvider(CustomDomainProbe)
         .useValue(probe)
         .overrideProvider(CustomDomainSettings)
-        .useValue({ targetIps: [SERVER, '203.0.113.11'], probe: false, platformHost: 'beelink.test' } satisfies CustomDomainSettings),
+        .useValue({ targetIps: [SERVER, '203.0.113.11'], probe: false, platformHost: 'beelink.test', reservedHosts: [] } satisfies CustomDomainSettings),
     );
     prisma = app.get(PrismaService);
     await resetDatabase(prisma);

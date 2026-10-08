@@ -12,12 +12,19 @@ export abstract class CustomDomainSettings {
   abstract readonly probe: boolean;
   /** The platform's own host: no shop may take it, nor a subdomain of it. */
   abstract readonly platformHost: string;
+  /**
+   * Every other host this deployment's web answers on — an earlier address, an alias. One already
+   * points at the server and has its certificate, so a check would pass it for the first shop to
+   * save it: it is refused like the platform's own.
+   */
+  abstract readonly reservedHosts: readonly string[];
 }
 
-export function customDomainSettingsOf(source: Pick<Env, 'SHOP_DOMAIN_TARGET_IPS' | 'SHOP_DOMAIN_PROBE' | 'WEB_URL'>): CustomDomainSettings {
+export function customDomainSettingsOf(source: Pick<Env, 'SHOP_DOMAIN_TARGET_IPS' | 'SHOP_DOMAIN_PROBE' | 'SHOP_DOMAIN_RESERVED_HOSTS' | 'WEB_URL'>): CustomDomainSettings {
   return {
     targetIps: source.SHOP_DOMAIN_TARGET_IPS ?? null,
     probe: source.SHOP_DOMAIN_PROBE,
     platformHost: new URL(source.WEB_URL).hostname,
+    reservedHosts: source.SHOP_DOMAIN_RESERVED_HOSTS ?? [],
   };
 }

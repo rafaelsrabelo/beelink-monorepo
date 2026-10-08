@@ -192,6 +192,16 @@ const envSchema = z.object({
   SHOP_DOMAIN_PROBE: z
     .preprocess((value) => (value === '' ? undefined : value), z.enum(['true', 'false']).default('true'))
     .transform((value) => value === 'true'),
+
+  /**
+   * Every other host the web of this deployment answers on, comma-separated — an earlier address
+   * kept alive, an alias. Such a host already points at the server and already has its certificate,
+   * so a check would pass it at once for the first shop to save it: it is refused like the
+   * platform's own, and so is any subdomain of it.
+   */
+  SHOP_DOMAIN_RESERVED_HOSTS: blankAsAbsent(
+    z.string().transform((value) => [...new Set(value.split(',').map((host) => host.trim().toLowerCase()).filter(Boolean))]),
+  ),
 }).refine(
   // All three or none: half of it is a deployment that shows the button and fails at the callback.
   (value) => [value.GOOGLE_CLIENT_ID, value.GOOGLE_CLIENT_SECRET, value.GOOGLE_REDIRECT_URI].every((part) => part === undefined) ||

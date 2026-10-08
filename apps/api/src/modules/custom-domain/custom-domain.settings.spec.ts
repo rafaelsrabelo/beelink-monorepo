@@ -3,15 +3,17 @@ import { customDomainSettingsOf } from './custom-domain.settings.js';
 
 describe('customDomainSettingsOf', () => {
   it("names the server's addresses, the probe and the platform's host — the host alone, with no port", () => {
-    expect(customDomainSettingsOf({ SHOP_DOMAIN_TARGET_IPS: ['161.97.70.106'], SHOP_DOMAIN_PROBE: true, WEB_URL: 'https://beelink.biz' })).toEqual({
+    expect(customDomainSettingsOf({ SHOP_DOMAIN_TARGET_IPS: ['161.97.70.106'], SHOP_DOMAIN_PROBE: true, SHOP_DOMAIN_RESERVED_HOSTS: ['link.beecoders.net'], WEB_URL: 'https://beelink.biz' })).toEqual({
       targetIps: ['161.97.70.106'],
       probe: true,
       platformHost: 'beelink.biz',
+      reservedHosts: ['link.beecoders.net'],
     });
     expect(customDomainSettingsOf({ SHOP_DOMAIN_TARGET_IPS: ['127.0.0.1'], SHOP_DOMAIN_PROBE: false, WEB_URL: 'http://localhost:3800' })).toEqual({
       targetIps: ['127.0.0.1'],
       probe: false,
       platformHost: 'localhost',
+      reservedHosts: [],
     });
   });
 

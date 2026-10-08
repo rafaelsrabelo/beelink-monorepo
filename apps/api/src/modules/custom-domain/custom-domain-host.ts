@@ -37,10 +37,11 @@ export function bareHostOf(input: string): string {
 }
 
 /**
- * The host a shop's domain is kept as, or why it cannot be one (BEELINK-281). Pure: `platformHost`
- * is the host of the platform's own address, handed in so no test depends on the environment.
+ * The host a shop's domain is kept as, or why it cannot be one (BEELINK-281). Pure: `platformHosts`
+ * are the hosts the platform itself answers on — its own address, and any other the deployment
+ * names — handed in so no test depends on the environment.
  */
-export function customDomainHostOf(input: string, platformHost: string): CustomDomainHostResult {
+export function customDomainHostOf(input: string, platformHosts: string | readonly string[]): CustomDomainHostResult {
   const host = bareHostOf(input);
 
   if (host === '') return { refusal: 'INVALID' };
@@ -54,8 +55,8 @@ export function customDomainHostOf(input: string, platformHost: string): CustomD
   if (host === 'localhost' || LOCAL_SUFFIXES.some((suffix) => host.endsWith(suffix))) return { refusal: 'LOCAL' };
   if (labels.length < 2) return { refusal: 'INVALID' };
 
-  const platform = bareHostOf(platformHost);
-  if (platform !== '' && (host === platform || host.endsWith(`.${platform}`))) return { refusal: 'PLATFORM' };
+  const platforms = (typeof platformHosts === 'string' ? [platformHosts] : platformHosts).map(bareHostOf).filter((platform) => platform !== '');
+  if (platforms.some((platform) => host === platform || host.endsWith(`.${platform}`))) return { refusal: 'PLATFORM' };
 
   return { host };
 }

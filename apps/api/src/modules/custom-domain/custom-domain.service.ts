@@ -157,7 +157,7 @@ export class CustomDomainService {
   }
 
   private hostOrRefuse(domain: string): string {
-    const { host, refusal } = customDomainHostOf(domain, this.settings.platformHost);
+    const { host, refusal } = customDomainHostOf(domain, [this.settings.platformHost, ...this.settings.reservedHosts]);
     if (host !== undefined) return host;
 
     const [errorCode, message] = REFUSALS[refusal];
