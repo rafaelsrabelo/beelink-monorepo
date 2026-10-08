@@ -9,6 +9,9 @@
  * Order ids alone, which name nothing to anyone but the shop.
  */
 
+// App
+import { shopHomeOf, type ShopAddress } from "./shop-address"
+
 export const PURCHASES_COOKIE = "bl_purchases"
 
 /**
@@ -55,6 +58,6 @@ export function rememberPurchase(told: readonly string[], orderId: string): stri
 }
 
 /** The `Set-Cookie` a page writes: scoped to the shop, like the answer that allowed the telling. */
-export function purchasesCookieOf(slug: string, told: readonly string[], secure: boolean): string {
-  return `${PURCHASES_COOKIE}=${told.join(".")}; Path=/${slug}; Max-Age=${PURCHASES_MAX_AGE_SECONDS}; SameSite=Lax${secure ? "; Secure" : ""}`
+export function purchasesCookieOf(shop: ShopAddress, told: readonly string[], secure: boolean): string {
+  return `${PURCHASES_COOKIE}=${told.join(".")}; Path=${shopHomeOf(shop)}; Max-Age=${PURCHASES_MAX_AGE_SECONDS}; SameSite=Lax${secure ? "; Secure" : ""}`
 }

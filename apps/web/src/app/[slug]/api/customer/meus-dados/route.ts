@@ -38,7 +38,7 @@ export async function GET(request: NextRequest, { params }: RouteContext<"/[slug
     const signIn = pageOf("entrada")
     signIn.searchParams.set(BACK_KEY, safeBackOf(here, query.get("retorno") ?? ""))
     const answer = NextResponse.redirect(signIn, 303)
-    clearCustomerSessionCookies(answer.cookies, slug)
+    clearCustomerSessionCookies(answer, here)
     return answer
   }
   const { response, renewed } = answered
@@ -59,6 +59,6 @@ export async function GET(request: NextRequest, { params }: RouteContext<"/[slug
     back.searchParams.set(DATA_ERROR_KEY, response?.status === 429 ? "RATE_LIMITED" : "UNKNOWN")
     answer = NextResponse.redirect(back, 303)
   }
-  if (renewed) setCustomerSessionCookies(answer.cookies, slug, renewed)
+  if (renewed) setCustomerSessionCookies(answer, here, renewed)
   return answer
 }

@@ -75,7 +75,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
       if (!response?.ok) return bounce("entrar", { erro: response ? await codeOf(response) : "UNKNOWN", email })
 
       const answer = NextResponse.redirect(new URL(back, publicOriginOf(request)), 303)
-      setCustomerSessionCookies(answer.cookies, slug, (await response.json()) as AuthSession)
+      setCustomerSessionCookies(answer, here, (await response.json()) as AuthSession)
       return answer
     }
     case "criar": {
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
       )
       if (saved.status === "signedOut") {
         const signedOut = NextResponse.redirect(new URL(shopHomeOf(here), publicOriginOf(request)), 303)
-        clearCustomerSessionCookies(signedOut.cookies, slug)
+        clearCustomerSessionCookies(signedOut, here)
         return signedOut
       }
       const { response, renewed } = saved
@@ -121,7 +121,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
       else landing.searchParams.set("erro", response ? profileRefusalOf(response.status, await codeOf(response)) : "UNKNOWN")
 
       const answer = NextResponse.redirect(landing, 303)
-      if (renewed) setCustomerSessionCookies(answer.cookies, slug, renewed)
+      if (renewed) setCustomerSessionCookies(answer, here, renewed)
       return answer
     }
     case "nova-senha": {
@@ -151,7 +151,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
       if (refreshToken) await callApi({ path: `${shop}/logout`, body: { refreshToken }, clientIp }).catch(() => null)
 
       const answer = NextResponse.redirect(new URL(shopHomeOf(here), publicOriginOf(request)), 303)
-      clearCustomerSessionCookies(answer.cookies, slug)
+      clearCustomerSessionCookies(answer, here)
       return answer
     }
     default:

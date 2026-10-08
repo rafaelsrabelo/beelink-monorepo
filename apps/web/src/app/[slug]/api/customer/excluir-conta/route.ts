@@ -9,7 +9,7 @@ import { PRIVACY_ERROR_KEY } from "@/lib/account-privacy"
 import { callApi, isApiErrorBody } from "@/lib/api"
 import { clientIpOf, publicOriginOf, refuseForeignOrigin } from "@/lib/bff"
 import { clearCustomerSessionCookies, setCustomerSessionCookies } from "@/lib/customer-session-cookies"
-import { shopAddressOf } from "@/lib/shop-address"
+import { shopAddressOf, type ShopAddress } from "@/lib/shop-address"
 import { callAsShopper } from "@/lib/shopper-call"
 import { SHOP_SLUG } from "@/lib/shopper-forward"
 import { ACCOUNT_DELETED_KEY, BACK_KEY, safeBackOf } from "@/lib/storefront-routes"
@@ -45,14 +45,14 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
     const signIn = pageOf("entrada")
     signIn.searchParams.set(BACK_KEY, safeBackOf(here, field("retorno")))
     signIn.searchParams.set("erro", "CUSTOMER_SESSION_ENDED")
-    return signedOut(signIn, slug)
+    return signedOut(signIn, here)
   }
   const { response, renewed } = answered
 
   if (response?.ok) {
     const signIn = pageOf("entrada")
     signIn.searchParams.set(ACCOUNT_DELETED_KEY, "1")
-    return signedOut(signIn, slug)
+    return signedOut(signIn, here)
   }
 
   const answer: unknown = response ? await response.json().catch(() => null) : null
@@ -60,13 +60,13 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
   const back = pageOf("retorno")
   back.searchParams.set(PRIVACY_ERROR_KEY, code)
   const redirect = NextResponse.redirect(back, 303)
-  if (renewed) setCustomerSessionCookies(redirect.cookies, slug, renewed)
+  if (renewed) setCustomerSessionCookies(redirect, here, renewed)
   return redirect
 }
 
 /** Out of the shop's session, its cookies gone, onto `landing`. */
-function signedOut(landing: URL, slug: string): NextResponse {
+function signedOut(landing: URL, here: ShopAddress): NextResponse {
   const answer = NextResponse.redirect(landing, 303)
-  clearCustomerSessionCookies(answer.cookies, slug)
+  clearCustomerSessionCookies(answer, here)
   return answer
 }

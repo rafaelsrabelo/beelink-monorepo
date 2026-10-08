@@ -62,7 +62,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
   const answered = await callAsShopper(request, slug, (accessToken) => callApi({ ...call, accessToken, clientIp: clientIpOf(request) }).catch(() => null))
   if (answered.status === "signedOut") {
     const signedOut = NextResponse.redirect(new URL(shopHomeOf(here), publicOriginOf(request)), 303)
-    clearCustomerSessionCookies(signedOut.cookies, slug)
+    clearCustomerSessionCookies(signedOut, here)
     return signedOut
   }
   const { response, renewed } = answered
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
   }
 
   const answer = NextResponse.redirect(landing, 303)
-  if (renewed) setCustomerSessionCookies(answer.cookies, slug, renewed)
+  if (renewed) setCustomerSessionCookies(answer, here, renewed)
   return answer
 }
 

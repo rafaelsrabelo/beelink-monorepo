@@ -59,7 +59,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
     signIn.searchParams.set(BACK_KEY, back)
     signIn.searchParams.set("erro", "CUSTOMER_SESSION_ENDED")
     const signedOut = NextResponse.redirect(signIn, 303)
-    clearCustomerSessionCookies(signedOut.cookies, slug)
+    clearCustomerSessionCookies(signedOut, here)
     return signedOut
   }
   const { response, renewed } = answered
@@ -72,6 +72,6 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
   }
 
   const answer = NextResponse.redirect(landing, 303)
-  if (renewed) setCustomerSessionCookies(answer.cookies, slug, renewed)
+  if (renewed) setCustomerSessionCookies(answer, here, renewed)
   return answer
 }

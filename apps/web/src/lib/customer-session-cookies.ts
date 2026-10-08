@@ -4,6 +4,7 @@ import type { NextResponse } from "next/server"
 
 // App
 import { accessCookieExpiryOf } from "./session-cookies"
+import { shopHomeOf, type ShopAddress } from "./shop-address"
 
 /**
  * A shopper's session, apart from a shopkeeper's. Two names and not the panel's `bl_access`: one
@@ -14,6 +15,10 @@ import { accessCookieExpiryOf } from "./session-cookies"
  * sends it to that shop's pages and nowhere else, so the sessions of two shops live side by side
  * and a handler that reads one has to live under the shop's path (`/<slug>/api/customer`).
  *
+ * At the shop's own domain (BEELINK-283) the path is `/`: the host is one shop's alone, and its
+ * pages sit at `/conta`, where a cookie on `/<slug>` is never sent. The handlers stay under
+ * `/<slug>/api`, which `/` reaches too.
+ *
  * `bl_shopper_*` and not the `bl_customer_*` these were before they were a shop's: those had
  * `path: "/"`, and would go on reaching every shop until they expire.
  */
@@ -22,16 +27,42 @@ export const CUSTOMER_REFRESH_COOKIE = "bl_shopper_refresh"
 
 type CookieJar = NextResponse["cookies"]
 
+/** An answer about to be sent: its jar, and its headers for what the jar cannot hold. */
+type Answer = Pick<NextResponse, "cookies" | "headers">
+
 const base = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
   sameSite: "lax",
 } as const
 
-export function setCustomerSessionCookies(jar: CookieJar, slug: string, session: AuthSession): void {
-  const path = `/${slug}`
-  jar.set(CUSTOMER_ACCESS_COOKIE, session.accessToken, { ...base, path, expires: accessCookieExpiryOf(session) })
-  jar.set(CUSTOMER_REFRESH_COOKIE, session.refreshToken, { ...base, path, expires: new Date(session.refreshTokenExpiresAt) })
+/**
+ * Stores a shopper's session on the shop's path — the whole site, at its own domain. The last thing
+ * written on an answer: see `dropPlatformTwins`.
+ */
+export function setCustomerSessionCookies(answer: Answer, shop: ShopAddress, session: AuthSession): void {
+  const path = shopHomeOf(shop)
+  answer.cookies.set(CUSTOMER_ACCESS_COOKIE, session.accessToken, { ...base, path, expires: accessCookieExpiryOf(session) })
+  answer.cookies.set(CUSTOMER_REFRESH_COOKIE, session.refreshToken, { ...base, path, expires: new Date(session.refreshTokenExpiresAt) })
+  dropPlatformTwins(answer, shop)
+}
+
+/**
+ * At the shop's own domain, the same two cookies on `/<slug>` are expired with every write. A
+ * browser holds them only if it was served that host under the slug, in the minute before the
+ * proxy learned of the domain — and then both would travel to `/<slug>/api`, where a session signed
+ * out at `/` would go on living in its twin.
+ *
+ * As raw headers, after the jar's writes: the jar keeps one cookie a name, so a second `set` on
+ * another path replaces the first, and any write to it afterwards rebuilds the headers from what it
+ * holds — which is why this is the last thing done to an answer.
+ */
+function dropPlatformTwins(answer: Answer, shop: ShopAddress): void {
+  if (!shop.ownDomain) return
+
+  for (const name of [CUSTOMER_ACCESS_COOKIE, CUSTOMER_REFRESH_COOKIE]) {
+    answer.headers.append("set-cookie", `${name}=; Path=/${shop.slug}; Max-Age=0; HttpOnly; SameSite=Lax${base.secure ? "; Secure" : ""}`)
+  }
 }
 
 /**
@@ -67,7 +98,10 @@ export function clearGoogleStateCookie(jar: CookieJar): void {
   jar.delete({ name: GOOGLE_STATE_COOKIE, path: GOOGLE_CALLBACK_PATH })
 }
 
-export function clearCustomerSessionCookies(jar: CookieJar, slug: string): void {
-  jar.delete({ name: CUSTOMER_ACCESS_COOKIE, path: `/${slug}` })
-  jar.delete({ name: CUSTOMER_REFRESH_COOKIE, path: `/${slug}` })
+/** Ends a shopper's session in this browser: on the shop's path, and on its twin at the shop's own domain. */
+export function clearCustomerSessionCookies(answer: Answer, shop: ShopAddress): void {
+  const path = shopHomeOf(shop)
+  answer.cookies.delete({ name: CUSTOMER_ACCESS_COOKIE, path })
+  answer.cookies.delete({ name: CUSTOMER_REFRESH_COOKIE, path })
+  dropPlatformTwins(answer, shop)
 }

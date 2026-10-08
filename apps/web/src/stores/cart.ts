@@ -3,6 +3,7 @@ import { createStore } from "zustand/vanilla"
 
 // App
 import { addLine, cartCookieOf, setLineQty, type CartLine } from "@/lib/cart-cookie"
+import type { ShopAddress } from "@/lib/shop-address"
 
 export interface CartState {
   lines: CartLine[]
@@ -22,11 +23,11 @@ export type CartStore = ReturnType<typeof createCartStore>
  * One per shop and per page load, not a module singleton: two shops are two carts, and a store
  * shared by every request on the server would hand one visitor's cart to the next.
  */
-export function createCartStore(slug: string, initial: readonly CartLine[]) {
+export function createCartStore(shop: ShopAddress, initial: readonly CartLine[]) {
   return createStore<CartState>()((set, get) => {
     const commit = (lines: CartLine[]) => {
       set({ lines })
-      if (typeof document !== "undefined") document.cookie = cartCookieOf(slug, lines, window.location.protocol === "https:")
+      if (typeof document !== "undefined") document.cookie = cartCookieOf(shop, lines, window.location.protocol === "https:")
     }
 
     return {

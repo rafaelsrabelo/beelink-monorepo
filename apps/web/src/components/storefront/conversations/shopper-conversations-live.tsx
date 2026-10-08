@@ -18,6 +18,7 @@ import { StorefrontConversationsPanel } from "@harness-monorepo/ui/blocks/storef
 import { AppLink } from "@/components/app-link"
 import { figtree, shopFontStyle } from "@/components/storefront/shop-font"
 import { unreadOf } from "@/lib/conversation-view"
+import { useShopAddress } from "@/components/storefront/shop-address-provider"
 import { storefrontRoutes } from "@/lib/storefront-routes"
 import { useShopperConversations } from "@/services/conversations/conversation-hooks"
 import { useConversationPanel } from "@/stores/conversation-panel"
@@ -38,7 +39,7 @@ const panelFont = { ...shopFontStyle, fontFamily: "var(--font-shop)" }
  * even while the balloon is not, since an order on its way has no conversation until its first word.
  */
 export function ShopperConversationsLive({ slug, routeWords, messages }: ShopperConversationsLiveProps) {
-  const routes = storefrontRoutes({ slug, routeWords })
+  const routes = storefrontRoutes({ ...useShopAddress(slug), routeWords })
   const list = useShopperConversations(slug)
   const { open, order, show, back, close, mount } = useConversationPanel()
   const pathname = usePathname()

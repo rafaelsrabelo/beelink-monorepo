@@ -26,7 +26,7 @@ afterEach(() => {
 
 describe("the cart store", () => {
   it("writes through to the shop's cookie on every change", () => {
-    const store = createCartStore("loja", [])
+    const store = createCartStore({ slug: "loja" }, [])
 
     store.getState().add({ productId: product, variantId: variant, qty: 2 })
 
@@ -34,17 +34,17 @@ describe("the cart store", () => {
   })
 
   it("survives a reload: a new store from the cookie holds the same cart", () => {
-    const first = createCartStore("loja", [])
+    const first = createCartStore({ slug: "loja" }, [])
     first.getState().add({ productId: product, variantId: null, qty: 1 })
     first.getState().add({ productId: product, variantId: null, qty: 1 })
 
-    const reloaded = createCartStore("loja", decodeCart(cookieNow()))
+    const reloaded = createCartStore({ slug: "loja" }, decodeCart(cookieNow()))
 
     expect(reloaded.getState().lines).toEqual([{ productId: product, variantId: null, qty: 2 }])
   })
 
   it("removes the cookie when the cart is emptied", () => {
-    const store = createCartStore("loja", [])
+    const store = createCartStore({ slug: "loja" }, [])
     store.getState().add({ productId: product, variantId: null, qty: 1 })
 
     store.getState().clear()
@@ -53,7 +53,7 @@ describe("the cart store", () => {
   })
 
   it("keeps another shop's cart out of this one", () => {
-    const store = createCartStore("outra", [])
+    const store = createCartStore({ slug: "outra" }, [])
     store.getState().add({ productId: product, variantId: null, qty: 1 })
 
     expect(cookieNow()).toBeUndefined()

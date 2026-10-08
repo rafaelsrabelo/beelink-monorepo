@@ -7,6 +7,7 @@ import { createContext, useContext, useState, type ReactNode } from "react"
 import { useStore } from "zustand"
 
 // App
+import { useShopAddress } from "@/components/storefront/shop-address-provider"
 import type { ConsentChoice } from "@/lib/consent-cookie"
 import { createConsentStore, type ConsentState, type ConsentStore } from "@/stores/consent"
 
@@ -17,7 +18,7 @@ const ConsentContext = createContext<ConsentStore | null>(null)
  * anything. A refusal that ignores every change stands in: nothing may be loaded on its word, and
  * the footer's "Cookies" does nothing there, like every link of the preview.
  */
-const INERT: ConsentStore = createConsentStore("", "denied")
+const INERT: ConsentStore = createConsentStore({ slug: "" }, "denied")
 INERT.setState({ accept: () => {}, refuse: () => {}, ask: () => {} })
 
 export interface ConsentProviderProps {
@@ -32,7 +33,8 @@ export interface ConsentProviderProps {
  * page load, and only at a shop that has something to ask about.
  */
 export function ConsentProvider({ slug, choice, children }: ConsentProviderProps) {
-  const [store] = useState(() => createConsentStore(slug, choice))
+  const shop = useShopAddress(slug)
+  const [store] = useState(() => createConsentStore(shop, choice))
 
   return <ConsentContext value={store}>{children}</ConsentContext>
 }

@@ -8,6 +8,7 @@ import { StorefrontDeliverTo } from "@harness-monorepo/ui/blocks/storefront/stor
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
+import { useShopAddress } from "@/components/storefront/shop-address-provider"
 import { cepDigitsOf } from "@/lib/saved-address"
 import { cepFromCookies, shopPrefsCookieOf } from "@/lib/shop-prefs-cookie"
 
@@ -33,13 +34,14 @@ export interface StorefrontDeliverToLiveProps {
  * this visit, and is kept over it.
  */
 export function StorefrontDeliverToLive({ slug, defaultCep = null, messages }: StorefrontDeliverToLiveProps) {
+  const shop = useShopAddress(slug)
   const cep = useSyncExternalStore(subscribe, () => cepFromCookies(document.cookie), () => null) ?? cepDigitsOf(defaultCep)
 
   return (
     <StorefrontDeliverTo
       cep={cep}
       onSave={(next) => {
-        document.cookie = shopPrefsCookieOf(slug, next, window.location.protocol === "https:")
+        document.cookie = shopPrefsCookieOf(shop, next, window.location.protocol === "https:")
         window.dispatchEvent(new Event(CHANGED))
       }}
       messages={messages}

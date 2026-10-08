@@ -116,7 +116,7 @@ async function keepShopperSignedIn(request: NextRequest): Promise<NextResponse> 
 
   if (outcome.status === "rejected") {
     const answer = NextResponse.next()
-    clearCustomerSessionCookies(answer.cookies, slug)
+    clearCustomerSessionCookies(answer, { slug })
     return answer
   }
 
@@ -124,7 +124,7 @@ async function keepShopperSignedIn(request: NextRequest): Promise<NextResponse> 
   request.cookies.set(CUSTOMER_ACCESS_COOKIE, outcome.session.accessToken)
   request.cookies.set(CUSTOMER_REFRESH_COOKIE, outcome.session.refreshToken)
   const answer = NextResponse.next({ request: { headers: request.headers } })
-  setCustomerSessionCookies(answer.cookies, slug, outcome.session)
+  setCustomerSessionCookies(answer, { slug }, outcome.session)
   return answer
 }
 

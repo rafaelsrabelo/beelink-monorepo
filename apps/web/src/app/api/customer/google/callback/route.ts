@@ -48,8 +48,9 @@ export async function GET(request: NextRequest) {
 
   const signedIn = (await response.json()) as GoogleSignIn
   const answer = NextResponse.redirect(new URL(safeBackOf({ slug: signedIn.storeSlug }, signedIn.returnTo ?? undefined), publicOriginOf(request)), 303)
-  // On the shop's path, as the password door stores them: the account Google opened is that shop's.
-  setCustomerSessionCookies(answer.cookies, signedIn.storeSlug, signedIn.session)
   clearGoogleStateCookie(answer.cookies)
+  // On the shop's path, as the password door stores them: the account Google opened is that shop's.
+  // The platform's host, always: this address is one, fixed, and no shop's domain.
+  setCustomerSessionCookies(answer, { slug: signedIn.storeSlug }, signedIn.session)
   return answer
 }

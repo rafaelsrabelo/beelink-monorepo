@@ -5,6 +5,7 @@ import { useContext, useEffect, useEffectEvent } from "react"
 
 // App
 import { TrackingContext } from "./use-track"
+import { useShopAddress } from "@/components/storefront/shop-address-provider"
 import type { Purchase } from "@/lib/purchase"
 import { purchasesCookieOf, purchasesFromCookies, rememberPurchase, wasPurchaseTold } from "@/lib/purchase-cookie"
 
@@ -19,6 +20,7 @@ import { purchasesCookieOf, purchasesFromCookies, rememberPurchase, wasPurchaseT
  * not said yes is marked as nothing.
  */
 export function usePurchaseTold(slug: string, purchase: Purchase | null): void {
+  const shop = useShopAddress(slug)
   const tracking = useContext(TrackingContext)
   const allowed = tracking?.allowed ?? false
   const orderId = purchase?.orderId ?? null
@@ -29,7 +31,7 @@ export function usePurchaseTold(slug: string, purchase: Purchase | null): void {
     if (wasPurchaseTold(told, purchase.orderId)) return
     if (!tracking.track(purchase.event, { id: purchase.eventId })) return
 
-    document.cookie = purchasesCookieOf(slug, rememberPurchase(told, purchase.orderId), window.location.protocol === "https:")
+    document.cookie = purchasesCookieOf(shop, rememberPurchase(told, purchase.orderId), window.location.protocol === "https:")
   })
 
   useEffect(() => {

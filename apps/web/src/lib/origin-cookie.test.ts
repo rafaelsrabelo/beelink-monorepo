@@ -108,15 +108,15 @@ describe("where a visitor came to a shop from (BEELINK-275)", () => {
       expect(ORIGIN_COOKIE).toBe("bl_origin")
       expect(ORIGIN_MAX_AGE_SECONDS).toBe(60 * 60 * 24 * 30)
 
-      const fresh = originCookieOf("loja-a", origin(), NOW, false)
+      const fresh = originCookieOf({ slug: "loja-a" }, origin(), NOW, false)
       expect(fresh).toMatch(/^bl_origin=[^;]+; Path=\/loja-a; Max-Age=2592000; SameSite=Lax$/)
       // Written again ten days in — to add or drop the click — it is not renewed.
-      expect(originCookieOf("loja-b", origin({ at: NOW - 10 * DAY }), NOW, true)).toMatch(/; Path=\/loja-b; Max-Age=1728000; SameSite=Lax; Secure$/)
+      expect(originCookieOf({ slug: "loja-b" }, origin({ at: NOW - 10 * DAY }), NOW, true)).toMatch(/; Path=\/loja-b; Max-Age=1728000; SameSite=Lax; Secure$/)
     })
 
     it("is removed when there is nothing to keep, or nothing left of its days", () => {
-      expect(originCookieOf("loja", null, NOW, false)).toBe("bl_origin=; Path=/loja; Max-Age=0; SameSite=Lax")
-      expect(originCookieOf("loja", origin({ at: NOW - 31 * DAY }), NOW, false)).toBe("bl_origin=; Path=/loja; Max-Age=0; SameSite=Lax")
+      expect(originCookieOf({ slug: "loja" }, null, NOW, false)).toBe("bl_origin=; Path=/loja; Max-Age=0; SameSite=Lax")
+      expect(originCookieOf({ slug: "loja" }, origin({ at: NOW - 31 * DAY }), NOW, false)).toBe("bl_origin=; Path=/loja; Max-Age=0; SameSite=Lax")
     })
 
     it("carries nothing a cookie cannot: no space, semicolon, comma or quote, whatever the labels hold", () => {
@@ -128,7 +128,7 @@ describe("where a visitor came to a shop from (BEELINK-275)", () => {
 
     it("survives the trip through the browser's cookies, and through the server's reader, which decodes first", () => {
       const kept = origin({ content: "Vídeo 1", term: "whey", fbclid: "abc123", at: NOW - DAY })
-      const value = valueOf(originCookieOf("loja", kept, NOW, false))
+      const value = valueOf(originCookieOf({ slug: "loja" }, kept, NOW, false))
 
       expect(originFromCookies(`bl_cart=x.y.1; bl_origin=${value}; bl_consent=granted`, NOW)).toEqual(kept)
       expect(decodeOrigin(decodeURIComponent(value), NOW)).toEqual(kept)

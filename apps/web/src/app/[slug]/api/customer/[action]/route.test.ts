@@ -262,3 +262,86 @@ describe("the shop's sign-in form", () => {
     expect((await post("entrar", form, { origin: "https://evil.example" })).status).toBe(403)
   })
 })
+
+/**
+ * The proxy stamps a request that arrived by the shop's own domain (BEELINK-283). There the pages
+ * have no slug in their address, so neither does anywhere this sends the shopper, and the session's
+ * cookies are on the whole site.
+ */
+describe("at the shop's own domain", () => {
+  function ownPost(action: string, fields: Record<string, string>, init: { cookie?: string; stamp?: string } = {}) {
+    const headers = new Headers({
+      "content-type": "application/x-www-form-urlencoded",
+      origin: "http://minhaloja.com.br",
+      "x-forwarded-host": "minhaloja.com.br",
+      "x-bl-shop-domain": init.stamp ?? "loja",
+    })
+    if (init.cookie) headers.set("cookie", init.cookie)
+
+    const request = new NextRequest(`http://localhost:3000/loja/api/customer/${action}`, { method: "POST", headers, body: new URLSearchParams(fields).toString() })
+    return POST(request, { params: Promise.resolve({ slug: "loja", action }) })
+  }
+  const ownForm = { email: "bia@exemplo.com", password: "uma-senha-comprida", voltar: "/carrinho", retorno: "/entrar" }
+  const pathsOf = (response: Response, name: string) => response.headers.getSetCookie().filter((cookie) => cookie.startsWith(`${name}=`)).map((cookie) => /;\s*path=([^;]*)/i.exec(cookie)?.[1])
+
+  it("signs in and returns to the page with no slug, the session on the whole site and its twin on the slug expired", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json(SESSION, { status: 200 })))
+
+    const response = await ownPost("entrar", ownForm)
+
+    expect(response.headers.get("location")).toBe("http://minhaloja.com.br/carrinho")
+    expect(response.cookies.get("bl_shopper_access")).toMatchObject({ value: "shopper-access", httpOnly: true, path: "/" })
+    expect(pathsOf(response, "bl_shopper_access")).toEqual(["/", "/loja"])
+    expect(pathsOf(response, "bl_shopper_refresh")).toEqual(["/", "/loja"])
+  })
+
+  /** An e-mailed link, and a page drawn before the proxy knew the domain, still say `/loja/…`. */
+  it("reads a return spelled the platform's way as the page it names there", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json(SESSION, { status: 200 })))
+
+    expect((await ownPost("entrar", { ...ownForm, voltar: "/loja/conta/pedidos" })).headers.get("location")).toBe("http://minhaloja.com.br/conta/pedidos")
+    expect((await ownPost("entrar", { ...ownForm, voltar: "/loja" })).headers.get("location")).toBe("http://minhaloja.com.br/")
+    expect((await ownPost("entrar", { ...ownForm, voltar: "//evil.example" })).headers.get("location")).toBe("http://minhaloja.com.br/")
+  })
+
+  it("comes back to the sign-in page with the refusal, at its address with no slug", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ statusCode: 401, errorCode: "AUTH_INVALID_CREDENTIALS", message: "x" }, { status: 401 })))
+
+    const location = new URL((await ownPost("entrar", ownForm)).headers.get("location") ?? "")
+
+    expect(`${location.origin}${location.pathname}`).toBe("http://minhaloja.com.br/entrar")
+    expect(location.searchParams.get("voltar")).toBe("/carrinho")
+  })
+
+  /** The API writes the e-mail's link with the platform's address, and keeps a return only under the slug. */
+  it("tells the API where to bring the shopper back in the platform's spelling", async () => {
+    const fetched = vi.fn(async () => Response.json({}, { status: 201 }))
+    vi.stubGlobal("fetch", fetched)
+
+    await ownPost("criar", { ...ownForm, name: "Bia" })
+    await ownPost("senha", { ...ownForm, voltar: "/" })
+
+    const sent = fetched.mock.calls.map((call) => JSON.parse(String(((call as unknown[])[1] as RequestInit).body)) as { returnTo?: string })
+    expect(sent.map((body) => body.returnTo)).toEqual(["/loja/carrinho", "/loja"])
+  })
+
+  it("signs out to the front door, and clears the session on the site and on the slug", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(null, { status: 204 })))
+
+    const response = await ownPost("sair", {}, { cookie: "bl_shopper_refresh=r" })
+
+    expect(response.headers.get("location")).toBe("http://minhaloja.com.br/")
+    expect(pathsOf(response, "bl_shopper_refresh")).toEqual(["/", "/loja"])
+    expect(response.cookies.get("bl_shopper_refresh")?.value).toBe("")
+  })
+
+  /** At one shop's domain no other shop is at the root. */
+  it("takes no stamp that names another shop: its pages stay under its slug", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json(SESSION, { status: 200 })))
+
+    const response = await ownPost("entrar", form, { stamp: "outra" })
+
+    expect(response.headers.get("location")).toBe("http://minhaloja.com.br/loja/carrinho")
+    expect(pathsOf(response, "bl_shopper_access")).toEqual(["/loja"])
+  })
+})

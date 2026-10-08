@@ -8,6 +8,9 @@
  * secret — the cookie is not `httpOnly`, and it never holds more than a shopper could type.
  */
 
+// App
+import { shopHomeOf, type ShopAddress } from "./shop-address"
+
 export const CART_COOKIE = "bl_cart"
 /** Fifty lines: at 32 characters an id, the most that still sits well under 4 KB. */
 export const CART_MAX_LINES = 50
@@ -89,10 +92,13 @@ export function countOf(lines: readonly CartLine[]): number {
   return lines.reduce((sum, line) => sum + line.qty, 0)
 }
 
-/** The `Set-Cookie` a page writes: scoped to the shop, so two shops on one domain keep two carts. */
-export function cartCookieOf(slug: string, lines: readonly CartLine[], secure: boolean): string {
+/**
+ * The `Set-Cookie` a page writes: scoped to the shop, so two shops on one domain keep two carts —
+ * and to the whole site at the shop's own domain, where the cart's page is `/carrinho`.
+ */
+export function cartCookieOf(shop: ShopAddress, lines: readonly CartLine[], secure: boolean): string {
   const value = encodeCart(lines)
   const age = value ? MAX_AGE_SECONDS : 0
 
-  return `${CART_COOKIE}=${value}; Path=/${slug}; Max-Age=${age}; SameSite=Lax${secure ? "; Secure" : ""}`
+  return `${CART_COOKIE}=${value}; Path=${shopHomeOf(shop)}; Max-Age=${age}; SameSite=Lax${secure ? "; Secure" : ""}`
 }

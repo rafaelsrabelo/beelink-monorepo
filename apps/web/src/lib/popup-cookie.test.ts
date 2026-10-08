@@ -12,17 +12,17 @@ describe("the pop-up cookie", () => {
   })
 
   it("is written on the shop's own path, readable by the page, and Secure on https", () => {
-    expect(popupCookieOf("loja-a", "VISITOR", 3, false)).toBe(`bl_popup=3; Path=/loja-a; Max-Age=${POPUP_MAX_AGE_SECONDS}; SameSite=Lax`)
-    expect(popupCookieOf("loja-b", "VISITOR", 12, true)).toBe(`bl_popup=12; Path=/loja-b; Max-Age=${POPUP_MAX_AGE_SECONDS}; SameSite=Lax; Secure`)
-    expect(popupCookieOf("loja-b", "CUSTOMER", 12, true)).toBe(`bl_popup=1000000012; Path=/loja-b; Max-Age=${POPUP_MAX_AGE_SECONDS}; SameSite=Lax; Secure`)
+    expect(popupCookieOf({ slug: "loja-a" }, "VISITOR", 3, false)).toBe(`bl_popup=3; Path=/loja-a; Max-Age=${POPUP_MAX_AGE_SECONDS}; SameSite=Lax`)
+    expect(popupCookieOf({ slug: "loja-b" }, "VISITOR", 12, true)).toBe(`bl_popup=12; Path=/loja-b; Max-Age=${POPUP_MAX_AGE_SECONDS}; SameSite=Lax; Secure`)
+    expect(popupCookieOf({ slug: "loja-b" }, "CUSTOMER", 12, true)).toBe(`bl_popup=1000000012; Path=/loja-b; Max-Age=${POPUP_MAX_AGE_SECONDS}; SameSite=Lax; Secure`)
     // The page writes it at the click: an httpOnly cookie could not be.
-    expect(popupCookieOf("loja-a", "CUSTOMER", 3, true)).not.toMatch(/httponly/i)
+    expect(popupCookieOf({ slug: "loja-a" }, "CUSTOMER", 3, true)).not.toMatch(/httponly/i)
   })
 
   // The published privacy policy: "guarda só um número que identifica o aviso fechado, e nada sobre você".
   it("holds one whole number — which notice was closed — and nothing about the person, for either notice in either form", () => {
     for (const notice of ["VISITOR", "CUSTOMER"] as const) for (const surface of ["DIALOG", "STRIP"] as const) {
-      const [pair, ...attributes] = popupCookieOf("loja", notice, 7, false, surface).split("; ")
+      const [pair, ...attributes] = popupCookieOf({ slug: "loja" }, notice, 7, false, surface).split("; ")
 
       expect(pair).toMatch(/^bl_popup=[1-9]\d*$/)
       expect(attributes).toEqual(["Path=/loja", `Max-Age=${POPUP_MAX_AGE_SECONDS}`, "SameSite=Lax"])
@@ -57,13 +57,13 @@ describe("the pop-up cookie", () => {
   })
 
   it("writes a strip's closing on the shop's own path, as a dialog's is", () => {
-    expect(popupCookieOf("loja-a", "VISITOR", 0, false, "STRIP")).toBe(`bl_popup=2000000000; Path=/loja-a; Max-Age=${POPUP_MAX_AGE_SECONDS}; SameSite=Lax`)
-    expect(popupCookieOf("loja-b", "CUSTOMER", 4, true, "STRIP")).toBe(`bl_popup=3000000004; Path=/loja-b; Max-Age=${POPUP_MAX_AGE_SECONDS}; SameSite=Lax; Secure`)
+    expect(popupCookieOf({ slug: "loja-a" }, "VISITOR", 0, false, "STRIP")).toBe(`bl_popup=2000000000; Path=/loja-a; Max-Age=${POPUP_MAX_AGE_SECONDS}; SameSite=Lax`)
+    expect(popupCookieOf({ slug: "loja-b" }, "CUSTOMER", 4, true, "STRIP")).toBe(`bl_popup=3000000004; Path=/loja-b; Max-Age=${POPUP_MAX_AGE_SECONDS}; SameSite=Lax; Secure`)
   })
 
   it("reads back what it writes", () => {
     for (const notice of ["VISITOR", "CUSTOMER"] as const) for (const surface of ["DIALOG", "STRIP"] as const) {
-      const value = popupCookieOf("loja", notice, 5, false, surface).split(";")[0]?.split("=")[1]
+      const value = popupCookieOf({ slug: "loja" }, notice, 5, false, surface).split(";")[0]?.split("=")[1]
 
       expect(decodePopupSeen(value)).toEqual({ notice, surface, revision: 5 })
     }

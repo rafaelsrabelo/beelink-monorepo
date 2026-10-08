@@ -35,7 +35,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
   )
   if (read.status === "signedOut") {
     const answer = go(routes.signIn({ back: routes.accountOrder(Number(number)) }))
-    clearCustomerSessionCookies(answer.cookies, slug)
+    clearCustomerSessionCookies(answer, store)
     return answer
   }
 
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
   const trimmed = (reorder?.lines ?? []).some((line) => qtyOf(lines, line) - qtyOf(before, line) < line.quantity)
 
   const answer = go(routes.cart({ reordered: Number(number), failed: !reorder, trimmed }))
-  if (read.renewed) setCustomerSessionCookies(answer.cookies, slug, read.renewed)
-  if (reorder) answer.headers.append("set-cookie", cartCookieOf(slug, lines, request.nextUrl.protocol === "https:"))
+  if (read.renewed) setCustomerSessionCookies(answer, store, read.renewed)
+  if (reorder) answer.headers.append("set-cookie", cartCookieOf(store, lines, request.nextUrl.protocol === "https:"))
   return answer
 }

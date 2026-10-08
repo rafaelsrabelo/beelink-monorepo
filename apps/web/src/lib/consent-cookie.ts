@@ -1,6 +1,9 @@
 // Types
 import type { PublicStore } from "@harness-monorepo/contracts"
 
+// App
+import { shopHomeOf, type ShopAddress } from "./shop-address"
+
 /**
  * What a visitor answered when a shop asked whether it may track them for its ads (BEELINK-271), as
  * the `bl_consent` cookie holds it.
@@ -43,7 +46,10 @@ export function marketingAllowed(store: Pick<PublicStore, "metaPixelId">, choice
   return Boolean(store.metaPixelId) && choice === "granted"
 }
 
-/** The `Set-Cookie` a page writes: scoped to the shop, so two shops on one domain keep two answers. */
-export function consentCookieOf(slug: string, choice: ConsentChoice, secure: boolean): string {
-  return `${CONSENT_COOKIE}=${choice}; Path=/${slug}; Max-Age=${CONSENT_MAX_AGE_SECONDS}; SameSite=Lax${secure ? "; Secure" : ""}`
+/**
+ * The `Set-Cookie` a page writes: scoped to the shop, so two shops on one domain keep two answers —
+ * and to the whole site at the shop's own domain, which is that shop's alone.
+ */
+export function consentCookieOf(shop: ShopAddress, choice: ConsentChoice, secure: boolean): string {
+  return `${CONSENT_COOKIE}=${choice}; Path=${shopHomeOf(shop)}; Max-Age=${CONSENT_MAX_AGE_SECONDS}; SameSite=Lax${secure ? "; Secure" : ""}`
 }

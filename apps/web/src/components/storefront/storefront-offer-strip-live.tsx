@@ -5,6 +5,7 @@ import { StorefrontOfferStrip } from "@harness-monorepo/ui/blocks/storefront/sto
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
+import { useShopAddress } from "@/components/storefront/shop-address-provider"
 import type { OfferStripView } from "@/lib/offer-strip"
 import { popupCookieOf, type PopupNotice } from "@/lib/popup-cookie"
 import { useOfferStrip } from "@/stores/offer-strip"
@@ -34,13 +35,14 @@ export interface StorefrontOfferStripLiveProps {
  * (`offersViewOf`), so nothing here steps aside and nothing arrives under the pointer when a dialog closes.
  */
 export function StorefrontOfferStripLive({ slug, strip, notice, revision, messages }: StorefrontOfferStripLiveProps) {
+  const shop = useShopAddress(slug)
   const closed = useOfferStrip((state) => state.closed[slug] === true)
   const close = useOfferStrip((state) => state.close)
 
   if (closed) return null
 
   function remember() {
-    document.cookie = popupCookieOf(slug, notice, revision, window.location.protocol === "https:", "STRIP")
+    document.cookie = popupCookieOf(shop, notice, revision, window.location.protocol === "https:", "STRIP")
   }
 
   return (

@@ -16,7 +16,7 @@ describe("shop-prefs-cookie", () => {
   })
 
   it("keeps it on the shop's own path, for a year, secure where the page is", () => {
-    expect(shopPrefsCookieOf("loja", "01310930", true)).toBe("bl_shop=cep.01310930;path=/loja;max-age=31536000;samesite=lax;secure")
-    expect(shopPrefsCookieOf("loja", "01310930", false)).not.toContain("secure")
+    expect(shopPrefsCookieOf({ slug: "loja" }, "01310930", true)).toBe("bl_shop=cep.01310930;path=/loja;max-age=31536000;samesite=lax;secure")
+    expect(shopPrefsCookieOf({ slug: "loja" }, "01310930", false)).not.toContain("secure")
   })
 })

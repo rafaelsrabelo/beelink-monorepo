@@ -18,6 +18,7 @@ import { format } from "@harness-monorepo/ui/locales/index"
 import { AppLink } from "@/components/app-link"
 import { conversationRefusalOf } from "@/lib/conversation-refusal"
 import { conversationLinesOf, MESSAGE_MAX, messageLengthOf } from "@/lib/conversation-view"
+import { useShopAddress } from "@/components/storefront/shop-address-provider"
 import { storefrontRoutes } from "@/lib/storefront-routes"
 import { useMarkShopperConversationRead, useSendShopperMessage, useShopperConversation } from "@/services/conversations/conversation-hooks"
 import { ShopperConversationError } from "@/services/conversations/conversation-requests"
@@ -40,7 +41,7 @@ export interface ConversationThreadLiveProps {
  */
 export function ConversationThreadLive({ slug, routeWords, number, onBack, onViewOrder, messages }: ConversationThreadLiveProps) {
   const text = messages.storefront
-  const routes = storefrontRoutes({ slug, routeWords })
+  const routes = storefrontRoutes({ ...useShopAddress(slug), routeWords })
   const conversation = useShopperConversation(slug, number)
   const send = useSendShopperMessage(slug, number)
   const { mutate: markRead } = useMarkShopperConversationRead(slug, number)

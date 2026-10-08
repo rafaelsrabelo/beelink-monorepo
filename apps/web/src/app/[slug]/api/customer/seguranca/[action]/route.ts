@@ -63,7 +63,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
     const signIn = new URL(safeBackOf(here, field("entrada")), publicOriginOf(request))
     signIn.searchParams.set(BACK_KEY, safeBackOf(here, field("retorno")))
     signIn.searchParams.set("erro", "CUSTOMER_SESSION_ENDED")
-    return signedOut(signIn, slug)
+    return signedOut(signIn, here)
   }
   const { response, renewed } = answered
 
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
     // This session ended with the rest: on to the shop's sign-in (`entrada`), told why.
     const signIn = new URL(safeBackOf(here, field("entrada")), publicOriginOf(request))
     signIn.searchParams.set(SIGNED_OUT_EVERYWHERE_KEY, "1")
-    return signedOut(signIn, slug)
+    return signedOut(signIn, here)
   }
 
   let landing: URL
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
   }
 
   const answer = NextResponse.redirect(landing, 303)
-  if (renewed) setCustomerSessionCookies(answer.cookies, slug, renewed)
+  if (renewed) setCustomerSessionCookies(answer, here, renewed)
   return answer
 }
 
@@ -104,8 +104,8 @@ function callOf(action: Action, here: ShopAddress, field: (name: string) => stri
 }
 
 /** Out of the shop's session, its cookies gone, onto `landing`. */
-function signedOut(landing: URL, slug: string): NextResponse {
+function signedOut(landing: URL, here: ShopAddress): NextResponse {
   const answer = NextResponse.redirect(landing, 303)
-  clearCustomerSessionCookies(answer.cookies, slug)
+  clearCustomerSessionCookies(answer, here)
   return answer
 }
