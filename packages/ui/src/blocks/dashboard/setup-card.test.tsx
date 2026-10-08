@@ -47,6 +47,18 @@ describe("SetupCard", () => {
     expect(screen.queryByText("Feito")).not.toBeInTheDocument()
   })
 
+  /** Begun and waiting on something outside the panel is neither left to do nor done: the action stays the next thing to press. */
+  it("says a word for a thing under way where the tick would be, and gives way to the tick once it is done", () => {
+    const { unmount } = renderCard({ status: "Aguardando" })
+    expect(screen.getByText("Aguardando")).toHaveAttribute("data-variant", "outline")
+    expect(screen.queryByText("Feito")).not.toBeInTheDocument()
+    unmount()
+
+    renderCard({ status: "Aguardando", done: true })
+    expect(screen.getByText("Feito")).toBeInTheDocument()
+    expect(screen.queryByText("Aguardando")).not.toBeInTheDocument()
+  })
+
   /**
    * It navigates, so it is a link — in the tab order as one, middle-clickable into a new tab, with
    * "copy address" on the right click. For one commit it was the Button primitive rendered as an
