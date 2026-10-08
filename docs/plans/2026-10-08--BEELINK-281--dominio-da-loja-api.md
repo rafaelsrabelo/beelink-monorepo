@@ -81,3 +81,44 @@ As do épico estão no plano do BEELINK-280. As abaixo são deste ticket, tomada
 - **A sonda supõe que o container da API alcança o IP público do próprio servidor** na 443. Onde não alcança, toda conferência termina em `HTTPS_UNREACHABLE`; é para isso que `SHOP_DOMAIN_PROBE=false` existe. Nada disto foi testado no servidor de produção.
 - **O DNS que a API consulta é o do container**, com o cache dele: uma mudança recém-feita pode levar o tempo do TTL para aparecer.
 - **`ACTIVE` é o que faz o web redirecionar a loja inteira para o domínio** (decisão 3 do épico). A sonda prova DNS e certificado; não prova que quem respondeu foi o web do bee-link (decisão 17).
+
+## Notas da entrega (acréscimo, 08/10)
+
+**Correções ao que está acima.**
+
+- **Decisão 5:** são tirados **todos** os `www.` da frente, não um só. `www.www.loja.com.br` vira `loja.com.br`. Com um só, o host guardado poderia começar com `www.`, que é a forma de que o web redireciona, e a `CHECK` da coluna (que recusa `www.` na frente) responderia 500.
+- **Decisão 3:** a `CHECK` de estado prende mais uma coisa: sem domínio, `customDomainCheckedAt` e `customDomainProblem` também são nulos.
+- **Decisão 11:** o verificador (`CustomDomainChecker`) recebe os IPs e o liga/desliga da sonda como argumento, em vez de ler a configuração. Quem lê é o serviço, de `CustomDomainSettings`.
+
+**Onde ficou cada coisa.**
+
+- Contratos: `packages/contracts/src/custom-domain.ts` (`CustomDomainStatus`, `CustomDomainDnsProblem`, `CustomDomainHttpsProblem`, `CustomDomainProblem`, `PublicCustomDomain`, `CustomDomain`, `CustomDomainWwwCheck`, `CustomDomainCheck`, `CustomDomainOverview`, `SaveCustomDomainPayload`, `CustomDomainEntry`, `CustomDomainErrorCode`); `PublicStore.customDomain` em `store.ts`.
+- Migration `20261008120000_store_custom_domain`: o enum `CustomDomainStatus`, as quatro colunas anuláveis em `stores`, o índice único `stores_customDomain_key` e as `CHECK` `stores_custom_domain_check` e `stores_custom_domain_status_check`. Foi escrita à mão a partir do `prisma migrate diff`, porque o `migrate dev --create-only` pede confirmação num terminal por causa do índice único; o `prisma migrate dev` seguinte a aplicou e não achou diferença com o schema.
+- API: `apps/api/src/modules/custom-domain/`. `custom-domain-host.ts` (normaliza e valida), `custom-domain.ports.ts` (as duas portas), `custom-domain-dns.resolver.ts` e `custom-domain-https.probe.ts` (o que toca a rede), `custom-domain-checker.ts` (a conferência e o que ela grava), `custom-domain.settings.ts`, `custom-domain.service.ts`, `custom-domain.controller.ts` (as rotas do lojista), `custom-domains.controller.ts` (a tabela), `dto/`. O campo público sai de `modules/stores/store.mapper.ts`.
+- Variáveis: `SHOP_DOMAIN_TARGET_IPS` e `SHOP_DOMAIN_PROBE` em `apps/api/src/shared/config/env.ts`.
+
+**Para o Y4 (web) e o Y6 (painel).**
+
+- **A tabela:** `GET {API_URL}/custom-domains`, sem sessão, responde `CustomDomainEntry[]` (`{ host, slug, status }`), ordenado por host, **com os pendentes**. O web filtra por `status === "ACTIVE"`.
+- **Nos dados públicos:** `PublicStore.customDomain?: PublicCustomDomain | null`, isto é `{ host, status }`. A API sempre manda; o `?` é para a resposta guardada em cache antes do deploy. Um domínio pendente também vem.
+- **Rotas do lojista**, todas com `Authorization` e a guarda de dono: `GET`, `PUT` (`{ domain }`) e `DELETE` em `/api/stores/:slug/custom-domain`, e `POST /api/stores/:slug/custom-domain/check`. `GET`, `PUT` e `POST` respondem `CustomDomainOverview`; `DELETE` responde 204.
+- **Os handlers do BFF não existem** (este ticket não toca o web). Quem os criar precisa derrubar o cache `store:<slug>` (`revalidateStore`) em todo 2xx de `PUT`, `DELETE` e `POST …/check`, porque os três podem mudar `PublicStore.customDomain`, e a cópia da tabela que o web guarda.
+- **A etapa de HTTPS** pede `GET https://<host>/favicon.ico` (constante `CUSTOM_DOMAIN_PROBE_PATH`), que o web já serve de `apps/web/src/app/favicon.ico`. O status não é lido: qualquer resposta HTTP sobre um certificado válido para o host conta. O Y4 não precisa criar rota nenhuma; só não pode fazer esse caminho deixar de responder no host de uma loja.
+- **`ACTIVE` com `problem` preenchido é válido** e quer dizer "ativo, e a última conferência achou isto". A tela mostra o aviso sem tratar o domínio como pendente.
+- **Os códigos que a tela precisa traduzir:** os de recusa (`CUSTOM_DOMAIN_INVALID`, `_IP_ADDRESS`, `_LOCAL`, `_NOT_ASCII`, `_PLATFORM`, `_TAKEN`, `_UNAVAILABLE`, `_NOT_SET`) e os de problema (`DNS_NOT_FOUND`, `DNS_POINTS_ELSEWHERE`, `DNS_LOOKUP_FAILED`, `HTTPS_UNREACHABLE`, `HTTPS_CERTIFICATE_INVALID`). Para `DNS_POINTS_ELSEWHERE`, `check.addresses` diz para onde; `check.www` é o aviso do `www`. `check` só vem na resposta de salvar e de conferir: numa leitura simples a tela tem `domain.problem` e não tem os endereços.
+- **`targetIps: null`** é a instalação sem a variável: a tela diz que não está disponível, e `PUT` e `POST …/check` respondem `503 CUSTOM_DOMAIN_UNAVAILABLE`.
+
+**Achados fora do escopo, não corrigidos.**
+
+1. **O e2e da API manda e-mail para a porta 1025.** `apps/api/vitest.config.e2e.ts` fixa `SMTP_URL: 'smtp://localhost:1025'`, e o `env` da configuração do Vitest ganha do ambiente do shell. Nesta máquina a 1025 e a 8025 são do Mailpit de outro projeto (`tradvogados-mail-1`), e cinco specs chamam `clearInbox()`, que apaga a caixa inteira. Rodar `pnpm --filter api test:e2e` aqui escreveria e apagaria na caixa dos outros. A suíte foi rodada com uma configuração local, não commitada, que só troca o `SMTP_URL` para a 1027, e com `MAILPIT_URL=http://localhost:8027`. A correção é uma linha (`SMTP_URL: process.env.TEST_SMTP_URL ?? 'smtp://localhost:1025'`) e fica para um ticket próprio.
+2. **Um apelido da plataforma pode ser tomado por uma loja.** A recusa "é o host da plataforma" só conhece o host de `WEB_URL`. Qualquer outro host que já aponte para o servidor e já tenha roteador e certificado para o web (um apelido antigo do site, por exemplo) passa na validação, passa no DNS, passa na sonda e fica `ACTIVE` na hora, para a primeira loja que o salvar. Com o Y4 no ar, o web passaria a abrir essa loja nesse host. É o risco "quem salva primeiro" com o Rafael fora do caminho: precisa de uma lista de hosts reservados ou da prova de posse por `TXT` antes de o Y4 ir para produção.
+3. **`test/meta-pixel-without-vault-key.e2e-spec.ts` falha neste worktree**, como a decisão 14 do plano do BEELINK-301 já registrava: não troca o `dotenv`, então a `INTEGRATIONS_SECRET_KEY` do `apps/api/.env` volta. O arquivo não foi tocado.
+
+**O que foi e o que não foi conferido.**
+
+- Conferido: os testes unitários novos (144 em 5 arquivos do módulo, mais o do mapper), entre eles a sonda HTTPS contra um servidor TLS de verdade na interface de loopback, com um certificado gerado na hora pelo `openssl` (resposta com certificado da casa, certificado sem autoridade, certificado de outro nome, porta fechada, porta que não fala TLS, servidor mudo); os dois e2e novos (2 arquivos, 16 testes); a suíte e2e inteira da API contra `harness_domain_test` na 5442 e o Mailpit da 8027: 86 arquivos passaram e 1 falhou, o do achado 3; `pnpm ci-check` verde.
+- Conferido à mão, com a API de pé na 3801 e uma conta criada pelo fluxo normal: o Swagger das cinco operações e do campo novo; ler, salvar, conferir, remover e as recusas por `curl`. Isso usou o DNS de verdade: `example.com` respondeu `DNS_POINTS_ELSEWHERE` com os endereços, um nome inexistente respondeu `DNS_NOT_FOUND`, e `lvh.me` (um nome público que resolve para `127.0.0.1`, o IP configurado neste worktree) passou no DNS e parou em `HTTPS_UNREACHABLE`, porque nada escuta na 443 daqui.
+- **Não conferido: um domínio ficando `ACTIVE` pela rede de verdade.** Não há aqui um servidor na 443 com certificado válido. O caminho "respondeu" da sonda só foi exercitado no teste unitário, com o certificado do teste dado como autoridade.
+- **Não conferido: nada no servidor de produção.** Em especial, se o container da API alcança o IP público do próprio servidor na 443, e o que o DNS de dentro do container responde.
+- **Não conferido: o adaptador de DNS em teste automatizado.** Ele consulta um servidor de DNS de verdade, então nenhum teste o chama; o que tem teste é a leitura dos erros dele. Foi exercitado só à mão, como acima.
+- **Não conferido: o limite de taxa** de salvar e conferir, e a `CHECK` e o índice único contra dados de produção (a migration só foi aplicada em bancos sem domínio nenhum).
