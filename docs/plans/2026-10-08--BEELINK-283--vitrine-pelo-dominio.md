@@ -102,3 +102,64 @@ A decisão 6 do BEELINK-280 diz que "o prefixo vem do pedido": sem prefixo quand
 - **Uma mudança de domínio leva até um minuto** para o proxy ver (decisão 17), e durante esse minuto a loja pode responder nos dois endereços.
 - **O proxy passa a rodar em todo pedido**, inclusive nos arquivos de `public/`. No host da plataforma com `WEB_DOMAIN` definida isso não lê nada; sem ela, ou em outro host, lê a cópia em memória.
 - **A tabela é lida pelo web a cada minuto.** Com a API fora no arranque, a cópia é vazia e todo host é tratado como o da plataforma até a primeira leitura que der certo.
+
+## Notas da entrega (acréscimo, 08/10)
+
+**O ambiente no dia.** O código, os testes de unidade e os documentos foram escritos com o Docker fora do ar e o disco da máquina quase cheio: no meio do ticket o disco encheu durante um `next build` de base e o Docker Desktop desligou o engine. A partir dali, por ordem do orquestrador, nada que precisasse do banco, de um build ou de um servidor foi rodado. **Tudo o que depende disso está escrito e não conferido**; a lista está em "O que não rodou".
+
+**Correções ao que está acima.**
+
+- **Decisão 9:** fora dos 21 blocos `it`, o arquivo `proxy.test.ts` mudou em quatro pontos, não dois: o helper `selects()`; o `vi.mock` da tabela de hosts; duas linhas no `afterEach`, que devolvem a tabela simulada ao vazio; e os imports (`wasHandedOver` e `unstable_doesMiddlewareMatch`, este para os testes novos do `matcher`). Um `diff` contra o arquivo anterior mostra só isso antes dos testes acrescentados no fim.
+- **Decisão 10:** a recusa do carimbo forjado responde `400` com o corpo de erro de sempre (`{ statusCode, errorCode: "BAD_REQUEST", message }`).
+- **Decisão 18:** o tipo que `shopAt` devolve é `ServedShop` (`PublicStore` mais `ownDomain: boolean`). `SectionPlace.store` aceita a loja com ou sem a marca.
+- **Decisão 19:** além de descascar o `/<slug>`, `safeBackOf` no domínio da loja resolve o caminho como o navegador resolve e confere a origem. Sem isso, `/<tab>/evil.example` passava: o navegador tira a tabulação e sobra `//evil.example`, outro site (conferido: `new URL("/\t/evil.example", base).origin` é `http://evil.example`). No host da plataforma a regra antiga já barrava, porque exige o `/<slug>` na frente.
+- **Decisão 24:** a ordem importa mais do que a decisão dizia. Uma escrita no jar **depois** dos headers crus os apaga (o jar reescreve todos os `Set-Cookie` a partir do que guarda). Os helpers da sessão são, por isso, a última coisa escrita numa resposta; no retorno do Google a limpeza do cookie de estado passou para antes deles. Há teste para a perda.
+- **Riscos:** faltaram três. O **carrinho, a sessão e a resposta sobre cookies não atravessam** do `beelink.biz/<slug>` para o domínio: são sites diferentes para o navegador, e o cliente que estava no meio de uma compra recomeça. **O funil conta a visita do próprio lojista** no domínio da loja, porque o cookie do painel, que o tira da conta, não chega àquele host. E **uma categoria `termos` ou `privacidade` que já exista** numa loja continua abrindo no host da plataforma e some no domínio próprio: a reserva na API só vale para o que for criado ou renomeado dali em diante, e nenhuma loja de produção foi consultada para saber se existe alguma.
+
+**Onde ficou cada coisa.**
+
+- `apps/web/src/lib/shop-address.ts`: `ShopAddress` (`{ slug, ownDomain? }`), `SHOP_DOMAIN_HEADER` (`x-bl-shop-domain`), `shopAddressOf(headers, slug)`, `shopBaseOf`, `shopHomeOf`, `platformPathOf`.
+- `apps/web/src/lib/shop-hosts.ts`: `shopHosts()` devolve `{ slugOf(host), hostOf(slug) }`; `hostNameOf(raw)`; `createShopHosts(read, now)` para os testes; `SHOP_HOSTS_FRESH_MS` (60 s) e `SHOP_HOSTS_RETRY_MS` (5 s).
+- `apps/web/src/lib/proxy-scope.ts`: `wasHandedOver(pathname, has)`, `isAuthPath`, `isPanelPath`, `isFilePath`, `shopPageOf`.
+- `apps/web/src/proxy.ts`: `proxy()` recusa o carimbo, lê o host e entrega a `onShopDomain()` ou a `onPlatform()`. `config.matcher` é `["/((?!_next/static|_next/image).*)"]`.
+- `apps/web/src/lib/storefront-data.ts`: `ServedShop`, e `shopAt` lendo o carimbo com `headers()`.
+- `apps/web/src/lib/storefront-routes.ts`: `StorefrontShop` estende `ShopAddress`; `safeBackOf(shop, raw)`.
+- `apps/web/src/lib/customer-session-cookies.ts`: `setCustomerSessionCookies(answer, shop, session)` e `clearCustomerSessionCookies(answer, shop)`.
+- `apps/web/src/components/storefront/shop-address-provider.tsx`: `ShopAddressProvider` e `useShopAddress(slug)`; o provider está em `app/[slug]/layout.tsx`.
+- `apps/web/src/lib/server-env.ts`: `WEB_DOMAIN`.
+- `apps/api/src/modules/catalog/catalog.constants.ts`: `termos` e `privacidade` em `RESERVED_PATH_SEGMENTS`. A lista é a mesma para o slug de um produto, então um produto chamado "Termos" também passa a ser recusado sem slug próprio.
+
+**Para o Y6 (painel).**
+
+- **Não há o que chamar para derrubar a cópia da tabela** (decisão 17). Depois de salvar, conferir ou remover um domínio, o handler derruba só o cache da loja (`revalidateStore`, como o plano do BEELINK-281 já pedia); o proxy vê a mudança em até um minuto. A tela precisa dizer isso ao lojista, ou o "ativo" dela vai adiantar-se à loja abrindo.
+- Um link do painel para a vitrine (`/<slug>`) continua certo: com o domínio ativo, o proxy o leva ao domínio.
+- `PublicStore.customDomain` é obrigatório e a loja lida por `shopAt` traz `ownDomain`.
+
+**Para o Y5 (Google e chat).** O botão do Google some no domínio da loja por `store.ownDomain` em `storefront-sign-in-section.tsx`; as duas rotas do Google usam `safeBackOf({ slug }, …)`, isto é, endereços do host da plataforma. O socket do chat continua abrindo em `NEXT_PUBLIC_REALTIME_URL`: no domínio da loja a origem é outra, e o que acontece ali não foi visto.
+
+**Para o Y7 (canonical, sitemap, e-mails).**
+
+- O canonical de cada página sai de `storefrontRoutes()` e é relativo: no domínio da loja fica sem o slug. Não há `metadataBase`.
+- `robots.txt` e `sitemap.xml` passam pelo proxy como arquivos, sem reescrita e sem carimbo, em qualquer host. Hoje nenhum dos dois existe. Para responderem por loja, o proxy precisa reescrevê-los no host da loja antes do teste de "é arquivo".
+- Os e-mails continuam escritos pela API com `WEB_URL`. Funcionam por causa do 308 do host da plataforma, e o `voltar` deles chega no formato `/<slug>/…`, que `safeBackOf` lê.
+- O JSON-LD do produto usa endereços relativos.
+
+**O que rodou.**
+
+- `pnpm ci-check`, no último commit: verde. `type-check` dos cinco workspaces, `lint`, os testes de unidade (ui 354 arquivos, api 119, web 291), `arch-gates` e `docs-gate`. Sem `--e2e`: nenhum build, nenhuma suíte que precise de banco.
+- Os testes de unidade deste ticket: `proxy.test.ts` (62: os 21 de antes e 41 novos), `proxy-scope.test.ts` (11), `shop-hosts.test.ts` (13), `shop-address.test.ts` (7), `own-domain-cookies.test.ts` (10), `customer-session-cookies.test.ts` (6), `shop-address-provider.test.tsx` (3), e acréscimos em `storefront-routes`, `storefront-data`, `storefront-track`, `order-origin`, `server-env`, no handler `customer/[action]` e no de `reorder`; na API, um teste em `catalog-slug.service.spec.ts`.
+- `next typegen` (escreve só os tipos de rota) e `playwright test --list` do spec novo, que o lê sem subir servidor nem navegador.
+- Antes da queda do ambiente: `prisma migrate status` no banco de dev ("Database schema is up to date!", 105 migrations), e um `next build` da branch **sem nenhuma mudança deste ticket**, em que todas as páginas já saíam dinâmicas (`ƒ`): `/`, as cinco de `/[slug]/…`, as do painel e as de autenticação. Só `/icon.png` e `/apple-icon.png` são estáticas.
+
+**O que não rodou.** Nada disto foi conferido; cada item é uma coisa escrita e não vista funcionar.
+
+- **`next build` com este ticket.** O item 18 da Definição de Pronto está sem evidência: o que há é o build de antes. A leitura de `headers()` em `shopAt` não deve mudar nada, porque as páginas já eram dinâmicas, mas isso é raciocínio, não saída de comando.
+- **O spec de Playwright** `apps/web/e2e/shop-domain.spec.ts`: escrito, tipado, listado, nunca rodado. Os seletores foram tirados dos textos em `packages/ui/src/locales/pt-BR.ts`, não de uma tela aberta. Quando rodar: `MAILPIT_URL=http://localhost:8027 SMTP_URL=smtp://localhost:1027 DATABASE_URL=postgresql://harness:harness@localhost:5442/harness_domain_test`, depois de `pnpm --filter api build && pnpm --filter web build`. `prisma db execute --stdin` também nunca foi visto funcionar: a única tentativa foi com o banco já fora.
+- **Os outros specs de Playwright** (`auth-journey`, `panel-session`, `shared-tab`, `accessibility`): o proxy mudou para todos eles e nenhum foi rodado.
+- **A suíte e2e da API.** A API mudou em duas linhas (a lista de palavras reservadas e o campo obrigatório no DTO); só os testes de unidade dela rodaram.
+- **O navegador.** Nenhuma tela foi aberta: nem `http://<algo>.localhost:3800`, nem o host da plataforma depois da troca do `matcher`.
+- **O proxy num servidor de verdade.** Os testes conferem os headers que o `NextResponse` escreve (`x-middleware-rewrite`, `x-middleware-request-x-bl-shop-domain`); que o Next entregue a página reescrita com o carimbo, numa navegação e num pedido de RSC, não foi visto. Idem para o `matcher`: `unstable_doesMiddlewareMatch` diz o que ele alcança, um servidor não foi perguntado.
+- **`usePathname()` sob reescrita.** Três componentes o usam (`like-on-return`, `storefront-favorite-live`, `shopper-conversations-live`). Se no servidor ele devolver o caminho reescrito (`/<slug>/produtos`) e no navegador o da barra (`/produtos`), há aviso de hidratação e o `voltar` do coração sai com o slug no HTML sem script; o destino continua certo, porque `safeBackOf` descasca. A documentação do Next só avisa do caso pré-renderizado, que não é o destas páginas.
+- **Se o proxy e os handlers dividem memória** em `next dev` e em `next start` (decisão 17).
+- **Os endpoints de desenvolvimento do Next fora de `/_next/`** (`/__nextjs_…`, a sobreposição de erro) num host de loja: lá eles seriam reescritos como página. Só afeta desenvolvimento, e não foi visto.
+- **Nada no servidor de produção**: nem `WEB_DOMAIN` no serviço `web`, nem o `X-Forwarded-Host` que o Traefik manda para um domínio de loja.
