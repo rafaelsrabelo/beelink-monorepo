@@ -176,7 +176,7 @@ Swagger documents all of it at `/api/docs`, with an Authorize button that holds 
 | Command | What it does |
 |---|---|
 | `pnpm turbo test --filter=api` | unit tests, after `prisma generate` — `pnpm --filter api test` alone uses the client already generated |
-| `pnpm --filter api test:e2e` | e2e against real Postgres and Mailpit — needs `pnpm stack:up` |
+| `pnpm --filter api test:e2e` | e2e against real Postgres and Mailpit — needs `pnpm stack:up`. `TEST_DATABASE_URL`, `TEST_SMTP_URL` and `MAILPIT_URL` point it at others: the suite empties the inbox it reads |
 
 The e2e suites run against `harness_test`, created and migrated on demand; the reset helper refuses any database whose name does not end in `_test`.
 

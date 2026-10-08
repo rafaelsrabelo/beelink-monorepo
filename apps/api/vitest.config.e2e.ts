@@ -17,7 +17,10 @@ export default defineConfig({
       LOG_LEVEL: 'silent',
       DATABASE_URL: TEST_DATABASE_URL,
       JWT_SECRET: 'test-secret-with-at-least-32-characters-long',
-      SMTP_URL: 'smtp://localhost:1025',
+      // Like TEST_DATABASE_URL: a value set here wins over the shell's, so the override has its own
+      // name. Where 1025 is another project's Mailpit the suite must not write to it, nor empty its
+      // inbox — MAILPIT_URL (test/support/mailpit.ts) moves that half.
+      SMTP_URL: process.env.TEST_SMTP_URL ?? 'smtp://localhost:1025',
       WEB_URL: 'http://localhost:3000',
       // The suites hammer the auth routes; the limit itself has its own spec, which lowers it.
       AUTH_RATE_LIMIT_MAX: '1000',
