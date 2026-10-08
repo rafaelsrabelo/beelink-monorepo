@@ -36,6 +36,14 @@ enum PaymentMethod {
   DEBIT_CARD
 }
 
+/// Where a shop's own domain stands (BEELINK-281). PENDING is saved and not yet opening the shop;
+/// ACTIVE is checked — its DNS points at the server and it answered over HTTPS. A check that fails
+/// later leaves ACTIVE as it is: a shop is not taken down by a DNS server that was slow once.
+enum CustomDomainStatus {
+  PENDING
+  ACTIVE
+}
+
 /// The platform's own taxonomy of shops. Rows are seeded by the platform; a shopkeeper picks one and
 /// never edits one, which is why nothing here carries an owner.
 model StoreCategory {
@@ -147,6 +155,19 @@ model Store {
   /// When the owner last opened the panel's reviews (BEELINK-158): those written after it are the
   /// menu's "new". Null counts every one — none was seen yet.
   reviewsSeenAt DateTime?
+
+  /// The shop's own domain (BEELINK-281), as a bare host: lower case, no scheme, no `www.`, no port,
+  /// no trailing dot. `custom-domain-host.ts` is the one place it is normalised and a CHECK keeps the
+  /// column to that form, so the unique index means what it says — one domain a shop, one shop a
+  /// domain. Null with none.
+  customDomain          String?             @unique @db.VarChar(253)
+  /// Null exactly when `customDomain` is (CHECK `stores_custom_domain_status_check`).
+  customDomainStatus    CustomDomainStatus?
+  /// When the domain was last checked; null when it never was.
+  customDomainCheckedAt DateTime?
+  /// What the last check found wrong, as a `CustomDomainProblem` of packages/contracts; null when it
+  /// found nothing. Text and not an enum: a new problem is a line of code, never a migration.
+  customDomainProblem   String?             @db.VarChar(40)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
