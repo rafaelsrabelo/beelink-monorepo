@@ -1,6 +1,7 @@
 "use client"
 
 // UI
+import { ShopAddressCard } from "@harness-monorepo/ui/blocks/custom-domain/shop-address-card"
 import { BeeflowBanner } from "@harness-monorepo/ui/blocks/dashboard/beeflow-banner"
 import { SetupCard } from "@harness-monorepo/ui/blocks/dashboard/setup-card"
 import { Skeleton } from "@harness-monorepo/ui/components/skeleton"
@@ -13,6 +14,7 @@ import type { WebMessages } from "@/locales"
 import { AppLink } from "@/components/app-link"
 import { BrandPhoto } from "@/components/landing/brand-photo"
 import beeflowBanner from "@/assets/images/beeflow-banner.jpg"
+import { customDomainPageOf } from "@/lib/custom-domain-form"
 import { integrationPagesOf } from "@/lib/integration-pages"
 import { useSections } from "@/services/page/page-hooks"
 import { useProducts } from "@/services/catalog/catalog-hooks"
@@ -21,6 +23,8 @@ import { useStore } from "@/services/stores/store-hooks"
 
 export interface ShopHomeScreenProps {
   slug: string
+  /** The shop's address at the platform, with no scheme — `beelink.biz/minha-loja` — as the address card says it. */
+  address: string
   ui: UiMessages
   web: WebMessages
 }
@@ -42,7 +46,7 @@ const BACKDROP_SIZES = "64px"
  * A finished card stays, marked. The list emptying as it is worked through would look broken on the
  * last step and would take away the way back into what was already set up.
  */
-export function ShopHomeScreen({ slug, ui, web }: ShopHomeScreenProps) {
+export function ShopHomeScreen({ slug, address, ui, web }: ShopHomeScreenProps) {
   const text = web.stores.home
   const store = useStore(slug)
   const site = store.data?.type === "INSTITUTIONAL"
@@ -159,6 +163,7 @@ export function ShopHomeScreen({ slug, ui, web }: ShopHomeScreenProps) {
           <Skeleton className="h-44 w-full lg:col-span-2" />
           <Skeleton className="h-44 w-full lg:col-span-2" />
           <Skeleton className="h-44 w-full lg:col-span-2" />
+          <Skeleton className="h-44 w-full lg:col-span-2" />
         </div>
       ) : (
         /*
@@ -176,6 +181,19 @@ export function ShopHomeScreen({ slug, ui, web }: ShopHomeScreenProps) {
               messages={ui}
             />
           ))}
+          {/*
+            The shop's address (BEELINK-285), a shop's and a site's alike, last: the store's own
+            record already says the domain, so it asks nothing more. "Ver a loja" above still leads
+            to `/<slug>` — the proxy takes it on to an active domain — and only this card names it.
+          */}
+          <ShopAddressCard
+            address={address}
+            domain={store.data?.customDomain ?? null}
+            href={customDomainPageOf(slug)}
+            className="lg:col-span-2"
+            linkComponent={AppLink}
+            messages={ui}
+          />
         </ul>
       )}
     </div>
