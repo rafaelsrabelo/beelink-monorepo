@@ -165,3 +165,7 @@ A decisão 6 do BEELINK-280 diz que "o prefixo vem do pedido": sem prefixo quand
 - **Nada no servidor de produção**: nem `WEB_DOMAIN` no serviço `web`, nem o `X-Forwarded-Host` que o Traefik manda para um domínio de loja.
 
 **Acréscimo às notas (08/10).** O item 11 da Definição de Pronto ganhou teste depois das notas acima: `storefront-sign-in-section.test.tsx` (3 testes) confere que o botão do Google é oferecido no host da plataforma e não no domínio da loja, onde a API nem é perguntada. `pnpm ci-check` foi rodado de novo no commit que traz este acréscimo, e continuou verde (web: 292 arquivos de teste).
+
+## Acréscimo do orquestrador (08/10, na revisão)
+
+**A leitura da tabela de hosts tem tempo limite.** `callApi` não tem nenhum, e o proxy espera a leitura em voo na frente de todo pedido de página de loja (e de todo pedido num host que não é o da plataforma): uma API que aceita a conexão e nunca responde seguraria esses pedidos pelos cinco minutos do próprio `fetch`. `readFromApi` agora desiste em 3 s (`SHOP_HOSTS_READ_TIMEOUT_MS`, `settledWithin` em `apps/web/src/lib/shop-hosts.ts`); uma leitura atrasada é uma leitura que falhou, e a última cópia continua valendo. Conferido só por teste de unidade, como o resto do proxy.
