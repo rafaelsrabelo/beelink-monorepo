@@ -187,12 +187,12 @@ describe("CustomDomainScreen, with a domain saved", () => {
   it("reads out what a check that just came back found", () => {
     with_({ overview: pending, checked: true })
     const { unmount } = view()
-    expect(screen.getByText("Verificado agora: ainda há um problema. Veja os detalhes nesta página.")).toHaveAttribute("role", "status")
+    expect(screen.getByText("Verificação feita: ainda há um problema. Veja os detalhes nesta página.")).toHaveAttribute("role", "status")
     unmount()
 
     with_({ overview: active, checked: true })
     view()
-    expect(screen.getByText("Verificado agora: está tudo certo com o domínio.")).toHaveAttribute("role", "status")
+    expect(screen.getByText("Verificação feita: está tudo certo com o domínio.")).toHaveAttribute("role", "status")
   })
 
   it.each([

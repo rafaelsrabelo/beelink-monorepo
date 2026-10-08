@@ -169,7 +169,7 @@ describe("CustomDomainCard, with a domain saved and not active yet", () => {
 
   it("reads out what a check that just came back found, or why it did not go through — never both, and neither while checking", () => {
     const { again } = show(pendingNotFound, { checked: true })
-    expect(screen.getByRole("status")).toHaveTextContent("Verificado agora: ainda há um problema. Veja os detalhes nesta página.")
+    expect(screen.getByRole("status")).toHaveTextContent("Verificação feita: ainda há um problema. Veja os detalhes nesta página.")
     expect(screen.queryByRole("alert")).toBeNull()
 
     again(pendingNotFound, { checked: true, checkError: ptBR.customDomain.errors.RATE_LIMITED })
@@ -251,10 +251,10 @@ describe("CustomDomainCard, with the domain active", () => {
 
   it("reads out a check that found nothing wrong as everything being right, and one that found something as a problem", () => {
     const { again } = show(active, { checked: true })
-    expect(screen.getByRole("status")).toHaveTextContent("Verificado agora: está tudo certo com o domínio.")
+    expect(screen.getByRole("status")).toHaveTextContent("Verificação feita: está tudo certo com o domínio.")
 
     again(activeWithProblem, { checked: true })
-    expect(screen.getByRole("status")).toHaveTextContent("Verificado agora: ainda há um problema.")
+    expect(screen.getByRole("status")).toHaveTextContent("Verificação feita: ainda há um problema.")
   })
 
   /** The domain is active without `www`: a note in the page's quiet colour, not a warning. */

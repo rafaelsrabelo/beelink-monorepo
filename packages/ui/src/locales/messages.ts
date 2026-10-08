@@ -4023,7 +4023,7 @@ export interface UiMessages {
     neverChecked: string
     check: string
     checking: string
-    /** Read out when a check asked from the screen came back: with nothing wrong, or with something. */
+    /** Read out when a check asked from the screen came back: with nothing wrong, or with something. No "now": the line stays while the page is open. */
     checkedOk: string
     checkedProblem: string
     remove: string
