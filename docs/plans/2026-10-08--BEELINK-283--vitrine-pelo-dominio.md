@@ -163,3 +163,5 @@ A decisão 6 do BEELINK-280 diz que "o prefixo vem do pedido": sem prefixo quand
 - **Se o proxy e os handlers dividem memória** em `next dev` e em `next start` (decisão 17).
 - **Os endpoints de desenvolvimento do Next fora de `/_next/`** (`/__nextjs_…`, a sobreposição de erro) num host de loja: lá eles seriam reescritos como página. Só afeta desenvolvimento, e não foi visto.
 - **Nada no servidor de produção**: nem `WEB_DOMAIN` no serviço `web`, nem o `X-Forwarded-Host` que o Traefik manda para um domínio de loja.
+
+**Acréscimo às notas (08/10).** O item 11 da Definição de Pronto ganhou teste depois das notas acima: `storefront-sign-in-section.test.tsx` (3 testes) confere que o botão do Google é oferecido no host da plataforma e não no domínio da loja, onde a API nem é perguntada. `pnpm ci-check` foi rodado de novo no commit que traz este acréscimo, e continuou verde (web: 292 arquivos de teste).
