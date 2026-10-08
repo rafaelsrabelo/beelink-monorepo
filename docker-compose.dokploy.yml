@@ -160,6 +160,11 @@ services:
       - ASAAS_CONTACT_EMAIL
       - INTEGRATIONS_SECRET_KEY
 
+      # A shop's own domain (BEELINK-281): the server's public IPv4, which a domain's A record must be,
+      # and whether a check also asks https://<domain>. Without the first, no domain can be saved.
+      - SHOP_DOMAIN_TARGET_IPS
+      - SHOP_DOMAIN_PROBE
+
       - AUTH_RATE_LIMIT_MAX
       - AUTH_RATE_LIMIT_WINDOW
       - STORE_WRITE_RATE_LIMIT_MAX
