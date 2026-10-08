@@ -204,11 +204,11 @@ export interface PublicStore {
    */
   googleAnalyticsId: string | null;
   /**
-   * The shop's own domain and where it stands (BEELINK-281); null with none saved. It is what tells
-   * the storefront whether a request arrived by the shop's domain. The API always sends it; it is
-   * absent only on an answer cached before a shop could have a domain, which had none.
+   * The shop's own domain and where it stands (BEELINK-281); null with none saved, and a pending
+   * one is told too. Whether a request arrived by it is not read from here: the web's proxy says so
+   * on the request itself (BEELINK-283), from the table of hosts.
    */
-  customDomain?: PublicCustomDomain | null;
+  customDomain: PublicCustomDomain | null;
   /**
    * The bands the landing page is made of, in the shopkeeper's order, already resolved.
    *
