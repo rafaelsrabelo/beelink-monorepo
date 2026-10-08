@@ -79,3 +79,49 @@ As do épico estão no plano do BEELINK-280. As abaixo são deste ticket, tomada
 - **O "Ativo" da tela pode adiantar-se à loja em até um minuto** (decisão 17 do BEELINK-283). A tela diz isso; não há o que o handler possa derrubar.
 - **O cartão da página inicial depende do cache da leitura da loja.** Se outra aba ou outro aparelho muda o domínio, o cartão só acompanha na próxima leitura.
 - **A frase do certificado promete uma ação da equipe.** Até o BEELINK-282, alguém precisa de fato cadastrar o domínio no Dokploy; a tela não avisa ninguém.
+
+## Notas da entrega (acréscimo, 08/10)
+
+**O ambiente no dia.** Como no BEELINK-283: o disco da máquina estava quase cheio e o Docker, desligado. Por ordem do orquestrador, nada que precisasse de banco, de build ou de servidor foi rodado: nem `next build`, nem Storybook, nem Playwright, nem a API, nem o web. **A tela nunca foi aberta num navegador.** O que há de evidência são testes de unidade (jsdom), `tsc`, `lint` e os gates.
+
+**Correções e acréscimos ao que está acima.**
+
+- **Decisão 22 (nova): o aviso do `www` só aparece quando o domínio em si já aponta para cá.** Com o DNS da raiz errado, a frase do problema já manda o lojista aos registros, e o do `www` está na mesma tabela; dois avisos ao mesmo tempo seriam ruído. O aviso também não aparece quando o DNS não respondeu para o `www` (`DNS_LOOKUP_FAILED`): isso não diz nada sobre o registro. Fica em `wwwOffOf` (`apps/web/src/lib/custom-domain-form.ts`).
+- **Decisão 23 (nova): a frase lida depois de "Verificar de novo" não diz "agora".** A linha fica na tela enquanto a página está aberta; "Verificação feita: …" continua verdadeira dez minutos depois. Quando foi, está em "Última verificação".
+- **Decisão 24 (nova): pedir uma das três ações limpa o que as outras duas disseram por último** (o aviso de salvo, uma recusa, o resultado de uma conferência). Sem isso, remover um domínio e salvar outro deixaria na tela "Verificação feita" da conferência do domínio anterior.
+- **Decisão 8:** o `check` é guardado dentro da própria leitura (`withKeptCheck`, em `custom-domain-hooks.ts`), comparando o host e o `checkedAt` do que foi lido com o que estava no cache. Não há estado fora do TanStack Query.
+- **Decisão 14:** além de `status`, a descrição do `SetupCard` ganhou `break-words`: um domínio é uma palavra só para um cartão estreito.
+- **Decisão 19:** o link na tela "Loja" é uma linha embaixo do formulário, escrita pelo app (`web.stores.settings.domainText` e `domainLink`), e não uma mudança no bloco do formulário.
+
+**Onde ficou cada coisa.**
+
+- Handlers: `apps/web/src/app/api/stores/[slug]/custom-domain/route.ts` (`GET`, `PUT`, `DELETE`) e `…/custom-domain/check/route.ts` (`POST`).
+- Serviço: `apps/web/src/services/custom-domain/`. `custom-domain-requests.ts` (`CustomDomainRequestError`, `fetchCustomDomain`, `saveCustomDomain`, `checkCustomDomain`, `removeCustomDomain`), `custom-domain-keys.ts` (`customDomainKeys.overview(slug)`), `custom-domain-hooks.ts` (`useCustomDomain`, `useSaveCustomDomain`, `useCheckCustomDomain`, `useRemoveCustomDomain`).
+- App: `apps/web/src/lib/custom-domain-form.ts` (`customDomainPageOf`, `platformAddressOf`, `customDomainViewOf`, `customDomainErrorOf`); `components/custom-domain/custom-domain-screen.tsx`; a página `app/(admin)/admin/[slug]/domain/page.tsx`.
+- Blocos: `packages/ui/src/blocks/custom-domain/`. `custom-domain-card` (que desenha `custom-domain-form`, `custom-domain-status` e `custom-domain-actions`), `custom-domain-records`, `custom-domain-copy-button`, `custom-domain-skeleton`, `shop-address-card`. Tipos e a lista de registros em `packages/ui/src/lib/custom-domain.ts`. Textos em `customDomain` (`packages/ui/src/locales/`).
+- Stories: `Blocos/Painel/Domínio próprio` (22) e `Blocos/Painel/Início/Endereço da página` (4).
+
+**Para o Y5, o Y3 e o Y7.**
+
+- A tela não sabe nada do login com Google nem do chat no domínio da loja (Y5); nada nela precisa mudar por causa deles.
+- **Y3 (Traefik):** quando o roteador e o certificado deixarem de ser feitos à mão, a frase de `HTTPS_UNREACHABLE` e `HTTPS_CERTIFICATE_INVALID` (`customDomain.problems`, nos dois idiomas) deixa de ser verdade: ela diz que a ativação é feita pela equipe da Beelink. As duas chaves têm hoje o mesmo texto. E se a prova de posse por `TXT` entrar, a tabela de registros (`customDomainRecordsOf`) ganha uma linha.
+- **Y7:** o cartão da página inicial e a tela mostram o endereço da plataforma lido do pedido (`siteOrigin()`), sem esquema. Quando o web tiver uma variável com o próprio endereço, `platformAddressOf` passa a ler dela.
+
+**O que rodou.**
+
+- `pnpm ci-check` na árvore com todo o código (commit `ca965eea`): verde. `type-check` e `lint` do web e do ui rodaram de verdade; os da API e dos contratos vieram do cache do turbo, porque nenhum arquivo deles mudou. Testes de unidade: ui 358 arquivos e 2600 testes, web 298 e 2560, e os da API (119 e 1314) do cache. `arch-gates` e `docs-gate` verdes. Sem `--e2e`.
+- Os testes deste ticket. No web: os dois handlers (7 e 3), os hooks (16), `custom-domain-form` (14), a tela (35), a página inicial (9, seis deles novos), a tela "Loja" (3). No ui: o cartão da tela (29), a tabela e o botão de copiar (7), o cartão da página inicial e o skeleton (7), `customDomainRecordsOf` (2), o `SetupCard` (7, um novo).
+- Duas quebras propositais na regra do `check` guardado (devolver a leitura sem ele; guardá-lo sem comparar host e instante), para conferir que os testes dos hooks pegam cada uma. Pegaram, e o arquivo voltou ao que era.
+- `next typegen` (escreve só os tipos de rota), dentro do `type-check` do web: a rota `/admin/[slug]/domain` e os dois handlers existem para o compilador.
+
+**O que não rodou.** Nada disto foi conferido; cada item é uma coisa escrita e não vista funcionar.
+
+- **O navegador.** Nem a tela, nem o cartão da página inicial, nem a linha na tela "Loja". Disposição, quebra de linha em tela estreita, a tabela num celular, o tema escuro, o foco depois de salvar e de remover, e o diálogo de confirmação só existem em jsdom.
+- **O botão de copiar com a área de transferência de verdade.** Os testes trocam `navigator.clipboard` por um dublê.
+- **Storybook.** As stories compilam (`tsc`) e nunca foram abertas; o painel de acessibilidade delas, que é onde o contraste é conferido, não rodou. Os testes dos blocos rodam o axe sem contraste, como os dos vizinhos.
+- **`next build`.** A página nova e os handlers passaram pelo `tsc` e pelo `next typegen`, não por um build.
+- **A API de verdade.** Nenhuma chamada saiu daqui: os handlers foram testados contra um `fetch` trocado, os hooks também. Em especial, não foi visto o corpo de um 429 (`RATE_LIMITED`) chegando à tela, nem o `PUT` demorando os até 8 segundos que a conferência pode levar.
+- **O caminho inteiro**: salvar na tela, ver "Aguardando", apontar o DNS, "Verificar de novo", ver "Ativo", abrir a loja no domínio, remover. Depende do banco, da API, do web e de um domínio que resolva.
+- **O minuto.** Que a loja de fato leve até um minuto para acompanhar o que a tela diz é o que o BEELINK-283 escreveu e também não viu.
+- **Playwright.** Nenhum spec foi escrito para esta tela, e nenhum dos que existem foi rodado. Os que existem não abrem a página inicial do painel nem a tela "Loja" (conferido por leitura).
+- **`delivery-check` como skill.** A lista dela foi conferida à mão contra o diff, sem bloqueador; o `pnpm ci-check` que ela pede é o de cima.
