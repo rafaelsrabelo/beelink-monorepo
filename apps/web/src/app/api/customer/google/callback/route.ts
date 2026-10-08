@@ -25,9 +25,9 @@ export async function GET(request: NextRequest) {
   // Back to the face the shopper left, with what to say and where they were going; with no flight
   // in hand, the shop is unknown.
   const fail = (code: string) => {
-    const page = new URL(flight ? safeBackOf(flight.slug, flight.signIn) : "/", publicOriginOf(request))
+    const page = new URL(flight ? safeBackOf({ slug: flight.slug }, flight.signIn) : "/", publicOriginOf(request))
     if (flight) {
-      page.searchParams.set(BACK_KEY, safeBackOf(flight.slug, flight.back))
+      page.searchParams.set(BACK_KEY, safeBackOf({ slug: flight.slug }, flight.back))
       page.searchParams.set("erro", code)
     }
     const answer = NextResponse.redirect(page, 303)
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
   }
 
   const signedIn = (await response.json()) as GoogleSignIn
-  const answer = NextResponse.redirect(new URL(safeBackOf(signedIn.storeSlug, signedIn.returnTo ?? undefined), publicOriginOf(request)), 303)
+  const answer = NextResponse.redirect(new URL(safeBackOf({ slug: signedIn.storeSlug }, signedIn.returnTo ?? undefined), publicOriginOf(request)), 303)
   // On the shop's path, as the password door stores them: the account Google opened is that shop's.
   setCustomerSessionCookies(answer.cookies, signedIn.storeSlug, signedIn.session)
   clearGoogleStateCookie(answer.cookies)

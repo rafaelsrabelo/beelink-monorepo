@@ -25,7 +25,7 @@ const category = (slug: string, parentSlug: string | null = null) =>
 const routes = storefrontRoutes(store)
 
 function arrange(categories: PublicProductCategory[] = [category("proteinas"), category("whey", "proteinas")]) {
-  vi.spyOn(data, "shopAt").mockResolvedValue(store)
+  vi.spyOn(data, "shopAt").mockResolvedValue({ ...store, ownDomain: false })
   vi.spyOn(data, "navigationAt").mockResolvedValue({ categories, onSale: true })
   vi.spyOn(locale, "getMessages").mockResolvedValue({ ui: ptBR } as Awaited<ReturnType<typeof locale.getMessages>>)
 }

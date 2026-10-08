@@ -4,6 +4,10 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 // Types
 import type { PublicProductCategory, StorefrontCatalog } from "@harness-monorepo/contracts"
 
+/** The request a page is drawn for, as `shopAt` reads it: the proxy's stamp is one of its headers. */
+const incoming = vi.hoisted(() => ({ current: new Headers() }))
+vi.mock("next/headers", () => ({ headers: async () => incoming.current }))
+
 // App
 import { catalogTag, offersTag, storeTag } from "./revalidate"
 import { catalogueAt, categoriesAt, landingAt, offersAt, paymentOptionsAt, shopAt, signInOptionsAt } from "./storefront-data"
@@ -55,6 +59,7 @@ function catalogue(over: Partial<StorefrontCatalog>): StorefrontCatalog {
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  incoming.current = new Headers()
 })
 
 describe("categoriesAt — the menu and the categories block", () => {
@@ -123,6 +128,47 @@ describe("shopAt — the shop, its showcases' cards included", () => {
     await shopAt("lessari")
 
     expect(asked[0]?.tags).toEqual([storeTag("lessari"), catalogTag("lessari")])
+  })
+
+  describe("and where this request arrived (BEELINK-283)", () => {
+    it("is the platform's host with no stamp on the request", async () => {
+      stubApi(() => ({ slug: "lessari", name: "Lessari" }))
+
+      expect(await shopAt("lessari")).toEqual({ slug: "lessari", name: "Lessari", ownDomain: false })
+    })
+
+    it("is the shop's own domain when the proxy stamped the request with this shop", async () => {
+      stubApi(() => ({ slug: "lessari" }))
+      incoming.current = new Headers({ "x-bl-shop-domain": "lessari" })
+
+      expect((await shopAt("lessari"))?.ownDomain).toBe(true)
+    })
+
+    /** At one shop's domain, another shop read by the same request is not at the root. */
+    it("takes no stamp that names another shop", async () => {
+      stubApi(() => ({ slug: "lessari" }))
+      incoming.current = new Headers({ "x-bl-shop-domain": "outra" })
+
+      expect((await shopAt("lessari"))?.ownDomain).toBe(false)
+    })
+
+    /** The kept answer is one for every request: the same shop is read from both hosts. */
+    it("is said per request, of an answer that is the same for both", async () => {
+      stubApi(() => ({ slug: "lessari" }))
+      incoming.current = new Headers({ "x-bl-shop-domain": "lessari" })
+      const own = await shopAt("lessari")
+      incoming.current = new Headers()
+      const platform = await shopAt("lessari")
+
+      expect([own?.ownDomain, platform?.ownDomain]).toEqual([true, false])
+    })
+
+    it("is nothing for a shop that does not exist", async () => {
+      vi.stubGlobal("fetch", () => Promise.resolve(new Response("", { status: 404 })))
+      incoming.current = new Headers({ "x-bl-shop-domain": "nada" })
+
+      expect(await shopAt("nada")).toBeNull()
+    })
   })
 })
 

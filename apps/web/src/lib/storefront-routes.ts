@@ -1,6 +1,9 @@
 // Types
 import type { StorefrontAccountTab, StorefrontRouteWords, StorefrontSort } from "@harness-monorepo/contracts"
 
+// App
+import { shopBaseOf, shopHomeOf, type ShopAddress } from "./shop-address"
+
 /**
  * The key a search term travels under on the shop's own URL.
  *
@@ -30,30 +33,57 @@ export function signInModeOf(raw: string | string[] | undefined): SignInMode {
   return raw === "criar" || raw === "senha" ? raw : "entrar"
 }
 
+/** Any base serves: only what the address resolves to against it is read. */
+const RESOLVED_AGAINST = "http://shop.invalid"
+
 /**
- * A return path the shop may follow: its own, and nothing else. Anything that is not a path under
- * `/<slug>` — another shop, another site, `//evil.example` — is the shop's front door instead, so
- * a link someone crafted cannot send a shopper off the shop after they sign in.
+ * A return path the shop may follow: its own, and nothing else. Anything that is not a path of the
+ * shop — another shop, another site, `//evil.example` — is the shop's front door instead, so a link
+ * someone crafted cannot send a shopper off the shop after they sign in.
+ *
+ * On the platform's host the shop is what sits under `/<slug>`. At the shop's own domain the whole
+ * site is the shop (BEELINK-283), so any path of the site is one of its own.
  */
-export function safeBackOf(slug: string, raw: string | string[] | undefined | null): string {
+export function safeBackOf(shop: ShopAddress, raw: string | string[] | undefined | null): string {
+  const { slug } = shop
   // A route's segment arrives decoded: `%2Fevil.example` is `/evil.example`, whose home would be
   // `//evil.example` — another site. A slug that is not one has no home to keep to.
   if (!/^[a-z0-9-]+$/.test(slug)) return "/"
 
-  const home = `/${slug}`
   const value = typeof raw === "string" ? raw : ""
+  if (shop.ownDomain) return ownBackOf(slug, value)
+
+  const home = `/${slug}`
   // The front door with a query is the shop too: a heart on the home comes back as `/loja?curtir=…`.
   const inShop = value === home || value.startsWith(`${home}/`) || value.startsWith(`${home}?`)
   if (value !== home && (!inShop || value.includes("//") || value.includes("\\"))) return home
 
   // Resolved as the browser will resolve it: `/loja/../outra` is `/outra`, and so is `%2e%2e`.
-  const resolved = URL.canParse(value, "http://shop.invalid") ? new URL(value, "http://shop.invalid").pathname : ""
+  const resolved = URL.canParse(value, RESOLVED_AGAINST) ? new URL(value, RESOLVED_AGAINST).pathname : ""
   return resolved === home || resolved.startsWith(`${home}/`) ? value : home
 }
 
-/** Everything a URL needs to know about a shop, and nothing else — a page passes its store. */
-export interface StorefrontShop {
-  slug: string
+/**
+ * The return path at the shop's own domain. A path spelled the platform's way is read as the page it
+ * names here — `/loja/carrinho` is `/carrinho` — because the API still writes a shopper's e-mails,
+ * and the `voltar` inside them, with the platform's addresses.
+ */
+function ownBackOf(slug: string, value: string): string {
+  const platform = `/${slug}`
+  const rest = value === platform || value.startsWith(`${platform}/`) || value.startsWith(`${platform}?`) ? value.slice(platform.length) : value
+  const path = rest === "" || rest.startsWith("?") ? `/${rest}` : rest
+  if (!path.startsWith("/") || path.includes("//") || path.includes("\\")) return "/"
+
+  // Resolved as the browser will resolve it: it drops a tab or a line break, and `/<tab>/evil.example`
+  // is then `//evil.example` — another site.
+  return URL.canParse(path, RESOLVED_AGAINST) && new URL(path, RESOLVED_AGAINST).origin === RESOLVED_AGAINST ? path : "/"
+}
+
+/**
+ * Everything a URL needs to know about a shop, and nothing else — a page passes its store, which
+ * `shopAt` hands over already saying whether the request arrived by the shop's own domain.
+ */
+export interface StorefrontShop extends ShopAddress {
   routeWords: StorefrontRouteWords
 }
 
@@ -181,13 +211,17 @@ export function toggledOption(filters: ListingFilters, option: string): ListingF
  * `Store.routeVocabulary` buys: one column decides every link at once, where literals scattered
  * through components move only where somebody remembers to move them — and the day a shop switches
  * to EN, a forgotten `"produtos"` is a dead link on a page nobody opened while testing.
+ *
+ * It is also the only place that knows where the shop's pages start (BEELINK-283): under `/<slug>`,
+ * or at the root of the shop's own domain. An address joined by hand onto `home` is `//produtos` there.
  */
 export function storefrontRoutes(shop: StorefrontShop) {
-  const { slug, routeWords } = shop
-  const home = `/${slug}`
+  const { routeWords } = shop
+  // `/<slug>` on the platform's host and nothing at the shop's own domain, where the front door is `/`.
+  const base = shopBaseOf(shop)
 
   return {
-    home,
+    home: shopHomeOf(shop),
 
     /**
      * The whole catalogue, in a grid. The home shows a selection and links here. Every filter is
@@ -195,7 +229,7 @@ export function storefrontRoutes(shop: StorefrontShop) {
      * and never remembered here.
      */
     catalog: ({ page, category, search, ...filters }: CatalogueQuery = {}) =>
-      withQuery(`${home}/${routeWords.products}`, {
+      withQuery(`${base}/${routeWords.products}`, {
         [PAGE_KEY]: page,
         categoria: category,
         [SEARCH_KEY]: search,
@@ -203,18 +237,18 @@ export function storefrontRoutes(shop: StorefrontShop) {
       }),
 
     /** The index of every category. A single category has no word in front of it. */
-    categories: () => `${home}/${routeWords.categories}`,
+    categories: () => `${base}/${routeWords.categories}`,
 
     /** One category, at the flat second segment: `/lessari/blusas`. */
     category: (categorySlug: string, { page, ...filters }: ListingFilters & { page?: number } = {}) =>
-      withQuery(`${home}/${categorySlug}`, { [PAGE_KEY]: page, ...filterEntries(filters) }),
+      withQuery(`${base}/${categorySlug}`, { [PAGE_KEY]: page, ...filterEntries(filters) }),
 
     /**
      * Where the header's search box posts. The term is the caller's; an empty one is dropped. A
      * category narrows the search — the header's "Buscar em" — and travels as `categoria`.
      */
     search: (term?: string, { page, category, ...filters }: ListingFilters & { page?: number; category?: string } = {}) =>
-      withQuery(`${home}/${routeWords.search}`, {
+      withQuery(`${base}/${routeWords.search}`, {
         [SEARCH_KEY]: term,
         categoria: category,
         [PAGE_KEY]: page,
@@ -227,7 +261,7 @@ export function storefrontRoutes(shop: StorefrontShop) {
      * not fit the cart's own limits.
      */
     cart: ({ reordered, failed = false, trimmed = false }: { reordered?: number; failed?: boolean; trimmed?: boolean } = {}) =>
-      withQuery(`${home}/${routeWords.cart}`, {
+      withQuery(`${base}/${routeWords.cart}`, {
         [REORDERED_KEY]: reordered === undefined ? undefined : String(reordered),
         [REORDER_FAILED_KEY]: failed ? "1" : undefined,
         [REORDER_TRIMMED_KEY]: trimmed ? "1" : undefined,
@@ -238,7 +272,7 @@ export function storefrontRoutes(shop: StorefrontShop) {
      * (`senha`). `back` is where they return to afterwards, a path inside this shop.
      */
     signIn: ({ mode, back }: { mode?: SignInMode; back?: string } = {}) =>
-      withQuery(`${home}/${routeWords.signIn}`, { [MODE_KEY]: mode === "entrar" ? undefined : mode, [BACK_KEY]: back }),
+      withQuery(`${base}/${routeWords.signIn}`, { [MODE_KEY]: mode === "entrar" ? undefined : mode, [BACK_KEY]: back }),
 
     /**
      * Where the links in a shopper's e-mails open (BEELINK-149), with their token and where to go
@@ -246,12 +280,12 @@ export function storefrontRoutes(shop: StorefrontShop) {
      * cache before the API spelled these words leads to its sign-in, never to `/undefined`.
      */
     verifyEmail: ({ token, back }: { token?: string; back?: string } = {}) =>
-      routeWords.verifyEmail ? withQuery(`${home}/${routeWords.verifyEmail}`, { token, [BACK_KEY]: back }) : withQuery(`${home}/${routeWords.signIn}`, { [BACK_KEY]: back }),
+      routeWords.verifyEmail ? withQuery(`${base}/${routeWords.verifyEmail}`, { token, [BACK_KEY]: back }) : withQuery(`${base}/${routeWords.signIn}`, { [BACK_KEY]: back }),
     resetPassword: ({ token, back }: { token?: string; back?: string } = {}) =>
-      routeWords.resetPassword ? withQuery(`${home}/${routeWords.resetPassword}`, { token, [BACK_KEY]: back }) : withQuery(`${home}/${routeWords.signIn}`, { [BACK_KEY]: back }),
+      routeWords.resetPassword ? withQuery(`${base}/${routeWords.resetPassword}`, { token, [BACK_KEY]: back }) : withQuery(`${base}/${routeWords.signIn}`, { [BACK_KEY]: back }),
 
     /** The shopper's own area at this shop: its overview, with the menu of its tabs. */
-    account: () => `${home}/${routeWords.account}`,
+    account: () => `${base}/${routeWords.account}`,
 
     /**
      * One tab of that area: `/<shop>/conta/perfil`. A shop read before the API spelled its tabs — the
@@ -260,7 +294,7 @@ export function storefrontRoutes(shop: StorefrontShop) {
      */
     accountTab: (tab: StorefrontAccountTab, query: Record<string, string | undefined> = {}) => {
       const word = routeWords.accountTabs?.[tab]
-      return withQuery(word ? `${home}/${routeWords.account}/${word}` : `${home}/${routeWords.account}`, query)
+      return withQuery(word ? `${base}/${routeWords.account}/${word}` : `${base}/${routeWords.account}`, query)
     },
 
     /**
@@ -269,8 +303,8 @@ export function storefrontRoutes(shop: StorefrontShop) {
      */
     accountConversation: (number: number) => {
       const word = routeWords.accountTabs?.messages
-      if (!word) return `${home}/${routeWords.account}`
-      return withQuery(`${home}/${routeWords.account}/${word}`, { [CONVERSATION_KEY]: String(number) })
+      if (!word) return `${base}/${routeWords.account}`
+      return withQuery(`${base}/${routeWords.account}/${word}`, { [CONVERSATION_KEY]: String(number) })
     },
 
     /**
@@ -280,18 +314,18 @@ export function storefrontRoutes(shop: StorefrontShop) {
      */
     accountOrder: (number: number, { receipt = false, payment = false }: { receipt?: boolean; payment?: boolean } = {}) => {
       const word = routeWords.accountTabs?.orders
-      if (!word) return `${home}/${routeWords.account}`
-      return withQuery(`${home}/${routeWords.account}/${word}/${number}`, { [RECEIPT_KEY]: receipt ? "1" : undefined, [PAYMENT_KEY]: payment ? "1" : undefined })
+      if (!word) return `${base}/${routeWords.account}`
+      return withQuery(`${base}/${routeWords.account}/${word}/${number}`, { [RECEIPT_KEY]: receipt ? "1" : undefined, [PAYMENT_KEY]: payment ? "1" : undefined })
     },
 
     /** One product. It never nests under a category: a product in two would have two addresses. */
-    product: (productSlug: string) => `${home}/${routeWords.products}/${productSlug}`,
+    product: (productSlug: string) => `${base}/${routeWords.products}/${productSlug}`,
 
     /**
      * One landing page. `lp` in every vocabulary: it is not a word a visitor reads as the shop's, and
      * the API reserves it so no category can take it.
      */
-    landing: (pageSlug: string) => `${home}/lp/${pageSlug}`,
+    landing: (pageSlug: string) => `${base}/lp/${pageSlug}`,
   }
 }
 

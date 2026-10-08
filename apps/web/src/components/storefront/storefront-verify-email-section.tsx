@@ -24,7 +24,7 @@ export interface StorefrontVerifyEmailSectionProps {
  */
 export async function StorefrontVerifyEmailSection({ place, routes, query }: StorefrontVerifyEmailSectionProps) {
   const { store, messages: ui } = place
-  const back = safeBackOf(store.slug, paramOf(query[BACK_KEY]))
+  const back = safeBackOf(store, paramOf(query[BACK_KEY]))
   const token = paramOf(query.token)
 
   if (token && (await emailConfirmedBy(token))) {

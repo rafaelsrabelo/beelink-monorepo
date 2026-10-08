@@ -4,6 +4,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import { getMessages } from "./locale"
+import type { ShopAddress } from "./shop-address"
 import { navigationAt, shopAt, type CatalogueAsk, type ShopNavigation } from "./storefront-data"
 import {
   MODE_KEY,
@@ -31,7 +32,8 @@ export type SectionQuery = Record<string, string | string[] | undefined>
  * section or a category that does not exist can still answer 404 rather than a 200 that says so.
  */
 export interface SectionPlace {
-  store: PublicStore
+  /** As `shopAt` served it: with whether this request arrived by the shop's own domain. */
+  store: PublicStore & Pick<ShopAddress, "ownDomain">
   section: StorefrontSection
   navigation: ShopNavigation
   /** The category whose own page this is. Null on every page that is not one. */

@@ -9,6 +9,7 @@ import { SECURITY_ERROR_KEY, SECURITY_NOTICE_KEY, type SecurityNotice } from "@/
 import { callApi, isApiErrorBody, type ApiCall } from "@/lib/api"
 import { clientIpOf, publicOriginOf, refuseForeignOrigin } from "@/lib/bff"
 import { clearCustomerSessionCookies, setCustomerSessionCookies } from "@/lib/customer-session-cookies"
+import { platformPathOf, shopAddressOf, type ShopAddress } from "@/lib/shop-address"
 import { callAsShopper } from "@/lib/shopper-call"
 import { SHOP_SLUG } from "@/lib/shopper-forward"
 import { BACK_KEY, SIGNED_OUT_EVERYWHERE_KEY, safeBackOf } from "@/lib/storefront-routes"
@@ -38,13 +39,14 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
     return NextResponse.json({ statusCode: 404, errorCode: "NOT_FOUND", message: "No such page" }, { status: 404 })
   }
 
+  const here = shopAddressOf(request.headers, slug)
   const form = await request.formData().catch(() => null)
   const field = (name: string) => {
     const value = form?.get(name)
     return typeof value === "string" ? value : ""
   }
   const back = (key: string, value: string) => {
-    const page = new URL(safeBackOf(slug, field("retorno")), publicOriginOf(request))
+    const page = new URL(safeBackOf(here, field("retorno")), publicOriginOf(request))
     page.searchParams.set(key, value)
     return page
   }
@@ -53,13 +55,13 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
     return NextResponse.redirect(back(SECURITY_ERROR_KEY, "CUSTOMER_PASSWORD_MISMATCH"), 303)
   }
 
-  const call = callOf(action as Action, slug, field)
+  const call = callOf(action as Action, here, field)
   const answered = await callAsShopper(request, slug, (accessToken) => callApi({ ...call, accessToken, clientIp: clientIpOf(request) }).catch(() => null))
   if (answered.status === "signedOut") {
     // This session ended elsewhere — a password changed on another device — before the form was
     // sent: nothing here was done, which the sign-in says, bringing the shopper back to the form.
-    const signIn = new URL(safeBackOf(slug, field("entrada")), publicOriginOf(request))
-    signIn.searchParams.set(BACK_KEY, safeBackOf(slug, field("retorno")))
+    const signIn = new URL(safeBackOf(here, field("entrada")), publicOriginOf(request))
+    signIn.searchParams.set(BACK_KEY, safeBackOf(here, field("retorno")))
     signIn.searchParams.set("erro", "CUSTOMER_SESSION_ENDED")
     return signedOut(signIn, slug)
   }
@@ -67,7 +69,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
 
   if (response?.ok && action === "sair-de-todos") {
     // This session ended with the rest: on to the shop's sign-in (`entrada`), told why.
-    const signIn = new URL(safeBackOf(slug, field("entrada")), publicOriginOf(request))
+    const signIn = new URL(safeBackOf(here, field("entrada")), publicOriginOf(request))
     signIn.searchParams.set(SIGNED_OUT_EVERYWHERE_KEY, "1")
     return signedOut(signIn, slug)
   }
@@ -88,14 +90,15 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
 }
 
 /** The API call each action makes. */
-function callOf(action: Action, slug: string, field: (name: string) => string): Omit<ApiCall, "accessToken" | "clientIp"> {
-  const me = `/stores/${encodeURIComponent(slug)}/customer/me`
+function callOf(action: Action, here: ShopAddress, field: (name: string) => string): Omit<ApiCall, "accessToken" | "clientIp"> {
+  const me = `/stores/${encodeURIComponent(here.slug)}/customer/me`
   if (action === "trocar-senha") {
     return { path: `${me}/password`, method: "PUT", body: { currentPassword: field("atual"), newPassword: field("password") } satisfies ChangeCustomerPasswordPayload }
   }
   // The link brings the shopper back to this page's own place, as the form carried it.
   if (action === "criar-senha") {
-    return { path: `${me}/password/link`, method: "POST", body: { returnTo: safeBackOf(slug, field("retorno")).split("#")[0] } satisfies CustomerPasswordLinkPayload }
+    const place = safeBackOf(here, field("retorno")).split("#")[0] ?? ""
+    return { path: `${me}/password/link`, method: "POST", body: { returnTo: platformPathOf(here, place) } satisfies CustomerPasswordLinkPayload }
   }
   return { path: `${me}/sessions`, method: "DELETE" }
 }

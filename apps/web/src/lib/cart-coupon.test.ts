@@ -52,6 +52,6 @@ describe("the coupon in the cart's address", () => {
   it("is still a way back the shop follows", () => {
     const back = new URL(backWithCoupon("/loja/entrar?voltar=%2Floja%2Fcarrinho", "BEMVINDO10"), "http://x").searchParams.get("voltar")
 
-    expect(safeBackOf("loja", back)).toBe("/loja/carrinho?cupom=BEMVINDO10")
+    expect(safeBackOf({ slug: "loja" }, back)).toBe("/loja/carrinho?cupom=BEMVINDO10")
   })
 })

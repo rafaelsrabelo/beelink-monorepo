@@ -7,6 +7,8 @@ import { POST } from "./route"
 import { encodeOrigin } from "@/lib/origin-cookie"
 
 const mocks = vi.hoisted(() => ({ revalidateOffers: vi.fn() }))
+// The shop's own read says where the request arrived, from its headers (BEELINK-283): none here is the platform's host.
+vi.mock("next/headers", () => ({ headers: async () => new Headers() }))
 // The tags stay real: the shop's own read, which the origin asks for, is kept under them.
 vi.mock("@/lib/revalidate", async (original) => ({ ...(await original<typeof import("@/lib/revalidate")>()), revalidateOffers: mocks.revalidateOffers }))
 

@@ -94,6 +94,15 @@ describe("the shop's quiet pages", () => {
     expect(quietPathsOf({ slug: "loja", routeWords: {} as never })).toEqual([])
   })
 
+  /** The browser's address has no slug there: a path under `/loja` would match nothing, and the token's page would be told. */
+  it("are spelled without the slug at the shop's own domain (BEELINK-283)", () => {
+    const own = quietPathsOf({ slug: "loja", ownDomain: true, routeWords: { verifyEmail: "confirmar-email", resetPassword: "redefinir-senha" } as never })
+
+    expect(own).toEqual(["/confirmar-email", "/redefinir-senha"])
+    expect(isQuietPath("/confirmar-email", own)).toBe(true)
+    expect(isQuietPath("/loja/confirmar-email", own)).toBe(false)
+  })
+
   it("match the page and what is under it, never a page that only starts the same", () => {
     expect(isQuietPath("/loja/redefinir-senha", QUIET)).toBe(true)
     expect(isQuietPath("/loja/redefinir-senha/x", QUIET)).toBe(true)

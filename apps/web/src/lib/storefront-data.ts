@@ -1,9 +1,13 @@
+// Next
+import { headers } from "next/headers"
+
 // Types
 import type { CustomerSignInOptions, PublicLanding, StorefrontOffers, PublicProductCategory, PublicProductDetail, PublicProductReviews, PublicReviewListQuery, PublicStore, StorefrontCartProducts, StorefrontCatalog, StorefrontPaymentOptions, StorefrontSort } from "@harness-monorepo/contracts"
 
 // App
 import { callPublicApi } from "./public-api"
 import { catalogTag, offersTag, storeTag } from "./revalidate"
+import { shopAddressOf } from "./shop-address"
 
 /**
  * The reads every storefront page shares.
@@ -18,18 +22,32 @@ import { catalogTag, offersTag, storeTag } from "./revalidate"
  */
 
 /**
+ * A shop as one request is served it: what the API says of it to anyone, and whether this request
+ * arrived by the shop's own domain (BEELINK-283) — which is what `storefrontRoutes(store)` reads to
+ * leave the slug out of every address.
+ */
+export interface ServedShop extends PublicStore {
+  ownDomain: boolean
+}
+
+/**
  * The shop and every showcase on its landing, cards included.
  *
  * Under both tags: the showcases' prices and pictures ride on this read, so a product write has to
  * drop it as surely as a colour change does. `revalidateStore` drops the two together today; the
  * second tag is what keeps this right the day something drops only the catalogue.
+ *
+ * Where the request arrived is added after the kept read, never inside it: the answer is one for
+ * every visitor, and the same shop is read from the platform's host and from its own domain. It is
+ * the proxy's word, stamped on the request, and it counts only for the shop it names.
  */
-export async function shopAt(slug: string): Promise<PublicStore | null> {
+export async function shopAt(slug: string): Promise<ServedShop | null> {
   const response = await callPublicApi({ path: `/stores/${slug}/public`, tags: [storeTag(slug), catalogTag(slug)] })
 
   if (!response.ok) return null
 
-  return (await response.json()) as PublicStore
+  const store = (await response.json()) as PublicStore
+  return { ...store, ownDomain: shopAddressOf(await headers(), store.slug).ownDomain === true }
 }
 
 /** The checkout of before anything was charged online: the shop's own labels, settled with it. */

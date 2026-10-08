@@ -21,6 +21,8 @@ import { StorefrontSecuritySection } from "./storefront-security-section"
 
 export interface StorefrontAccountSectionProps {
   slug: string
+  /** Whether the request arrived by the shop's own domain: what a `voltar` is read against. */
+  ownDomain?: boolean
   /** The profile tab's address, to come back to after a save. */
   accountHref: string
   /** The shop's sign-in, where signing out of every device lands. */
@@ -69,9 +71,9 @@ const BLANK_ADDRESS = {
  * Reached from the cart, with its way back (`voltar`), a save goes back to the cart; otherwise, here.
  * A refusal always comes back here, still on its way to the cart: the cart has no form to say it on.
  */
-export function StorefrontAccountSection({ slug, accountHref, signInHref, profile, query, errors, messages }: StorefrontAccountSectionProps) {
+export function StorefrontAccountSection({ slug, ownDomain = false, accountHref, signInHref, profile, query, errors, messages }: StorefrontAccountSectionProps) {
   const code = paramOf(query.erro)
-  const back = paramOf(query[BACK_KEY]) ? safeBackOf(slug, paramOf(query[BACK_KEY])) : null
+  const back = paramOf(query[BACK_KEY]) ? safeBackOf({ slug, ownDomain }, paramOf(query[BACK_KEY])) : null
   const withBack = (params: Record<string, string>) => `${accountHref}?${new URLSearchParams({ ...params, ...(back ? { [BACK_KEY]: back } : {}) }).toString()}`
 
   const opened = paramOf(query[ADDRESS_KEY])

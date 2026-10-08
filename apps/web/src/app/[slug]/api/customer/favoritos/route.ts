@@ -6,6 +6,7 @@ import { callApi, isApiErrorBody } from "@/lib/api"
 import { clientIpOf, publicOriginOf, refuseForeignOrigin } from "@/lib/bff"
 import { clearCustomerSessionCookies, setCustomerSessionCookies } from "@/lib/customer-session-cookies"
 import { FAVORITE_REMOVED, FAVORITES_ERROR_KEY } from "@/lib/favorite-list-query"
+import { shopAddressOf } from "@/lib/shop-address"
 import { callAsShopper } from "@/lib/shopper-call"
 import { PRODUCT_ID, SHOP_SLUG } from "@/lib/shopper-forward"
 import { BACK_KEY, safeBackOf } from "@/lib/storefront-routes"
@@ -22,12 +23,13 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
   const { slug } = await params
   if (!SHOP_SLUG.test(slug)) return NextResponse.json({ statusCode: 404, errorCode: "NOT_FOUND", message: "No such shop" }, { status: 404 })
 
+  const here = shopAddressOf(request.headers, slug)
   const form = await request.formData().catch(() => null)
   const field = (name: string) => {
     const value = form?.get(name)
     return typeof value === "string" ? value : ""
   }
-  const back = safeBackOf(slug, field("retorno"))
+  const back = safeBackOf(here, field("retorno"))
   const landing = new URL(back, publicOriginOf(request))
   const productId = field("produto")
   if (!PRODUCT_ID.test(productId)) {
@@ -41,7 +43,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
   if (answered.status === "signedOut") {
     // The session ended elsewhere meanwhile: nothing was removed, which the sign-in says, and it brings
     // the shopper back to the tab.
-    const signIn = new URL(safeBackOf(slug, field("entrada")), publicOriginOf(request))
+    const signIn = new URL(safeBackOf(here, field("entrada")), publicOriginOf(request))
     signIn.searchParams.set(BACK_KEY, back)
     signIn.searchParams.set("erro", "CUSTOMER_SESSION_ENDED")
     const signedOut = NextResponse.redirect(signIn, 303)
