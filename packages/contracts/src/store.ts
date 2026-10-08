@@ -1,4 +1,5 @@
 import type { PublicCashback } from "./cashback.js";
+import type { PublicCustomDomain } from "./custom-domain.js";
 import type { PublicPageLink } from "./store-pages.js";
 import type { PublicSection } from "./page.js";
 import type { StorefrontRouteWords } from "./catalog.js";
@@ -202,6 +203,12 @@ export interface PublicStore {
    * gives: the storefront passes it to Google's tag as an argument, and never writes it into a script.
    */
   googleAnalyticsId: string | null;
+  /**
+   * The shop's own domain and where it stands (BEELINK-281); null with none saved. It is what tells
+   * the storefront whether a request arrived by the shop's domain. The API always sends it; it is
+   * absent only on an answer cached before a shop could have a domain, which had none.
+   */
+  customDomain?: PublicCustomDomain | null;
   /**
    * The bands the landing page is made of, in the shopkeeper's order, already resolved.
    *

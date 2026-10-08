@@ -7,6 +7,7 @@ export type * from "./page-templates.js";
 export type * from "./cashback.js";
 export type * from "./catalog.js";
 export type * from "./conversation.js";
+export type * from "./custom-domain.js";
 export type * from "./customer.js";
 export type * from "./customer-data.js";
 export type * from "./delivery.js";
