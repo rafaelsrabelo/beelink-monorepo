@@ -125,3 +125,5 @@ As do épico estão no plano do BEELINK-280. As abaixo são deste ticket, tomada
 - **O minuto.** Que a loja de fato leve até um minuto para acompanhar o que a tela diz é o que o BEELINK-283 escreveu e também não viu.
 - **Playwright.** Nenhum spec foi escrito para esta tela, e nenhum dos que existem foi rodado. Os que existem não abrem a página inicial do painel nem a tela "Loja" (conferido por leitura).
 - **`delivery-check` como skill.** A lista dela foi conferida à mão contra o diff, sem bloqueador; o `pnpm ci-check` que ela pede é o de cima.
+
+**Correção às notas acima (08/10).** Em "O que não rodou", a frase sobre o Playwright diz que nenhum spec abre a página inicial do painel. Um abre: `apps/web/e2e/shop-domain.spec.ts`, do BEELINK-283, vai a `/admin/<slug>` de uma loja com domínio ativo, no último passo, e confere só o endereço da página. O cartão novo vai estar nessa tela ("Domínio próprio", "Feito") e nada no spec olha para ele. Esse spec nunca rodou, nem lá nem aqui. Os outros (`auth-journey`, `panel-session`, `shared-tab`, `accessibility`, `screenshots`) não abrem a página inicial de uma loja, nem a tela "Loja", nem a tela nova.
