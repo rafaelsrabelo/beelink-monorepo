@@ -170,6 +170,28 @@ const envSchema = z.object({
   INTEGRATIONS_SECRET_KEY: blankAsAbsent(
     z.string().refine((value) => Buffer.from(value, 'base64').length === 32, 'INTEGRATIONS_SECRET_KEY must be 32 bytes in base64'),
   ),
+
+  /**
+   * A shop's own domain (BEELINK-281): the server's public IPv4 addresses, comma-separated — what a
+   * shopkeeper points the domain's `A` record at, and what a check compares the domain's records
+   * with. Optional: without it the API answers no address to point a domain at, and refuses saving
+   * or checking one with CUSTOM_DOMAIN_UNAVAILABLE.
+   */
+  SHOP_DOMAIN_TARGET_IPS: blankAsAbsent(
+    z
+      .string()
+      .transform((value) => [...new Set(value.split(',').map((address) => address.trim()).filter(Boolean))])
+      .pipe(z.array(z.ipv4()).min(1)),
+  ),
+
+  /**
+   * Whether a check also asks `https://<domain>` once its DNS is right. `false` only where the API's
+   * container cannot reach the server's own public address: every check would end unreachable, and
+   * there the DNS being right has to be enough.
+   */
+  SHOP_DOMAIN_PROBE: z
+    .preprocess((value) => (value === '' ? undefined : value), z.enum(['true', 'false']).default('true'))
+    .transform((value) => value === 'true'),
 }).refine(
   // All three or none: half of it is a deployment that shows the button and fails at the callback.
   (value) => [value.GOOGLE_CLIENT_ID, value.GOOGLE_CLIENT_SECRET, value.GOOGLE_REDIRECT_URI].every((part) => part === undefined) ||

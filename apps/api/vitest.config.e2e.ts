@@ -39,6 +39,9 @@ export default defineConfig({
       MELHOR_ENVIO_CLIENT_SECRET: 'test-melhor-envio-secret',
       MELHOR_ENVIO_REDIRECT_URI: 'http://localhost:3000/api/integrations/melhor-envio/callback',
       INTEGRATIONS_SECRET_KEY: 'MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=',
+      // A shop's own domain switched on, at a documentation address: its suite stands a fake DNS and
+      // a fake probe in for the network, and no other suite reaches the routes that would ask either.
+      SHOP_DOMAIN_TARGET_IPS: '203.0.113.10',
     },
   },
 });
