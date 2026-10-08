@@ -89,6 +89,10 @@ export const RESERVED_PATH_SEGMENTS: readonly string[] = [
   'about',
   // A shop's landing pages, at `/<shop>/lp/<address>`.
   'lp',
+  // bee-link's terms and privacy policy. At a shop's own domain (BEELINK-283) the second segment
+  // is the first, and `/termos` there is the platform's page: a category by that name would never open.
+  'termos',
+  'privacidade',
   // The shop window's own assets, which Next serves from paths of this shape.
   'api',
   'sitemap.xml',
