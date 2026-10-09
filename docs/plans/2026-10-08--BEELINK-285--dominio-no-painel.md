@@ -181,3 +181,5 @@ Com a API de verdade, na loja `loja-dominio-1791487727` e num site criado pelo f
 - **Nada em produção.**
 
 Duas coisas notadas e deixadas como estão: numa instalação sem a variável o cartão da página inicial convida a configurar um domínio e a tela responde "Indisponível" (o cartão lê só `Store.customDomain`, e saber mais custaria outra chamada); e a tela "Loja" de um site tem o título "Minha loja", que não é deste ticket.
+
+**Correção ao parágrafo da tabela a 320px (09/10).** "A 360px com o endereço da produção, cabe" é conta feita com as larguras medidas, não medição: a 360px a tela não foi aberta. O que foi medido: a 390px a tabela cabe no cartão, também com endereços de treze e de quinze caracteres; a 320px, com eles, rola 56px de lado.
