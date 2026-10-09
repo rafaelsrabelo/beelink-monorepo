@@ -74,6 +74,7 @@ export function toSettingsValues(store: Store): StoreSettingsValues {
       type: store.type,
       description: store.description ?? "",
       logoUrl: store.logoUrl ?? "",
+      faviconUrl: store.faviconUrl ?? "",
       categoryId: store.category?.id ?? "",
     },
     address: {
@@ -111,6 +112,7 @@ export function toUpdatePayload(store: Store, values: StoreSettingsValues): Upda
     type: values.identity.type,
     description: orNull(values.identity.description),
     logoUrl: orNull(values.identity.logoUrl),
+    faviconUrl: orNull(values.identity.faviconUrl),
     bannerImageUrl: store.bannerImageUrl,
     categoryId: orNull(values.identity.categoryId),
     layoutType: store.layoutType,
@@ -182,6 +184,9 @@ function openingTemplateOf(input: Pick<StoreCreateInput, "identity" | "homeTempl
  * A new shop. The address and the social handles travel with it, which closes the legacy defect
  * the mapping notes record as F1: the five-step wizard collected both, refused to advance past
  * step 4 without WhatsApp, and then posted neither.
+ *
+ * The browser icon is not sent: the form that opens a shop does not offer it (BEELINK-312), and a
+ * shop's tab shows its logo until one is chosen in the settings.
  *
  * Every blank-to-null and mask-stripping rule is the update path's, reused rather than restated:
  * the two verbs disagreeing about what "empty" means is how the legacy ended up storing a masked

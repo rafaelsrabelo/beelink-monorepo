@@ -10,20 +10,50 @@ import { en } from "@/locales/en"
 import { ptBR as web } from "@/locales/pt-BR"
 import { StoreSettingsScreen } from "./store-settings-screen"
 
-const mocks = vi.hoisted(() => ({ store: vi.fn() }))
+const mocks = vi.hoisted(() => ({ store: vi.fn(), form: vi.fn(), uploads: [] as Array<() => void> }))
 const idle = { isPending: false, isSuccess: false, error: null, reset: () => {} }
 vi.mock("@/services/stores/store-hooks", () => ({ useStore: mocks.store, useStoreCategories: () => ({ data: [] }), useUpdateStore: () => ({ ...idle, mutate: () => {} }) }))
 vi.mock("@/services/cep/cep-hooks", () => ({ useZipCodeLookup: () => ({ ...idle, lookup: () => {}, pending: false }) }))
 vi.mock("@/services/addresses/address-hooks", () => ({ useAddressSearch: () => ({ suggestions: [], pending: false }), DEBOUNCE_MS: 0 }))
-vi.mock("@/services/uploads/upload-hooks", () => ({ useImageUpload: () => ({ ...idle, upload: () => {}, pending: false }) }))
+// Each call its own handle, as the hook gives: the screen asks for the logo's first and the icon's second.
+vi.mock("@/services/uploads/upload-hooks", () => ({
+  useImageUpload: () => {
+    const upload = () => {}
+    mocks.uploads.push(upload)
+    return { ...idle, upload, pending: mocks.uploads.length % 2 === 0 }
+  },
+}))
 // What this test is about is around the form, not in it: the form, its values and its extra tab stand as a word.
-vi.mock("@harness-monorepo/ui/blocks/store/store-settings-form", () => ({ StoreSettingsForm: () => <form aria-label="settings" /> }))
+vi.mock("@harness-monorepo/ui/blocks/store/store-settings-form", () => ({
+  StoreSettingsForm: (props: object) => {
+    mocks.form(props)
+    return <form aria-label="settings" />
+  },
+}))
 vi.mock("@/components/store/store-payloads", () => ({ toSettingsValues: () => ({}), toUpdatePayload: () => ({}) }))
 vi.mock("@/components/store/store-delivery-tab", () => ({ StoreDeliveryTab: () => null }))
 
 const view = (messages = web) => render(<StoreSettingsScreen slug="lessari" locale="pt-BR" ui={ui} web={messages} />)
 
-beforeEach(() => mocks.store.mockReturnValue({ isPending: false, isError: false, data: { slug: "lessari", latitude: null, longitude: null } }))
+beforeEach(() => {
+  mocks.form.mockClear()
+  mocks.uploads.length = 0
+  mocks.store.mockReturnValue({ isPending: false, isError: false, data: { slug: "lessari", latitude: null, longitude: null } })
+})
+
+describe("StoreSettingsScreen, the shop's browser icon (BEELINK-312)", () => {
+  /** One upload each: with the logo's state alone, sending the logo would say "sending" on the icon's field too. */
+  it("hands the icon an upload and a pending of its own, apart from the logo's, and bee-link's icon for the preview", () => {
+    view()
+
+    const [logoUpload, iconUpload] = mocks.uploads
+    expect(mocks.uploads).toHaveLength(2)
+    expect(mocks.form).toHaveBeenLastCalledWith(
+      expect.objectContaining({ onImageUpload: logoUpload, imageUploadPending: false, onFaviconUpload: iconUpload, faviconUploadPending: true, platformIconUrl: "/icon.png" }),
+    )
+    expect(iconUpload).not.toBe(logoUpload)
+  })
+})
 
 describe("StoreSettingsScreen, the way to the shop's own domain (BEELINK-285)", () => {
   /** The panel's menu has no group of settings: the domain's screen is reached from here and from the home's card. */

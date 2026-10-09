@@ -122,7 +122,7 @@ export function StoreCreateScreen({ ui, web }: StoreCreateScreenProps) {
 function emptyStore(colors: StoreColors): StoreCreateValues {
   return {
     slug: "",
-    identity: { name: "", type: "ECOMMERCE", description: "", logoUrl: "", categoryId: "" },
+    identity: { name: "", type: "ECOMMERCE", description: "", logoUrl: "", faviconUrl: "", categoryId: "" },
     address: { zipCode: "", street: "", number: "", complement: "", neighborhood: "", city: "", state: "" },
     social: { whatsapp: "", instagram: "", tiktok: "", spotify: "", youtube: "" },
     colors,

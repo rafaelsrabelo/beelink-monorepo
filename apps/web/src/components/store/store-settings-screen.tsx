@@ -26,6 +26,9 @@ import { useZipCodeLookup } from "@/services/cep/cep-hooks"
 import { useStore, useStoreCategories, useUpdateStore } from "@/services/stores/store-hooks"
 import { useImageUpload } from "@/services/uploads/upload-hooks"
 
+/** bee-link's own tab icon, `app/icon.png` as Next serves it: what a shop with no icon and no logo keeps. */
+const PLATFORM_ICON = "/icon.png"
+
 export interface StoreSettingsScreenProps {
   slug: string
   locale: string
@@ -51,6 +54,8 @@ export function StoreSettingsScreen({ slug, locale, ui, web }: StoreSettingsScre
   // resolved on the server when it was last saved. Hooks run before `current` exists.
   const [picked, setPicked] = useState<Point | null>(null)
   const image = useImageUpload()
+  // Its own state: with the logo's, sending one would say "sending" on the other's field too.
+  const icon = useImageUpload()
 
   if (store.isPending) return <StoreSettingsSkeleton messages={ui} />
 
@@ -81,8 +86,11 @@ export function StoreSettingsScreen({ slug, locale, ui, web }: StoreSettingsScre
         zipCodeLookupPending={zipCode.pending}
         onImageUpload={image.upload}
         imageUploadPending={image.pending}
+        onFaviconUpload={icon.upload}
+        faviconUploadPending={icon.pending}
+        platformIconUrl={PLATFORM_ICON}
         pending={update.isPending}
-        error={firstStoreErrorCopy([update.error, image.error, zipCode.error], web)}
+        error={firstStoreErrorCopy([update.error, image.error, icon.error, zipCode.error], web)}
         messages={ui}
         extraTabs={[{ value: "delivery", label: ui.delivery.tab, content: <StoreDeliveryTab store={current} locale={locale} messages={ui} /> }]}
         onSubmit={(values) => {
@@ -90,6 +98,7 @@ export function StoreSettingsScreen({ slug, locale, ui, web }: StoreSettingsScre
           // one place for a sentence, so the older failures are cleared before a new one can arrive.
           zipCode.reset()
           image.reset()
+          icon.reset()
           update.mutate(toUpdatePayload(current, values))
         }}
       />

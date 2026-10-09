@@ -1,4 +1,5 @@
 // Next
+import type { Metadata } from "next"
 import { cookies } from "next/headers"
 
 // App
@@ -15,6 +16,7 @@ import { consentAt } from "@/lib/consent"
 import { funnelCountedAt } from "@/lib/funnel-count"
 import { getMessages } from "@/lib/locale"
 import { REFRESH_COOKIE } from "@/lib/session-cookies"
+import { shopIconsOf } from "@/lib/shop-icon"
 import { shopperAt } from "@/lib/shopper"
 import { quietPathsOf } from "@/lib/storefront-event"
 import { shopAt } from "@/lib/storefront-data"
@@ -56,6 +58,17 @@ import { storefrontRoutes } from "@/lib/storefront-routes"
  * around everything: the components that run in the browser spell the shop's addresses and write its
  * cookies, and are given a slug and nothing of the request.
  */
+/**
+ * The tab's icon of every page of the shop, said once and here (BEELINK-312): no page below sets
+ * `icons`, so each keeps this one beside its own title — the landings and the shop's own domain, a
+ * rewrite onto this segment, among them. `shopAt` is the kept read the page makes too.
+ */
+export async function generateMetadata({ params }: Pick<LayoutProps<"/[slug]">, "params">): Promise<Metadata> {
+  const { slug } = await params
+
+  return shopIconsOf(await shopAt(slug))
+}
+
 export default async function StorefrontLayout({ children, params }: LayoutProps<"/[slug]">) {
   const { slug } = await params
   const [lines, shopper, store, { ui }, choice, jar] = await Promise.all([cartLinesAt(), shopperAt(slug), shopAt(slug), getMessages(), consentAt(), cookies()])
