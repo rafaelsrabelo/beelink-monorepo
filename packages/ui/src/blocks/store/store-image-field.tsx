@@ -204,6 +204,22 @@ export function StoreImageField({
                 style={{ aspectRatio: ratio }}
                 className={previewClass}
               />
+              {/*
+                The picker "Trocar" opens. The drop area's own input is not on the page while a picture
+                is, and without this one the button clicked nothing. `hidden`, not `sr-only`: the button
+                is the control here, and a second, unnamed stop for the keyboard would be noise.
+              */}
+              <input
+                ref={fileInput}
+                type="file"
+                accept={accept}
+                hidden
+                data-testid={`${id}-replace-file`}
+                onChange={(event) => {
+                  const file = event.target.files?.[0]
+                  if (file) void handleFile(file)
+                }}
+              />
               <div className="flex flex-wrap gap-2">
                 {onUpload ? (
                   <Button
