@@ -53,6 +53,9 @@ async function shopkeeper(page: Page, request: APIRequestContext): Promise<void>
  * what a visitor's browser does with `minhaloja.com.br` once its DNS points at the server.
  */
 test.describe("a shop at its own domain", () => {
+  // A computer's width: on a narrow one the shelf's filters are behind a button.
+  test.use({ viewport: { width: 1440, height: 900 } })
+
   test("opens at the root, sells with no slug in any address, and takes its old address with it", async ({ page, request, context, baseURL }) => {
     test.setTimeout(PROXY_LEARNS_WITHIN_MS + 120_000)
 
@@ -102,6 +105,10 @@ test.describe("a shop at its own domain", () => {
       const product = await page.request.post(`/api/stores/${slug}/products`, { headers: json, data: { name: productName, priceCents: 12990, categoryId } })
       expect(product.status()).toBe(201)
       productSlug = ((await product.json()) as { slug: string }).slug
+
+      // A second price, so the shelf has a price range to be narrowed by.
+      const other = await page.request.post(`/api/stores/${slug}/products`, { headers: json, data: { name: `Bolsa Jabuticaba ${stamp}`, priceCents: 15990, categoryId } })
+      expect(other.status()).toBe(201)
     })
 
     await test.step("the shop is at its slug while it has no domain", async () => {
@@ -141,6 +148,30 @@ test.describe("a shop at its own domain", () => {
       await page.goto(at(`/busca?q=${encodeURIComponent("Bolsa Amora")}`))
       await expect(productCard()).toBeVisible()
       await expectAt("/busca")
+    })
+
+    /**
+     * The one navigation the shop makes with the router and not the browser: a filter of the shelf
+     * it is on. The router asks for the page's data at the address in the bar — which has no slug —
+     * and the proxy has to answer that as it answers the page.
+     */
+    await test.step("a filter of the shelf is followed in place, with no full load, at an address with no slug", async () => {
+      await page.goto(at("/produtos"))
+      await page.evaluate(() => {
+        ;(window as Window & { keptAcrossTheFilter?: boolean }).keptAcrossTheFilter = true
+      })
+      const data = page.waitForResponse((response) => {
+        const url = new URL(response.url())
+        return url.host === `${domain}:${port}` && url.pathname === "/produtos" && url.searchParams.has("_rsc") && url.searchParams.has("precoMin")
+      })
+
+      await page.locator('main a[href^="/produtos?precoMin="]').first().click()
+
+      expect((await data).status()).toBe(200)
+      await expect(page).toHaveURL(/\/produtos\?precoMin=\d+&precoMax=\d+$/)
+      expect(await page.evaluate(() => (window as Window & { keptAcrossTheFilter?: boolean }).keptAcrossTheFilter)).toBe(true)
+      await expect(productCard()).toBeVisible()
+      await expectAt("/produtos")
     })
 
     await test.step("a product is reached by its link, and goes into the cart", async () => {
