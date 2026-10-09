@@ -169,3 +169,60 @@ A decisão 6 do BEELINK-280 diz que "o prefixo vem do pedido": sem prefixo quand
 ## Acréscimo do orquestrador (08/10, na revisão)
 
 **A leitura da tabela de hosts tem tempo limite.** `callApi` não tem nenhum, e o proxy espera a leitura em voo na frente de todo pedido de página de loja (e de todo pedido num host que não é o da plataforma): uma API que aceita a conexão e nunca responde seguraria esses pedidos pelos cinco minutos do próprio `fetch`. `readFromApi` agora desiste em 3 s (`SHOP_HOSTS_READ_TIMEOUT_MS`, `settledWithin` em `apps/web/src/lib/shop-hosts.ts`); uma leitura atrasada é uma leitura que falhou, e a última cópia continua valendo. Conferido só por teste de unidade, como o resto do proxy.
+
+## O que rodou em 09/10 (acréscimo)
+
+Com o disco liberado e o Docker de volta, rodou tudo o que a seção "O que não rodou" listava. Na branch do BEELINK-285 (o painel, em cima desta), que contém este ticket inteiro; a tela de domínio usada abaixo é dela. Banco de dev e de e2e no Postgres da porta 5442, Mailpit na 1027/8027.
+
+**Build.** `pnpm --filter api build` e `pnpm --filter web build`: os dois com saída 0. Na tabela de rotas do web, as únicas estáticas (`○`) são `/apple-icon.png` e `/icon.png`, as mesmas duas do build de 08/10, feito antes de qualquer mudança deste ticket. `/`, `/[slug]`, `/[slug]/[section]`, `/[slug]/[section]/[item]`, `/[slug]/[section]/[item]/[sub]`, `/[slug]/lp/[page]`, `/login`, `/termos` e `/privacidade` seguem `ƒ`. O item 18 da Definição de Pronto tem evidência agora. O log do build de 08/10 se perdeu com a pasta temporária; a comparação é com a lista que este plano e o relatório daquele dia registraram.
+
+**Playwright**, contra os apps compilados, com `MAILPIT_URL=http://localhost:8027 SMTP_URL=smtp://localhost:1027 DATABASE_URL=…5442/harness_domain_test`: **12 passaram** (`12 passed (1.1m)`), os 11 que já existiam e o `shop-domain.spec.ts`. O spec novo falhou duas vezes antes de passar, as duas por seletor, nenhuma por defeito do app:
+
+1. `getByRole("link", { name: <produto> }).first()` pegava o coração ao lado do cartão ("Entre para curtir <produto>"), que leva ao entrar. O cartão passou a ser achado pelo endereço para onde leva (`a[href="/produtos/<slug>"]`), o que também confere o endereço.
+2. `getByText("Olá, Bia")` casava com o cabeçalho e com o título da página. Passou a pedir o `h1`.
+
+O jeito de ativar o domínio no banco (`prisma db execute --stdin`) funcionou de primeira, e a cópia do proxy conheceu o domínio dentro do prazo em todas as rodadas. Depois entrou um passo a mais no spec: um filtro da prateleira seguido pelo roteador (`router.push`), que pede os dados da página no endereço sem o slug (`/produtos?precoMin=…&_rsc=…`, 200, sem recarregar).
+
+**Suíte e2e da API**, inteira, com `TEST_DATABASE_URL`, `TEST_SMTP_URL` e `MAILPIT_URL` deste worktree: `Test Files 1 failed | 86 passed (87)`, `Tests 1 failed | 1096 passed (1097)`. O que falhou é `meta-pixel-without-vault-key.e2e-spec.ts`, o conhecido do `.env`.
+
+**No navegador** (`next dev --port 3800`, API na 3801), com a loja `loja-dominio-1791487727`, uma categoria e dois produtos criados pelo painel:
+
+- **Host da plataforma, sem domínio ativo:** visitante anônimo em `/<slug>`, catálogo, categoria, busca, produto, carrinho e entrar: 200, nenhum redirecionamento para `/login`, todo link com o slug. `/<slug>/conta` leva ao entrar da loja. `/admin` e `/admin/<slug>` sem sessão levam a `/login?voltar=…`; o login do painel entra. O carrinho e a sessão do cliente ficam em `Path=/<slug>` e não são mandados para `/` (conferido no header `Cookie` de cada pedido). O botão do Google aparece. Um pedido com `x-bl-shop-domain` responde 400 em página, handler e `/favicon.ico`; num arquivo de `/_next/static` o header passa (o proxy não é chamado ali).
+- **Domínio da loja** (`loja.localhost`, escrito `ACTIVE` no banco): `/`, `/produtos`, `/bolsas`, `/categorias`, `/busca?q=…`, `/produtos/<produto>`, `/carrinho`, `/entrar`, `/entrar?modo=criar`: 200, nenhum `href` com o slug, no HTML do servidor inclusive. `/termos`, `/privacidade` e `/favicon.ico`: 200. `/admin`, `/login` e o handler de outra loja: 404. Produto no carrinho (`bl_cart` em `Path=/`), ainda lá depois de recarregar. Conta criada; o link do e-mail, escrito com o endereço da plataforma e `voltar=/<slug>/carrinho`, abriu no host da plataforma, foi levado (308) ao domínio e terminou em `/entrar?voltar=%2Fcarrinho&confirmado=1`. Entrar devolveu ao `/carrinho`; `bl_shopper_access` e `bl_shopper_refresh` em `Path=/`, mandados às páginas e a `/<slug>/api/…`. Perfil salvo pelo formulário, voltando ao carrinho. **Pedido nº 1 fechado** (`POST /<slug>/api/orders` → 201), a página do pedido e "Meus pedidos" sem o slug. Sair levou a `/`, e `/conta` voltou a pedir o entrar. O botão do Google não aparece.
+- **Redirecionamentos:** `localhost:3800/<slug>/produtos/<p>?variant=x&cor=azul` → 308 → `http://loja.localhost:3800/produtos/<p>?variant=x&cor=azul`; `/<slug>/…` no domínio → 308 para o mesmo sem o slug; `www.` → 308 para o domínio, com caminho e query. Um handler nunca é redirecionado.
+- **A sessão vencida no domínio:** com `bl_shopper_access` apagado, `/conta/pedidos` abriu já logado, e a resposta trouxe o par novo em `Path=/` e os dois gêmeos de `/<slug>` com `Max-Age=0`.
+- **O caminho pelo painel** (`SHOP_DOMAIN_PROBE=false` no `.env` da API): em `/admin/<slug>/domain`, `https://www.LVH.me/` foi salvo como `lvh.me`, `ACTIVE` ("Domínio salvo e ativo."). `http://lvh.me:3800/` abriu a loja **51 s depois**; `www.lvh.me` levou a `lvh.me`. Removido pela tela, o endereço da plataforma voltou a servir a loja **49 s** depois numa vez e **48 s** na outra. Escrito direto no banco, o domínio levou 13, 33, 21 e menos de 2 s para valer: é o minuto da cópia, contado de quando ela foi lida.
+
+**O que o navegador mostrou e mudou código.**
+
+- **Em `next dev`, a loja em `lvh.me` desenhava e nenhum botão respondia.** O servidor de desenvolvimento do Next recusa os próprios recursos (o socket de recarga) a um host em que não foi iniciado, e a página não hidrata. `localhost` e `*.localhost` já eram aceitos. `allowedDevOrigins: ["lvh.me", "*.lvh.me"]` em `next.config.ts` resolve; conferido depois: hidrata, o carrinho grava, o filtro navega sem recarregar. Um servidor compilado não tem essa checagem (conferido em `next start`).
+
+**O que o navegador mostrou e não mudou nada.**
+
+- **`usePathname()` sob reescrita devolve o caminho da barra, no servidor também.** O HTML do servidor traz o coração com `voltar=%2Fprodutos%3Fcurtir%3D…`, sem o slug. Nenhum aviso de hidratação no console em toda a sessão.
+- **O socket do chat é recusado por CORS no domínio da loja**, para o cliente logado, em toda página, e tenta de novo (32 erros no console durante a sessão). As páginas funcionam. É o que o BEELINK-284 resolve.
+- **Os endpoints de desenvolvimento do Next fora de `/_next/`** (`/__nextjs_…`) respondem igual nos dois hosts: não passam pela reescrita.
+- A página 404 escreve no console "Encountered a script tag while rendering React component" nos dois hosts: já era assim.
+
+**O proxy e os handlers dividem memória?** Medido com um módulo de sonda temporário, importado pelo proxy e por um handler, nunca commitado:
+
+| Onde | Mesmo processo | Mesma instância do módulo | Mesmo `globalThis` |
+|---|---|---|---|
+| `next dev` | sim | **não** | sim |
+| `next start` | sim | **não** | sim |
+| `node .next/standalone/…/server.js` | sim | **não** | sim |
+
+O estado guardado num módulo não é dividido: uma função exportada de `lib/shop-hosts.ts` e chamada por um handler mexeria numa cópia que o proxy não lê, e a decisão 17 fica como está. O `globalThis` é dividido nos três modos, então uma cópia guardada nele seria alcançável por um handler. Isso contraria o aviso da documentação do Next, que diz para não contar com globais em comum, e não foi feito.
+
+**No servidor `standalone`, com os headers que o Traefik manda** (`X-Forwarded-Host`, `X-Forwarded-Proto: https`): página da loja pelo host do domínio, 200; `/<slug>/carrinho?cupom=X` no domínio → 308 `https://lvh.me/carrinho?cupom=X`; `www.` → 308 `https://lvh.me/carrinho`; `beelink.biz/<slug>/produtos?pagina=2` → 308 `https://lvh.me/produtos?pagina=2`. Os destinos saem do host encaminhado, não do endereço em que o servidor escuta.
+
+**O que continua sem ter sido visto.**
+
+- Nada no servidor de produção: o Traefik de verdade, o certificado, `WEB_DOMAIN` no serviço `web`.
+- Um domínio ficando `ACTIVE` com a sonda de HTTPS ligada. Aqui ela estava desligada.
+- "Comprar de novo" no domínio: o pedido feito não o oferecia. Só o teste de unidade cobre.
+- O login com Google e o chat do pedido no domínio da loja, que são do BEELINK-284.
+- O pixel da Meta e a faixa de cookies no domínio: a loja de teste não tem pixel.
+- Um navegador que não seja o Chromium.
+
+**O que ficou no ambiente.** `SHOP_DOMAIN_PROBE=false` no `apps/api/.env` do worktree, que o roteiro mandou pôr. No banco de dev, a loja `loja-dominio-1791487727` sem domínio, com uma categoria, dois produtos, um cliente (`cliente-1791543071550@teste.dev`) e um pedido. No banco de e2e, uma loja com domínio `ACTIVE` por rodada do spec.
