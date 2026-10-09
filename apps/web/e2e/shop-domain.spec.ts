@@ -71,6 +71,11 @@ test.describe("a shop at its own domain", () => {
         (anchors, shop) => anchors.map((anchor) => anchor.getAttribute("href") ?? "").filter((href) => new URL(href, window.location.href).pathname.split("/")[1] === shop),
         slug,
       )
+    /**
+     * The product's card, by where it leads: its address with no slug. By name it would be the heart
+     * beside it too — "Entre para curtir <product>" — which leads to the sign-in.
+     */
+    const productCard = () => page.locator(`a[href="/produtos/${productSlug}"]`).first()
     /** Where the page is: at the shop's domain, at an address with no slug. */
     const expectAt = async (pathname: string | RegExp) => {
       const url = new URL(page.url())
@@ -126,7 +131,7 @@ test.describe("a shop at its own domain", () => {
     await test.step("the catalogue, a category and a search are at addresses with no slug", async () => {
       await page.goto(at("/produtos"))
       await expect(page.getByRole("heading", { level: 1, name: "Todos os produtos" })).toBeVisible()
-      await expect(page.getByRole("link", { name: productName }).first()).toBeVisible()
+      await expect(productCard()).toBeVisible()
       await expectAt("/produtos")
 
       await page.goto(at("/bolsas"))
@@ -134,13 +139,13 @@ test.describe("a shop at its own domain", () => {
       await expectAt("/bolsas")
 
       await page.goto(at(`/busca?q=${encodeURIComponent("Bolsa Amora")}`))
-      await expect(page.getByRole("link", { name: productName }).first()).toBeVisible()
+      await expect(productCard()).toBeVisible()
       await expectAt("/busca")
     })
 
     await test.step("a product is reached by its link, and goes into the cart", async () => {
       await page.goto(at("/produtos"))
-      await page.getByRole("link", { name: productName }).first().click()
+      await productCard().click()
       await expect(page).toHaveURL(at(`/produtos/${productSlug}`))
       await expect(page.getByRole("heading", { level: 1, name: productName })).toBeVisible()
       await expectAt(`/produtos/${productSlug}`)
@@ -193,7 +198,8 @@ test.describe("a shop at its own domain", () => {
 
     await test.step("the account opens for them, and the cart is still theirs", async () => {
       await page.goto(at("/conta"))
-      await expect(page.getByText("Olá, Bia")).toBeVisible()
+      // The page's own heading: the header greets them by the same words.
+      await expect(page.getByRole("heading", { level: 1, name: "Olá, Bia" })).toBeVisible()
       await expectAt("/conta")
 
       await page.goto(at("/carrinho"))
