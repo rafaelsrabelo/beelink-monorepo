@@ -144,7 +144,7 @@ describe("CustomDomainScreen, with a domain saved", () => {
     expect(screen.getByText("Aguardando")).toBeInTheDocument()
     expect(screen.getByText("Domínio").nextElementSibling).toHaveTextContent(HOST)
     expect(screen.getByText("Última verificação").nextElementSibling).toHaveTextContent("08/10/2026, 14:20")
-    expect(screen.getByText(/aponta para outro lugar/)).toHaveTextContent(`O domínio ${HOST} aponta para outro lugar: ${ELSEWHERE}. Ele precisa apontar só para ${TARGET}:`)
+    expect(screen.getByText(/aponta para outro lugar/)).toHaveTextContent(`O domínio ${HOST} aponta para outro lugar (${ELSEWHERE}). Para ele apontar só para ${TARGET}, troque`)
     expect(screen.queryByRole("textbox")).toBeNull()
     expect(records()).toBeInTheDocument()
     // Read as saved, not just saved: nothing is announced.
@@ -159,16 +159,21 @@ describe("CustomDomainScreen, with a domain saved", () => {
 
     with_({ overview: active, saved: true })
     view()
-    expect(screen.getByText("Domínio salvo e ativo.")).toHaveAttribute("role", "status")
+    // Saved and active at once is the very moment the shop window has not caught up: the minute is said there and then.
+    expect(screen.getByText("Domínio salvo e ativo. Ele pode levar até um minuto para começar a abrir a sua página.")).toHaveAttribute("role", "status")
   })
 
-  /** The proxy reads which host is which shop's once a minute: "active" here may be a minute ahead of the shop window. */
-  it("says an active domain opens the page, that the platform's address leads to it, and that a change takes up to a minute", () => {
+  /**
+   * The proxy reads which host is which shop's once a minute: "active" here may be a minute ahead of
+   * the shop window. Seen in the browser on 09/10 — the domain opened the shop 60 s after the screen
+   * said active — so no sentence says the page "already opens" there.
+   */
+  it("says an active domain is the page's address, that the platform's leads to it, and that one just activated takes up to a minute", () => {
     with_({ overview: active })
     view()
 
     expect(screen.getByText("Ativo")).toHaveAttribute("data-variant", "success")
-    expect(screen.getByText(`${HOST} já abre a sua página, e beelink.biz/loja passa a levar para lá. Quando um domínio é ativado ou removido, a mudança pode levar até um minuto para aparecer.`)).toBeInTheDocument()
+    expect(screen.getByText(`${HOST} é o endereço da sua página, e beelink.biz/loja leva para ele. Um domínio que acabou de ser ativado pode levar até um minuto para começar a abrir a página.`)).toBeInTheDocument()
     expect(screen.getByText("Última verificação").nextElementSibling).toHaveTextContent("08/10/2026, 16:05")
   })
 
@@ -333,6 +338,15 @@ describe("CustomDomainScreen, its words", () => {
     const said = sentences(messages.customDomain).join(" ")
 
     expect(said).not.toMatch(/\blojas?\b|\bshops?\b|\bstores?\b/i)
+  })
+
+  /** For up to a minute after it turns active a domain does not open the page: no sentence may say that it already does. */
+  it.each([["pt-BR", ui], ["en", en]] as const)("never say the page already opens at the domain, in %s", (_name, messages) => {
+    const { active, savedActiveNotice, checkedOk, home } = messages.customDomain
+
+    expect([active, savedActiveNotice, checkedOk, home.active.text].join(" ")).not.toMatch(/já abre|already opens/i)
+    expect(active).toMatch(/até um minuto|up to a minute/)
+    expect(savedActiveNotice).toMatch(/até um minuto|up to a minute/)
   })
 
   it("are spoken in the language the screen is handed", () => {

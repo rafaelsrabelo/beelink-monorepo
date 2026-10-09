@@ -4034,18 +4034,25 @@ export interface UiMessages {
     removeConfirm: string
     removeCancel: string
     removeFailed: string
-    /** Over the page once a domain was saved, there and then: found right at once, or not yet. */
+    /** Over the page once a domain was saved, there and then: found right at once — with the minute it takes to open the page — or not yet. */
     savedActiveNotice: string
     savedPendingNotice: string
     /** `{address}`. Says the minute a removal takes to show. */
     removedNotice: string
-    /** An active domain: where the page opens, where the old address leads, and the minute a change takes. `{domain}`, `{address}`. */
+    /**
+     * An active domain: that it is the page's address, where the old one leads, and the minute one just
+     * activated takes. Never that the page "already opens" there: for that minute it may not (seen in
+     * the browser, 09/10: 60 s). `{domain}`, `{address}`.
+     */
     active: string
     /** Before the problem's sentence, on a domain that stays active with one. */
     activeProblem: string
     /** A pending domain no problem was recorded of. */
     pending: string
-    /** What the shopkeeper does about each problem. `{domain}`; `{expected}` where the records point elsewhere. */
+    /**
+     * What the shopkeeper does about each problem. `{domain}`; `{expected}` where the records point
+     * elsewhere — followed by a comma or a bracket, never a colon: `127.0.0.1:` reads as a port.
+     */
     problems: Record<CustomDomainProblemValue, string>
     /** `DNS_POINTS_ELSEWHERE` when the check told where: `{domain}`, `{found}`, `{expected}`. */
     pointsElsewhereFound: string

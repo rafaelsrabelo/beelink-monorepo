@@ -1,5 +1,5 @@
 // Libs
-import { render, screen, within } from "@testing-library/react"
+import { cleanup, render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 
@@ -103,8 +103,8 @@ describe("CustomDomainCard, with a domain saved and not active yet", () => {
     expect(screen.getByText("Domínio").nextElementSibling).toHaveTextContent(/^lessari\.com\.br$/)
     expect(screen.getByText("Última verificação").nextElementSibling).toHaveTextContent(/^08\/10\/2026, 14:20$/)
     expect(screen.queryByRole("textbox")).toBeNull()
-    // Nothing says the page opens at the domain before it does.
-    expect(screen.queryByText(/já abre a sua página/)).toBeNull()
+    // Nothing says the domain is the page's address before it is.
+    expect(screen.queryByText(/é o endereço da sua página/)).toBeNull()
     await expectNoA11yViolations(container)
   })
 
@@ -117,7 +117,7 @@ describe("CustomDomainCard, with a domain saved and not active yet", () => {
   it("says where the records were found to point and where they have to, when the check told", () => {
     show(pendingElsewhere)
 
-    expect(screen.getByText(new RegExp(`^O domínio lessari\\.com\\.br aponta para outro lugar: ${PARKING_IP.replaceAll(".", "\\.")}\\. Ele precisa apontar só para ${TARGET_IP.replaceAll(".", "\\.")}: troque o registro A do @, apague qualquer outro registro A`))).toBeInTheDocument()
+    expect(screen.getByText(/aponta para outro lugar/)).toHaveTextContent(`O domínio lessari.com.br aponta para outro lugar (${PARKING_IP}). Para ele apontar só para ${TARGET_IP}, troque o registro A do @, apague qualquer outro registro A que exista nele e desligue o encaminhamento, se houver.`)
   })
 
   /** A plain read tells the problem and not the addresses: the sentence stands without them, with no hole in it. */
@@ -125,14 +125,25 @@ describe("CustomDomainCard, with a domain saved and not active yet", () => {
     show(pendingElsewhereRead)
 
     const said = screen.getByText(/aponta para outro lugar/)
-    expect(said).toHaveTextContent(`O domínio lessari.com.br aponta para outro lugar. Ele precisa apontar só para ${TARGET_IP}:`)
-    expect(said).not.toHaveTextContent(/\{|\}|: \./)
+    expect(said).toHaveTextContent(`O domínio lessari.com.br aponta para outro lugar. Para ele apontar só para ${TARGET_IP}, troque`)
+    expect(said).not.toHaveTextContent(/\{|\}|\(\)/)
   })
 
   it("names every address the server answers on, and every one the domain was found at", () => {
     show({ ...pendingElsewhere, addresses: [PARKING_IP, "198.51.100.8"] }, { targetIps: [TARGET_IP, "203.0.113.11"] })
 
-    expect(screen.getByText(/aponta para outro lugar/)).toHaveTextContent(`aponta para outro lugar: ${PARKING_IP} e 198.51.100.8. Ele precisa apontar só para ${TARGET_IP} e 203.0.113.11:`)
+    expect(screen.getByText(/aponta para outro lugar/)).toHaveTextContent(`aponta para outro lugar (${PARKING_IP} e 198.51.100.8). Para ele apontar só para ${TARGET_IP} e 203.0.113.11, troque`)
+  })
+
+  /** Seen in the browser: "…só para 127.0.0.1: troque…" reads as an address with a port. An address is followed by a comma or a bracket. */
+  it.each([["pt-BR", ptBR], ["en", en]] as const)("never puts a colon after an address, in %s", (_name, messages) => {
+    show(pendingElsewhere, { messages })
+    const withAddresses = screen.getByText(new RegExp(PARKING_IP.replaceAll(".", "\\."))).textContent
+    cleanup()
+    show(pendingElsewhereRead, { messages })
+    const without = screen.getByText(new RegExp(TARGET_IP.replaceAll(".", "\\."))).textContent
+
+    for (const said of [withAddresses, without]) expect(said).not.toMatch(/\d:/)
   })
 
   it("says a DNS that did not answer as nothing to change, only to try again", () => {
@@ -254,12 +265,12 @@ describe("CustomDomainCard, with a domain saved and not active yet", () => {
 })
 
 describe("CustomDomainCard, with the domain active", () => {
-  it("is active in green, and says where the page opens, where its old address leads, and the minute a change takes", async () => {
+  it("is active in green, and says the domain is the page's address, where its old one leads, and the minute a domain just activated takes", async () => {
     const { container } = show(active)
 
     expect(within(card()).getByText("Ativo")).toHaveAttribute("data-variant", "success")
     expect(within(card()).queryByText("Aguardando")).toBeNull()
-    expect(screen.getByText("lessari.com.br já abre a sua página, e beelink.biz/lessari passa a levar para lá. Quando um domínio é ativado ou removido, a mudança pode levar até um minuto para aparecer.")).toBeInTheDocument()
+    expect(screen.getByText("lessari.com.br é o endereço da sua página, e beelink.biz/lessari leva para ele. Um domínio que acabou de ser ativado pode levar até um minuto para começar a abrir a página.")).toBeInTheDocument()
     expect(screen.getByText("Última verificação").nextElementSibling).toHaveTextContent("08/10/2026, 16:05")
     await expectNoA11yViolations(container)
   })
@@ -271,7 +282,7 @@ describe("CustomDomainCard, with the domain active", () => {
     expect(within(card()).getByText("Ativo")).toHaveAttribute("data-variant", "success")
     expect(within(card()).queryByText("Aguardando")).toBeNull()
     expect(screen.getByText("O domínio continua ativo, mas a última verificação encontrou um problema:").nextElementSibling).toHaveTextContent("Não conseguimos consultar o DNS agora.")
-    expect(screen.getByText(/já abre a sua página/)).toBeInTheDocument()
+    expect(screen.getByText(/é o endereço da sua página/)).toBeInTheDocument()
   })
 
   it("reads out a check that found nothing wrong as everything being right, and one that found something as a problem", () => {
@@ -297,7 +308,7 @@ describe("CustomDomainCard, with the domain active", () => {
     show(active, { messages: en })
 
     expect(screen.getByText("Active")).toBeInTheDocument()
-    expect(screen.getByText(/^lessari\.com\.br already opens your page, and beelink\.biz\/lessari now leads there\./)).toHaveTextContent("the change may take up to a minute to show")
+    expect(screen.getByText(/^lessari\.com\.br is your page's address, and beelink\.biz\/lessari leads to it\./)).toHaveTextContent("may take up to a minute to start opening the page")
     expect(screen.getByRole("button", { name: "Check again" })).toBeInTheDocument()
   })
 })
