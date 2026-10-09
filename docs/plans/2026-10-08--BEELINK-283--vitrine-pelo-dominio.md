@@ -226,3 +226,9 @@ O estado guardado num módulo não é dividido: uma função exportada de `lib/s
 - Um navegador que não seja o Chromium.
 
 **O que ficou no ambiente.** `SHOP_DOMAIN_PROBE=false` no `apps/api/.env` do worktree, que o roteiro mandou pôr. No banco de dev, a loja `loja-dominio-1791487727` sem domínio, com uma categoria, dois produtos, um cliente (`cliente-1791543071550@teste.dev`) e um pedido. No banco de e2e, uma loja com domínio `ACTIVE` por rodada do spec.
+
+**Acréscimo à seção de 09/10 (mesmo dia).** Depois das notas acima, mais uma passada no navegador, no domínio da loja, corrige um item de "O que continua sem ter sido visto":
+
+- **Seis dos sete cookies foram vistos em `Path=/`**, não só a sessão e o carrinho. Com um pixel de mentira ligado pelo painel, a faixa de cookies apareceu e "Recusar" gravou `bl_consent`; a chegada por um link com `utm_*` gravou `bl_origin`; fechar a faixa de oferta gravou `bl_popup`; "Entregar em" gravou `bl_shop`. Na página seguinte a faixa de cookies e a de oferta não voltaram, e o CEP estava lá. Nenhum pedido saiu para a Meta. O pixel foi removido depois.
+- **Segue sem ter sido visto:** `bl_purchases` e o pixel com um "sim", que mandariam um evento à Meta com um ID inventado.
+- **Um tropeço do ambiente, não do ticket:** depois de apagar `apps/web/.next/dev` para liberar disco, o `next dev` seguinte respondeu 500 em toda página da vitrine (`next/font/google queries have exactly one entry`, do Turbopack, na fonte Figtree) e continuou assim ao reiniciar. Apagar `.next/dev` de novo resolveu. O build e o `next start` não foram afetados.
