@@ -327,4 +327,14 @@ describe("CustomDomainCard, where the deployment lost its setting with a domain 
     await userEvent.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Remover domínio" }))
     expect(onRemove).toHaveBeenCalledOnce()
   })
+
+  /** Seen in the browser: with the domain gone there is no field and no button, and the focus was dropped to the page's start. */
+  it("hands the focus to the notice once that domain is removed, since nothing is left to press", () => {
+    const { again } = show(pendingNotFound, { targetIps: null })
+
+    again(null, { targetIps: null })
+
+    expect(screen.getByText("O domínio próprio não está disponível nesta instalação do bee-link.")).toHaveFocus()
+    expect(screen.queryByRole("button")).toBeNull()
+  })
 })

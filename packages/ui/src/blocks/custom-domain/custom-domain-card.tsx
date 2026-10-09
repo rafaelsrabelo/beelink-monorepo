@@ -77,9 +77,17 @@ export function CustomDomainCard({ targetIps, domain, address, onSave, saving = 
         </Badge>
       </div>
       <p className="text-muted-foreground text-sm break-words">{format(text.lead, { address })}</p>
-      {targetIps === null ? <p className="bg-muted rounded-lg px-3 py-3 text-sm">{text.unavailable}</p> : null}
 
       <div ref={body} className="flex flex-col gap-4">
+        {/*
+          Focusable by script alone: once a domain saved here before is removed, nothing is left to
+          press, and this is what the focus lands on rather than being dropped to the page's start.
+        */}
+        {targetIps === null ? (
+          <p tabIndex={-1} className="bg-muted rounded-lg px-3 py-3 text-sm outline-none">
+            {text.unavailable}
+          </p>
+        ) : null}
         {domain ? (
           <>
             <dl className="grid gap-4 sm:grid-cols-2">
