@@ -19,6 +19,15 @@ const nextConfig: NextConfig = {
    * before tsc for that reason; running tsc alone reports those types as missing.
    */
   typedRoutes: true,
+  /**
+   * A shop's own domain, opened in `next dev` (BEELINK-283). The dev server refuses its own
+   * resources — the hot-reload socket among them — to a host it was not started on, and a page whose
+   * socket was refused never hydrates: the shop draws and no button on it answers. `localhost` and
+   * every `*.localhost` are let in already; `lvh.me` is the public name that resolves to this
+   * machine, and the one the API takes for a domain, since it refuses `.localhost`. Development only:
+   * a built server has no such check.
+   */
+  allowedDevOrigins: ["lvh.me", "*.lvh.me"],
   images: {
     /**
      * AVIF first, for a browser that takes it: the brand's photos (`src/assets/images`) come out a

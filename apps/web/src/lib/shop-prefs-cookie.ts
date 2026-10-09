@@ -7,6 +7,9 @@
  * the shop window dynamic, and the window is the page that has to be cached.
  */
 
+// App
+import { shopHomeOf, type ShopAddress } from "./shop-address"
+
 export const SHOP_PREFS_COOKIE = "bl_shop"
 /** A year: a visitor's address changes rarely, and asking again costs them a form. */
 const MAX_AGE_SECONDS = 60 * 60 * 24 * 365
@@ -19,7 +22,8 @@ export function cepFromCookies(cookies: string): string | null {
   return cep ?? null
 }
 
-/** The cookie that keeps a CEP for one shop, as `document.cookie` takes it. */
-export function shopPrefsCookieOf(slug: string, cep: string, secure: boolean): string {
-  return `${SHOP_PREFS_COOKIE}=cep.${cep};path=/${encodeURIComponent(slug)};max-age=${MAX_AGE_SECONDS};samesite=lax${secure ? ";secure" : ""}`
+/** The cookie that keeps a CEP for one shop, as `document.cookie` takes it: on the shop's path, or the whole site at its own domain. */
+export function shopPrefsCookieOf(shop: ShopAddress, cep: string, secure: boolean): string {
+  const path = shop.ownDomain ? shopHomeOf(shop) : `/${encodeURIComponent(shop.slug)}`
+  return `${SHOP_PREFS_COOKIE}=cep.${cep};path=${path};max-age=${MAX_AGE_SECONDS};samesite=lax${secure ? ";secure" : ""}`
 }

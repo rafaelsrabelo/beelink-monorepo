@@ -109,18 +109,18 @@ describe("the sign-in page's addresses", () => {
   })
 
   it("follows a return path only inside the shop", () => {
-    expect(safeBackOf("loja", "/loja/carrinho")).toBe("/loja/carrinho")
-    expect(safeBackOf("loja", "/loja")).toBe("/loja")
+    expect(safeBackOf({ slug: "loja" }, "/loja/carrinho")).toBe("/loja/carrinho")
+    expect(safeBackOf({ slug: "loja" }, "/loja")).toBe("/loja")
     // The front door with the product a heart asked to like on the way back.
-    expect(safeBackOf("loja", "/loja?curtir=p-1")).toBe("/loja?curtir=p-1")
+    expect(safeBackOf({ slug: "loja" }, "/loja?curtir=p-1")).toBe("/loja?curtir=p-1")
     for (const unsafe of ["https://evil.example", "//evil.example", "/lojaoutra", "/lojaoutra?x=1", "/loja?x=//evil.example", "/loja//x", "/loja/../outra", "/loja/%2e%2e/outra", "/loja/.%2E/outra", undefined]) {
-      expect(safeBackOf("loja", unsafe)).toBe("/loja")
+      expect(safeBackOf({ slug: "loja" }, unsafe)).toBe("/loja")
     }
   })
 
   it("keeps to the site when the slug itself is not one", () => {
     for (const slug of ["/evil.example", "\\evil.example", ""]) {
-      expect(safeBackOf(slug, `/${slug}`)).toBe("/")
+      expect(safeBackOf({ slug }, `/${slug}`)).toBe("/")
     }
   })
 })
@@ -167,5 +167,84 @@ describe("an order's address", () => {
       expect(accountOrderNumberOf("pedidos", sub, shop.routeWords)).toBeNull()
     }
     expect(accountOrderNumberOf("pedidos", "2147483647", shop.routeWords)).toBe(2147483647)
+  })
+})
+
+describe("a shop at its own domain (BEELINK-283)", () => {
+  const words = { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha", account: "conta", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", cashback: "cashback", profile: "perfil", messages: "conversas" } }
+  const own = storefrontRoutes({ slug: "loja", routeWords: words, ownDomain: true })
+  const platform = storefrontRoutes({ slug: "loja", routeWords: words })
+
+  it("has its front door at the root, never at the empty string", () => {
+    expect(own.home).toBe("/")
+    expect(platform.home).toBe("/loja")
+  })
+
+  /** Every address the shop window renders: the same one as on the platform's host, less the slug. */
+  it("spells every address without the slug, and never with two slashes", () => {
+    const ask = (routes: typeof own): string[] => [
+      routes.catalog(),
+      routes.catalog({ page: 2, category: "blusas", search: "seda", sort: "menor-preco" }),
+      routes.categories(),
+      routes.category("blusas"),
+      routes.category("blusas", { page: 3, discount: true }),
+      routes.search("seda", { category: "blusas" }),
+      routes.cart(),
+      routes.cart({ reordered: 14, trimmed: true }),
+      routes.signIn(),
+      routes.signIn({ mode: "criar", back: routes.cart() }),
+      routes.verifyEmail({ token: "t", back: routes.home }),
+      routes.resetPassword({ token: "t" }),
+      routes.account(),
+      routes.accountTab("profile"),
+      routes.accountTab("orders", { situacao: "ACTIVE" }),
+      routes.accountConversation(14),
+      routes.accountOrder(14, { payment: true }),
+      routes.product("bolsa-amora"),
+      routes.landing("dia-das-maes"),
+    ]
+    const there = ask(own)
+    const here = ask(platform)
+
+    for (const [index, address] of there.entries()) {
+      expect(address.startsWith("/")).toBe(true)
+      expect(address.startsWith("//")).toBe(false)
+      expect(address).not.toMatch(/^\/loja(\/|\?|$)/)
+      // A `voltar` inside the address is one of the shop's own addresses too, spelled the same way.
+      expect(here[index]).toBe(`/loja${address}`.replaceAll("voltar=%2F", "voltar=%2Floja%2F").replace("voltar=%2Floja%2F&", "voltar=%2Floja&").replace(/voltar=%2Floja%2F$/, "voltar=%2Floja"))
+    }
+    expect(there).toContain("/produtos")
+    expect(there).toContain("/conta/pedidos/14?pagamento=1")
+    expect(there).toContain("/entrar?modo=criar&voltar=%2Fcarrinho")
+  })
+
+  describe("a return path", () => {
+    const shop = { slug: "loja", ownDomain: true }
+
+    it("is any path of the site, which is the shop's alone", () => {
+      expect(safeBackOf(shop, "/carrinho")).toBe("/carrinho")
+      expect(safeBackOf(shop, "/")).toBe("/")
+      expect(safeBackOf(shop, "/?curtir=p-1")).toBe("/?curtir=p-1")
+      expect(safeBackOf(shop, "/conta/perfil?endereco=novo#enderecos")).toBe("/conta/perfil?endereco=novo#enderecos")
+    })
+
+    /** The API writes a shopper's e-mails, and the `voltar` in them, with the platform's addresses. */
+    it("reads an address spelled the platform's way as the page it names here", () => {
+      expect(safeBackOf(shop, "/loja")).toBe("/")
+      expect(safeBackOf(shop, "/loja/carrinho")).toBe("/carrinho")
+      expect(safeBackOf(shop, "/loja?curtir=p-1")).toBe("/?curtir=p-1")
+      // Only the slug itself: a page that merely starts the same is a page of the shop.
+      expect(safeBackOf(shop, "/lojaoutra")).toBe("/lojaoutra")
+    })
+
+    it("is the front door for anything that would leave the site", () => {
+      for (const unsafe of ["https://evil.example", "//evil.example", "/\\evil.example", "\\evil.example", "/x//evil.example", "/?x=//evil.example", "/\t/evil.example", "/\n/evil.example", "/loja//evil.example", "carrinho", "", undefined, null, ["/carrinho"]]) {
+        expect(safeBackOf(shop, unsafe)).toBe("/")
+      }
+    })
+
+    it("keeps to the site when the slug itself is not one", () => {
+      expect(safeBackOf({ slug: "/evil.example", ownDomain: true }, "/carrinho")).toBe("/")
+    })
   })
 })

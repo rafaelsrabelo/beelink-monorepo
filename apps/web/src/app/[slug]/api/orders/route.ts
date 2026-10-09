@@ -10,6 +10,7 @@ import { clientIpOf, readJsonBody, refuseCrossOrigin } from "@/lib/bff"
 import { clearCustomerSessionCookies, setCustomerSessionCookies } from "@/lib/customer-session-cookies"
 import { marketingConsentAt, orderOriginOf } from "@/lib/order-origin"
 import { revalidateOffers } from "@/lib/revalidate"
+import { shopAddressOf } from "@/lib/shop-address"
 import { callAsShopper } from "@/lib/shopper-call"
 
 function isCart(body: unknown): body is Record<string, unknown> {
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
 
   if (placed.status === "signedOut") {
     const answer = refusal(401, "AUTH_UNAUTHENTICATED", "Sign in to place the order")
-    clearCustomerSessionCookies(answer.cookies, slug)
+    clearCustomerSessionCookies(answer, shopAddressOf(request.headers, slug))
     return answer
   }
   if (!placed.response) return refusal(502, "UNKNOWN", "The shop could not be reached")
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
   const answer = NextResponse.json(payload ?? { statusCode: placed.response.status, errorCode: "UNKNOWN", message: "Unexpected answer" }, {
     status: placed.response.status,
   })
-  if (placed.renewed) setCustomerSessionCookies(answer.cookies, slug, placed.renewed)
+  if (placed.renewed) setCustomerSessionCookies(answer, shopAddressOf(request.headers, slug), placed.renewed)
   if (placed.response.ok && tookACoupon(payload)) revalidateOffers(slug)
   return answer
 }

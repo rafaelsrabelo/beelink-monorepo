@@ -27,6 +27,7 @@ const STORE: Store = {
   cashback: null,
   metaPixelId: null,
   googleAnalyticsId: null,
+  customDomain: null,
   address: {
     street: null,
     number: null,

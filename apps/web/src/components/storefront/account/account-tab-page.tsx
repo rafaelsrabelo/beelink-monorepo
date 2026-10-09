@@ -147,7 +147,7 @@ export async function AccountTabPage({ slug, section, item, query }: AccountTabP
           <AccountConversations key={conversationOrderOf(query) ?? "list"} slug={store.slug} routeWords={store.routeWords} initialOrder={conversationOrderOf(query)} messages={ui} />
         ) : (
           <Suspense fallback={<StorefrontAccountSkeleton />}>
-            <StorefrontAccountSection slug={store.slug} accountHref={routes.accountTab("profile")} signInHref={routes.signIn()} profile={shopper} query={query} errors={web.errors} messages={ui} />
+            <StorefrontAccountSection slug={store.slug} ownDomain={store.ownDomain} accountHref={routes.accountTab("profile")} signInHref={routes.signIn()} profile={shopper} query={query} errors={web.errors} messages={ui} />
           </Suspense>
         )}
       </StorefrontAccountArea>

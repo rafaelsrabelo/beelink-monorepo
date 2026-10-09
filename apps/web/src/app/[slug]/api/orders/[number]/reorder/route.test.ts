@@ -6,11 +6,14 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import { decodeCart } from "@/lib/cart-cookie"
 
 vi.mock("server-only", () => ({}))
+/** Whether the shop is read as reached by its own domain, which `shopAt` says from the proxy's stamp. */
+const served = vi.hoisted(() => ({ ownDomain: false }))
 vi.mock("@/lib/storefront-data", () => ({
   shopAt: async (slug: string) =>
     slug === "loja"
       ? {
           slug: "loja",
+          ownDomain: served.ownDomain,
           routeWords: {
             products: "produtos",
             categories: "categorias",
@@ -46,6 +49,7 @@ function cartOf(response: Response) {
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  served.ownDomain = false
 })
 
 describe("buying an order again", () => {
@@ -109,5 +113,28 @@ describe("buying an order again", () => {
 
     expect((await post({ origin: "https://evil.example" })).status).toBe(403)
     expect((await post({}, "abc")).status).toBe(404)
+  })
+})
+
+describe("buying an order again at the shop's own domain (BEELINK-283)", () => {
+  it("goes to the cart with no slug in its address, the cart's cookie on the whole site", async () => {
+    served.ownDomain = true
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ number: 14, lines: [{ productId: P1, variantId: V1, quantity: 1 }], left: [] })))
+
+    const response = await post({ cookie: "bl_shopper_access=shopper-access" })
+
+    expect(response.headers.get("location")).toBe("http://localhost:3000/carrinho?repetido=14")
+    expect(response.headers.getSetCookie().find((value) => value.startsWith("bl_cart="))).toContain("; Path=/;")
+  })
+
+  it("sends a session that ended to the sign-in, and back to the order, both with no slug", async () => {
+    served.ownDomain = true
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ statusCode: 401 }, { status: 401 })))
+
+    const response = await post({ cookie: "bl_shopper_access=spent" })
+
+    expect(response.headers.get("location")).toBe("http://localhost:3000/entrar?voltar=%2Fconta%2Fpedidos%2F14")
+    // The session is cleared on the site, and its twin on the slug with it.
+    expect(response.headers.getSetCookie().filter((value) => value.startsWith("bl_shopper_access=")).map((value) => /;\s*path=([^;]*)/i.exec(value)?.[1])).toEqual(["/", "/loja"])
   })
 })

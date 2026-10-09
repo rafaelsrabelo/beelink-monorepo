@@ -8,6 +8,7 @@ import type { ApiErrorBody } from "@harness-monorepo/contracts"
 import { callApi } from "@/lib/api"
 import { clientIpOf, refuseCrossOrigin } from "@/lib/bff"
 import { clearCustomerSessionCookies, setCustomerSessionCookies } from "@/lib/customer-session-cookies"
+import { shopAddressOf } from "@/lib/shop-address"
 import { callAsShopper } from "@/lib/shopper-call"
 
 function refusal(statusCode: number, errorCode: string, message: string) {
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
 
   if (cancelled.status === "signedOut") {
     const answer = refusal(401, "AUTH_UNAUTHENTICATED", "Sign in to cancel the order")
-    clearCustomerSessionCookies(answer.cookies, slug)
+    clearCustomerSessionCookies(answer, shopAddressOf(request.headers, slug))
     return answer
   }
   if (!cancelled.response) return refusal(502, "UNKNOWN", "The shop could not be reached")
@@ -44,6 +45,6 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
   const answer = NextResponse.json(payload ?? { statusCode: cancelled.response.status, errorCode: "UNKNOWN", message: "Unexpected answer" }, {
     status: cancelled.response.status,
   })
-  if (cancelled.renewed) setCustomerSessionCookies(answer.cookies, slug, cancelled.renewed)
+  if (cancelled.renewed) setCustomerSessionCookies(answer, shopAddressOf(request.headers, slug), cancelled.renewed)
   return answer
 }

@@ -49,6 +49,16 @@ describe('CatalogSlugService.resolve', () => {
     expect(() => slugs.resolve('checkout', 'x')).toThrow(BadRequestException);
   });
 
+  /**
+   * At a shop's own domain the shop's second segment is the address's first (BEELINK-283), and the
+   * web serves bee-link's legal pages there: a category slugged like one of them would be hidden by it.
+   */
+  it("refuses the platform's legal pages, which a shop's own domain serves at its root", () => {
+    expect(() => slugs.resolve('termos', 'x')).toThrow(BadRequestException);
+    expect(() => slugs.resolve(undefined, 'Privacidade')).toThrow(BadRequestException);
+    expect(slugs.resolve('termos-de-troca', 'x')).toBe('termos-de-troca');
+  });
+
   it('refuses a name that leaves nothing addressable, rather than inventing one', () => {
     expect(() => slugs.resolve(undefined, '!!!')).toThrow(BadRequestException);
   });

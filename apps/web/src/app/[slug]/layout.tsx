@@ -4,6 +4,7 @@ import { cookies } from "next/headers"
 // App
 import { CartProvider } from "@/components/storefront/cart-provider"
 import { FavoritesProvider } from "@/components/storefront/favorites/favorites-provider"
+import { ShopAddressProvider } from "@/components/storefront/shop-address-provider"
 import { figtree, shopFontStyle } from "@/components/storefront/shop-font"
 import { ShopperRealtime } from "@/components/storefront/shopper-realtime"
 import { StorefrontConsentGate } from "@/components/storefront/storefront-consent-gate"
@@ -50,6 +51,10 @@ import { storefrontRoutes } from "@/lib/storefront-routes"
  * with or without a pixel, as anonymous numbers per day. Not for a browser that holds a panel
  * session — a shopkeeper looking at a shop is not a visit, and the cookie is read only to leave
  * them out.
+ *
+ * And whether the request arrived by the shop's own domain is handed down from here (BEELINK-283),
+ * around everything: the components that run in the browser spell the shop's addresses and write its
+ * cookies, and are given a slug and nothing of the request.
  */
 export default async function StorefrontLayout({ children, params }: LayoutProps<"/[slug]">) {
   const { slug } = await params
@@ -67,15 +72,17 @@ export default async function StorefrontLayout({ children, params }: LayoutProps
 
   return (
     <div className={figtree.variable} style={shopFontStyle}>
-      <CartProvider slug={slug} lines={lines}>
-        {shopper ? <ShopperRealtime slug={slug} /> : null}
-        <StorefrontConsentGate slug={slug} store={store} choice={choice} messages={ui}>
-          {store ? <StorefrontOrigin slug={slug} pixelId={store.metaPixelId ?? null} /> : null}
-          <StorefrontTracking pixelId={store?.metaPixelId ?? null} quietPaths={store ? quietPathsOf(store) : []} countAt={countAt}>
-            {pages}
-          </StorefrontTracking>
-        </StorefrontConsentGate>
-      </CartProvider>
+      <ShopAddressProvider ownDomain={store?.ownDomain ?? false}>
+        <CartProvider slug={slug} lines={lines}>
+          {shopper ? <ShopperRealtime slug={slug} /> : null}
+          <StorefrontConsentGate slug={slug} store={store} choice={choice} messages={ui}>
+            {store ? <StorefrontOrigin slug={slug} pixelId={store.metaPixelId ?? null} /> : null}
+            <StorefrontTracking pixelId={store?.metaPixelId ?? null} quietPaths={store ? quietPathsOf(store) : []} countAt={countAt}>
+              {pages}
+            </StorefrontTracking>
+          </StorefrontConsentGate>
+        </CartProvider>
+      </ShopAddressProvider>
     </div>
   )
 }

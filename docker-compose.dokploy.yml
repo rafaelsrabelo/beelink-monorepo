@@ -234,6 +234,9 @@ services:
       # `homolog` on the homologation stack and nowhere else: the flag over every page, and noindex.
       # Unset, it arrives blank and the site is production's, unmarked.
       - APP_ENVIRONMENT=${APP_ENVIRONMENT:-}
+      # The platform's own host, which the proxy tells from a shop's own domain by (BEELINK-283): a
+      # request by it never asks the table of shop hosts whose host it is.
+      - WEB_DOMAIN=${WEB_DOMAIN}
     # `service_started`, not `service_healthy`: Docker never restarts an unhealthy container, so an
     # API that is down would hold the web back forever, and a visitor would get nothing instead of
     # a page that says something went wrong.

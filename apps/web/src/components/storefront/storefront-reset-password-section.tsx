@@ -26,7 +26,7 @@ export interface StorefrontResetPasswordSectionProps {
  */
 export function StorefrontResetPasswordSection({ place, routes, query, errors }: StorefrontResetPasswordSectionProps) {
   const { store, messages: ui } = place
-  const back = safeBackOf(store.slug, paramOf(query[BACK_KEY]))
+  const back = safeBackOf(store, paramOf(query[BACK_KEY]))
   const token = paramOf(query.token)
   const code = paramOf(query.erro)
 

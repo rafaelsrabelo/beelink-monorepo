@@ -44,7 +44,7 @@ export async function generateMetadata({ params }: PageProps<"/[slug]">): Promis
   return {
     title: store.name,
     description: store.description ?? undefined,
-    alternates: { canonical: `/${slug}` },
+    alternates: { canonical: storefrontRoutes(store).home },
     openGraph: {
       title: store.name,
       description: store.description ?? undefined,

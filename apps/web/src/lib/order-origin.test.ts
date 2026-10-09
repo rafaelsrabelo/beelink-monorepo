@@ -15,12 +15,14 @@ const FBP = "fb.1.1759795200000.1234567890"
 const kept: VisitOrigin = { source: "facebook", medium: "cpc", campaign: "teste", content: null, term: null, fbclid: "abc123", at: ARRIVED }
 const originCookie = (origin: VisitOrigin) => `bl_origin=${encodeOrigin(origin)}`
 
-function request(init: { cookie?: string; referer?: string; userAgent?: string | null; host?: string } = {}, slug = "loja") {
+function request(init: { cookie?: string; referer?: string; userAgent?: string | null; host?: string; ownDomainOf?: string } = {}, slug = "loja") {
   const headers = new Headers({ "content-type": "application/json" })
   if (init.cookie) headers.set("cookie", init.cookie)
   if (init.referer) headers.set("referer", init.referer)
   if (init.userAgent !== null) headers.set("user-agent", init.userAgent ?? "Mozilla/5.0 (teste)")
   if (init.host) headers.set("x-forwarded-host", init.host)
+  // The proxy's stamp: the request arrived by that shop's own domain.
+  if (init.ownDomainOf) headers.set("x-bl-shop-domain", init.ownDomainOf)
   return new NextRequest(`http://localhost:3000/${slug}/api/orders`, { method: "POST", headers, body: "{}" })
 }
 
@@ -83,6 +85,17 @@ describe("what an order says of where its buyer came from, read on the server (B
       for (const foreign of ["https://evil.example/loja/carrinho", "http://localhost:3000/outra-loja/carrinho", "http://localhost:3000/loja-2/carrinho", "http://localhost:3000/", "not a url", `http://localhost:3000/loja/${"a".repeat(600)}`]) {
         expect(pageOf(foreign), foreign.slice(0, 50)).toBeNull()
       }
+    })
+
+    /** There the whole site is the shop's, and no page of it sits under the slug. */
+    it("takes any page of the site at the shop's own domain (BEELINK-283)", () => {
+      const pageOf = (referer: string, ownDomainOf = "loja") => orderOriginOf(request({ referer, host: "minhaloja.com.br", ownDomainOf }), "loja", true, NOW).marketingConsent?.pageUrl
+
+      expect(pageOf("http://minhaloja.com.br/carrinho?cupom=VIP")).toBe("http://minhaloja.com.br/carrinho")
+      expect(pageOf("http://minhaloja.com.br/")).toBe("http://minhaloja.com.br/")
+      expect(pageOf("http://evil.example/carrinho")).toBeNull()
+      // Another shop's stamp is no stamp: only what is under this shop's slug is its page.
+      expect(pageOf("http://minhaloja.com.br/carrinho", "outra")).toBeNull()
     })
   })
 

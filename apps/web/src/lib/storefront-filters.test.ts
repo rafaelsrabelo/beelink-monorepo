@@ -31,7 +31,7 @@ const catalogue = {
 } as unknown as Pick<StorefrontCatalog, "facets">
 
 function arrange() {
-  vi.spyOn(data, "shopAt").mockResolvedValue(store)
+  vi.spyOn(data, "shopAt").mockResolvedValue({ ...store, ownDomain: false })
   vi.spyOn(data, "navigationAt").mockResolvedValue({
     categories: [category("pre-treino"), category("pote", "pre-treino"), category("dose-unica", "pre-treino"), category("whey"), category("vazia")],
     onSale: true,

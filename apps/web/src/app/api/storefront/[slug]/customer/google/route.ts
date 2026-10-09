@@ -25,8 +25,10 @@ export async function GET(request: NextRequest, { params }: RouteContext<"/api/s
   if (!/^[a-z0-9-]+$/.test(slug)) return NextResponse.redirect(new URL("/", publicOriginOf(request)), 303)
 
   const query = request.nextUrl.searchParams
-  const back = safeBackOf(slug, query.get(BACK_KEY) ?? undefined)
-  const signIn = safeBackOf(slug, query.get("retorno") ?? undefined)
+  // The platform's addresses: this flow ends at one fixed callback on the platform's host, and a
+  // shop's own domain does not offer it (BEELINK-283, until BEELINK-284).
+  const back = safeBackOf({ slug }, query.get(BACK_KEY) ?? undefined)
+  const signIn = safeBackOf({ slug }, query.get("retorno") ?? undefined)
 
   const response = await callApi({
     path: `/stores/${encodeURIComponent(slug)}/customer/google/authorize`,

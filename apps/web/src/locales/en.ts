@@ -114,6 +114,8 @@ export const en: WebMessages = {
     },
     settings: {
       saved: "Changes saved.",
+      domainText: "Your page's address can be a domain of your own.",
+      domainLink: "Set up your own domain",
     },
   },
   locale: {

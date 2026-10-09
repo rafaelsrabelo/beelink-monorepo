@@ -20,6 +20,11 @@ export interface SetupCardProps {
   href: string
   /** True once the thing is set up. The card stays, so the way back in stays too. */
   done?: boolean
+  /**
+   * A word for a thing under way — begun, and waiting on something outside the panel. Drawn where
+   * the tick goes, and never beside it: done says more.
+   */
+  status?: string
   /** Opens outside the panel — the shop's own window, say. */
   external?: boolean
   /** How wide the card sits in its grid. The screen owns the layout; the card owns its inside. */
@@ -43,6 +48,7 @@ export function SetupCard({
   actionLabel,
   href,
   done = false,
+  status,
   external = false,
   className,
   linkComponent: Link = AnchorLink,
@@ -88,9 +94,14 @@ export function SetupCard({
             <CheckIcon aria-hidden="true" className="size-3" />
             {messages.setup.done}
           </Badge>
+        ) : status ? (
+          <Badge variant="outline" className="shrink-0">
+            {status}
+          </Badge>
         ) : null}
       </div>
-      <p className="text-muted-foreground flex-1 text-sm">{description}</p>
+      {/* `break-words`: a description may carry a domain, which is one long word to a narrow card. */}
+      <p className="text-muted-foreground flex-1 text-sm break-words">{description}</p>
       <div className="flex">{action}</div>
     </li>
   )

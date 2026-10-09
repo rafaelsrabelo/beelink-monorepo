@@ -27,14 +27,16 @@ export interface StorefrontSignInSectionProps {
  */
 export async function StorefrontSignInSection({ place, routes, query, errors }: StorefrontSignInSectionProps) {
   const { store, signInMode: mode, messages: ui } = place
-  const back = safeBackOf(store.slug, paramOf(query[BACK_KEY]))
+  const back = safeBackOf(store, paramOf(query[BACK_KEY]))
   const code = paramOf(query.erro)
   // Only a code the web has a sentence for is shown; anything else a hand-typed address carries is
   // the catch-all, never an identifier on a shopper's screen.
   const error = code ? errorSentenceOf(errors, code) : null
   // Google only when the API has it set up; its link carries where to return and this face, which
-  // a refusal or a cancel on Google's page comes back to.
-  const { google } = await signInOptionsAt()
+  // a refusal or a cancel on Google's page comes back to. Never at the shop's own domain: the flow
+  // ends at one fixed address on the platform's host, where this host's cookies do not reach
+  // (BEELINK-283, until BEELINK-284).
+  const { google } = store.ownDomain ? { google: false } : await signInOptionsAt()
   const googleHref = `/api/storefront/${store.slug}/customer/google?${new URLSearchParams({ [BACK_KEY]: back, retorno: routes.signIn({ mode }) }).toString()}`
 
   return (

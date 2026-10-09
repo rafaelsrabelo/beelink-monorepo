@@ -8,6 +8,7 @@ import type { ApiErrorBody } from "@harness-monorepo/contracts"
 import { callApi } from "@/lib/api"
 import { clientIpOf, readJsonBody, refuseCrossOrigin } from "@/lib/bff"
 import { clearCustomerSessionCookies, CUSTOMER_ACCESS_COOKIE, CUSTOMER_REFRESH_COOKIE, setCustomerSessionCookies } from "@/lib/customer-session-cookies"
+import { shopAddressOf } from "@/lib/shop-address"
 import { callAsShopper } from "@/lib/shopper-call"
 
 function refusal(statusCode: number, errorCode: string, message: string) {
@@ -81,12 +82,12 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
 
   if (priced.status === "signedOut") {
     const answer = couponCode === null ? await asVisitor() : refusal(401, "AUTH_UNAUTHENTICATED", "Sign in to apply a coupon")
-    clearCustomerSessionCookies(answer.cookies, slug)
+    clearCustomerSessionCookies(answer, shopAddressOf(request.headers, slug))
     return answer
   }
   if (!priced.response) return refusal(502, "UNKNOWN", "The shop could not be reached")
 
   const answer = await answerOf(priced.response)
-  if (priced.renewed) setCustomerSessionCookies(answer.cookies, slug, priced.renewed)
+  if (priced.renewed) setCustomerSessionCookies(answer, shopAddressOf(request.headers, slug), priced.renewed)
   return answer
 }

@@ -16,8 +16,8 @@ describe("the consent cookie", () => {
   })
 
   it("is written on the shop's own path, so a yes at one shop is not sent to another", () => {
-    expect(consentCookieOf("loja-a", "granted", false)).toBe(`bl_consent=granted; Path=/loja-a; Max-Age=${CONSENT_MAX_AGE_SECONDS}; SameSite=Lax`)
-    expect(consentCookieOf("loja-b", "denied", true)).toBe(`bl_consent=denied; Path=/loja-b; Max-Age=${CONSENT_MAX_AGE_SECONDS}; SameSite=Lax; Secure`)
+    expect(consentCookieOf({ slug: "loja-a" }, "granted", false)).toBe(`bl_consent=granted; Path=/loja-a; Max-Age=${CONSENT_MAX_AGE_SECONDS}; SameSite=Lax`)
+    expect(consentCookieOf({ slug: "loja-b" }, "denied", true)).toBe(`bl_consent=denied; Path=/loja-b; Max-Age=${CONSENT_MAX_AGE_SECONDS}; SameSite=Lax; Secure`)
   })
 
   it("keeps a refusal exactly as long as a yes: half a year, then the shop asks again", () => {

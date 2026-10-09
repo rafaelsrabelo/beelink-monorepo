@@ -13,6 +13,9 @@
  * to edit: nothing is read from either without being cleaned and bounded here.
  */
 
+// App
+import { shopHomeOf, type ShopAddress } from "./shop-address"
+
 export const ORIGIN_COOKIE = "bl_origin"
 
 /**
@@ -197,8 +200,8 @@ export function originFromCookies(cookies: string, now: number): VisitOrigin | n
  * The `Set-Cookie` a page writes: scoped to the shop, and living only what is left of the thirty
  * days since the arrival — writing it again, to add or drop the click, never renews it. Null removes it.
  */
-export function originCookieOf(slug: string, origin: VisitOrigin | null, now: number, secure: boolean): string {
+export function originCookieOf(shop: ShopAddress, origin: VisitOrigin | null, now: number, secure: boolean): string {
   const left = origin ? Math.ceil((origin.at + ORIGIN_MAX_AGE_SECONDS * 1000 - now) / 1000) : 0
   const value = origin && left > 0 ? encodeOrigin(origin) : ""
-  return `${ORIGIN_COOKIE}=${value}; Path=/${slug}; Max-Age=${value ? left : 0}; SameSite=Lax${secure ? "; Secure" : ""}`
+  return `${ORIGIN_COOKIE}=${value}; Path=${shopHomeOf(shop)}; Max-Age=${value ? left : 0}; SameSite=Lax${secure ? "; Secure" : ""}`
 }

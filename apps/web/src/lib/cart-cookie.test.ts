@@ -17,7 +17,7 @@ describe("the cart cookie", () => {
   it("stays under 4 KB with fifty lines, attributes and all", () => {
     const lines = Array.from({ length: CART_MAX_LINES }, (_, at) => line(at, at, 99))
 
-    expect(new TextEncoder().encode(cartCookieOf("uma-loja-de-nome-comprido", lines, true)).length).toBeLessThan(4096)
+    expect(new TextEncoder().encode(cartCookieOf({ slug: "uma-loja-de-nome-comprido" }, lines, true)).length).toBeLessThan(4096)
   })
 
   it("drops what a shopper could have typed wrong, and keeps the rest", () => {
@@ -28,8 +28,8 @@ describe("the cart cookie", () => {
   })
 
   it("is scoped to the shop, and a cart emptied is a cookie removed", () => {
-    expect(cartCookieOf("loja", [line(1)], false)).toMatch(/^bl_cart=[^;]+; Path=\/loja; Max-Age=2592000; SameSite=Lax$/)
-    expect(cartCookieOf("loja", [], true)).toBe("bl_cart=; Path=/loja; Max-Age=0; SameSite=Lax; Secure")
+    expect(cartCookieOf({ slug: "loja" }, [line(1)], false)).toMatch(/^bl_cart=[^;]+; Path=\/loja; Max-Age=2592000; SameSite=Lax$/)
+    expect(cartCookieOf({ slug: "loja" }, [], true)).toBe("bl_cart=; Path=/loja; Max-Age=0; SameSite=Lax; Secure")
   })
 })
 

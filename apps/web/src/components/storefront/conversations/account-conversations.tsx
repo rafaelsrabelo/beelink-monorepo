@@ -8,6 +8,7 @@ import type { StorefrontRouteWords } from "@harness-monorepo/contracts"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
+import { useShopAddress } from "@/components/storefront/shop-address-provider"
 import { storefrontRoutes } from "@/lib/storefront-routes"
 import { ShopperConversations } from "./shopper-conversations"
 
@@ -25,7 +26,7 @@ export interface AccountConversationsProps {
  */
 export function AccountConversations({ slug, routeWords, initialOrder, messages }: AccountConversationsProps) {
   const [order, setOrder] = useState(initialOrder)
-  const routes = storefrontRoutes({ slug, routeWords })
+  const routes = storefrontRoutes({ ...useShopAddress(slug), routeWords })
 
   // The address follows what shows, so a reload opens the same thing.
   const select = (number: number) => {

@@ -3,6 +3,7 @@ import { createStore } from "zustand/vanilla"
 
 // App
 import { consentCookieOf, type ConsentChoice } from "@/lib/consent-cookie"
+import type { ShopAddress } from "@/lib/shop-address"
 
 export interface ConsentState {
   /** What the visitor answered at this shop; null while they have not. */
@@ -29,11 +30,11 @@ export type ConsentStore = ReturnType<typeof createConsentStore>
  * One per shop and per page load, like the cart: a store shared by every request on the server
  * would hand one visitor's answer to the next.
  */
-export function createConsentStore(slug: string, initial: ConsentChoice | null) {
+export function createConsentStore(shop: ShopAddress, initial: ConsentChoice | null) {
   return createStore<ConsentState>()((set) => {
     const commit = (choice: ConsentChoice) => {
       set({ choice, asking: false, answered: true })
-      if (typeof document !== "undefined") document.cookie = consentCookieOf(slug, choice, window.location.protocol === "https:")
+      if (typeof document !== "undefined") document.cookie = consentCookieOf(shop, choice, window.location.protocol === "https:")
     }
 
     return {

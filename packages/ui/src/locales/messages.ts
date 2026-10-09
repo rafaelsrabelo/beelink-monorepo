@@ -7,6 +7,7 @@ import type {
   ProductSource,
 } from "../blocks/design/design-types"
 import type { CashbackEntryKindValue } from "../lib/cashback"
+import type { CustomDomainErrorValue, CustomDomainProblemValue } from "../lib/custom-domain"
 import type { CouponRefusalValue } from "../lib/order-discounts"
 import type { SectionCategory } from "../lib/section-registry"
 import type { LeadStatus } from "../blocks/leads/lead-types"
@@ -3986,6 +3987,96 @@ export interface UiMessages {
       senderStateRegisterHint: string
       issues: { handlingDays: string; package: string; packageRange: string; senderDocument: string }
       errors: Record<"MELHOR_ENVIO_SETTINGS_INVALID" | "UNKNOWN", string>
+    }
+  }
+  /**
+   * A shop's own domain in the panel (BEELINK-285): the card on the panel's home, the domain's own
+   * screen, what each check found and the records to create at the provider. Said of "the page" and
+   * "the address" and never of "the shop": a site takes a domain as a shop does.
+   */
+  customDomain: {
+    title: string
+    /** What a domain of one's own gives, under the title. `{address}`. */
+    lead: string
+    badges: Record<"ACTIVE" | "PENDING" | "NONE" | "UNAVAILABLE", string>
+    /** This deployment names no address to point a domain at. */
+    unavailable: string
+    /** A read of the domain that failed. */
+    failed: string
+    /** The card on the panel's home, by where the domain stands. `{address}` is the platform's, `{domain}` the shop's own. */
+    home: {
+      none: { title: string; text: string; action: string }
+      pending: { title: string; badge: string; text: string; action: string }
+      active: { title: string; text: string; action: string }
+    }
+    form: {
+      label: string
+      placeholder: string
+      /** What to type, and that a whole address pasted is read down to its domain. */
+      hint: string
+      submit: string
+      saving: string
+    }
+    domainLabel: string
+    checkedAtLabel: string
+    /** In place of the date, for a domain no check was recorded of. */
+    neverChecked: string
+    check: string
+    checking: string
+    /** Read out when a check asked from the screen came back: with nothing wrong, or with something. No "now": the line stays while the page is open. */
+    checkedOk: string
+    checkedProblem: string
+    remove: string
+    /** `{domain}`. */
+    removeTitle: string
+    /** `{domain}`, `{address}`. Says the minute a removal takes to show. */
+    removeBody: string
+    removeConfirm: string
+    removeCancel: string
+    removeFailed: string
+    /** Over the page once a domain was saved, there and then: found right at once — with the minute it takes to open the page — or not yet. */
+    savedActiveNotice: string
+    savedPendingNotice: string
+    /** `{address}`. Says the minute a removal takes to show. */
+    removedNotice: string
+    /**
+     * An active domain: that it is the page's address, where the old one leads, and the minute one just
+     * activated takes. Never that the page "already opens" there: for that minute it may not (seen in
+     * the browser, 09/10: 60 s). `{domain}`, `{address}`.
+     */
+    active: string
+    /** Before the problem's sentence, on a domain that stays active with one. */
+    activeProblem: string
+    /** A pending domain no problem was recorded of. */
+    pending: string
+    /**
+     * What the shopkeeper does about each problem. `{domain}`; `{expected}` where the records point
+     * elsewhere — followed by a comma or a bracket, never a colon: `127.0.0.1:` reads as a port.
+     */
+    problems: Record<CustomDomainProblemValue, string>
+    /** `DNS_POINTS_ELSEWHERE` when the check told where: `{domain}`, `{found}`, `{expected}`. */
+    pointsElsewhereFound: string
+    /** `www.<domain>` does not lead here: a note, since the domain is active without it. `{domain}`. */
+    www: string
+    /** By the API's code. Any other code reads as `saveFailed` or `checkFailed`, by what was being done. */
+    errors: Record<CustomDomainErrorValue | "RATE_LIMITED", string>
+    saveFailed: string
+    checkFailed: string
+    /** The records to create where the domain was bought. */
+    records: {
+      title: string
+      /** Where the records are created. */
+      intro: string
+      /** Names the table for a screen reader. */
+      caption: string
+      columns: { type: string; name: string; value: string }
+      copy: string
+      copied: string
+      /** The clipboard refused: the value was selected instead, to be copied by hand. */
+      selected: string
+      notesTitle: string
+      /** How long a change takes, forwarding, the one `A` on the root, why the root takes no `CNAME`, and a provider that refuses `@` as a value. */
+      notes: Record<"time" | "forwarding" | "single" | "root" | "cname", string>
     }
   }
 }

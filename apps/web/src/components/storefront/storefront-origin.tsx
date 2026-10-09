@@ -5,6 +5,7 @@ import { useEffect, useEffectEvent, useRef } from "react"
 
 // App
 import { useConsent } from "./consent-provider"
+import { useShopAddress } from "@/components/storefront/shop-address-provider"
 import { marketingAllowed } from "@/lib/consent-cookie"
 import { arrivalOf, originAfter, originCookieOf, originFromCookies, sameOrigin, withoutClick, type VisitOrigin } from "@/lib/origin-cookie"
 
@@ -31,6 +32,7 @@ export interface StorefrontOriginProps {
  * takes it out of the cookie.
  */
 export function StorefrontOrigin({ slug, pixelId }: StorefrontOriginProps) {
+  const shop = useShopAddress(slug)
   const choice = useConsent((consent) => consent.choice)
   const allowed = marketingAllowed({ metaPixelId: pixelId }, choice)
   /** This page load's arrival at the shop named, as its address told it. */
@@ -44,7 +46,7 @@ export function StorefrontOrigin({ slug, pixelId }: StorefrontOriginProps) {
 
     const kept = originFromCookies(document.cookie, now)
     const next = originAfter(kept, landing.current.arrival, allowed)
-    if (!sameOrigin(kept, next)) document.cookie = originCookieOf(slug, next, now, window.location.protocol === "https:")
+    if (!sameOrigin(kept, next)) document.cookie = originCookieOf(shop, next, now, window.location.protocol === "https:")
   })
 
   useEffect(() => {

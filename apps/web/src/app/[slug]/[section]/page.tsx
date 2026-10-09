@@ -35,6 +35,7 @@ import { customerOrdersAt, customerReorderAt } from "@/lib/customer-orders"
 import { reorderNoticeOf } from "@/lib/reorder-view"
 import { ADDRESS_KEY, checkoutAddressesOf, checkoutAddressIdOf, DELIVER_TO_KEY, NEW_ADDRESS } from "@/lib/saved-address"
 import { cartInvitationOf, pathWithQuery } from "@/lib/offer-strip"
+import { shopBaseOf } from "@/lib/shop-address"
 import { shopperAt } from "@/lib/shopper"
 import { catalogueAt, offersAt, paymentOptionsAt } from "@/lib/storefront-data"
 import { BACK_KEY, orderNumberOf, paramOf, REORDER_FAILED_KEY, REORDER_TRIMMED_KEY, REORDERED_KEY, storefrontRoutes } from "@/lib/storefront-routes"
@@ -139,7 +140,7 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
       shopper={shopper}
       body={catalogue ? { layout: "flush", surface: "canvas" } : undefined}
       // On a shelf alone — the catalogue, a category, the search: the cart, the account and the sign-in pages show none.
-      notice={catalogue ? <StorefrontOffers store={store} back={pathWithQuery(`${routes.home}/${encodeURIComponent(section)}`, query)} messages={ui} /> : undefined}
+      notice={catalogue ? <StorefrontOffers store={store} back={pathWithQuery(`${shopBaseOf(store)}/${encodeURIComponent(section)}`, query)} messages={ui} /> : undefined}
       // The shopper's area draws its own front (6c): the greeting is its heading, and there is no band.
       pageHeader={place.section.kind === "account" ? undefined : <StorefrontSectionBand place={place} routes={routes} {...(catalogue ? { catalogue } : {})} locale={locale} />}
       messages={ui}

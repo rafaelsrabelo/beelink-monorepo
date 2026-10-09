@@ -9,6 +9,7 @@ import { PRIVACY_ERROR_KEY } from "@/lib/account-privacy"
 import { callApi, isApiErrorBody } from "@/lib/api"
 import { clientIpOf, publicOriginOf, refuseForeignOrigin } from "@/lib/bff"
 import { clearCustomerSessionCookies, setCustomerSessionCookies } from "@/lib/customer-session-cookies"
+import { shopAddressOf, type ShopAddress } from "@/lib/shop-address"
 import { callAsShopper } from "@/lib/shopper-call"
 import { SHOP_SLUG } from "@/lib/shopper-forward"
 import { ACCOUNT_DELETED_KEY, BACK_KEY, safeBackOf } from "@/lib/storefront-routes"
@@ -25,12 +26,13 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
   const { slug } = await params
   if (!SHOP_SLUG.test(slug)) return NextResponse.json({ statusCode: 404, errorCode: "NOT_FOUND", message: "No such page" }, { status: 404 })
 
+  const here = shopAddressOf(request.headers, slug)
   const form = await request.formData().catch(() => null)
   const field = (name: string) => {
     const value = form?.get(name)
     return typeof value === "string" ? value : ""
   }
-  const pageOf = (name: string) => new URL(safeBackOf(slug, field(name)), publicOriginOf(request))
+  const pageOf = (name: string) => new URL(safeBackOf(here, field(name)), publicOriginOf(request))
 
   // Only the field the form drew: an account with a password is never confirmed by its e-mail.
   const body: DeleteCustomerAccountPayload = form?.has("password") ? { password: field("password") } : { email: field("email") }
@@ -41,16 +43,16 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
   if (answered.status === "signedOut") {
     // Nothing was deleted: the session had ended before the form was sent.
     const signIn = pageOf("entrada")
-    signIn.searchParams.set(BACK_KEY, safeBackOf(slug, field("retorno")))
+    signIn.searchParams.set(BACK_KEY, safeBackOf(here, field("retorno")))
     signIn.searchParams.set("erro", "CUSTOMER_SESSION_ENDED")
-    return signedOut(signIn, slug)
+    return signedOut(signIn, here)
   }
   const { response, renewed } = answered
 
   if (response?.ok) {
     const signIn = pageOf("entrada")
     signIn.searchParams.set(ACCOUNT_DELETED_KEY, "1")
-    return signedOut(signIn, slug)
+    return signedOut(signIn, here)
   }
 
   const answer: unknown = response ? await response.json().catch(() => null) : null
@@ -58,13 +60,13 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
   const back = pageOf("retorno")
   back.searchParams.set(PRIVACY_ERROR_KEY, code)
   const redirect = NextResponse.redirect(back, 303)
-  if (renewed) setCustomerSessionCookies(redirect.cookies, slug, renewed)
+  if (renewed) setCustomerSessionCookies(redirect, here, renewed)
   return redirect
 }
 
 /** Out of the shop's session, its cookies gone, onto `landing`. */
-function signedOut(landing: URL, slug: string): NextResponse {
+function signedOut(landing: URL, here: ShopAddress): NextResponse {
   const answer = NextResponse.redirect(landing, 303)
-  clearCustomerSessionCookies(answer.cookies, slug)
+  clearCustomerSessionCookies(answer, here)
   return answer
 }

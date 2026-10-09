@@ -12,10 +12,12 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import type { WebMessages } from "@/locales"
 
 // App
+import { AppLink } from "@/components/app-link"
 import { StoreDeliveryTab } from "@/components/store/store-delivery-tab"
 import { StoreErrorAlert } from "@/components/store/store-error-alert"
 import { firstStoreErrorCopy, storeErrorCopy } from "@/components/store/store-error-copy"
 import { toSettingsValues, toUpdatePayload } from "@/components/store/store-payloads"
+import { customDomainPageOf } from "@/lib/custom-domain-form"
 import { useAddressSearch, DEBOUNCE_MS } from "@/services/addresses/address-hooks"
 import { mapTileUrl, pointOf } from "@/services/addresses/map-tiles"
 import type { Point } from "@/services/addresses/map-tiles"
@@ -91,6 +93,13 @@ export function StoreSettingsScreen({ slug, locale, ui, web }: StoreSettingsScre
           update.mutate(toUpdatePayload(current, values))
         }}
       />
+      {/* The panel's menu has no group of settings to hold it: the domain's screen is reached from here and from the home. */}
+      <p className="text-muted-foreground text-sm">
+        {web.stores.settings.domainText}{" "}
+        <AppLink href={customDomainPageOf(current.slug)} className="text-foreground underline underline-offset-4">
+          {web.stores.settings.domainLink}
+        </AppLink>
+      </p>
     </div>
   )
 }

@@ -14,6 +14,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // App
 import { useConsent } from "./consent-provider"
 import { usePopupTrigger } from "./use-popup-trigger"
+import { useShopAddress } from "@/components/storefront/shop-address-provider"
 import { popupCookieOf, type PopupNotice } from "@/lib/popup-cookie"
 import { useShopPopup } from "@/stores/shop-popup"
 
@@ -60,6 +61,7 @@ export interface StorefrontPopupLiveProps {
  * It tells no one. Opening it and pressing its button reach neither the shop's pixel nor its funnel.
  */
 export function StorefrontPopupLive({ slug, notice, revision, trigger, delaySeconds, words, code = null, actionHref, imageUrl, style, messages }: StorefrontPopupLiveProps) {
+  const shop = useShopAddress(slug)
   const open = useShopPopup((state) => state.open[slug] === true)
   const shown = useShopPopup((state) => state.shown[slug] === true)
   const show = useShopPopup((state) => state.show)
@@ -73,7 +75,7 @@ export function StorefrontPopupLive({ slug, notice, revision, trigger, delaySeco
   useEffect(() => () => hide(slug), [slug, hide])
 
   function dismiss() {
-    document.cookie = popupCookieOf(slug, notice, revision, window.location.protocol === "https:")
+    document.cookie = popupCookieOf(shop, notice, revision, window.location.protocol === "https:")
     hide(slug)
   }
 

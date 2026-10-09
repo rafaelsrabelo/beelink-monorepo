@@ -26,6 +26,9 @@
  * account's: nothing is kept of who closed it.
  */
 
+// App
+import { shopHomeOf, type ShopAddress } from "./shop-address"
+
 export const POPUP_COOKIE = "bl_popup"
 
 /** Thirty days: then the shop may call again. The privacy policy says this number; a change here is a new version of that text. */
@@ -111,6 +114,6 @@ export function closingRevisionOf(seen: PopupSeen | null, revision: number): num
 }
 
 /** The `Set-Cookie` a page writes: scoped to the shop, so two shops on one domain keep two memories. */
-export function popupCookieOf(slug: string, notice: PopupNotice, revision: number, secure: boolean, surface: NoticeSurface = "DIALOG"): string {
-  return `${POPUP_COOKIE}=${popupNoticeVersion(notice, revision, surface)}; Path=/${slug}; Max-Age=${POPUP_MAX_AGE_SECONDS}; SameSite=Lax${secure ? "; Secure" : ""}`
+export function popupCookieOf(shop: ShopAddress, notice: PopupNotice, revision: number, secure: boolean, surface: NoticeSurface = "DIALOG"): string {
+  return `${POPUP_COOKIE}=${popupNoticeVersion(notice, revision, surface)}; Path=${shopHomeOf(shop)}; Max-Age=${POPUP_MAX_AGE_SECONDS}; SameSite=Lax${secure ? "; Secure" : ""}`
 }

@@ -43,7 +43,7 @@ function arriveAt(address: string) {
 const kept = () => originFromCookies(document.cookie, Date.now())
 
 function keep(slug: string, origin: VisitOrigin) {
-  document.cookie = originCookieOf(slug, origin, Date.now(), false)
+  document.cookie = originCookieOf({ slug }, origin, Date.now(), false)
 }
 
 afterEach(() => {

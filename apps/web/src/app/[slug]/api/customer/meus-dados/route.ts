@@ -6,6 +6,7 @@ import { DATA_ERROR_KEY } from "@/lib/account-privacy"
 import { callApi } from "@/lib/api"
 import { clientIpOf, publicOriginOf } from "@/lib/bff"
 import { clearCustomerSessionCookies, setCustomerSessionCookies } from "@/lib/customer-session-cookies"
+import { shopAddressOf } from "@/lib/shop-address"
 import { callAsShopper } from "@/lib/shopper-call"
 import { SHOP_SLUG } from "@/lib/shopper-forward"
 import { BACK_KEY, safeBackOf } from "@/lib/storefront-routes"
@@ -25,8 +26,9 @@ export async function GET(request: NextRequest, { params }: RouteContext<"/[slug
   const { slug } = await params
   if (!SHOP_SLUG.test(slug)) return NextResponse.json({ statusCode: 404, errorCode: "NOT_FOUND", message: "No such page" }, { status: 404 })
 
+  const here = shopAddressOf(request.headers, slug)
   const query = request.nextUrl.searchParams
-  const pageOf = (name: string) => new URL(safeBackOf(slug, query.get(name) ?? ""), publicOriginOf(request))
+  const pageOf = (name: string) => new URL(safeBackOf(here, query.get(name) ?? ""), publicOriginOf(request))
 
   const answered = await callAsShopper(request, slug, (accessToken) =>
     callApi({ path: `/stores/${encodeURIComponent(slug)}/customer/me/data`, method: "GET", accessToken, clientIp: clientIpOf(request) }).catch(() => null),
@@ -34,9 +36,9 @@ export async function GET(request: NextRequest, { params }: RouteContext<"/[slug
 
   if (answered.status === "signedOut") {
     const signIn = pageOf("entrada")
-    signIn.searchParams.set(BACK_KEY, safeBackOf(slug, query.get("retorno") ?? ""))
+    signIn.searchParams.set(BACK_KEY, safeBackOf(here, query.get("retorno") ?? ""))
     const answer = NextResponse.redirect(signIn, 303)
-    clearCustomerSessionCookies(answer.cookies, slug)
+    clearCustomerSessionCookies(answer, here)
     return answer
   }
   const { response, renewed } = answered
@@ -57,6 +59,6 @@ export async function GET(request: NextRequest, { params }: RouteContext<"/[slug
     back.searchParams.set(DATA_ERROR_KEY, response?.status === 429 ? "RATE_LIMITED" : "UNKNOWN")
     answer = NextResponse.redirect(back, 303)
   }
-  if (renewed) setCustomerSessionCookies(answer.cookies, slug, renewed)
+  if (renewed) setCustomerSessionCookies(answer, here, renewed)
   return answer
 }

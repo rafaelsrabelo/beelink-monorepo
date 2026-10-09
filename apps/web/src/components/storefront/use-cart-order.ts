@@ -12,6 +12,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import { usePurchaseTold } from "./tracking/use-purchase-told"
+import { useShopAddress } from "@/components/storefront/shop-address-provider"
 import { purchaseOf, purchaseOrderOf } from "@/lib/purchase"
 import { storefrontRoutes } from "@/lib/storefront-routes"
 import { orderMessageOf, whatsappOrderHref } from "@/lib/whatsapp-order"
@@ -60,6 +61,7 @@ export interface CartOrderHandle {
  */
 export function useCartOrder({ slug, routeWords, shopName, whatsapp, shopper, locale, messages }: CartOrderInput): CartOrderHandle {
   const router = useRouter()
+  const shop = useShopAddress(slug)
   const placing = usePlaceShopperOrder(slug)
   const [sent, setSent] = useState<SentCartOrder | null>(null)
   // Read from the answer the order came in, at the moment it came: an order just placed is inside its day.
@@ -75,7 +77,7 @@ export function useCartOrder({ slug, routeWords, shopName, whatsapp, shopper, lo
     placing.mutate(payload, {
       onSuccess: (order) => {
         if (order.paymentChannel === "ONLINE") {
-          const payHref = storefrontRoutes({ slug, routeWords }).accountOrder(order.number, { payment: true })
+          const payHref = storefrontRoutes({ ...shop, routeWords }).accountOrder(order.number, { payment: true })
           setSent({ number: order.number, href: null, payHref })
           placed()
           // Last: `placed` writes this page's own address — the coupon leaving it — and must not land on the next one.

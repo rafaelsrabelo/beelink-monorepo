@@ -16,6 +16,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // App
 import { useDebouncedValue } from "@/services/addresses/use-debounced-value"
 import { DEBOUNCE_MS, useStorefrontSearch } from "@/services/storefront/storefront-hooks"
+import { useShopAddress } from "@/components/storefront/shop-address-provider"
 import { storefrontRoutes } from "@/lib/storefront-routes"
 
 export interface StorefrontSearchLiveProps {
@@ -58,7 +59,7 @@ export function StorefrontSearchLive({
   const settled = useDebouncedValue(term, DEBOUNCE_MS)
   const { products, total, pending } = useStorefrontSearch(slug, settled, scope)
 
-  const routes = storefrontRoutes({ slug, routeWords })
+  const routes = storefrontRoutes({ ...useShopAddress(slug), routeWords })
   const money = new Intl.NumberFormat(locale, { style: "currency", currency: "BRL" })
 
   // Formatted here and not in the block: what money looks like is a decision about a locale, and a

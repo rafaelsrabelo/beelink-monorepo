@@ -9,6 +9,7 @@ import { NOTICES_ERROR_KEY, NOTICES_SAVED } from "@/lib/account-notices"
 import { callApi, isApiErrorBody } from "@/lib/api"
 import { clientIpOf, publicOriginOf, refuseForeignOrigin } from "@/lib/bff"
 import { clearCustomerSessionCookies, setCustomerSessionCookies } from "@/lib/customer-session-cookies"
+import { shopAddressOf } from "@/lib/shop-address"
 import { callAsShopper } from "@/lib/shopper-call"
 import { SHOP_SLUG } from "@/lib/shopper-forward"
 import { BACK_KEY, safeBackOf } from "@/lib/storefront-routes"
@@ -25,12 +26,13 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
   const { slug } = await params
   if (!SHOP_SLUG.test(slug)) return NextResponse.json({ statusCode: 404, errorCode: "NOT_FOUND", message: "No such shop" }, { status: 404 })
 
+  const here = shopAddressOf(request.headers, slug)
   const form = await request.formData().catch(() => null)
   const field = (name: string) => {
     const value = form?.get(name)
     return typeof value === "string" ? value : ""
   }
-  const back = safeBackOf(slug, field("retorno"))
+  const back = safeBackOf(here, field("retorno"))
   // A body that is not a form carries no box at all: read as three noes, it would turn every notice off.
   if (!form) {
     const refusal = new URL(back, publicOriginOf(request))
@@ -53,11 +55,11 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
   if (answered.status === "signedOut") {
     // The session ended elsewhere meanwhile: nothing was saved, which the sign-in says, and it brings
     // the shopper back to the notices themselves to save them again.
-    const signIn = new URL(safeBackOf(slug, field("entrada")), publicOriginOf(request))
+    const signIn = new URL(safeBackOf(here, field("entrada")), publicOriginOf(request))
     signIn.searchParams.set(BACK_KEY, back)
     signIn.searchParams.set("erro", "CUSTOMER_SESSION_ENDED")
     const signedOut = NextResponse.redirect(signIn, 303)
-    clearCustomerSessionCookies(signedOut.cookies, slug)
+    clearCustomerSessionCookies(signedOut, here)
     return signedOut
   }
   const { response, renewed } = answered
@@ -70,6 +72,6 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
   }
 
   const answer = NextResponse.redirect(landing, 303)
-  if (renewed) setCustomerSessionCookies(answer.cookies, slug, renewed)
+  if (renewed) setCustomerSessionCookies(answer, here, renewed)
   return answer
 }

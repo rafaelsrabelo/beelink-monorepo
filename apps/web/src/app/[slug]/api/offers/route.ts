@@ -9,6 +9,7 @@ import { callApi } from "@/lib/api"
 import { clientIpOf, readJsonBody, refuseCrossOrigin } from "@/lib/bff"
 import { offersCartOf } from "@/lib/cart-offers"
 import { clearCustomerSessionCookies, CUSTOMER_ACCESS_COOKIE, CUSTOMER_REFRESH_COOKIE, setCustomerSessionCookies } from "@/lib/customer-session-cookies"
+import { shopAddressOf } from "@/lib/shop-address"
 import { callAsShopper } from "@/lib/shopper-call"
 
 function refusal(statusCode: number, errorCode: string, message: string) {
@@ -49,13 +50,13 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
 
   if (read.status === "signedOut") {
     const answer = refusal(401, "AUTH_UNAUTHENTICATED", "Sign in to see your offers")
-    clearCustomerSessionCookies(answer.cookies, slug)
+    clearCustomerSessionCookies(answer, shopAddressOf(request.headers, slug))
     return answer
   }
   if (!read.response) return refusal(502, "UNKNOWN", "The shop could not be reached")
 
   const payload: unknown = await read.response.json().catch(() => null)
   const answer = NextResponse.json(payload ?? { statusCode: read.response.status, errorCode: "UNKNOWN", message: "Unexpected answer" }, { status: read.response.status })
-  if (read.renewed) setCustomerSessionCookies(answer.cookies, slug, read.renewed)
+  if (read.renewed) setCustomerSessionCookies(answer, shopAddressOf(request.headers, slug), read.renewed)
   return answer
 }

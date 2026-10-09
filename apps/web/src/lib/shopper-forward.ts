@@ -8,6 +8,7 @@ import type { ApiErrorBody } from "@harness-monorepo/contracts"
 import { callApi, type ApiCall } from "./api"
 import { clientIpOf } from "./bff"
 import { clearCustomerSessionCookies, setCustomerSessionCookies } from "./customer-session-cookies"
+import { shopAddressOf } from "./shop-address"
 import { callAsShopper } from "./shopper-call"
 
 /** A shop's slug as the API spells one; anything else names no shop, and nothing is asked. */
@@ -38,14 +39,14 @@ export async function forwardAsShopper(request: NextRequest, slug: string, call:
 
   if (answered.status === "signedOut") {
     const answer = shopperRefusal(401, "AUTH_UNAUTHENTICATED", "Sign in to continue")
-    clearCustomerSessionCookies(answer.cookies, slug)
+    clearCustomerSessionCookies(answer, shopAddressOf(request.headers, slug))
     return answer
   }
   if (!answered.response) return shopperRefusal(502, "UNKNOWN", "The shop could not be reached")
 
   // No content has no body to pass on, and `NextResponse.json` refuses a 204 outright.
   const answer = answered.response.status === 204 ? new NextResponse(null, { status: 204 }) : await withBodyOf(answered.response)
-  if (answered.renewed) setCustomerSessionCookies(answer.cookies, slug, answered.renewed)
+  if (answered.renewed) setCustomerSessionCookies(answer, shopAddressOf(request.headers, slug), answered.renewed)
   return answer
 }
 

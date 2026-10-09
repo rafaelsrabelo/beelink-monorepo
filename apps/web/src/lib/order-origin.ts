@@ -8,6 +8,7 @@ import type { OrderMarketingConsentInput, OrderOriginInput, PlaceCustomerOrderPa
 import { publicOriginOf } from "./bff"
 import { CONSENT_COOKIE, decodeConsent, marketingAllowed } from "./consent-cookie"
 import { decodeOrigin, ORIGIN_COOKIE } from "./origin-cookie"
+import { shopAddressOf, shopBaseOf, shopHomeOf } from "./shop-address"
 import { shopAt } from "./storefront-data"
 
 /**
@@ -41,7 +42,8 @@ export async function marketingConsentAt(request: NextRequest, slug: string): Pr
 
 /**
  * The page the order was placed from, as the browser named it: of this site and under this shop's
- * path, or nothing. Without its query — a cart's address may carry a coupon, and Meta needs neither.
+ * path — any path, at the shop's own domain — or nothing. Without its query — a cart's address may
+ * carry a coupon, and Meta needs neither.
  */
 function pageUrlOf(request: NextRequest, slug: string): string | null {
   const referer = request.headers.get("referer")
@@ -53,7 +55,8 @@ function pageUrlOf(request: NextRequest, slug: string): string | null {
     return null
   }
   if (url.origin !== publicOriginOf(request)) return null
-  if (url.pathname !== `/${slug}` && !url.pathname.startsWith(`/${slug}/`)) return null
+  const here = shopAddressOf(request.headers, slug)
+  if (url.pathname !== shopHomeOf(here) && !url.pathname.startsWith(`${shopBaseOf(here)}/`)) return null
 
   const page = `${url.origin}${url.pathname}`
   return page.length <= PAGE_URL_MAX ? page : null

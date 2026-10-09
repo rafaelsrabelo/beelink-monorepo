@@ -1,6 +1,9 @@
 // Types
 import type { PublicStore } from "@harness-monorepo/contracts"
 
+// App
+import { shopBaseOf, type ShopAddress } from "./shop-address"
+
 /**
  * What a visitor did at a shop, as the shop window tells it (BEELINK-272): the facts of the shop —
  * a product, a price in whole cents, a quantity — and nothing of any third party's. Who receives an
@@ -63,9 +66,12 @@ export type Track = (event: StorefrontEvent, options?: TrackOptions) => boolean
  * The shop's pages no event may leave from: the ones whose address carries a single-use token —
  * confirming an e-mail, setting a password. A tracker sends the page's address with whatever it is
  * told, so on these it is told nothing, a page view included.
+ *
+ * As the browser's address spells them: with no slug at the shop's own domain, where a path under
+ * `/<slug>` would match nothing and the token's page would be told like any other.
  */
-export function quietPathsOf(store: Pick<PublicStore, "slug" | "routeWords">): string[] {
-  return [store.routeWords.verifyEmail, store.routeWords.resetPassword].filter((word): word is string => Boolean(word)).map((word) => `/${store.slug}/${word}`)
+export function quietPathsOf(store: Pick<PublicStore, "routeWords"> & ShopAddress): string[] {
+  return [store.routeWords.verifyEmail, store.routeWords.resetPassword].filter((word): word is string => Boolean(word)).map((word) => `${shopBaseOf(store)}/${word}`)
 }
 
 export function isQuietPath(pathname: string, quietPaths: readonly string[]): boolean {

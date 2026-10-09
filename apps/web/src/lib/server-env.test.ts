@@ -2,11 +2,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 /** The module parses the environment as it loads, so each case loads it again. */
-async function load(example: string | undefined, environment?: string) {
+async function load(example: string | undefined, environment?: string, webDomain?: string) {
   vi.resetModules()
   if (example === undefined) vi.stubEnv("EXAMPLE_STORE_SLUG", undefined)
   else vi.stubEnv("EXAMPLE_STORE_SLUG", example)
   vi.stubEnv("APP_ENVIRONMENT", environment)
+  vi.stubEnv("WEB_DOMAIN", webDomain)
 
   return (await import("./server-env")).serverEnv
 }
@@ -48,5 +49,24 @@ describe("serverEnv.APP_ENVIRONMENT", () => {
   // A typo that read as production would be a homologation site with no flag on it.
   it("refuses a name it does not know rather than guess which site this is", async () => {
     await expect(load(undefined, "staging")).rejects.toThrow(/Invalid environment/)
+  })
+})
+
+describe("serverEnv.WEB_DOMAIN (BEELINK-283)", () => {
+  /** Development and the e2e set none: every host is then looked up in the table of shop hosts. */
+  it("is optional, and blank is unset — compose hands an unset variable over as blank", async () => {
+    expect((await load(undefined, undefined, undefined)).WEB_DOMAIN).toBeUndefined()
+    expect((await load(undefined, undefined, "")).WEB_DOMAIN).toBeUndefined()
+  })
+
+  it("takes the platform's host, as the stack names it for the API", async () => {
+    expect((await load(undefined, undefined, "beelink.biz")).WEB_DOMAIN).toBe("beelink.biz")
+    expect((await load(undefined, undefined, "localhost:3800")).WEB_DOMAIN).toBe("localhost:3800")
+  })
+
+  // A host is compared with the request's: an address would never match, and every request would be looked up.
+  it("refuses an address, which the variable never was", async () => {
+    await expect(load(undefined, undefined, "https://beelink.biz")).rejects.toThrow(/Invalid environment/)
+    await expect(load(undefined, undefined, "beelink.biz/")).rejects.toThrow(/Invalid environment/)
   })
 })

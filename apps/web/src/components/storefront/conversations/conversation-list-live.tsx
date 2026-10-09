@@ -12,6 +12,7 @@ import { StorefrontConversationListSkeleton } from "@harness-monorepo/ui/blocks/
 // App
 import { AppLink } from "@/components/app-link"
 import { conversationRowsOf } from "@/lib/conversation-view"
+import { useShopAddress } from "@/components/storefront/shop-address-provider"
 import { storefrontRoutes } from "@/lib/storefront-routes"
 import { useShopperConversations } from "@/services/conversations/conversation-hooks"
 
@@ -27,12 +28,13 @@ export interface ConversationListLiveProps {
 
 /** The shopper's conversations at the shop, read live: every event on the channel reads them again. */
 export function ConversationListLive({ slug, routeWords, onSelect, focusNumber = null, messages }: ConversationListLiveProps) {
+  const shop = useShopAddress(slug)
   const list = useShopperConversations(slug)
 
   if (list.isPending) return <StorefrontConversationListSkeleton />
   // Only a first read that failed: a later one keeps the list as it was.
   if (!list.data) return <StorefrontConversationFailed message={messages.storefront.conversationsFailed} onRetry={() => void list.refetch()} messages={messages} />
 
-  const rows = conversationRowsOf(list.data, { routes: storefrontRoutes({ slug, routeWords }), locale: "pt-BR", messages })
+  const rows = conversationRowsOf(list.data, { routes: storefrontRoutes({ ...shop, routeWords }), locale: "pt-BR", messages })
   return <StorefrontConversationList rows={rows} {...(onSelect ? { onSelect } : {})} focusNumber={focusNumber} linkComponent={AppLink} messages={messages} />
 }
