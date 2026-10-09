@@ -208,8 +208,8 @@ describe("CustomDomainScreen, with a domain saved", () => {
 
     with_({ overview: pending, checking: true })
     view()
-    expect(screen.getByRole("button", { name: "Verificando…" })).toBeDisabled()
-    expect(screen.getByRole("button", { name: "Remover domínio" })).toBeDisabled()
+    expect(screen.getByRole("button", { name: "Verificando…" })).toHaveAttribute("aria-disabled", "true")
+    expect(screen.getByRole("button", { name: "Remover domínio" })).toHaveAttribute("aria-disabled", "true")
   })
 
   it("asks before removing, says the minute it takes, and removes only once confirmed", async () => {

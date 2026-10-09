@@ -163,8 +163,33 @@ describe("CustomDomainCard, with a domain saved and not active yet", () => {
     expect(onCheck).toHaveBeenCalledOnce()
 
     again(pendingNotFound, { checking: true })
-    expect(screen.getByRole("button", { name: "Verificando…" })).toBeDisabled()
-    expect(screen.getByRole("button", { name: "Remover domínio" })).toBeDisabled()
+    expect(screen.getByRole("button", { name: "Verificando…" })).toHaveAttribute("aria-disabled", "true")
+    expect(screen.getByRole("button", { name: "Remover domínio" })).toHaveAttribute("aria-disabled", "true")
+  })
+
+  /**
+   * Seen in the browser: a button that turns `disabled` under the focus drops it to the page's
+   * start, and the check's result was read out from nowhere near the button that asked. Held, both
+   * buttons keep the focus they had and do nothing when pressed.
+   */
+  it("holds both buttons while a check runs without taking them out of the tab order, and neither does anything", async () => {
+    const { again, onCheck, onRemove } = show(pendingNotFound)
+    screen.getByRole("button", { name: "Verificar de novo" }).focus()
+
+    again(pendingNotFound, { checking: true })
+    const held = screen.getByRole("button", { name: "Verificando…" })
+    expect(held).toHaveFocus()
+    expect(held).not.toHaveAttribute("disabled")
+    expect(screen.getByRole("button", { name: "Remover domínio" })).not.toHaveAttribute("disabled")
+    await userEvent.click(held)
+    await userEvent.click(screen.getByRole("button", { name: "Remover domínio" }))
+    expect(onCheck).not.toHaveBeenCalled()
+    expect(onRemove).not.toHaveBeenCalled()
+    expect(screen.queryByRole("alertdialog")).toBeNull()
+
+    again(pendingNotFound, { checking: false, checked: true })
+    expect(screen.getByRole("button", { name: "Verificar de novo" })).toHaveFocus()
+    expect(screen.getByRole("button", { name: "Verificar de novo" })).not.toHaveAttribute("aria-disabled", "true")
   })
 
   it("reads out what a check that just came back found, or why it did not go through — never both, and neither while checking", () => {
@@ -212,8 +237,8 @@ describe("CustomDomainCard, with a domain saved and not active yet", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("Não foi possível remover o domínio agora. Tente de novo.")
 
     again(pendingNotFound, { removing: true, removeError: undefined })
-    expect(screen.getByRole("button", { name: "Remover domínio" })).toBeDisabled()
-    expect(screen.getByRole("button", { name: "Verificar de novo" })).toBeDisabled()
+    expect(screen.getByRole("button", { name: "Remover domínio" })).toHaveAttribute("aria-disabled", "true")
+    expect(screen.getByRole("button", { name: "Verificar de novo" })).toHaveAttribute("aria-disabled", "true")
   })
 
   /** A form swapped for the saved domain leaves the focus on the page's body: it goes to the first thing to press. */

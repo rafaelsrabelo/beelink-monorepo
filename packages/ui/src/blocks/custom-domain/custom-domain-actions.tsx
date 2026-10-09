@@ -40,10 +40,17 @@ export interface CustomDomainActionsProps {
   messages?: UiMessages
 }
 
+/** The look of a held button: the primitive dims `:disabled`, which a button kept focusable is not. */
+const HELD = "aria-disabled:opacity-50"
+
 /**
  * What can be done with a saved domain (BEELINK-285): check it again — DNS changes on its own time,
  * and the shopkeeper who has just saved the records at their provider is the one who knows to ask —
  * and remove it, after a question that says what removing does and how long it takes to show.
+ *
+ * Both buttons are held while either runs, and stay focusable meanwhile: a button that turns
+ * disabled under the focus drops it to the page's start, and whoever pressed "Verificar de novo"
+ * by the keyboard would be read the result from nowhere near it.
  */
 export function CustomDomainActions({ host, address, onCheck, checking = false, checkResult, checkError, onRemove, removing = false, removeError, messages = defaultMessages }: CustomDomainActionsProps) {
   const text = messages.customDomain
@@ -55,11 +62,11 @@ export function CustomDomainActions({ host, address, onCheck, checking = false, 
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-3">
         {onCheck ? (
-          <Button type="button" variant="outline" disabled={busy} aria-busy={checking || undefined} onClick={onCheck}>
+          <Button type="button" variant="outline" disabled={busy} focusableWhenDisabled aria-busy={checking || undefined} onClick={onCheck} className={HELD}>
             {checking ? text.checking : text.check}
           </Button>
         ) : null}
-        <Button type="button" variant="outline" disabled={busy} onClick={() => setConfirming(true)}>
+        <Button type="button" variant="outline" disabled={busy} focusableWhenDisabled onClick={() => setConfirming(true)} className={HELD}>
           {text.remove}
         </Button>
       </div>
