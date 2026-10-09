@@ -161,6 +161,67 @@ describe("StoreImageField", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("Formato não aceito")
   })
 
+  it("asks the screen's own rule after its two, shows the sentence it answers and sends nothing", async () => {
+    const validate = vi.fn(async (file: File) => (file.name === "largo.png" ? "O ícone precisa ser quadrado." : undefined))
+    const { onUpload, onChange } = renderField({ validate })
+    const input = screen.getByLabelText<HTMLInputElement>(CTA)
+
+    await userEvent.upload(input, imageNamed("largo.png"))
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("O ícone precisa ser quadrado.")
+    expect(onUpload).not.toHaveBeenCalled()
+
+    await userEvent.upload(input, imageNamed("quadrado.png"))
+
+    await waitFor(() => expect(onChange).toHaveBeenCalledWith(sampleImage))
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument()
+  })
+
+  it("never asks the screen's rule about a file it already refused for its size", async () => {
+    const validate = vi.fn(async () => undefined)
+    renderField({ validate, maxSizeBytes: 2 * 1024 * 1024 })
+
+    await userEvent.upload(screen.getByLabelText(CTA), imageNamed("grande.png", "image/png", 3 * 1024 * 1024))
+
+    expect(validate).not.toHaveBeenCalled()
+  })
+
+  it("calls its three controls what the screen calls them, where a form holds two image fields", () => {
+    renderField({ value: sampleImage, copy: { replace: "Trocar ícone", clear: "Remover ícone" } })
+
+    expect(screen.getByRole("button", { name: "Trocar ícone" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Remover ícone" })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Trocar imagem" })).not.toBeInTheDocument()
+  })
+
+  // The button was there and opened nothing: the only file input lived in the empty area.
+  it("opens the picker from Trocar while it holds a picture, and sends what is picked there", async () => {
+    const opened = vi.spyOn(HTMLInputElement.prototype, "click")
+    const { onUpload, onChange } = renderField({ value: "https://cdn.exemplo.com/antiga.png" })
+
+    await userEvent.click(screen.getByRole("button", { name: "Trocar imagem" }))
+    expect(opened).toHaveBeenCalledTimes(1)
+    expect(opened.mock.contexts[0]).toBe(screen.getByTestId("store-logo-replace-file"))
+    opened.mockRestore()
+
+    const file = imageNamed("nova.png")
+    fireEvent.change(screen.getByTestId("store-logo-replace-file"), { target: { files: [file] } })
+
+    expect(onUpload).toHaveBeenCalledWith(file)
+    await waitFor(() => expect(onChange).toHaveBeenCalledWith(sampleImage))
+  })
+
+  it("refuses through Trocar what it refuses in the empty area, and keeps the picture it has", async () => {
+    const { onUpload, onChange } = renderField({ value: sampleImage, validate: async () => "O ícone precisa ser quadrado." })
+
+    fireEvent.change(screen.getByTestId("store-logo-replace-file"), { target: { files: [imageNamed("largo.png")] } })
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("O ícone precisa ser quadrado.")
+    expect(onUpload).not.toHaveBeenCalled()
+    expect(onChange).not.toHaveBeenCalled()
+    expect(screen.getByRole("img", { name: "Pré-visualização da logo" })).toHaveAttribute("src", sampleImage)
+  })
+
   it("drops its own refusal once an acceptable file replaces the bad one", async () => {
     const { onUpload } = renderField({ maxSizeBytes: 2 * 1024 * 1024 })
     const input = screen.getByLabelText<HTMLInputElement>(CTA)

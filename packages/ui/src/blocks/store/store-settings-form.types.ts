@@ -40,6 +40,11 @@ export interface StoreSettingsFormProps {
    */
   onImageUpload?: (file: File) => Promise<string>
   imageUploadPending?: boolean
+  /** The browser icon's upload (BEELINK-312): the same endpoint, a state of its own. */
+  onFaviconUpload?: (file: File) => Promise<string>
+  faviconUploadPending?: boolean
+  /** The platform's own tab icon, which the icon's preview shows for a shop with no icon and no logo. */
+  platformIconUrl?: string
   pending?: boolean
   /** A sentence the reader can act on. The screen turns an API errorCode into it. */
   error?: string

@@ -108,6 +108,7 @@ export function toPublicStore(
     description: row.description,
     type: row.type,
     logoUrl: row.logoUrl,
+    faviconUrl: row.faviconUrl,
     bannerImageUrl: row.bannerImageUrl,
     layoutType: row.layoutType,
     // Four columns on the way out, one object on the wire — the seam the schema note promised.

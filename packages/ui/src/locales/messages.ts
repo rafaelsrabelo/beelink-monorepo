@@ -3301,6 +3301,26 @@ export interface UiMessages {
       replace: string
       clear: string
     }
+    /** The shop's own picture in a browser tab (BEELINK-312), a field of the identity tab. */
+    favicon: {
+      label: string
+      /** What it is, what works best, and what stands in for it while there is none. */
+      hint: string
+      alt: string
+      /** The image field's three controls, named for the icon: the logo's field sits right above. */
+      dropCta: string
+      replace: string
+      clear: string
+      /** `{width}`, `{height}`: what the refused image measures. */
+      notSquare: string
+      previewTitle: string
+      /** The tab's title while the shop's name is still empty. */
+      previewTabFallback: string
+      /** Which of the three pictures the tab is showing: the icon, the logo, or the platform's. */
+      previewOwn: string
+      previewLogo: string
+      previewNone: string
+    }
     settings: {
       title: string
       description: string

@@ -19,7 +19,7 @@ export const CUSTOM_DOMAIN_PROBE_TIMEOUT_MS = 5_000;
 
 /**
  * What the probe asks the domain for: a file the web serves to anyone, with no session and no shop
- * (`apps/web/src/app/favicon.ico`). Its status is not read — any answer over a certificate that is
+ * (`apps/web/public/favicon.ico`). Its status is not read — any answer over a certificate that is
  * the domain's own says the server routes the host and holds its certificate.
  */
 export const CUSTOM_DOMAIN_PROBE_PATH = '/favicon.ico';

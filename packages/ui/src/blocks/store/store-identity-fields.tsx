@@ -25,6 +25,7 @@ import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
+import { StoreFaviconField } from "./store-favicon-field"
 import { StoreImageField } from "./store-image-field"
 import type { StoreIdentityValues } from "./store-schemas"
 import type { FieldIssue, FieldIssues, StoreCategoryOption } from "./store-types"
@@ -45,6 +46,11 @@ export interface StoreIdentityFieldsProps {
   /** Hands the logo to whoever keeps bytes. Absent leaves the address field alone — see the field. */
   onLogoUpload?: (file: File) => Promise<string>
   logoUploadPending?: boolean
+  /** The browser icon's own upload, with its own pending: the logo's would say "sending" on both. */
+  onFaviconUpload?: (file: File) => Promise<string>
+  faviconUploadPending?: boolean
+  /** What a shop with no icon and no logo is left with in the tab, for the preview. */
+  platformIconUrl?: string
   disabled?: boolean
   messages?: UiMessages
 }
@@ -60,6 +66,9 @@ export function StoreIdentityFields({
   errors,
   onLogoUpload,
   logoUploadPending,
+  onFaviconUpload,
+  faviconUploadPending,
+  platformIconUrl,
   disabled = false,
   messages = defaultMessages,
 }: StoreIdentityFieldsProps) {
@@ -186,6 +195,22 @@ export function StoreIdentityFields({
         messages={messages}
         onChange={(logoUrl) => onChange({ ...value, logoUrl })}
       />
+
+      {/* Chosen in the settings alone: opening a shop stays short, and its tab shows the logo until then. */}
+      {onSlugChange ? null : (
+        <StoreFaviconField
+          value={value.faviconUrl}
+          error={errors?.faviconUrl}
+          logoUrl={value.logoUrl}
+          platformIconUrl={platformIconUrl}
+          storeName={value.name}
+          onUpload={onFaviconUpload}
+          pending={faviconUploadPending}
+          disabled={disabled}
+          messages={messages}
+          onChange={(faviconUrl) => onChange({ ...value, faviconUrl })}
+        />
+      )}
     </FieldGroup>
   )
 }

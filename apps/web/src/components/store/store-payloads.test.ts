@@ -17,6 +17,7 @@ const STORE: Store = {
   description: null,
   type: "ECOMMERCE",
   logoUrl: null,
+  faviconUrl: null,
   bannerImageUrl: null,
   sections: [],
   layoutType: "DEFAULT",
@@ -71,6 +72,7 @@ describe("toSettingsValues", () => {
     const values = toSettingsValues(STORE)
 
     expect(values.identity.description).toBe("")
+    expect(values.identity.faviconUrl).toBe("")
     expect(values.identity.categoryId).toBe("")
     expect(values.social.whatsapp).toBe("")
     expect(values.address.city).toBe("")
@@ -83,6 +85,17 @@ describe("toUpdatePayload", () => {
   it("reads and sends back after how many days a customer turns inactive", () => {
     expect(values.customers).toEqual({ inactiveAfterDays: 45 })
     expect(toUpdatePayload(STORE, { ...values, customers: { inactiveAfterDays: 90 } }).inactiveAfterDays).toBe(90)
+  })
+
+  // A PUT replaces: the icon is sent with every save, or the save of another tab would clear it.
+  it("shows the shop's browser icon and sends it back, and sends none once it was removed (BEELINK-312)", () => {
+    const withIcon = { ...STORE, faviconUrl: "https://cdn.exemplo.com/icone.png" }
+    const shown = toSettingsValues(withIcon)
+
+    expect(shown.identity.faviconUrl).toBe("https://cdn.exemplo.com/icone.png")
+    expect(toUpdatePayload(withIcon, shown).faviconUrl).toBe("https://cdn.exemplo.com/icone.png")
+    expect(toUpdatePayload(withIcon, { ...shown, identity: { ...shown.identity, faviconUrl: "" } }).faviconUrl).toBeNull()
+    expect(toUpdatePayload(STORE, values).faviconUrl).toBeNull()
   })
 
   it("sends back the layout switches no tab edits, so a replacement cannot clear them", () => {
@@ -170,6 +183,8 @@ describe("toCreatePayload", () => {
     expect(untouched).not.toHaveProperty("template")
     expect(folded).toEqual(untouched)
     expect(Object.keys(untouched).sort()).toEqual(["address", "categoryId", "description", "logoUrl", "name", "slug", "socialNetworks", "type"])
+    // The browser icon is the settings' to choose (BEELINK-312): a new shop is sent without one.
+    expect(untouched).not.toHaveProperty("faviconUrl")
   })
 
   it("sends the home model a shop picked, and none it does not know", () => {

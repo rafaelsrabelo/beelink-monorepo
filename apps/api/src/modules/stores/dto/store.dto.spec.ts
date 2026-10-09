@@ -82,6 +82,13 @@ describe('CreateStoreDto', () => {
     await expect(create({ ...createBody, logoUrl: 'javascript:alert(1)' })).rejects.toThrow(BadRequestException);
   });
 
+  it("takes the picture of the shop's tab under the logo's own rule: an http(s) URL, and a blank is none", async () => {
+    expect((await create({ ...createBody, faviconUrl: 'https://cdn.exemplo.com/icone.png' })).faviconUrl).toBe('https://cdn.exemplo.com/icone.png');
+    expect((await create({ ...createBody, faviconUrl: '  ' })).faviconUrl).toBeNull();
+    await expect(create({ ...createBody, faviconUrl: 'javascript:alert(1)' })).rejects.toThrow(BadRequestException);
+    await expect(create({ ...createBody, faviconUrl: 'icone.png' })).rejects.toThrow(BadRequestException);
+  });
+
   it('refuses a field nobody declared', async () => {
     await expect(create({ ...createBody, printSettings: {} })).rejects.toThrow(BadRequestException);
   });
@@ -92,6 +99,14 @@ describe('UpdateStoreDto', () => {
     await expect(update({ ...updateBody, slug: 'outra' })).rejects.toThrow(BadRequestException);
     await expect(update({ ...updateBody, latitude: -23.5 })).rejects.toThrow(BadRequestException);
     await expect(update({ ...updateBody, longitude: -46.6 })).rejects.toThrow(BadRequestException);
+  });
+
+  it("takes the picture of the shop's tab, null to remove it, and refuses what is not an http(s) URL", async () => {
+    expect((await update({ ...updateBody, faviconUrl: 'https://cdn.exemplo.com/icone.png' })).faviconUrl).toBe('https://cdn.exemplo.com/icone.png');
+    expect((await update({ ...updateBody, faviconUrl: null })).faviconUrl).toBeNull();
+    expect((await update({ ...updateBody, faviconUrl: '' })).faviconUrl).toBeNull();
+    await expect(update({ ...updateBody, faviconUrl: 'data:image/png;base64,AAAA' })).rejects.toThrow(BadRequestException);
+    await expect(update({ ...updateBody, faviconUrl: 42 })).rejects.toThrow(BadRequestException);
   });
 
   it('refuses a checkout with no payment method, and a method that is not one of the four', async () => {

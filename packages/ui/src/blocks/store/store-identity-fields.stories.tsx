@@ -15,6 +15,7 @@ const meta = {
     slug: "doces-da-ana",
     categories: sampleStoreCategories,
     onLogoUpload: fn(async () => "https://res.cloudinary.com/demo/image/upload/sample.jpg"),
+    onFaviconUpload: fn(async () => "https://res.cloudinary.com/demo/image/upload/sample.jpg"),
   },
 } satisfies Meta<typeof StoreIdentityFields>
 

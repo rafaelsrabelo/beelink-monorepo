@@ -52,6 +52,16 @@ export interface StoreImageFieldProps {
    * number the specs quote, and the number a refusal is measured against.
    */
   maxSizeBytes?: number
+  /**
+   * Its own words for the three controls, where two image fields share a form: a control is found
+   * by its name, and two called "Trocar imagem" are one too many. Absent keeps the dictionary's.
+   */
+  copy?: Partial<Pick<UiMessages["store"]["image"], "dropCta" | "replace" | "clear">>
+  /**
+   * One more reason to refuse a file, asked after the format and the size and before a byte is sent:
+   * it answers the sentence to show, or nothing to let the file through.
+   */
+  validate?: (file: File) => Promise<string | undefined>
   /** Quoted to the shopkeeper, never enforced — a smaller image is a worse picture, not an error. */
   recommendedSize?: { width: number; height: number }
   disabled?: boolean
@@ -89,11 +99,13 @@ export function StoreImageField({
   aspect = "square",
   accept = "image/png,image/jpeg,image/webp",
   maxSizeBytes = 2 * MEGABYTE,
+  copy,
+  validate,
   recommendedSize,
   disabled = false,
   messages = defaultMessages,
 }: StoreImageFieldProps) {
-  const text = messages.store.image
+  const text = { ...messages.store.image, ...copy }
   const fileInput = useRef<HTMLInputElement>(null)
   // The picture lands a second after the pick, to the latest `onChange`: the pick's carries the form
   // as it was then, and would put it back over what was typed meanwhile. A field that left the page
@@ -136,6 +148,13 @@ export function StoreImageField({
     }
     if (file.size > maxSizeBytes) {
       setRefusal(format(text.tooLarge, { size: sizeMb }))
+      return
+    }
+
+    // Awaited only where there is a rule: with none, the file is handed over in the very tick it was picked.
+    const refused = validate ? await validate(file) : undefined
+    if (refused) {
+      setRefusal(refused)
       return
     }
 
@@ -184,6 +203,22 @@ export function StoreImageField({
                 alt={previewAlt}
                 style={{ aspectRatio: ratio }}
                 className={previewClass}
+              />
+              {/*
+                The picker "Trocar" opens. The drop area's own input is not on the page while a picture
+                is, and without this one the button clicked nothing. `hidden`, not `sr-only`: the button
+                is the control here, and a second, unnamed stop for the keyboard would be noise.
+              */}
+              <input
+                ref={fileInput}
+                type="file"
+                accept={accept}
+                hidden
+                data-testid={`${id}-replace-file`}
+                onChange={(event) => {
+                  const file = event.target.files?.[0]
+                  if (file) void handleFile(file)
+                }}
               />
               <div className="flex flex-wrap gap-2">
                 {onUpload ? (

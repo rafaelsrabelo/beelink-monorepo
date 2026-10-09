@@ -99,6 +99,34 @@ describe("StoreIdentityFields", () => {
     )
   })
 
+  it("offers the browser icon under the logo, with its own upload, and hands the group back with it", async () => {
+    const onLogoUpload = vi.fn(async () => "https://cdn.exemplo.com/logo.png")
+    const onFaviconUpload = vi.fn(async () => "https://cdn.exemplo.com/icone.png")
+    const { onChange } = renderFields({ onLogoUpload, onFaviconUpload })
+
+    const file = new File(["bytes"], "icone.png", { type: "image/png" })
+    await userEvent.upload(screen.getByLabelText("Clique ou arraste o ícone aqui"), file)
+
+    expect(onFaviconUpload).toHaveBeenCalledWith(file)
+    expect(onLogoUpload).not.toHaveBeenCalled()
+    await waitFor(() => expect(onChange).toHaveBeenCalledWith({ ...values, faviconUrl: "https://cdn.exemplo.com/icone.png" }))
+  })
+
+  it("says sending on the icon alone while the icon is the one being sent", () => {
+    renderFields({ onLogoUpload: vi.fn(), onFaviconUpload: vi.fn(), faviconUploadPending: true })
+
+    expect(screen.getAllByText("Enviando…")).toHaveLength(1)
+    expect(screen.getByLabelText("Clique ou arraste a imagem aqui")).toBeEnabled()
+    expect(screen.getByLabelText("Enviando…")).toBeDisabled()
+  })
+
+  it("leaves the browser icon out while a shop is being opened", () => {
+    renderFields({ onSlugChange: vi.fn(), onFaviconUpload: vi.fn() })
+
+    expect(screen.queryByText("Ícone do navegador")).not.toBeInTheDocument()
+    expect(screen.getByText("Logo da loja")).toBeInTheDocument()
+  })
+
   it("names the category the shop already has, not its id", () => {
     renderFields()
 

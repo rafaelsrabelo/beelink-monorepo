@@ -50,12 +50,14 @@ Every block takes its data, its callbacks and its links through props, which is 
 | `blocks/store/store-opening-template` | `value` ("" is the default page), `onChange`, `templates` (`id`, `recommended`), `state` (`loading`, `failed`, `ready`), `onRetry`, `disabled` — the home a new shop opens with (BEELINK-266): folded away, the default page first and chosen, then the catalogue's models in the API's order. No preview: the shop does not exist yet. The create form draws it on its last step, for a shop only | Blocos/Loja/Modelo da página inicial |
 | `blocks/store/store-settings-form` | `slug`, `defaultValues`, `onSubmit`, `categories`, `onZipCodeLookup`, `onImageUpload`, `pending`, `error`, `extraTabs` | Blocos/Loja/Configurações da loja |
 | `blocks/store/store-settings-skeleton` | — | Blocos/Loja/Esqueleto das configurações |
-| `blocks/store/store-identity-fields` | `value`, `onChange`, `slug`, `onSlugChange`, `slugError`, `categories`, `onLogoUpload`, `errors` | Blocos/Loja/Aba informações básicas |
+| `blocks/store/store-identity-fields` | `value`, `onChange`, `slug`, `onSlugChange`, `slugError`, `categories`, `onLogoUpload`, `onFaviconUpload`, `faviconUploadPending`, `platformIconUrl`, `errors` — the browser icon's field is drawn under the logo's only without `onSlugChange`, that is, in the settings and never while a shop is opened | Blocos/Loja/Aba informações básicas |
 | `blocks/store/store-address-fields` | `value`, `onChange`, `onZipCodeLookup`, `lookupPending` | Blocos/Loja/Aba endereço |
 | `blocks/store/store-social-fields` | `value`, `onChange`, `errors` | Blocos/Loja/Aba redes sociais |
 | `blocks/store/store-colors-fields` | `value`, `onChange`, `presets`, `errors` | Blocos/Loja/Cores da loja |
 | `blocks/store/store-payment-methods-fields` | `value`, `onChange`, `error` | Blocos/Loja/Aba pagamento |
-| `blocks/store/store-image-field` | `id`, `label`, `value`, `onChange`, `onUpload`, `pending`, `previewAlt`, `aspect` | Blocos/Loja/Campo de imagem |
+| `blocks/store/store-image-field` | `id`, `label`, `value`, `onChange`, `onUpload`, `pending`, `previewAlt`, `aspect`, `validate` (one more refusal, asked after the format and the size), `copy` (its three controls' own names, where a form holds two) | Blocos/Loja/Campo de imagem |
+| `blocks/store/store-favicon-field` | `value`, `onChange`, `logoUrl`, `platformIconUrl`, `storeName`, `onUpload`, `pending`, `error` — the shop's picture in a browser tab (BEELINK-312): the image field, refusing an image that is not square before it is sent (`store-image-size`), over the tab's preview | Blocos/Loja/Campo do ícone do navegador |
+| `blocks/store/store-favicon-preview` | `faviconUrl`, `logoUrl`, `platformIconUrl`, `title` — a browser tab at its real size, 16 pixels, showing what the shop's pages declare: the icon, else the logo, else the platform's, and saying which | Blocos/Loja/Prévia do ícone do navegador |
 | `blocks/store/store-color-field` | `id`, `label`, `value`, `onChange`, `pickerSuffix` | Blocos/Loja/Campo de cor |
 | `blocks/store/store-color-preview` | `colors` | Blocos/Loja/Prévia das cores |
 | `blocks/landing/landing-shell` | `children` — the brand's ground and `--font-brand` | Blocos/Landing |
