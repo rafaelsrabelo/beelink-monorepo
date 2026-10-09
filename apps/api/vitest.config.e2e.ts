@@ -17,7 +17,10 @@ export default defineConfig({
       LOG_LEVEL: 'silent',
       DATABASE_URL: TEST_DATABASE_URL,
       JWT_SECRET: 'test-secret-with-at-least-32-characters-long',
-      SMTP_URL: 'smtp://localhost:1025',
+      // Like TEST_DATABASE_URL: a value set here wins over the shell's, so the override has its own
+      // name. Where 1025 is another project's Mailpit the suite must not write to it, nor empty its
+      // inbox — MAILPIT_URL (test/support/mailpit.ts) moves that half.
+      SMTP_URL: process.env.TEST_SMTP_URL ?? 'smtp://localhost:1025',
       WEB_URL: 'http://localhost:3000',
       // The suites hammer the auth routes; the limit itself has its own spec, which lowers it.
       AUTH_RATE_LIMIT_MAX: '1000',
@@ -39,6 +42,9 @@ export default defineConfig({
       MELHOR_ENVIO_CLIENT_SECRET: 'test-melhor-envio-secret',
       MELHOR_ENVIO_REDIRECT_URI: 'http://localhost:3000/api/integrations/melhor-envio/callback',
       INTEGRATIONS_SECRET_KEY: 'MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=',
+      // A shop's own domain switched on, at a documentation address: its suite stands a fake DNS and
+      // a fake probe in for the network, and no other suite reaches the routes that would ask either.
+      SHOP_DOMAIN_TARGET_IPS: '203.0.113.10',
     },
   },
 });

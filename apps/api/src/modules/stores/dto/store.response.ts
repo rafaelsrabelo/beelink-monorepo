@@ -19,6 +19,7 @@ import type {
 
 // App
 import { PublicCashbackResponse } from '../../cashback/dto/cashback.response.js';
+import { PublicCustomDomainResponse } from '../../custom-domain/dto/custom-domain.response.js';
 import { PublicSectionResponse } from '../../page/dto/page.response.js';
 import { PAYMENT_METHODS, STORE_LAYOUT_TYPES, STORE_TYPES } from '../stores.constants.js';
 
@@ -138,6 +139,10 @@ export class PublicStoreResponse implements PublicStore {
 
   @ApiProperty({ nullable: true, type: String, example: 'G-AB12CD34EF', description: "The shop's GA4 measurement ID, `G-` and capital letters or digits; null with none saved." })
   googleAnalyticsId!: string | null;
+
+  // Optional as the contract has it — for an answer the web cached before the field existed — and always sent from here.
+  @ApiProperty({ nullable: true, type: PublicCustomDomainResponse, description: "The shop's own domain and where it stands; null with none saved." })
+  customDomain?: PublicCustomDomainResponse | null;
 
   @ApiProperty({ type: [PublicSectionResponse], description: "The blocks the landing page is made of, in order." })
   sections!: PublicSectionResponse[];

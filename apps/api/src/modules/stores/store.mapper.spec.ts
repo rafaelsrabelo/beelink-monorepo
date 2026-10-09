@@ -152,6 +152,15 @@ describe('toPublicStore', () => {
     expect(toPublicStore({ ...row, integrations: [{ provider: 'GOOGLE_ANALYTICS', pixelId: '9999999999', measurementId: null }, { provider: 'META_PIXEL', pixelId: null, measurementId: 'G-ZZ99ZZ99ZZ' }] })).toMatchObject({ metaPixelId: null, googleAnalyticsId: null });
   });
 
+  it("carries the shop's own domain and where it stands, pending as well as active, and null while the shop saved none (BEELINK-281)", () => {
+    expect(toPublicStore(row).customDomain).toBeNull();
+    expect(toPublicStore({ ...row, customDomain: null, customDomainStatus: null }).customDomain).toBeNull();
+    expect(toPublicStore({ ...row, customDomain: 'minhaloja.com.br', customDomainStatus: 'PENDING' }).customDomain).toEqual({ host: 'minhaloja.com.br', status: 'PENDING' });
+    // The host and the status and nothing else: when it was checked, and what was found, are the owner's to read.
+    expect(toPublicStore({ ...row, customDomain: 'minhaloja.com.br', customDomainStatus: 'ACTIVE', customDomainCheckedAt: new Date(), customDomainProblem: 'DNS_NOT_FOUND' }).customDomain).toEqual({ host: 'minhaloja.com.br', status: 'ACTIVE' });
+    expect(toStore({ ...row, customDomain: 'minhaloja.com.br', customDomainStatus: 'ACTIVE' }).customDomain).toEqual({ host: 'minhaloja.com.br', status: 'ACTIVE' });
+  });
+
   /** What Melhor Envio or Asaas gave the shop is sealed: the public read asks for the two public parties' rows, and for their IDs alone. */
   it("reads the two public IDs and nothing else of an integration's row", () => {
     expect(storeInclude.integrations).toEqual({ where: { provider: { in: ['META_PIXEL', 'GOOGLE_ANALYTICS'] } }, select: { provider: true, pixelId: true, measurementId: true } });

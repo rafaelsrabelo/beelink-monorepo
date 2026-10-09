@@ -131,6 +131,8 @@ export function toPublicStore(
     // Each by its own party's row: with both saved, neither is served in the other's place.
     metaPixelId: row.integrations.find(({ provider }) => provider === 'META_PIXEL')?.pixelId ?? null,
     googleAnalyticsId: row.integrations.find(({ provider }) => provider === 'GOOGLE_ANALYTICS')?.measurementId ?? null,
+    // The host and where it stands, pending included: it is the web that decides what each state opens.
+    customDomain: row.customDomain && row.customDomainStatus ? { host: row.customDomain, status: row.customDomainStatus } : null,
     // Resolved here, where the shop's slug and its route words are already in hand: a banner
     // stores what it points at, never where it lives.
     sections: sections.map((section) =>
