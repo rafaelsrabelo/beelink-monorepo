@@ -12,6 +12,7 @@ const row = {
   type: 'ECOMMERCE',
   description: null,
   logoUrl: null,
+  faviconUrl: null,
   bannerImageUrl: null,
   categoryId: '0199a0f1-0000-7000-8000-0000000000c1',
   pageVersions: [],
@@ -126,6 +127,14 @@ describe('toPublicStore', () => {
       resetPassword: 'reset-password',
       account: 'account',
       accountTabs: { orders: 'orders', favorites: 'favorites', reviews: 'reviews', cashback: 'cashback', profile: 'profile', messages: 'messages' },
+    });
+  });
+
+  it("carries the picture of the shop's tab beside its logo, and null while the shop chose none (BEELINK-312)", () => {
+    expect(toPublicStore(row).faviconUrl).toBeNull();
+    expect(toPublicStore({ ...row, logoUrl: 'https://cdn.exemplo.com/logo.png', faviconUrl: 'https://cdn.exemplo.com/icone.png' })).toMatchObject({
+      logoUrl: 'https://cdn.exemplo.com/logo.png',
+      faviconUrl: 'https://cdn.exemplo.com/icone.png',
     });
   });
 

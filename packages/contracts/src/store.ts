@@ -181,6 +181,11 @@ export interface PublicStore {
   description: string | null;
   type: StoreType;
   logoUrl: string | null;
+  /**
+   * The picture a browser draws in the shop's tab (BEELINK-312), square. Null means the shop has
+   * chosen none, and its pages declare the logo instead — and, with no logo either, bee-link's own.
+   */
+  faviconUrl: string | null;
   /** The single banner, shown when `layoutType` is `"BANNER"`. */
   bannerImageUrl: string | null;
   layoutType: StoreLayoutType;
@@ -287,6 +292,8 @@ export interface CreateStorePayload {
   /** At most 2000 characters — the bound is stated once, on `PublicStore.description`. */
   description?: string | null;
   logoUrl?: string | null;
+  /** The tab's picture. Like the logo, absent or null stores none. */
+  faviconUrl?: string | null;
   categoryId?: string | null;
   /** Omitted means the platform's default theme, not an empty object. */
   colors?: StoreColors;
@@ -306,6 +313,8 @@ export interface UpdateStorePayload {
   /** At most 2000 characters — the bound is stated once, on `PublicStore.description`. */
   description?: string | null;
   logoUrl?: string | null;
+  /** The tab's picture. Like the logo, absent or null stores none. */
+  faviconUrl?: string | null;
   bannerImageUrl?: string | null;
   categoryId?: string | null;
   layoutType: StoreLayoutType;

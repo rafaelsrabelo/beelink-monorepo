@@ -22,6 +22,7 @@ const row = {
   type: 'ECOMMERCE',
   description: null,
   logoUrl: null,
+  faviconUrl: null,
   bannerImageUrl: null,
   categoryId: null,
   pageVersions: [],
@@ -317,6 +318,18 @@ describe('StoresService.update', () => {
       instagram: null,
       layoutSettings: {},
     });
+  });
+});
+
+describe("StoresService.update, the picture of the shop's tab (BEELINK-312)", () => {
+  it('writes the address it is sent, and clears it when the body leaves it out or sends null', async () => {
+    const { service, fakes } = build();
+
+    await service.update('padaria-do-bairro', OWNER, { ...updateDto, faviconUrl: 'https://cdn.exemplo.com/icone.png' });
+    await service.update('padaria-do-bairro', OWNER, updateDto);
+    await service.update('padaria-do-bairro', OWNER, { ...updateDto, faviconUrl: null });
+
+    expect(fakes.update.mock.calls.map((call) => call[0].data.faviconUrl)).toEqual(['https://cdn.exemplo.com/icone.png', null, null]);
   });
 });
 

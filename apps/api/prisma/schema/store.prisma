@@ -87,6 +87,8 @@ model Store {
   description    String?
   /// The stored image URL. The bytes never move through this API; the upload adapter is phase 2.
   logoUrl        String?
+  /// The picture a browser draws in the shop's tab (BEELINK-312). Null: its pages declare the logo.
+  faviconUrl     String?
   /// The single banner, shown when layoutType is BANNER. The carousel's images live in layoutSettings.
   bannerImageUrl String?
 

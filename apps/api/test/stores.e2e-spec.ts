@@ -116,6 +116,11 @@ describe('stores', () => {
       });
     });
 
+    it("opens with no picture of the tab unless one is sent (BEELINK-312)", async () => {
+      expect((await openShop(owner)).faviconUrl).toBeNull();
+      expect((await openShop(stranger, { ...createBody, slug: 'outra-padaria', faviconUrl: 'https://cdn.exemplo.com/icone.png' })).faviconUrl).toBe('https://cdn.exemplo.com/icone.png');
+    });
+
     it('starts on the platform theme and the four payment methods, with no colours sent', async () => {
       const store = await openShop(owner);
 
@@ -170,6 +175,39 @@ describe('stores', () => {
         // Sent on create, absent from this body: a PUT replaces.
         address: { city: null, state: null, zipCode: null },
       });
+    });
+
+    it("saves the picture of the shop's tab, serves it on the shop window, and removes it (BEELINK-312)", async () => {
+      await openShop(owner);
+      const faviconUrl = 'https://cdn.exemplo.com/icone.png';
+
+      const saved = await call('PUT', '/api/stores/padaria-do-bairro', owner, { ...updateBody, logoUrl: 'https://cdn.exemplo.com/logo.png', faviconUrl });
+
+      expect(saved.statusCode).toBe(200);
+      expect(saved.json<Store>()).toMatchObject({ faviconUrl, logoUrl: 'https://cdn.exemplo.com/logo.png' });
+      expect((await call('GET', '/api/stores/padaria-do-bairro/public')).json<PublicStore>()).toMatchObject({ faviconUrl, logoUrl: 'https://cdn.exemplo.com/logo.png' });
+
+      // Null removes it, and so does a body without the key: a PUT replaces. The logo sent stays.
+      for (const body of [{ ...updateBody, logoUrl: 'https://cdn.exemplo.com/logo.png', faviconUrl: null }, { ...updateBody, logoUrl: 'https://cdn.exemplo.com/logo.png' }]) {
+        await call('PUT', '/api/stores/padaria-do-bairro', owner, { ...updateBody, faviconUrl });
+        const removed = await call('PUT', '/api/stores/padaria-do-bairro', owner, body);
+
+        expect(removed.statusCode).toBe(200);
+        expect((await call('GET', '/api/stores/padaria-do-bairro/public')).json<PublicStore>()).toMatchObject({ faviconUrl: null, logoUrl: 'https://cdn.exemplo.com/logo.png' });
+      }
+    });
+
+    it("refuses a picture of the tab that is not an http(s) URL, and keeps the one stored", async () => {
+      await openShop(owner);
+      const faviconUrl = 'https://cdn.exemplo.com/icone.png';
+      await call('PUT', '/api/stores/padaria-do-bairro', owner, { ...updateBody, faviconUrl });
+
+      for (const refused of ['javascript:alert(1)', 'icone.png', 'data:image/png;base64,AAAA']) {
+        const response = await call('PUT', '/api/stores/padaria-do-bairro', owner, { ...updateBody, faviconUrl: refused });
+
+        expect(response.statusCode, refused).toBe(400);
+      }
+      expect((await call('GET', '/api/stores/padaria-do-bairro/public')).json<PublicStore>().faviconUrl).toBe(faviconUrl);
     });
 
     it('refuses to move the slug or to be handed coordinates', async () => {

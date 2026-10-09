@@ -115,6 +115,8 @@ export class PublicStoreResponse implements PublicStore {
   @ApiProperty({ nullable: true }) description!: string | null;
   @ApiProperty({ enum: STORE_TYPES }) type!: StoreType;
   @ApiProperty({ nullable: true }) logoUrl!: string | null;
+  @ApiProperty({ nullable: true, type: String, description: "The picture a browser draws in the shop's tab; null with none chosen, and the pages declare the logo." })
+  faviconUrl!: string | null;
   @ApiProperty({ nullable: true, description: 'Shown when layoutType is BANNER.' })
   bannerImageUrl!: string | null;
   @ApiProperty({ enum: STORE_LAYOUT_TYPES }) layoutType!: StoreLayoutType;

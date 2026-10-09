@@ -17,6 +17,7 @@ const STORE: Store = {
   description: null,
   type: "ECOMMERCE",
   logoUrl: null,
+  faviconUrl: null,
   bannerImageUrl: null,
   sections: [],
   layoutType: "DEFAULT",

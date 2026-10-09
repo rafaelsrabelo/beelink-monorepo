@@ -71,6 +71,7 @@ export class StoresService {
             type: dto.type,
             description: dto.description ?? null,
             logoUrl: dto.logoUrl ?? null,
+            faviconUrl: dto.faviconUrl ?? null,
             categoryId: dto.categoryId ?? null,
             // Omitted colours mean the platform theme, which is the column default — so the four
             // fields are left out of the insert entirely rather than repeated here as literals.
@@ -185,6 +186,7 @@ export class StoresService {
         type: dto.type,
         description: dto.description ?? null,
         logoUrl: dto.logoUrl ?? null,
+        faviconUrl: dto.faviconUrl ?? null,
         bannerImageUrl: dto.bannerImageUrl ?? null,
         categoryId: dto.categoryId ?? null,
         layoutType: dto.layoutType,

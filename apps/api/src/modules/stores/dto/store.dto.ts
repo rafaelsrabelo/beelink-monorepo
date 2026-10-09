@@ -107,6 +107,12 @@ export class CreateStoreDto implements CreateStorePayload {
   @blankToNull
   logoUrl?: string | null;
 
+  @ApiPropertyOptional({ nullable: true, description: "The picture a browser draws in the shop's tab. Null or absent stores none, and the shop's pages declare the logo." })
+  @IsOptional()
+  @imageUrl
+  @blankToNull
+  faviconUrl?: string | null;
+
   @ApiPropertyOptional({ format: 'uuid', nullable: true })
   @IsOptional()
   @IsUUID()
@@ -161,6 +167,12 @@ export class UpdateStoreDto implements UpdateStorePayload {
   @imageUrl
   @blankToNull
   logoUrl?: string | null;
+
+  @ApiPropertyOptional({ nullable: true, description: "The picture a browser draws in the shop's tab. Null or absent stores none, and the shop's pages declare the logo." })
+  @IsOptional()
+  @imageUrl
+  @blankToNull
+  faviconUrl?: string | null;
 
   @ApiPropertyOptional({ nullable: true })
   @IsOptional()
