@@ -81,6 +81,14 @@ describe("ScrollRail", () => {
     expect(track.className).not.toContain("overflow-hidden")
   })
 
+  it("keeps the cards' layers under the arrows", () => {
+    renderRail()
+
+    // A card's photo carries a z-index; without a stacking context on the track it covered the
+    // arrows and took their clicks. jsdom paints nothing, so the class is what can be held here.
+    expect(screen.getByRole("group", { name: "Destaques" }).className).toContain("isolate")
+  })
+
   /**
    * A region that scrolls sideways cannot be reached by a keyboard unless it can hold focus — the
    * arrow keys scroll whatever is focused, and a div is nothing. WCAG 2.1.1, and axe cannot catch
