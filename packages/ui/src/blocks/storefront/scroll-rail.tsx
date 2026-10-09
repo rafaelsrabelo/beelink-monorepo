@@ -189,13 +189,17 @@ export function ScrollRail({ label, previousLabel, nextLabel, children, heading,
           the container's padding, so the final card sits jammed against the text edge. The band
           bleeds a gutter wider than the page and pays it back as padding on the track itself — not
           on the scroller, where an end padding is the one browsers have historically dropped.
+
+          `isolate` keeps the cards' own layers inside the track. A card lifts its photos, its heart
+          and its button with z-indexes, and without a stacking context here those outranked the
+          arrows below, which have none: the photo was painted over the arrow and took its click.
         */}
         <div
           ref={track}
           tabIndex={0}
           role="group"
           aria-label={label}
-          className="no-scrollbar -mx-4 overflow-x-auto overscroll-x-contain scroll-px-4 snap-x snap-mandatory focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:scroll-smooth"
+          className="no-scrollbar isolate -mx-4 overflow-x-auto overscroll-x-contain scroll-px-4 snap-x snap-mandatory focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:scroll-smooth"
           style={{ outlineColor: "var(--shop-primary)" }}
         >
           {children}
@@ -210,7 +214,7 @@ export function ScrollRail({ label, previousLabel, nextLabel, children, heading,
               aria-label={previousLabel}
               onMouseDown={keepFocus}
               onClick={() => step(-1)}
-              className="absolute top-1/2 -left-2 hidden size-9 -translate-y-1/2 rounded-full shadow-sm pointer-fine:flex"
+              className="absolute top-1/2 -left-3 hidden size-10 -translate-y-1/2 rounded-full shadow-md pointer-fine:flex"
             >
               <ChevronLeftIcon aria-hidden="true" className="size-4" />
             </Button>
@@ -221,7 +225,7 @@ export function ScrollRail({ label, previousLabel, nextLabel, children, heading,
               aria-label={nextLabel}
               onMouseDown={keepFocus}
               onClick={() => step(1)}
-              className="absolute top-1/2 -right-2 hidden size-9 -translate-y-1/2 rounded-full shadow-sm pointer-fine:flex"
+              className="absolute top-1/2 -right-3 hidden size-10 -translate-y-1/2 rounded-full shadow-md pointer-fine:flex"
             >
               <ChevronRightIcon aria-hidden="true" className="size-4" />
             </Button>
