@@ -251,6 +251,9 @@ export interface WebMessages {
     }
     settings: {
       saved: string
+      /** Under the form: the way to the shop's own domain (BEELINK-285), said for a shop and for a site alike. */
+      domainText: string
+      domainLink: string
     }
   }
   locale: {

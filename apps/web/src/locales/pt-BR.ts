@@ -114,6 +114,8 @@ export const ptBR: WebMessages = {
     },
     settings: {
       saved: "Alterações salvas.",
+      domainText: "O endereço da sua página pode ser o seu próprio domínio.",
+      domainLink: "Configurar domínio próprio",
     },
   },
   locale: {
