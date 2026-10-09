@@ -45,6 +45,8 @@ export function createStoreIdentitySchema(messages: ValidationMessages) {
     // column is an unbounded `text`, so a lower cap here refuses a migrated shop's own description.
     description: z.string().max(2000, messages.storeDescriptionMax),
     logoUrl: optionalUrl(messages),
+    /** The tab's picture (BEELINK-312). The settings form edits it; a new shop opens with none. */
+    faviconUrl: optionalUrl(messages),
     /** The empty string means "no category", which is what the API stores as null. */
     categoryId: z.string(),
   })

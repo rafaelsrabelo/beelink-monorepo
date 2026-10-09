@@ -59,6 +59,7 @@ export const sampleStoreSettingsValues: StoreSettingsValues = {
     type: "ECOMMERCE",
     description: "Bolos e doces feitos no dia, entregues na região.",
     logoUrl: "",
+    faviconUrl: "",
     categoryId: sampleStoreCategories[1]?.id ?? "",
   },
   address: {
@@ -84,7 +85,7 @@ export const sampleStoreSettingsValues: StoreSettingsValues = {
 /** A shop as the create screen holds it before anything has been typed. */
 export const sampleStoreCreateValues: StoreCreateValues = {
   slug: "",
-  identity: { name: "", type: "ECOMMERCE", description: "", logoUrl: "", categoryId: "" },
+  identity: { name: "", type: "ECOMMERCE", description: "", logoUrl: "", faviconUrl: "", categoryId: "" },
   address: { zipCode: "", street: "", number: "", complement: "", neighborhood: "", city: "", state: "" },
   social: { whatsapp: "", instagram: "", tiktok: "", spotify: "", youtube: "" },
   colors: sampleStoreColors,

@@ -61,6 +61,9 @@ export function StoreSettingsForm({
   mapTileUrl,
   onImageUpload,
   imageUploadPending,
+  onFaviconUpload,
+  faviconUploadPending,
+  platformIconUrl,
   pending = false,
   error,
   extraTabs = [],
@@ -137,6 +140,9 @@ export function StoreSettingsForm({
                     errors={errors.identity}
                     onLogoUpload={onImageUpload}
                     logoUploadPending={imageUploadPending}
+                    onFaviconUpload={onFaviconUpload}
+                    faviconUploadPending={faviconUploadPending}
+                    platformIconUrl={platformIconUrl}
                     disabled={pending}
                     messages={messages}
                   />
