@@ -53,6 +53,18 @@ describe("CustomDomainRecords (BEELINK-285)", () => {
     expect(notes[4]).toMatch(/não aceitar @ como valor do CNAME, coloque o próprio domínio/)
   })
 
+  /**
+   * Seen in the browser at 390px: side by side, an address and its button are wider than the card,
+   * and the button was cut at the card's edge. Below `sm` the button goes under its value.
+   */
+  it("stacks each value over its button at a phone's width, and sets them side by side from sm up", () => {
+    render(<CustomDomainRecords targetIps={[TARGET_IP]} />)
+
+    for (const button of screen.getAllByRole("button", { name: "Copiar" })) {
+      expect(button.parentElement).toHaveClass("flex-col", "items-start", "sm:flex-row", "sm:items-center", "sm:justify-between")
+    }
+  })
+
   /** A value typed by hand into a provider's panel is where a domain goes wrong: each has its own button. */
   it("copies each value with its own button, named for the value beside it, and says it did", async () => {
     const user = userEvent.setup()

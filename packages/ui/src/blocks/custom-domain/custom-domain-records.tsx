@@ -52,7 +52,8 @@ export function CustomDomainRecords({ targetIps, messages = defaultMessages }: C
               <TableCell className="font-medium">{record.type}</TableCell>
               <TableCell className="font-mono">{record.name}</TableCell>
               <TableCell>
-                <div className="flex items-center justify-between gap-3">
+                {/* Stacked below `sm`: side by side, an address and its button are wider than a phone's card, and the button is what gets cut. */}
+                <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                   <span id={`${id}-value-${at}`} className="font-mono">
                     {record.value}
                   </span>
