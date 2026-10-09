@@ -48,3 +48,32 @@ Gerar tamanhos ou recortar a imagem no servidor; manifesto de aplicativo por loj
 - Uma loja sem ícone usa a logo, que pode não ser quadrada: a aba a mostra como o navegador decidir. É o comportamento pedido ("usando a logo quando o campo estiver vazio").
 - `apple-touch-icon` em JPEG ou WebP: a Apple documenta PNG. Não há iPhone neste ambiente para conferir.
 - Tirar o `.ico` do HTML das páginas da Beelink muda qual arquivo o navegador escolhe para a aba delas: passa a ser o `icon.png` reduzido.
+
+## 09/10/2026, mais tarde — o que mudou ao escrever e o que foi visto no navegador
+
+### Acréscimos às decisões
+
+- **O `StoreImageField` ganhou também `copy`** (os nomes dos seus três controles). Com dois campos de imagem na mesma aba, dois botões chamados "Trocar imagem" e duas áreas chamadas "Clique ou arraste a imagem aqui" não se distinguem para quem navega por nome. O campo do ícone diz "Clique ou arraste o ícone aqui", "Trocar ícone" e "Remover ícone".
+- **O web não manda `faviconUrl` ao criar a loja.** A API aceita (decisão 2), mas o formulário de criação não mostra o campo, então `toCreatePayload` não inclui a chave.
+- **A prévia recebe o ícone da Beelink por propriedade** (`platformIconUrl`, que a tela passa como `/icon.png`), para mostrar o terceiro caso com a imagem certa. `packages/ui` não conhece endereço nenhum do app.
+- **Um defeito antigo apareceu e foi consertado aqui: o botão "Trocar imagem" não abria nada.** O único `<input type="file">` do `StoreImageField` ficava dentro da área vazia; com uma imagem guardada ele não estava na página e o botão clicava em `null`. Valia para a logo desde sempre. Agora há um `input` escondido ao lado do botão, e a troca passa pelas mesmas recusas (formato, tamanho, quadrado). Entrou neste ticket porque "trocar" é parte do pedido.
+
+### Visto no navegador (Chromium pelo Playwright, API em 3801 e web em 3800, upload de verdade no Cloudinary de desenvolvimento)
+
+- **Tela Loja, 1280 px e 390 px**: o campo aparece embaixo da logo com o texto de ajuda, os formatos e a dimensão recomendada. Uma imagem de 600 x 200 foi recusada antes do envio com "O ícone precisa ser quadrado. A imagem enviada tem 600 x 200 pixels.", na área vazia e também pelo "Trocar ícone" (o ícone guardado ficou). Uma de 256 x 256 foi enviada (`POST /api/uploads` 200), a prévia grande e a da aba (16 x 16 px medidos) passaram a mostrá-la, e "Salvar alterações" respondeu 200. Em 390 px a página não ganha rolagem horizontal (`scrollWidth` igual a `clientWidth`).
+- **"Trocar ícone" abre o seletor de arquivos** (o Playwright acusou o seletor aberto). O arquivo da troca foi entregue direto ao `input` escondido, porque a ferramenta não deixa escolher arquivo de fora do repositório pelo seletor.
+- **Trocar muda o endereço**: dois envios seguidos deram `…/uuzzlfmrrflpxe6va4c6.png` e `…/cozphafebiteaxrohbx6.png`.
+- **HTML da loja com ícone**, em `localhost:3800/<slug>`, `/produtos`, `/carrinho`, `/entrar`, e no domínio próprio `lvh.me:3800/`, `/produtos`, `/carrinho`: exatamente dois `<link>`, `rel="icon"` e `rel="apple-touch-icon"`, os dois no endereço do ícone da loja. Nenhum da Beelink.
+- **Removido o ícone, com logo**: os dois `<link>` passam ao endereço da logo, na leitura seguinte (o cache `store:<slug>` caiu com o salvar); a prévia diz "Sem ícone, a aba mostra a logo da loja.".
+- **Sem ícone e sem logo** (`site-dominio-285`, e a loja antes de qualquer envio) e um slug que não existe: `/icon.png` e `/apple-icon.png` da Beelink.
+- **`/admin`, `/admin/<slug>`, `/login` e `/`**: `/icon.png` e `/apple-icon.png` da Beelink.
+- **`/favicon.ico`** responde 200 `image/x-icon` em `localhost:3800` e em `lvh.me:3800`.
+
+### Não visto
+
+- **O desenho do ícone na aba de um navegador com janela.** O Chromium do Playwright roda sem a barra de abas: o que foi conferido é o HTML e o DOM, não o pixel na aba.
+- **Uma landing (`/<slug>/lp/<página>`)**: a loja de teste não tem nenhuma publicada. Ela está sob o mesmo layout, e um teste lê que nenhuma página sob `app/[slug]` declara `icons`.
+- **iPhone / "Adicionar à Tela de Início"** e Safari.
+- **JPEG e WebP como ícone**: só PNG foi enviado.
+- **A build de produção no navegador**: tudo acima foi em `next dev`.
+- O ícone enviado por último ficou guardado na loja de teste (`loja-dominio-1791487727`), junto com uma logo de teste; o domínio `lvh.me` foi removido de volta ao fim.
