@@ -86,4 +86,19 @@ describe("the description's Markdown", () => {
   it("gives the words alone for a meta description", () => {
     expect(plainTextOf("**Whey**\n\nCom _alto_ teor.\n\n- a\n- [b](https://x.y)")).toBe("Whey Com alto teor. a b")
   })
+
+  // As a product of the first shop is stored: the heading it was pasted with lost its break on the way in.
+  it("reads the edge of a mark as the edge of a word, where the stored text has nothing between them", () => {
+    expect(plainTextOf("**Fogo Roxo**Mais energia, disposição e praticidade.")).toBe("Fogo Roxo Mais energia, disposição e praticidade.")
+    expect(plainTextOf("**Fogo _Roxo_**Mais energia")).toBe("Fogo Roxo Mais energia")
+    expect(plainTextOf("**Sabor:**Chocolate")).toBe("Sabor: Chocolate")
+    expect(plainTextOf("Veja[aqui](https://x.y)_agora_")).toBe("Veja aqui agora")
+  })
+
+  it("adds no second space, and none before punctuation or inside a bracket or a hyphenated word", () => {
+    expect(plainTextOf("**Whey** com _alto_ teor")).toBe("Whey com alto teor")
+    expect(plainTextOf("**Whey**, creatina e **BCAA**.")).toBe("Whey, creatina e BCAA.")
+    expect(plainTextOf("Pote (**novo**) de 300 g")).toBe("Pote (novo) de 300 g")
+    expect(plainTextOf("Creme anti-**idade** e **pré**-treino")).toBe("Creme anti-idade e pré-treino")
+  })
 })
