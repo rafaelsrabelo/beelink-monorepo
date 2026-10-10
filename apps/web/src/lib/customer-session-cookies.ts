@@ -98,6 +98,47 @@ export function clearGoogleStateCookie(jar: CookieJar): void {
   jar.delete({ name: GOOGLE_STATE_COOKIE, path: GOOGLE_CALLBACK_PATH })
 }
 
+/**
+ * A Google sign-in begun at the shop's own domain (BEELINK-284), held to the browser that began it
+ * — at that domain, which the state cookie of the platform's host never reaches. The secret
+ * (`verifier`) is what the handler here trades the returning code with; its hash went along the
+ * flow as the challenge. Without it a code opens nothing, so one read off an address or sent to
+ * another person's browser signs nobody in. `signIn` and `back` are this domain's own addresses, for
+ * a refusal to land on. Read only by the two handlers under its path, for the state's ten minutes.
+ *
+ * The same name as the state cookie, on purpose: it is the same thing to a shopper — a Google
+ * sign-in in flight, kept ten minutes so it ends in the browser it began in — and that is the line
+ * the privacy policy's list of cookies already has for `bl_oauth_google`. The two never meet: this
+ * one is the shop's host's, and on a path the platform's callback is not under.
+ */
+/** The address parameter the challenge rides to the platform's host in, beside `voltar` and `retorno`. */
+export const GOOGLE_HANDOFF_KEY = "desafio"
+/** 32 random bytes, or a SHA-256, in base64url: a handoff's code, secret and challenge alike. */
+export const GOOGLE_HANDOFF_VALUE = /^[A-Za-z0-9_-]{43}$/
+
+export interface GoogleHandoffFlight {
+  verifier: string
+  signIn: string
+  back: string
+}
+
+const handoffPathOf = (slug: string) => `/${slug}/api/customer/google`
+
+export function setGoogleHandoffCookie(jar: CookieJar, slug: string, flight: GoogleHandoffFlight): void {
+  jar.set(GOOGLE_STATE_COOKIE, new URLSearchParams({ ...flight }).toString(), { ...base, path: handoffPathOf(slug), maxAge: 600 })
+}
+
+export function googleHandoffFlightOf(value: string | undefined): GoogleHandoffFlight | null {
+  if (!value) return null
+  const read = new URLSearchParams(value)
+  const [verifier, signIn, back] = [read.get("verifier"), read.get("signIn"), read.get("back")]
+  return verifier && GOOGLE_HANDOFF_VALUE.test(verifier) && signIn && back ? { verifier, signIn, back } : null
+}
+
+export function clearGoogleHandoffCookie(jar: CookieJar, slug: string): void {
+  jar.delete({ name: GOOGLE_STATE_COOKIE, path: handoffPathOf(slug) })
+}
+
 /** Ends a shopper's session in this browser: on the shop's path, and on its twin at the shop's own domain. */
 export function clearCustomerSessionCookies(answer: Answer, shop: ShopAddress): void {
   const path = shopHomeOf(shop)

@@ -65,4 +65,23 @@ describe("GET /api/storefront/[slug]/customer/google", () => {
     expect(location.searchParams.get("erro")).toBe("GOOGLE_SIGN_IN_UNAVAILABLE")
     expect(response.headers.get("set-cookie") ?? "").not.toContain("bl_oauth_google")
   })
+
+  /** BEELINK-284: a flow begun at the shop's own domain brings the hash of a secret that browser keeps. */
+  it("carries the challenge of a flow begun at the shop's own domain to the API, and nothing that is not shaped like one", async () => {
+    const fetched = vi.fn(async () => Response.json({ url: "https://accounts.google.com/x", state: "abc" }))
+    vi.stubGlobal("fetch", fetched)
+    const challenge = "a".repeat(43)
+
+    await start(`voltar=%2Floja%2Fcarrinho&desafio=${challenge}`)
+    await start("voltar=%2Floja%2Fcarrinho&desafio=https%3A%2F%2Fevil.example")
+    await start(`voltar=%2Floja%2Fcarrinho&desafio=${challenge}&host=evil.example&dominio=evil.example`)
+
+    const bodies = (fetched.mock.calls as unknown as [string, RequestInit][]).map(([, init]) => JSON.parse(String(init.body)) as unknown)
+    expect(bodies).toEqual([
+      { returnTo: "/loja/carrinho", handoffChallenge: challenge },
+      { returnTo: "/loja/carrinho" },
+      // No parameter names a host: the API is told the challenge and nothing else.
+      { returnTo: "/loja/carrinho", handoffChallenge: challenge },
+    ])
+  })
 })

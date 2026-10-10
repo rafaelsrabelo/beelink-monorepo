@@ -115,7 +115,7 @@ export interface CatalogueAsk {
  */
 export async function signInOptionsAt(): Promise<CustomerSignInOptions> {
   const response = await callPublicApi({ path: "/customer/sign-in-options", revalidate: 300 }).catch(() => null)
-  if (!response?.ok) return { google: false }
+  if (!response?.ok) return { google: false, platformOrigin: "" }
   return (await response.json()) as CustomerSignInOptions
 }
 

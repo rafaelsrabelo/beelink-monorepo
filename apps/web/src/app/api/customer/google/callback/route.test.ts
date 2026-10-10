@@ -15,8 +15,8 @@ const SESSION = {
 
 const FLIGHT = `bl_oauth_google=${encodeURIComponent(new URLSearchParams({ state: "abc", slug: "loja", signIn: "/loja/entrar?modo=criar", back: "/loja/carrinho" }).toString())}`
 
-function back(query: string, cookie: string | null = FLIGHT) {
-  const headers = new Headers()
+function back(query: string, cookie: string | null = FLIGHT, host = "localhost:3000") {
+  const headers = new Headers({ host })
   if (cookie) headers.set("cookie", cookie)
   return GET(new NextRequest(`http://localhost:3000/api/customer/google/callback?${query}`, { headers }))
 }
@@ -79,5 +79,65 @@ describe("GET /api/customer/google/callback", () => {
     vi.stubGlobal("fetch", vi.fn())
 
     expect(new URL((await back("code=x&state=abc", null)).headers.get("location") ?? "").pathname).toBe("/")
+  })
+
+  /** BEELINK-284: a flow begun at the shop's own domain ends there, and this host stores no session. */
+  describe("with a handoff to the shop's own domain", () => {
+    const CODE = "c".repeat(43)
+    const handoff = (host: string) => vi.fn(async () => Response.json({ session: null, handoff: { host, code: CODE }, storeSlug: "loja", returnTo: "/loja/carrinho" }))
+
+    it("sends the browser to the domain the API named, with the code, and stores no session here", async () => {
+      vi.stubGlobal("fetch", handoff("loja.com.br"))
+
+      const response = await back("code=o-codigo&state=abc", FLIGHT, "beelink.biz")
+
+      expect(response.status).toBe(303)
+      expect(response.headers.get("location")).toBe(`https://loja.com.br/loja/api/customer/google/session?code=${CODE}`)
+      const cookies = response.headers.get("set-cookie") ?? ""
+      expect(cookies).not.toContain("bl_shopper_access")
+      expect(cookies).not.toContain("bl_shopper_refresh")
+      expect(cookies).toMatch(/bl_oauth_google=;/)
+      expect(response.headers.get("cache-control")).toBe("no-store")
+      expect(response.headers.get("referrer-policy")).toBe("no-referrer")
+    })
+
+    // Development and the e2e: nothing terminates TLS, and the port is the server's own.
+    it("goes on by the request's scheme and port from a local host", async () => {
+      vi.stubGlobal("fetch", handoff("lvh.me"))
+
+      const response = await back("code=o-codigo&state=abc", FLIGHT, "localhost:3800")
+
+      expect(response.headers.get("location")).toBe(`http://lvh.me:3800/loja/api/customer/google/session?code=${CODE}`)
+    })
+
+    // The one thing that may never happen here: a sign-in sent to a host a request chose.
+    it("takes the host from the API alone: no parameter, header or cookie of the request moves it", async () => {
+      vi.stubGlobal("fetch", handoff("loja.com.br"))
+      const flight = `bl_oauth_google=${encodeURIComponent(new URLSearchParams({ state: "abc", slug: "loja", signIn: "https://evil.example/entrar", back: "https://evil.example/", host: "evil.example" }).toString())}`
+      const headers = new Headers({ host: "beelink.biz", cookie: flight, referer: "https://evil.example/", origin: "https://evil.example" })
+
+      const response = await GET(
+        new NextRequest("http://localhost:3000/api/customer/google/callback?code=x&state=abc&host=evil.example&dominio=evil.example&voltar=https%3A%2F%2Fevil.example&redirect_uri=https%3A%2F%2Fevil.example", { headers }),
+      )
+
+      const location = new URL(response.headers.get("location") ?? "")
+      expect(location.origin).toBe("https://loja.com.br")
+      expect(location.pathname).toBe("/loja/api/customer/google/session")
+      expect([...location.searchParams.keys()]).toEqual(["code"])
+    })
+
+    it("refuses a host or a shop that is not shaped like one, and carries the code nowhere", async () => {
+      for (const [host, storeSlug] of [["evil.example/x", "loja"], ["a@evil.example", "loja"], ["loja.com.br:8080", "loja"], ["", "loja"], ["loja.com.br", "../x"]] as const) {
+        vi.stubGlobal("fetch", vi.fn(async () => Response.json({ session: null, handoff: { host, code: CODE }, storeSlug, returnTo: null })))
+
+        const response = await back("code=o-codigo&state=abc", FLIGHT, "beelink.biz")
+
+        const location = response.headers.get("location") ?? ""
+        expect(new URL(location).origin).toBe("http://beelink.biz")
+        expect(location).not.toContain(CODE)
+        // An empty host is no handoff at all, and then there is no session either.
+        expect(new URL(location).searchParams.get("erro")).toBe("UNKNOWN")
+      }
+    })
   })
 })
