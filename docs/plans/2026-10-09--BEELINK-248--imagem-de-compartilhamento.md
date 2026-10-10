@@ -222,3 +222,117 @@ O que este ticket faz, e o que não faz:
 
 `plainTextOf` tem dois chamadores, os dois em metadados (`[item]/page.tsx` e `product-json-ld.ts`):
 nada desenhado na tela passa por ela.
+
+## 10/10/2026 — o que mudou ao escrever, o que foi medido e o que foi visto
+
+### Acréscimos às decisões
+
+- **A página diz também `og:image:type` (`image/jpeg`)** da imagem montada, pela decisão 4: o
+  endereço continua terminando em `.png` ou `.webp`.
+- **A versão que conta é a primeira do endereço.** Uma pasta pode se chamar `v2`; a transformação
+  entra antes de `/v<número>/` na primeira vez que ele aparece.
+- **As regras de compartilhamento do produto foram para `apps/web/src/lib/product-share.ts`**
+  (descrição cortada, variação escolhida, foto, endereço do cartão). Estavam dentro de
+  `[item]/page.tsx`, que tinha 255 linhas e ia crescer; a página ficou com 239, e as regras ganharam
+  teste próprio. Nenhuma mudou de comportamento, fora o `og:url` com a variação (decisão 11).
+- **O que a Meta documenta sobre `og:url`**, que sustenta a decisão 11
+  (`https://developers.facebook.com/docs/sharing/webmasters/getting-started/versioned-link`, lida em
+  09/10/2026): "All links that specify the same canonical URL are treated as the same resource" e
+  "When the path referred to by `og:url` returns an `og:url` link that is different, the new link is
+  followed. […] The sharing details that Facebook uses are the ones at the final link in the redirect
+  chain." A mesma documentação pede as medidas da imagem: "Specify height and width for your image
+  to ensure that the image loads properly the first time it's shared."
+- **As páginas da conta e do pedido herdam a descrição que já tinham.** Elas não declaram
+  `description`, então a do layout raiz (a frase da Beelink) é a que vale nelas desde antes, e o
+  `og:description` passa a repeti-la quando a loja não tem descrição. Com descrição, é a da loja.
+  Nenhum leitor de prévia lê essas páginas (ver abaixo); a `description` delas não foi mexida.
+
+### Medido (Cloudinary, imagens baixadas e lidas pixel a pixel com `sharp`)
+
+| Imagem | Resultado |
+|---|---|
+| Loja de teste (`loja-dominio-1791487727`), o endereço que a página declara | JPEG de 1200×630, **3,3 KB**. A logo de teste (600×200, um retângulo de uma cor só) fica em 560×187, com 320 px de cada lado, 222 px em cima e 221 px embaixo; o canto é a cor do topo |
+| A mesma loja com a cor do topo trocada no painel | endereço novo (`b_rgb:190358`), JPEG de 1200×630, 4,0 KB, canto na cor nova |
+| Uma logo comprida com fundo transparente (900×220), enviada pelo painel à conta de desenvolvimento | JPEG de 1200×630, **12,6 KB**. O desenho ocupa 554×128 no centro; o vão transparente sai na cor do topo, sem caixa branca |
+| Uma foto de 800×1000 recortada como banner (`c_fill,w_1200,h_630/f_jpg`) | JPEG de 1200×630, 8,7 KB, o quadro inteiro preenchido |
+| A logo da Mutante (905×220, transparente) sobre a cor do topo dela, na conta de produção | JPEG de 1200×630, **16,6 KB**. A logo fica em 560×138, com 320 px de cada lado e 246 px em cima e embaixo |
+
+O limite que o WhatsApp documenta é 600 KB; a mais pesada das cinco tem 16,6 KB. As três logos ficam
+inteiras dentro do quadrado central de 630 px.
+
+A última linha foi pedida à conta de produção do Cloudinary, uma vez: é a imagem que a página da
+Mutante vai declarar depois do deploy. Na véspera a mesma logo foi pedida com a caixa de 600×400,
+antes de a decisão 2 fechar em 560: essa imagem derivada ficou guardada lá e ninguém vai pedi-la de
+novo.
+
+### Visto com `next dev` (API em 3801, web em 3800), lendo o HTML com `User-Agent: WhatsApp/2.23.20.0 A`
+
+Loja `loja-dominio-1791487727`, que tem logo e não tem descrição. Um produto ganhou foto e descrição
+para a conferência (ver "Deixado na loja de teste").
+
+**No host da plataforma (`localhost:3800/<slug>`):**
+
+- **Página inicial:** `og:title` "Loja Dominio", `og:url`
+  `http://localhost:3800/loja-dominio-1791487727`, `og:site_name` "Loja Dominio", `og:image` a
+  imagem montada, com `og:image:type`, `og:image:width` 1200, `og:image:height` 630 e
+  `og:image:alt` "Loja Dominio", `og:type` `website`, `theme-color` na cor do topo. O cartão do
+  Twitter saiu junto (`summary_large_image`, título, imagem, texto alternativo e medidas), sem
+  nenhuma página declará-lo.
+- **Categoria (`/bolsas`):** as mesmas tags, com `og:title` "Bolsas · Loja Dominio" e `og:url` no
+  endereço da categoria. Antes não havia nenhuma tag `og:`.
+- **Catálogo, busca, carrinho e "Entrar":** as mesmas, cada uma com o título e o endereço dela. A
+  busca com `?q=bolsa&pagina=2` declara `og:url` em `/busca`, sem o termo e sem a página, e continua
+  `noindex`.
+- **Produto com foto (`/produtos/bolsa-amora`):** `og:title` "Bolsa Amora", `og:image` a foto, como
+  veio, sem medidas, `og:site_name` e `og:url` presentes. Com `?variant=<a variação dele>`, o
+  `og:url` mantém a variação e o canonical não; com uma variação que não existe, o `og:url` sai sem
+  ela.
+- **Produto sem foto (`/produtos/bolsa-jabuticaba`):** a imagem montada da loja, com as medidas.
+- **A descrição do produto**, guardada colada (`**Bolsa Amora**Feita à mão…`): `description`,
+  `og:description` e o JSON-LD saem "Bolsa Amora Feita à mão, em crochê, com alça de couro. Forro de
+  algodão Fecho com ímã". Na página, à vista do cliente, o texto continua colado, como previsto.
+- **Loja sem logo e sem banner (`site-dominio-285`):** nenhuma `og:image`, cartão do Twitter
+  `summary`, `og:url` e `og:site_name` presentes, `theme-color` na cor dela.
+- **Slug que não existe:** 404, nenhuma tag de loja, nenhum `theme-color`. **`/` e `/login`:**
+  como antes; a landing da Beelink continua com a imagem dela (PNG de 1200×630, 9,8 KB).
+- **Conta e pedido (`/conta/pedidos`, `/conta/pedidos/1`):** respondem 307 para "Entrar", que tem o
+  cartão. É o que um leitor de prévia recebe.
+- **Com o `User-Agent` de um navegador** (Chrome), as tags da página inicial também saem dentro do
+  `<head>`.
+
+Todas as tags saíram dentro do `<head>`, que tem entre 3 KB e 4,3 KB.
+
+**No domínio próprio (`lvh.me` salvo em `/admin/<slug>/domain` pelo painel; a loja abriu em
+`http://lvh.me:3800/` em cerca de 20 segundos):** página inicial, categoria, catálogo, busca,
+carrinho, "Entrar", os dois produtos e uma landing. Em todas, `og:url` e canonical **sem o slug**
+(`/`, `/bolsas`, `/produtos/bolsa-amora`, `/lp/dia-das-maes`), `og:site_name` e a mesma imagem. O
+`og:url` sai `https://lvh.me:3800/…`: é o `https` que `siteOrigin()` dá a todo host que não é local
+(está em Riscos). No host da plataforma, as páginas da loja passaram a responder 308 para o domínio,
+como já era.
+
+**A landing (`/lp/dia-das-maes`, em branco, sem imagem própria):** a imagem montada da loja, onde
+antes saía a logo crua.
+
+**A imagem muda sozinha (decisão 5):** a cor do topo foi trocada pelo painel
+(`PUT /api/stores/<slug>/colors`); na leitura seguinte a página declarou outro endereço
+(`b_rgb:190358` no lugar de `b_rgb:3b7af7`) e `theme-color` na cor nova, e a imagem baixada desse
+endereço tem o fundo novo. A cor foi devolvida ao que era.
+
+### Não visto
+
+- **A prévia no WhatsApp de verdade**, que não alcança `localhost`. Só depois do deploy.
+- **A troca da logo no aplicativo.** Está no teste de unidade (logo nova, endereço novo) e decorre do
+  endereço: a logo está dentro dele. O BEELINK-312 já tinha visto que cada envio ganha endereço novo.
+- **Uma landing com imagem própria** e **uma loja só com banner**: só nos testes de unidade. O
+  recorte do banner foi medido com o endereço montado à mão, não por uma loja que o declare.
+- **`theme-color` pintando a barra de um celular.** O que foi conferido é a tag no HTML.
+- **Um navegador.** Nada do que mudou é desenhado na tela; tudo foi lido no HTML com `curl`. O
+  Playwright não foi usado, pela regra de disco desta entrega.
+- **A build de produção.** Tudo acima foi em `next dev`.
+
+### Deixado na loja de teste (`loja-dominio-1791487727`)
+
+- O produto `bolsa-amora` com uma foto de teste e com a descrição guardada colada, de propósito.
+- Uma landing publicada, em branco: `/lp/dia-das-maes`.
+- Duas imagens de teste na conta de desenvolvimento do Cloudinary (a foto e uma logo transparente).
+- O domínio `lvh.me` foi removido e a cor do topo voltou a ser a de antes.
