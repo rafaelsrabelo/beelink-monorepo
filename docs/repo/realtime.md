@@ -35,6 +35,15 @@ reads again when the channel comes back.
   development: it lets the long-polling transport answer the web. It is not what guards the
   channel — a WebSocket is not subject to CORS. The ticket is, and it travels in the handshake, not
   in a cookie: a page on another site has nothing of the visitor's to open a socket with.
+- **A shop's own domain is such a page in production too** (BEELINK-284). The shop window at
+  `https://<a shop's domain>` opens its socket where every page does, at `NEXT_PUBLIC_REALTIME_URL`
+  — the platform's origin, fixed at build — so there the origins differ. The transport answers
+  `https://<domain>` for every domain that is `ACTIVE`, read from the database (`RealtimeOrigins`,
+  handed to Socket.IO by `RealtimeIoAdapter` in `app.setup.ts`): a copy that stands a minute, read
+  again within seconds for an origin it does not know, and kept as it was when a read fails. Never a
+  wildcard. Outside production the scheme and the port are whatever came, for a domain on a local
+  host. No variable and no proxy rule is added per domain; a route to the socket on the shop's own
+  domain, which would make the origins the same again, is the routing ticket's (BEELINK-282).
 - **The socket's path is outside the API's rate limits.** A guess at a ticket costs one indexed
   delete against 256 random bits; a flood of handshakes, if one ever comes, is the proxy's to limit.
 

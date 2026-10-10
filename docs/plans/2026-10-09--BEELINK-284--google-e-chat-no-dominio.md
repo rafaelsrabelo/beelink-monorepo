@@ -71,6 +71,14 @@ domínio da loja                      host da plataforma                     Goo
 12. **Sem FK na tabela nova**, como `oauth_states` e `realtime_tickets`: uma linha vive um minuto, e a troca relê a loja e a conta.
 13. **A sessão aberta pela troca registra o `user-agent` do servidor do web**, como a do retorno do Google já registra hoje. Não mudou.
 
+### O chat
+
+14. **`RealtimeOrigins`** (`apps/api/src/modules/realtime/realtime-origins.ts`) responde se uma origem é aceita: as de `CORS_ORIGINS`, sem ler nada, e a de um domínio `ACTIVE`. A lista vem do banco (`stores` com `customDomainStatus = ACTIVE`) e fica numa cópia de 60 s, com uma leitura em voo por vez; uma leitura que falha mantém a cópia anterior e a próxima tentativa é em 5 s. É o desenho da cópia do web (`lib/shop-hosts.ts`), com uma diferença: **uma origem que a cópia não conhece a faz ser lida de novo quando ela tem mais de 5 s.** Sem isso, o chat de um domínio recém-ativado ficaria um minuto recusado; com isso, uma enxurrada de origens desconhecidas custa uma leitura a cada 5 s.
+15. **Em produção só `https://<domínio>`, na porta padrão.** Fora de produção (`NODE_ENV` diferente de `production`), o esquema e a porta que vierem, para um domínio `ACTIVE`: em desenvolvimento o domínio é `lvh.me` ou `*.localhost`, sem TLS e na porta do `next dev`. O briefing dizia "para um host local"; como o domínio precisa estar `ACTIVE` no banco de qualquer jeito, a regra ficou "fora de produção", que não depende de uma lista de nomes locais.
+16. **A origem tem que ser uma origem**: sem caminho, sem credenciais, `http` ou `https`. Um pedido sem `Origin` não recebe o header. Nunca `*`.
+17. **A opção vai ao Socket.IO por um adaptador** (`RealtimeIoAdapter`, em `app.setup.ts`), porque o `cors` do decorator do gateway é avaliado antes de qualquer injeção e não consegue ler o banco. `docs/repo/realtime.md` já previa um adaptador próprio nesse ponto.
+18. **Nada muda no web.** O socket continua abrindo em `NEXT_PUBLIC_REALTIME_URL`, com o tíquete pedido a `/<slug>/api/realtime/ticket`, que no domínio da loja já recebe a sessão (cookies em `Path=/`). O CORS do REST (`@fastify/cors` em `app.setup.ts`) não mudou: o navegador nunca chama o REST.
+
 ## Fora do escopo
 
 - O Traefik e o socket na mesma origem da loja (Y3), prova de posse por `TXT`, canonical, sitemap e e-mails (Y7).
