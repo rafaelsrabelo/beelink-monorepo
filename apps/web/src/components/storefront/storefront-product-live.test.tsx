@@ -5,7 +5,7 @@ import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 // Types
-import type { PublicProductDetail } from "@harness-monorepo/contracts"
+import type { PublicCashback, PublicProductDetail } from "@harness-monorepo/contracts"
 
 // UI
 import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
@@ -117,12 +117,12 @@ describe("StorefrontProductLive — what it tells (BEELINK-272)", () => {
     variants: [{ id: "v2", optionValueIds: [], priceCents: 10990, compareAtPriceCents: null, imageUrl: null, available: true }],
   } as unknown as PublicProductDetail
 
-  function renderTold(track: () => boolean) {
+  function renderTold(track: () => boolean, cashback: PublicCashback | null = null, sold: PublicProductDetail = whey) {
     return render(
       <QueryClientProvider client={new QueryClient()}>
         <TrackingContext value={{ allowed: true, track }}>
           <CartProvider slug="lessari" lines={[]}>
-            <StorefrontProductLive slug="lessari" shopName="Lessari" homeHref="/lessari" product={whey} initialVariantId={null} cartHref="/lessari/carrinho" showPrice showBadge showStock finishesOnWhatsApp={false} seller={{ name: "Lessari", paymentMethods: ["PIX"], cashback: null }} restockCopy={copy} messages={ptBR} />
+            <StorefrontProductLive slug="lessari" shopName="Lessari" homeHref="/lessari" product={sold} initialVariantId={null} cartHref="/lessari/carrinho" showPrice showBadge showStock finishesOnWhatsApp={false} seller={{ name: "Lessari", paymentMethods: ["PIX"], cashback }} restockCopy={copy} messages={ptBR} />
           </CartProvider>
         </TrackingContext>
       </QueryClientProvider>,
@@ -131,6 +131,18 @@ describe("StorefrontProductLive — what it tells (BEELINK-272)", () => {
 
   afterEach(() => {
     document.cookie = "bl_cart=; Path=/lessari; Max-Age=0"
+  })
+
+  /** BEELINK-313: in a shop that gives by product the box says this product's own rate, and nothing for one with none. */
+  it("says what the purchase earns at the product's own rate where the shop gives by product, and nothing without one", () => {
+    const byProduct = { mode: "PRODUCT", rateBps: 500, minSubtotalCents: 0 } as const
+    const first = renderTold(vi.fn(), byProduct, { ...whey, cashbackRateBps: 1000 })
+    // 10% of the product's R$ 99,90 — never the shop's 5%.
+    expect(screen.getByText(/Ganhe até R\$\s9,99 de cashback nesta compra/)).toBeInTheDocument()
+    first.unmount()
+
+    renderTold(vi.fn(), byProduct)
+    expect(screen.queryByText(/cashback/i)).not.toBeInTheDocument()
   })
 
   it("tells the product as seen, once, by its own id, with its category and price", () => {
