@@ -9,12 +9,13 @@ import { adjustmentPayloadOf, cashbackErrorOf, cashbackExampleOf, cashbackFormOf
 
 const text = ptBR.cashback
 const money = (cents: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100).replace(/\s/g, " ")
-const typed = { enabled: true, rate: "5", validity: "DAYS" as const, validityDays: "90", minimum: "50,00", maxRedeem: "50" }
+const typed = { enabled: true, mode: "STORE" as const, rate: "5", validity: "DAYS" as const, validityDays: "90", minimum: "50,00", maxRedeem: "50" }
 
 describe("the cashback rules' form (BEELINK-242)", () => {
   it("reads the saved rules into the shopkeeper's units", () => {
-    expect(cashbackFormOf({ enabled: true, rateBps: 250, expiresAfterDays: null, minSubtotalCents: 5000, maxRedeemBps: 10000, updatedAt: null })).toEqual({
+    expect(cashbackFormOf({ enabled: true, mode: "PRODUCT", rateBps: 250, expiresAfterDays: null, minSubtotalCents: 5000, maxRedeemBps: 10000, updatedAt: null })).toEqual({
       enabled: true,
+      mode: "PRODUCT",
       rate: "2,5",
       validity: "NONE",
       validityDays: "",
@@ -24,9 +25,9 @@ describe("the cashback rules' form (BEELINK-242)", () => {
   })
 
   it("sends basis points, cents and days, and no days when the credit never expires", () => {
-    expect(cashbackPayloadOf(typed, text.issues)).toEqual({ payload: { enabled: true, rateBps: 500, expiresAfterDays: 90, minSubtotalCents: 5000, maxRedeemBps: 5000 } })
+    expect(cashbackPayloadOf(typed, text.issues)).toEqual({ payload: { enabled: true, mode: "STORE", rateBps: 500, expiresAfterDays: 90, minSubtotalCents: 5000, maxRedeemBps: 5000 } })
     expect(cashbackPayloadOf({ ...typed, validity: "NONE", validityDays: "abc", minimum: "" }, text.issues)).toEqual({
-      payload: { enabled: true, rateBps: 500, expiresAfterDays: null, minSubtotalCents: 0, maxRedeemBps: 5000 },
+      payload: { enabled: true, mode: "STORE", rateBps: 500, expiresAfterDays: null, minSubtotalCents: 0, maxRedeemBps: 5000 },
     })
   })
 
@@ -43,6 +44,13 @@ describe("the cashback rules' form (BEELINK-242)", () => {
     expect(cashbackExampleOf({ ...typed, rate: "0,333", validity: "NONE" }, money, text.settings)).toBe(text.settings.exampleRateMissing)
     expect(cashbackExampleOf({ ...typed, rate: "3,33", validity: "NONE" }, money, text.settings)).toBe("Num pedido de R$ 100,00, o cliente ganha R$ 3,33 de cashback.")
     expect(cashbackExampleOf({ ...typed, enabled: false }, money, text.settings)).toBe(text.settings.exampleOff)
+  })
+
+  /** BEELINK-313: by product there is no one sum to show, and the one rate is kept for the day the shop comes back. */
+  it("says each product earns its own rate when the shop gives by product, and still sends the one rate", () => {
+    const byProduct = { ...typed, mode: "PRODUCT" as const }
+    expect(cashbackExampleOf(byProduct, money, text.settings)).toBe("Em cada produto, o cliente ganha o percentual definido no cadastro dele, para usar em até 90 dias depois da entrega.")
+    expect(cashbackPayloadOf(byProduct, text.issues)).toEqual({ payload: { enabled: true, mode: "PRODUCT", rateBps: 500, expiresAfterDays: 90, minSubtotalCents: 5000, maxRedeemBps: 5000 } })
   })
 
   /** An order of R$ 100,00 under a R$ 150,00 minimum earns nothing at the API: the example never promises it. */

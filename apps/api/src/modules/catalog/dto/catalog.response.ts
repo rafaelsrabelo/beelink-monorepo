@@ -136,6 +136,8 @@ export class PublicProductResponse extends PublicProductCardResponse implements 
   @ApiProperty({ type: [PublicProductImageResponse] }) images!: PublicProductImageResponse[];
   @ApiPropertyOptional({ type: PublicProductCategoryResponse, nullable: true })
   category!: PublicProductCategoryResponse | null;
+  @ApiProperty({ nullable: true, type: Number, example: 500, description: "Its own cashback, in basis points; read while the shop's cashback is by product." })
+  cashbackRateBps!: number | null;
 }
 
 export class ProductResponse extends PublicProductResponse implements Product {

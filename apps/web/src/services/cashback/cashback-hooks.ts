@@ -14,6 +14,16 @@ export function useCashback(slug: string): UseQueryResult<CashbackOverview> {
   return useQuery({ queryKey: cashbackKeys.overview(slug), queryFn: () => fetchCashback(slug) })
 }
 
+/**
+ * Whether the shop gives its cashback product by product, and has it on (BEELINK-313): what makes the
+ * products' screens ask each product's rate. False until the rules are read — a field that appears is
+ * kinder than one that vanishes.
+ */
+export function useGivesCashbackByProduct(slug: string): boolean {
+  const { data } = useCashback(slug)
+  return Boolean(data?.settings.enabled && data.settings.mode === "PRODUCT")
+}
+
 /** Saved: the answer is the overview as it now stands, written straight into the cache. */
 export function useSaveCashback(slug: string): UseMutationResult<CashbackOverview, Error, CashbackSettingsPayload> {
   const queryClient = useQueryClient()

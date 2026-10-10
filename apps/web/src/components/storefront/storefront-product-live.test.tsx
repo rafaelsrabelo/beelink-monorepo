@@ -28,6 +28,7 @@ const product = {
   description: null,
   images: [],
   category: null,
+  cashbackRateBps: null,
   options: [],
   variants: [{ id: "v1", optionValueIds: [], priceCents: 18900, compareAtPriceCents: null, imageUrl: null, available: false }],
 } satisfies PublicProductDetail

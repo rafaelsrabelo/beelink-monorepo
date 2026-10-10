@@ -18,7 +18,7 @@ function shopBody(slug: string) {
 }
 
 const DAY = 24 * 60 * 60 * 1000;
-const RULES = { enabled: true, rateBps: 500, expiresAfterDays: 10, minSubtotalCents: 0, maxRedeemBps: 10000 };
+const RULES = { enabled: true, mode: 'STORE', rateBps: 500, expiresAfterDays: 10, minSubtotalCents: 0, maxRedeemBps: 10000 };
 const MAILPIT = process.env.MAILPIT_URL ?? 'http://localhost:8025';
 
 describe('credit expires by itself, and its customer is told a week before (BEELINK-241)', () => {

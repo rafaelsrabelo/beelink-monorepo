@@ -15,7 +15,7 @@ function shopBody(slug: string) {
   return { name: slug, slug, type: 'ECOMMERCE', socialNetworks: { whatsapp: '(11) 99999-8888' }, address: { city: 'São Paulo', state: 'sp', zipCode: '01310-930' } };
 }
 
-const RULES = { enabled: true, rateBps: 500, expiresAfterDays: 30, minSubtotalCents: 0, maxRedeemBps: 10000 };
+const RULES = { enabled: true, mode: 'STORE', rateBps: 500, expiresAfterDays: 30, minSubtotalCents: 0, maxRedeemBps: 10000 };
 
 describe("the shopper's own cashback (BEELINK-244)", () => {
   let app: NestFastifyApplication;

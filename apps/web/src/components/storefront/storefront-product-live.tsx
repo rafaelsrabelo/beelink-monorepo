@@ -1,7 +1,7 @@
 "use client"
 
 // Types
-import type { PaymentMethod, PublicCashback, PublicProductDetail } from "@harness-monorepo/contracts"
+import type { PaymentMethod, PublicProductDetail } from "@harness-monorepo/contracts"
 
 // UI
 import { StorefrontProductDetail } from "@harness-monorepo/ui/blocks/storefront/storefront-product"
@@ -11,6 +11,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import { AppLink } from "@/components/app-link"
+import type { ProductCashbackRule } from "@/lib/product-cashback"
 import { StorefrontFavoriteLive } from "./favorites/storefront-favorite-live"
 import { useTrackView } from "./tracking/use-track"
 import { useAddToCart } from "./use-add-to-cart"
@@ -43,8 +44,8 @@ export interface StorefrontProductLiveProps {
   showStock: boolean
   /** The shop takes orders on WhatsApp, which the buy box says. */
   finishesOnWhatsApp: boolean
-  /** Who sells it, and the shop's cashback while on (BEELINK-243). */
-  seller: { name: string; paymentMethods: readonly PaymentMethod[]; cashback: PublicCashback | null }
+  /** Who sells it, and what this product earns at while the shop's cashback is on (BEELINK-243, BEELINK-313). */
+  seller: { name: string; paymentMethods: readonly PaymentMethod[]; cashback: ProductCashbackRule | null }
   restockCopy: RestockCopy
   messages: UiMessages
 }

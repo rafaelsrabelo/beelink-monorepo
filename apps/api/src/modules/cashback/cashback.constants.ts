@@ -1,5 +1,5 @@
 // Types
-import type { CashbackCreditStatus, CashbackEntryKind, CashbackErrorCode, CashbackExpiringSoonDays, CashbackSettingsPayload } from '@harness-monorepo/contracts';
+import type { CashbackCreditStatus, CashbackEntryKind, CashbackErrorCode, CashbackExpiringSoonDays, CashbackMode, CashbackSettingsPayload } from '@harness-monorepo/contracts';
 
 /**
  * What a shop that never saved its rules reads (BEELINK-238): switched off, so nothing is given until
@@ -8,6 +8,7 @@ import type { CashbackCreditStatus, CashbackEntryKind, CashbackErrorCode, Cashba
  */
 export const CASHBACK_DEFAULTS = {
   enabled: false,
+  mode: 'STORE',
   rateBps: 500,
   expiresAfterDays: null,
   minSubtotalCents: 0,
@@ -34,6 +35,7 @@ export const CASHBACK_EXPIRY_NOTICE_DAYS = 7;
 /** How many customers one sweep expires credit for, and how many lots it owes a notice for: the rest wait a minute. */
 export const CASHBACK_SWEEP_BATCH = 100;
 
+export const CASHBACK_MODES = ['STORE', 'PRODUCT'] as const satisfies readonly CashbackMode[];
 export const CASHBACK_ENTRY_KINDS = ['EARN', 'REDEEM', 'REVERSAL', 'EXPIRE', 'ADJUST', 'FORFEIT'] as const satisfies readonly CashbackEntryKind[];
 export const CASHBACK_CREDIT_STATUSES = ['PENDING', 'AVAILABLE', 'VOIDED', 'EXPIRED'] as const satisfies readonly CashbackCreditStatus[];
 

@@ -3,16 +3,17 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 // Libs
 import { Transform, Type } from 'class-transformer';
-import { IsBoolean, IsInt, IsOptional, IsString, Max, Min, MinLength, NotEquals, ValidateIf } from 'class-validator';
+import { IsBoolean, IsIn, IsInt, IsOptional, IsString, Max, Min, MinLength, NotEquals, ValidateIf } from 'class-validator';
 
 // Types
-import type { CashbackAdjustmentPayload, CashbackErrorCode, CashbackSettingsPayload } from '@harness-monorepo/contracts';
+import type { CashbackAdjustmentPayload, CashbackErrorCode, CashbackMode, CashbackSettingsPayload } from '@harness-monorepo/contracts';
 
 // App
 import { MaxCodePoints } from '../../../shared/http/max-code-points.js';
 import {
   CASHBACK_AMOUNT_MAX_CENTS,
   CASHBACK_BPS_MAX,
+  CASHBACK_MODES,
   CASHBACK_PAGE_MAX,
   CASHBACK_PAGE_SIZE,
   CASHBACK_PAGE_SIZE_MAX,
@@ -34,7 +35,11 @@ export class CashbackSettingsDto implements CashbackSettingsPayload {
   @IsBoolean(SETTINGS)
   enabled!: boolean;
 
-  @ApiProperty({ minimum: 1, maximum: CASHBACK_BPS_MAX, example: 500, description: 'Basis points of the products paid for (500 = 5.00%).' })
+  @ApiProperty({ enum: CASHBACK_MODES, description: "STORE: one rate for every product. PRODUCT: each product's own, and one without earns nothing." })
+  @IsIn(CASHBACK_MODES, SETTINGS)
+  mode!: CashbackMode;
+
+  @ApiProperty({ minimum: 1, maximum: CASHBACK_BPS_MAX, example: 500, description: 'Basis points of the products paid for (500 = 5.00%). Read on STORE; kept on PRODUCT.' })
   @IsInt(SETTINGS)
   @Min(1, SETTINGS)
   @Max(CASHBACK_BPS_MAX, SETTINGS)

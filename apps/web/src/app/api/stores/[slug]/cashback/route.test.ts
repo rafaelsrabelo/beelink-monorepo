@@ -32,7 +32,7 @@ describe("the shop's cashback, for the panel (BEELINK-242)", () => {
   it("reads and saves the rules at the API as the owner, the body as it came", async () => {
     const fetched = vi.fn<Fetched>(async () => Response.json({ settings: {}, owed: {} }))
     vi.stubGlobal("fetch", fetched)
-    const rules = { enabled: true, rateBps: 500, expiresAfterDays: null, minSubtotalCents: 0, maxRedeemBps: 10000 }
+    const rules = { enabled: true, mode: "STORE", rateBps: 500, expiresAfterDays: null, minSubtotalCents: 0, maxRedeemBps: 10000 }
 
     expect((await GET(request("/api/stores/loja/cashback"), shop)).status).toBe(200)
     expect(String(fetched.mock.calls[0]?.[0])).toMatch(/\/stores\/loja\/cashback$/)

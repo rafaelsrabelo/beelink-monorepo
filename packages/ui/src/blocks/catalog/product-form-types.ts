@@ -15,6 +15,8 @@ export interface ProductFormValues {
   price: string
   compareAtPrice: string
   cost: string
+  /** A percentage as typed, "5" or "2,5"; `""` is none. Asked only in a shop whose cashback is by product. */
+  cashback: string
   /** `""` is "no category": a select cannot hold null, and the screen turns it back. */
   categoryId: string
   /** On sale, or still being written. See the API's ProductStatus for why it is not a boolean. */
@@ -59,6 +61,7 @@ export const EMPTY_PRODUCT: ProductFormValues = {
   price: "",
   compareAtPrice: "",
   cost: "",
+  cashback: "",
   categoryId: "",
   status: "ACTIVE",
   origin: "",

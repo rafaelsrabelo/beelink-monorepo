@@ -3,6 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 // Types
 import type {
+  CashbackMode,
   CashbackCredit,
   CashbackCreditStatus,
   CashbackEntry,
@@ -23,10 +24,11 @@ import type {
 } from '@harness-monorepo/contracts';
 
 // App
-import { CASHBACK_CREDIT_STATUSES, CASHBACK_ENTRY_KINDS, CASHBACK_EXPIRING_SOON_DAYS } from '../cashback.constants.js';
+import { CASHBACK_CREDIT_STATUSES, CASHBACK_ENTRY_KINDS, CASHBACK_EXPIRING_SOON_DAYS, CASHBACK_MODES } from '../cashback.constants.js';
 
 export class CashbackSettingsResponse implements CashbackSettings {
   @ApiProperty() enabled!: boolean;
+  @ApiProperty({ enum: CASHBACK_MODES }) mode!: CashbackMode;
   @ApiProperty({ example: 500, description: 'Basis points (500 = 5.00%).' }) rateBps!: number;
   @ApiProperty({ nullable: true, type: Number, description: 'Null never expires.' }) expiresAfterDays!: number | null;
   @ApiProperty() minSubtotalCents!: number;
@@ -121,6 +123,7 @@ export class CustomerDataCashbackResponse implements CustomerDataCashback {
 }
 
 export class PublicCashbackResponse implements PublicCashback {
+  @ApiProperty({ enum: CASHBACK_MODES }) mode!: CashbackMode;
   @ApiProperty({ example: 500, description: 'Basis points of the products paid for.' }) rateBps!: number;
   @ApiProperty({ description: 'The products after discounts an order must reach to earn.' }) minSubtotalCents!: number;
 }

@@ -10,7 +10,9 @@ import { format } from "@harness-monorepo/ui/locales/index"
 /** The rules as the form edits them: what was typed, before it is read as numbers. */
 export interface CashbackSettingsFormValues {
   enabled: boolean
-  /** "5" or "2,5": a percentage. */
+  /** "STORE" is one rate for every product; "PRODUCT", each product's own. Mirrors `CashbackMode`. */
+  mode: "STORE" | "PRODUCT"
+  /** "5" or "2,5": a percentage. Kept, and not asked for, while by product. */
   rate: string
   /** "NONE" never expires; "DAYS" expires after `validityDays`. */
   validity: "NONE" | "DAYS"

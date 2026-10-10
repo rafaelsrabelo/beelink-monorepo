@@ -143,6 +143,11 @@ model Product {
   /// beside the price, and it must never reach `PublicProduct`.
   costCents Int?
 
+  /// The product's own cashback (BEELINK-313): basis points of what was paid for it, 1 to 10000 by a
+  /// CHECK; null has none. Read only while the shop's `CashbackSettings.mode` is PRODUCT. The
+  /// product's, not a variant's: it is not part of the cache above.
+  cashbackRateBps Int?
+
   /// The shopkeeper's own code for the thing. Unique within a shop, but that is enforced on
   /// ProductVariant, which owns the code: this column is part of the cache described there.
   sku     String? @db.VarChar(64)

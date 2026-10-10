@@ -6,7 +6,10 @@ import type { Product, UpdateProductPayload } from "@harness-monorepo/contracts"
 
 // UI
 import type { ProductEditor } from "@harness-monorepo/ui/blocks/catalog/product-editor"
-import { centsFrom, reaisFrom } from "@harness-monorepo/ui/lib/money"
+import { centsFrom, centsFromStrict, reaisFrom } from "@harness-monorepo/ui/lib/money"
+
+// App
+import { percentFrom } from "@/lib/discount-form"
 
 /**
  * Read off the block rather than imported: `@harness-monorepo/ui/blocks/*` serves `.tsx`, so the
@@ -24,6 +27,7 @@ export const EMPTY_FORM: FormValues = {
   price: "",
   compareAtPrice: "",
   cost: "",
+  cashback: "",
   categoryId: "",
   status: "ACTIVE",
   origin: "",
@@ -57,6 +61,7 @@ export function toForm(product: Product): FormValues {
     price: reaisFrom(product.priceCents),
     compareAtPrice: reaisFrom(product.compareAtPriceCents),
     cost: reaisFrom(product.costCents),
+    cashback: product.cashbackRateBps === null ? "" : percentFrom(product.cashbackRateBps),
     categoryId: product.category?.id ?? "",
     status: product.status,
     origin: product.origin ?? "",
@@ -72,9 +77,20 @@ export function toForm(product: Product): FormValues {
   }
 }
 
+/**
+ * The product's own cashback as the wire takes it (BEELINK-313): "2,5" is 250 basis points, and an
+ * empty field is none. `undefined` is a percentage that does not hold — the form says so, and nothing is sent.
+ */
+export function cashbackRateOf(typed: string): number | null | undefined {
+  if (typed.trim() === "") return null
+  const bps = centsFromStrict(typed)
+  return bps !== null && bps >= 1 && bps <= 10_000 ? bps : undefined
+}
+
 /** What describes the product itself, whatever its variations. */
 export function fieldsOf(value: FormValues): UpdateProductPayload {
   return {
+    cashbackRateBps: cashbackRateOf(value.cashback),
     name: value.name.trim(),
     slug: value.slug.trim() || undefined,
     description: value.description.trim() || null,

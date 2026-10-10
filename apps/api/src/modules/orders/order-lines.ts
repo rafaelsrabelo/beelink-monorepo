@@ -20,6 +20,8 @@ export interface OrderLine {
   quantity: number;
   /** The product's category and that category's parent — not kept on the order: a promotion on either covers the line. */
   categoryIds: string[];
+  /** The product's own cashback rate — not kept on the order either: what the order earned is. */
+  cashbackRateBps: number | null;
 }
 
 /**
@@ -44,7 +46,7 @@ export async function readOrderLines(db: Prisma.TransactionClient, storeId: stri
       productId: true,
       priceCents: true,
       sku: true,
-      product: { select: { name: true, categoryId: true, category: { select: { parentId: true } } } },
+      product: { select: { name: true, categoryId: true, cashbackRateBps: true, category: { select: { parentId: true } } } },
       values: { select: { option: { select: { name: true, position: true } }, value: { select: { name: true } } } },
     },
   });
@@ -74,6 +76,7 @@ export async function readOrderLines(db: Prisma.TransactionClient, storeId: stri
       unitPriceCents: variant.priceCents,
       quantity: item.quantity,
       categoryIds: [variant.product.categoryId, variant.product.category?.parentId].filter((id): id is string => typeof id === 'string'),
+      cashbackRateBps: variant.product.cashbackRateBps,
     };
   });
 }

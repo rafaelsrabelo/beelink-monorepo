@@ -13,7 +13,7 @@ import type { OrderCustomerDto } from './dto/order.dto.js';
 import type { CartQuoteDto, CustomerOffersDto, CustomerOrderQuoteDto, ShopOrderQuoteDto } from './dto/order-quote.dto.js';
 import { readOrderLines, type OrderLine } from './order-lines.js';
 import { placedAtOf } from './order-placed-at.js';
-import { earningBaseOf, quotedCashbackOf } from '../cashback/cashback-earning.js';
+import { quotedCashbackOf } from '../cashback/cashback-earning.js';
 import { earningPartsOf, priceOrder, type PricedOrder, type PricingCustomer, type PricingInput } from './order-pricing.js';
 import { deliveryTermsOf, OrderShipping } from './order-shipping.js';
 import { orderError } from './orders.constants.js';
@@ -129,9 +129,6 @@ export class OrderQuotes {
     const { lines, priced, shipping } = await this.price(input);
     // What it would earn, worked out as the order would be when placed (BEELINK-243).
     const rules = await this.prisma.cashbackSettings.findUnique({ where: { storeId: input.storeId } });
-    const base = earningBaseOf(earningPartsOf(priced, 0));
-    // Earned on what is paid in money; the minimum held against the products before the credit (BEELINK-240).
-    const paid = base - (priced.cashbackUse?.appliedCents ?? 0);
 
     return {
       lines: lines.map((line, index) => ({
@@ -152,7 +149,7 @@ export class OrderQuotes {
       deliveryFeeCents: priced.totals.deliveryFeeCents,
       shipping,
       totalCents: priced.totals.totalCents,
-      cashback: quotedCashbackOf(rules, paid, base),
+      cashback: quotedCashbackOf(rules, earningPartsOf(lines, priced, priced.cashbackUse?.appliedCents ?? 0)),
       cashbackUse: priced.cashbackUse && { balanceCents: priced.cashbackUse.balanceCents, maxCents: priced.cashbackUse.maxCents, appliedCents: priced.cashbackUse.appliedCents, unavailable: priced.cashbackUse.unavailable },
     } satisfies OrderQuote;
   }

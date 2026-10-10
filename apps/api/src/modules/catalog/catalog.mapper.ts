@@ -209,6 +209,7 @@ export function toPublicProduct(row: ProductRow): PublicProduct {
     description: row.description,
     images: row.images.map(toPublicProductImage),
     category: row.category ? toPublicProductCategory(row.category) : null,
+    cashbackRateBps: row.cashbackRateBps,
   } satisfies PublicProduct;
 }
 

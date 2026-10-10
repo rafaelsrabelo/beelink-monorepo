@@ -37,6 +37,18 @@ describe("ProductEditor", () => {
     expect(headings.indexOf("Estoque")).toBe(headings.indexOf("Variações") + 1)
   })
 
+  /** BEELINK-313: the product's own rate, asked only in a shop that gives its cashback by product. */
+  it("asks the product's cashback only when the shop gives it by product, whatever its variations", async () => {
+    const { props, rerender } = renderEditor()
+    expect(screen.queryByLabelText("Cashback deste produto (%)")).not.toBeInTheDocument()
+
+    rerender(<ProductEditor {...props} cashback variations={{ value: BLOUSE, onChange: () => {} }} errors={{ cashback: { message: "Informe um percentual entre 0,01% e 100%, ou deixe vazio." } }} />)
+    await userEvent.type(screen.getByLabelText("Cashback deste produto (%)"), "5")
+
+    expect(props.onChange).toHaveBeenLastCalledWith({ ...props.value, cashback: "5" })
+    expect(screen.getByText("Informe um percentual entre 0,01% e 100%, ou deixe vazio.")).toBeInTheDocument()
+  })
+
   it("keeps the price fields while the product sells one thing", () => {
     renderEditor({ variations: { value: EMPTY_VARIATIONS, onChange: () => {} } })
 

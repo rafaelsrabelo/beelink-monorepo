@@ -50,6 +50,25 @@ export const RegrasRecusadas: Story = {
   ),
 }
 
+/** A loja dá o cashback por produto: o percentual único some, e o caminho para os produtos aparece. */
+export const RegrasPorProduto: Story = {
+  render: () => (
+    <div className="max-w-3xl">
+      <CashbackSettingsForm
+        value={{ ...settings, mode: "PRODUCT" }}
+        onChange={noop}
+        onSubmit={noop}
+        example="Em cada produto, o cliente ganha o percentual definido no cadastro dele, para usar em até 90 dias depois da entrega."
+        productsLink={
+          <a href="#produtos" className="text-foreground underline underline-offset-4">
+            Definir nos produtos
+          </a>
+        }
+      />
+    </div>
+  ),
+}
+
 /** O cashback na ficha do cliente: saldo, pendente, vencimento e o extrato. */
 export const NaFichaDoCliente: Story = {
   render: () => (

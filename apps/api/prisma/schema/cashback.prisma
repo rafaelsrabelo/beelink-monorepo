@@ -25,6 +25,12 @@ enum CashbackEntryKind {
   FORFEIT
 }
 
+/// Where a shop's rate comes from (BEELINK-313): one for every product, or each product's own.
+enum CashbackMode {
+  STORE
+  PRODUCT
+}
+
 /// A shop's cashback rules (docs/product/README.md, "Cashback"). One row per shop, written the first
 /// time the shopkeeper saves them; a shop without one reads the defaults the API states, switched off.
 /// A change applies to orders placed from then on: a lot keeps the validity it was given, and an order
@@ -34,7 +40,10 @@ model CashbackSettings {
   store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
 
   enabled          Boolean @default(false)
+  /// STORE reads `rateBps`; PRODUCT reads each product's `cashbackRateBps`, and one without earns nothing.
+  mode             CashbackMode @default(STORE)
   /// Basis points of what the customer paid for the products, 1 to 10000 (500 = 5.00%), by a CHECK.
+  /// Kept while the shop is on PRODUCT, for the day it comes back.
   rateBps          Int
   /// Days a credit stays usable once available, 1 to 3650; null never expires.
   expiresAfterDays Int?

@@ -9,6 +9,7 @@ export function toCashbackSettings(row: CashbackSettingsModel | null): CashbackS
   if (!row) return { ...CASHBACK_DEFAULTS, updatedAt: null };
   return {
     enabled: row.enabled,
+    mode: row.mode,
     rateBps: row.rateBps,
     expiresAfterDays: row.expiresAfterDays,
     minSubtotalCents: row.minSubtotalCents,

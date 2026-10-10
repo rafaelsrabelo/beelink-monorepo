@@ -26,6 +26,7 @@ import { ProductReviews } from "@/components/storefront/product-reviews"
 import { StorefrontProductLive } from "@/components/storefront/storefront-product-live"
 import { StorefrontRelated } from "@/components/storefront/storefront-related"
 import { getMessages } from "@/lib/locale"
+import { productCashbackRuleOf } from "@/lib/product-cashback"
 import { jsonLdText, productJsonLd } from "@/lib/product-json-ld"
 import { shopperAt } from "@/lib/shopper"
 import { finishesOnWhatsAppOf } from "@/lib/checkout-payment"
@@ -208,7 +209,7 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
         showRating={layout.showProductRating ?? true}
         showStock={layout.showProductStock ?? true}
         finishesOnWhatsApp={finishesOnWhatsAppOf(order, paymentOptions)}
-        seller={{ name: store.name, paymentMethods: store.paymentMethods, cashback: store.cashback }}
+        seller={{ name: store.name, paymentMethods: store.paymentMethods, cashback: productCashbackRuleOf(store.cashback, product) }}
         restockCopy={{
           RESTOCK_VARIANT_INVALID: web.errors.RESTOCK_VARIANT_INVALID,
           BAD_REQUEST: ui.validation.whatsappInvalid,

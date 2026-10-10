@@ -16,7 +16,7 @@ function shopBody(slug: string) {
 }
 
 const DAY = 24 * 60 * 60 * 1000;
-const RULES = { enabled: true, rateBps: 500, expiresAfterDays: 30, minSubtotalCents: 0, maxRedeemBps: 5000 };
+const RULES = { enabled: true, mode: 'STORE', rateBps: 500, expiresAfterDays: 30, minSubtotalCents: 0, maxRedeemBps: 5000 };
 
 describe('an order spends the customer\'s cashback (BEELINK-240)', () => {
   let app: NestFastifyApplication;

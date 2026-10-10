@@ -20,6 +20,7 @@ import { defaultLocale, defaultMessages } from "@harness-monorepo/ui/locales/ind
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
+import { ProductCashbackCell } from "./product-cashback-cell"
 import { ProductNameCell } from "./product-name-cell"
 
 export interface ProductTableItem {
@@ -49,12 +50,19 @@ export interface ProductTableItem {
   viewHref?: string | null
   /** What a carrier lacks to quote it (BEELINK-184): said under the name. Null or absent says nothing. */
   carrierGap?: "NO_WEIGHT" | "NO_SIZE" | null
+  /** Its own cashback, in basis points (BEELINK-313); null or absent has none. Shown only with `onAddCashback`. */
+  cashbackRateBps?: number | null
 }
 
 export interface ProductTableProps {
   products: readonly ProductTableItem[]
   onEdit: (productId: string) => void
   onDelete: (productId: string) => void
+  /**
+   * The shop gives its cashback by product (BEELINK-313): the table grows a column that says each
+   * product's rate, and offers this on a product with none. Absent, there is no such column.
+   */
+  onAddCashback?: (productId: string) => void
   /**
    * What to say when there is nothing to show. It is a prop because "no products yet" and "no
    * product matches this filter" are different facts, and telling a shopkeeper with 200 products
@@ -84,6 +92,7 @@ export function ProductTable({
   products,
   onEdit,
   onDelete,
+  onAddCashback,
   emptyTitle,
   emptyHint,
   locale = defaultLocale,
@@ -139,6 +148,7 @@ export function ProductTable({
             <TableHead className="w-40">{columns.category}</TableHead>
             <TableHead className="w-32">{columns.origin}</TableHead>
             <TableHead className="w-32 text-right">{columns.price}</TableHead>
+            {onAddCashback ? <TableHead className="w-40">{columns.cashback}</TableHead> : null}
             {/* Read aloud, never drawn: a visible "Actions" over two icon buttons is a column
                 heading that describes the furniture rather than the data. */}
             <TableHead className="w-32">
@@ -205,6 +215,12 @@ export function ProductTable({
                   </span>
                 ) : null}
               </TableCell>
+
+              {onAddCashback ? (
+                <TableCell>
+                  <ProductCashbackCell name={product.name} rateBps={product.cashbackRateBps ?? null} onAdd={() => onAddCashback(product.id)} disabled={busyId === product.id} locale={locale} messages={messages} />
+                </TableCell>
+              ) : null}
 
               <TableCell>
                 <div className="flex items-center justify-end gap-1">

@@ -34,6 +34,13 @@ function dayOf(iso: string, locale: string): string {
  * shop's cashback while it is on: a shopper keeps what they were given after the shop switches it
  * off, and then the tab says the balance without a rule.
  */
+/** The shop's rule in a sentence: its one rate, or — by product (BEELINK-313) — that each product's page says its own. */
+function ruleOf(rule: PublicCashback, words: { rate: string; minimum: string }, text: UiMessages["storefront"]["accountCashbackTab"]): string {
+  const from = rule.minSubtotalCents > 0
+  if (rule.mode === "PRODUCT") return from ? format(text.earnsByProductFrom, words) : text.earnsByProduct
+  return format(from ? text.earnsFrom : text.earns, words)
+}
+
 export function cashbackTabViewOf(cashback: ShopperCashback, rule: PublicCashback | null, { locale, messages }: CashbackTabContext): Omit<StorefrontAccountCashbackProps, "pagination" | "messages"> {
   const text = messages.storefront.accountCashbackTab
   const money = (cents: number) => formatCents(cents, locale, "BRL")
@@ -48,11 +55,7 @@ export function cashbackTabViewOf(cashback: ShopperCashback, rule: PublicCashbac
         : cashback.nextExpiry
           ? format(text.nextExpiry, { amount: money(cashback.nextExpiry.amountCents), date: dayOf(cashback.nextExpiry.expiresAt, locale) })
           : text.noExpiry,
-    rule: rule
-      ? rule.minSubtotalCents > 0
-        ? format(text.earnsFrom, { rate: ratePercentOf(rule.rateBps, locale), minimum: money(rule.minSubtotalCents) })
-        : format(text.earns, { rate: ratePercentOf(rule.rateBps, locale) })
-      : null,
+    rule: rule ? ruleOf(rule, { rate: ratePercentOf(rule.rateBps, locale), minimum: money(rule.minSubtotalCents) }, text) : null,
     credits: cashback.credits.map((credit) => ({
       key: credit.id,
       origin: originOf(credit.orderNumber) ?? text.shopCredit,
