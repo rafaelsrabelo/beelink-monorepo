@@ -277,4 +277,10 @@ describe("the cards of a shop's pages, in the app's tree", () => {
   it("sets no base for its addresses and no Twitter card of its own", () => {
     for (const file of files) expect(read(file), file).not.toMatch(/\bmetadataBase\b|\btwitter\s*:/)
   })
+
+  // A viewport is merged by key: a page's own colour would replace the shop's on that page alone.
+  it("has the browser's bar painted once, by the shop's layout, and by no page under it", () => {
+    expect(read("app/[slug]/layout.tsx")).toContain("return shopThemeColorOf(await shopAt(slug))")
+    for (const file of files.filter((entry) => entry !== "app/[slug]/layout.tsx")) expect(read(file), file).not.toMatch(/\bthemeColor\b|\bgenerateViewport\b/)
+  })
 })
