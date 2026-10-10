@@ -46,3 +46,49 @@ Percentual por categoria ou por variação; cashback em valor fixo (R$) por prod
 
 - Uma loja que passa para "por produto" sem preencher nenhum produto deixa de dar cashback em tudo. A tela diz isso ao lado da escolha, e a listagem mostra "Adicionar cashback" em cada linha.
 - O percentual médio do pedido pode ser um número quebrado (3,33%) no detalhe do pedido.
+
+## 09/10/2026, mais tarde — como ficou, a cobertura e o que foi visto no navegador
+
+### O que mudou ao escrever
+
+- **Este plano foi escrito com o código já em andamento**, não antes. O pedido chegou em duas mensagens: a primeira ("pode ser vinculado ao produto") levou a um desenho em que o percentual do produto *substituía* o da loja; a segunda ("tem que ser configurável: % no produto ou de forma geral") trocou esse desenho pelo modo da decisão 1, antes de qualquer commit.
+- **`earningOf` e `quotedCashbackOf` passaram a receber as partes do pedido** (`EarningParts`, agora com as linhas), e não mais dois números soltos. Quem chama é o mesmo de antes: a colocação do pedido e a cotação.
+- **A coluna da listagem e o campo do cadastro são blocos próprios** (`product-cashback-cell`, `product-cashback-field`, este já com o seu card). Para a tabela voltar a caber em 250 linhas, os três botões da linha (ver, editar, excluir) saíram para `product-row-actions`, sem mudar o que fazem. A tabela tinha 272 linhas antes deste ticket; ficou com 239.
+- **Um campo recusado deixa de ficar marcado quando é digitado de novo.** Visto no navegador: depois de "150" recusado, o "10" certo continuava em vermelho até o próximo Salvar. `ProductEditorScreen` agora limpa as recusas ao digitar. Vale também para o preço, que tinha o mesmo comportamento.
+- **A página do produto na vitrine não mudou**: quem calcula a regra do produto é `StorefrontProductLive`, que já recebia o produto e o cashback da loja.
+
+### Cobertura da Definição de Pronto
+
+| # | Evidência |
+|---|---|
+| 1 | `apps/api/prisma/migrations/20261009230000_cashback_by_product/migration.sql` (`mode` com padrão `STORE`); `cashback.e2e-spec.ts` "reads the defaults…" |
+| 2 | `cashback-settings-form.tsx`; `cashback.test.tsx` "chooses between one rate and by product…"; `cashback-screen.test.tsx` "saves giving it by product…"; `cashback.e2e-spec.ts` "saves giving it by product, and keeps the one rate…" |
+| 3 | `product.dto.ts` (`cashbackRateBps`, 1 a 10000) e o CHECK da migration; `cashback-orders.e2e-spec.ts` "refuses a product's rate of %s" e "clears a product's rate with null…" |
+| 4 | `product-editor.test.tsx` "asks the product's cashback only when the shop gives it by product, whatever its variations"; `product-cashback-field.test.tsx`; `product-form-mapping.test.ts` |
+| 5 | `product-table.test.tsx` "says each product's cashback, and offers to add one…" e "has no cashback column in any other shop"; `product-cashback-cell.test.tsx` |
+| 6 | `cashback-earning.spec.ts` "earning by product" (seis casos); `cashback-orders.e2e-spec.ts` "earns on the products that have a rate…" e "earns nothing on an order of products with no rate…" |
+| 7 | `cashback-earning.spec.ts` "reads no product's own rate while the shop gives one rate"; `cashback-storefront.e2e-spec.ts` "keeps a product's rate unread…"; todos os testes de cashback que já existiam passam sem mudar o valor esperado |
+| 8 | `cashback-earning.spec.ts` "holds the shop's minimum against the whole order…" |
+| 9 | A cotação e o pedido chamam o mesmo `earningPartsOf`; `cashback-storefront.e2e-spec.ts` "quotes nothing for a product with no rate, and its own rate once it has one" |
+| 10 | `product-cashback.test.ts`; `storefront-product-live.test.tsx` "says what the purchase earns at the product's own rate…"; `cashback-tab-view.test.ts` "says the cashback is by product…" |
+| 11 | `cashback-earning.spec.ts` "…records the order's average" e "records a rate of at least one basis point…"; `cashback-orders.e2e-spec.ts` (`rateBps: 333`) |
+| 12 | Três blocos novos, cada um com `.stories.tsx` e `.test.tsx` (com axe); `locales/pt-BR.ts` e `locales/en.ts` |
+| 13 | Acima; `docs/product/README.md` (Cashback), `packages/ui/docs/README.md`, `apps/web/docs/README.md` |
+| 14 | `pnpm ci-check` verde; o navegador, abaixo |
+
+### O que foi visto no navegador
+
+Numa loja de teste local (API e web deste branch, banco próprio), em 1440 px e em 390 px:
+
+- Tela Cashback: "Um percentual para a loja toda" vem marcado; ao ligar e escolher "Por produto" o campo "Quanto volta (%)" some, aparece o texto com "Definir nos produtos" e o exemplo vira "Em cada produto, o cliente ganha o percentual definido no cadastro dele." Salvou.
+- Listagem de produtos: sem coluna Cashback enquanto o cashback estava desligado; com ela depois, e "Adicionar cashback" nas três linhas.
+- "Adicionar cashback" abriu o produto com o foco no campo, já visível na tela. "150" foi recusado no campo, sem enviar; "10" salvou e a listagem voltou mostrando 10%, sem recarregar. O mesmo com "2,5" em outro produto.
+- "Novo produto" mostra o campo.
+- Vitrine: o produto de R$ 149,90 a 10% diz "Ganhe até R$ 14,99 de cashback nesta compra"; o de R$ 89,90 a 2,5%, "R$ 2,24"; o produto sem percentual não diz nada.
+- Em 390 px nem a tela Cashback nem o cadastro do produto rolam para o lado.
+
+### O que não foi conferido
+
+- A aba Cashback da conta do cliente e a linha de cashback do carrinho não foram abertas no navegador: estão cobertas por teste de unidade e pelo e2e da cotação.
+- A suíte e2e inteira da API foi rodada duas vezes neste ambiente e falhou em 12 e depois em 14 testes, de arquivos diferentes a cada rodada, quase todos por e-mail que não chegou a tempo (o Mailpit é dividido com outro worktree). Os seis arquivos de cashback passam. Os arquivos que falharam na segunda rodada, e dois da primeira, passaram rodados à parte, menos `meta-pixel-without-vault-key`, que depende do `.env` local; `custom-domain` começa conferindo esse mesmo `.env` e não foi rodado de novo. Nem todos os que falharam na primeira rodada foram anotados. Vale conferir o job `api` do CI.
+- O e2e do web (Playwright) não foi rodado.
