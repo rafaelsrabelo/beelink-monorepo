@@ -12,6 +12,8 @@ import {
   GoogleAuthorizationResponse,
   GoogleAuthorizeDto,
   GoogleCallbackDto,
+  GoogleHandoffDto,
+  GoogleHandoffSessionResponse,
   GoogleSignInResponse,
 } from '../dto/customer-google.dto.js';
 
@@ -20,7 +22,8 @@ const rateLimit = { max: env.AUTH_RATE_LIMIT_MAX, timeWindow: env.AUTH_RATE_LIMI
 
 /**
  * A shopper's Google door. The start is per shop; the callback is not — Google sends every shop's
- * shopper back to one fixed address, and the state says which shop the flow began at.
+ * shopper back to one fixed address, and the state says which shop the flow began at. A flow begun
+ * at a shop's own domain ends there, by a handoff that domain trades for the session (BEELINK-284).
  */
 @ApiTags('customers')
 @Public()
@@ -43,7 +46,7 @@ export class CustomerGoogleController {
   @ApiNotFoundResponse({ description: 'GOOGLE_SIGN_IN_UNAVAILABLE · STORE_NOT_FOUND' })
   @ApiTooManyRequestsResponse({ description: 'RATE_LIMITED' })
   authorize(@Param('storeSlug') storeSlug: string, @Body() dto: GoogleAuthorizeDto): Promise<GoogleAuthorizationResponse> {
-    return this.google.authorize(storeSlug, dto.returnTo);
+    return this.google.authorize(storeSlug, dto.returnTo, dto.handoffChallenge);
   }
 
   @Post('customer/google/callback')
@@ -56,5 +59,17 @@ export class CustomerGoogleController {
   @ApiNotFoundResponse({ description: 'GOOGLE_SIGN_IN_UNAVAILABLE' })
   callback(@Body() dto: GoogleCallbackDto, @Headers('user-agent') userAgent?: string): Promise<GoogleSignInResponse> {
     return this.google.callback(dto.code, dto.state, userAgent);
+  }
+
+  @Post('stores/:storeSlug/customer/google/handoff')
+  @HttpCode(HttpStatus.OK)
+  @RouteConfig({ rateLimit })
+  @ApiOperation({ summary: "Trade a handoff's code for the session, at the shop's own domain — once, within its minute" })
+  @ApiOkResponse({ type: GoogleHandoffSessionResponse })
+  @ApiBadRequestResponse({ description: 'GOOGLE_STATE_INVALID' })
+  @ApiNotFoundResponse({ description: 'STORE_NOT_FOUND' })
+  @ApiTooManyRequestsResponse({ description: 'RATE_LIMITED' })
+  handoff(@Param('storeSlug') storeSlug: string, @Body() dto: GoogleHandoffDto, @Headers('user-agent') userAgent?: string): Promise<GoogleHandoffSessionResponse> {
+    return this.google.redeemHandoff(storeSlug, dto.code, dto.verifier, userAgent);
   }
 }

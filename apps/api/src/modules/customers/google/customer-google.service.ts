@@ -1,12 +1,16 @@
+// Node
+import { createHash, randomBytes } from 'node:crypto';
+
 // Nest
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 
 // Types
-import type { CustomerSignInOptions, GoogleAuthorization, GoogleSignIn } from '@harness-monorepo/contracts';
+import type { CustomerSignInOptions, GoogleAuthorization, GoogleHandoffSession, GoogleSignIn } from '@harness-monorepo/contracts';
 import type { Prisma } from '../../../generated/prisma/client.js';
 import type { UserModel } from '../../../generated/prisma/models.js';
 
 // App
+import { env } from '../../../shared/config/env.js';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { LEGAL_VERSION, legalAcceptanceOf } from '../../auth/auth.constants.js';
 import { SessionService } from '../../auth/session.service.js';
@@ -16,6 +20,16 @@ import { codeChallengeOf, googleConfig, GoogleOAuthClient, newCodeVerifier, newS
 
 /** Long enough to pick an account and consent; short enough that an abandoned state is soon gone. */
 const STATE_TTL_MS = 10 * 60 * 1000;
+
+/**
+ * How long a handoff's code is good for: the browser carries it from the platform's host to the
+ * shop's domain in one redirect, so a minute is a slow network, not a person.
+ */
+export const HANDOFF_TTL_MS = 60 * 1000;
+
+function hashOf(code: string): string {
+  return createHash('sha256').update(code).digest('hex');
+}
 
 /**
  * The Google button says continuing accepts bee-link's terms (BEELINK-171), on the sign-in face too:
@@ -52,6 +66,18 @@ function returnToOf(storeSlug: string, returnTo: string | undefined): string | n
  *   later through "forgot my password".
  * Google not vouching for the e-mail is refused for everyone alike, so the refusal says nothing
  * about whether an account exists.
+ *
+ * A flow begun at the shop's own domain (BEELINK-284) cannot end here with a session: the callback
+ * is on the platform's host, and the cookies belong on the shop's. It ends with a handoff — a code
+ * the browser carries to that domain, which trades it for the session. What the code is held to:
+ * - the shop and the account, so it opens nothing else;
+ * - one use and one minute, taken by the delete that reads it;
+ * - the challenge the flow began with, whose secret only the browser that began it holds, in a
+ *   cookie of the shop's domain. A code read off an address, a log or a history opens nothing
+ *   without it — and a code of someone's own sign-in, sent to another person's browser, signs
+ *   nobody in there, which is what the state cookie does for the platform's host.
+ * The domain it goes to is the shop's `ACTIVE` one as the database has it at that moment; no request
+ * ever names a host.
  */
 @Injectable()
 export class CustomerGoogleService {
@@ -64,10 +90,10 @@ export class CustomerGoogleService {
   ) {}
 
   options(): CustomerSignInOptions {
-    return { google: googleConfig() !== null };
+    return { google: googleConfig() !== null, platformOrigin: new URL(env.WEB_URL).origin };
   }
 
-  async authorize(storeSlug: string, returnTo?: string): Promise<GoogleAuthorization> {
+  async authorize(storeSlug: string, returnTo?: string, handoffChallenge?: string): Promise<GoogleAuthorization> {
     const config = this.config();
     const storeId = await this.stores.publicStoreId(storeSlug);
     const state = newState();
@@ -77,7 +103,7 @@ export class CustomerGoogleService {
       // Abandoned flows are swept on the way in; nothing else ever reads them.
       this.prisma.oAuthState.deleteMany({ where: { expiresAt: { lt: new Date() } } }),
       this.prisma.oAuthState.create({
-        data: { state, codeVerifier, storeId, returnTo: returnToOf(storeSlug, returnTo), expiresAt: new Date(Date.now() + STATE_TTL_MS) },
+        data: { state, codeVerifier, storeId, returnTo: returnToOf(storeSlug, returnTo), handoffChallenge: handoffChallenge ?? null, expiresAt: new Date(Date.now() + STATE_TTL_MS) },
       }),
     ]);
 
@@ -89,7 +115,10 @@ export class CustomerGoogleService {
 
     // Taken out as it is read: a replayed state finds nothing, and neither does a second tab.
     const flight = await this.prisma.oAuthState.delete({ where: { state } }).catch(() => null);
-    const store = flight && flight.expiresAt > new Date() ? await this.prisma.store.findUnique({ where: { id: flight.storeId }, select: { id: true, slug: true } }) : null;
+    const store =
+      flight && flight.expiresAt > new Date()
+        ? await this.prisma.store.findUnique({ where: { id: flight.storeId }, select: { id: true, slug: true, customDomain: true, customDomainStatus: true } })
+        : null;
     if (!flight || !store) {
       throw new BadRequestException({ errorCode: 'GOOGLE_STATE_INVALID', message: 'This Google sign-in was not started here, was used, or took too long' });
     }
@@ -104,9 +133,48 @@ export class CustomerGoogleService {
 
     const user = await this.accountOf(store.id, claims);
     await this.customers.recordOf(store.id, user);
+
+    // Begun at the shop's own domain, and the domain still is the shop's: the session is opened
+    // there, by the trade. A domain removed or unverified since leaves the flow on this host.
+    if (flight.handoffChallenge && store.customDomain && store.customDomainStatus === 'ACTIVE') {
+      const code = await this.issueHandoff({ challenge: flight.handoffChallenge, storeId: store.id, userId: user.id, returnTo: flight.returnTo });
+      return { session: null, handoff: { host: store.customDomain, code }, storeSlug: store.slug, returnTo: flight.returnTo };
+    }
+
     const session = await this.sessions.start(user, userAgent, 'CUSTOMER');
 
-    return { session, storeSlug: store.slug, returnTo: flight.returnTo };
+    return { session, handoff: null, storeSlug: store.slug, returnTo: flight.returnTo };
+  }
+
+  /**
+   * The session a handoff carried to the shop's own domain. One refusal for every way it can fail —
+   * unknown, used, late, another shop's, another browser's — so it tells a guesser nothing; and the
+   * code is spent by being read, whatever comes of it.
+   */
+  async redeemHandoff(storeSlug: string, code: string, verifier: string, userAgent?: string): Promise<GoogleHandoffSession> {
+    const storeId = await this.stores.publicStoreId(storeSlug);
+
+    // Taken out as it is read: of two trades at once, one finds nothing.
+    const taken = await this.prisma.googleHandoff.delete({ where: { codeHash: hashOf(code) } }).catch(() => null);
+    const holds = taken !== null && taken.expiresAt > new Date() && taken.storeId === storeId && taken.challenge === codeChallengeOf(verifier);
+    const user = holds ? await this.prisma.user.findFirst({ where: { id: taken.userId, storeId } }) : null;
+    if (!taken || !user) {
+      throw new BadRequestException({ errorCode: 'GOOGLE_STATE_INVALID', message: 'This Google sign-in was not started here, was used, or took too long' });
+    }
+
+    return { session: await this.sessions.start(user, userAgent, 'CUSTOMER'), returnTo: taken.returnTo };
+  }
+
+  private async issueHandoff(row: { challenge: string; storeId: string; userId: string; returnTo: string | null }): Promise<string> {
+    const now = Date.now();
+    // 32 random bytes: 43 characters of base64url, nothing to guess.
+    const code = randomBytes(32).toString('base64url');
+    await this.prisma.$transaction([
+      // The ones nobody traded: swept here, so the table never outgrows a minute of handoffs.
+      this.prisma.googleHandoff.deleteMany({ where: { expiresAt: { lte: new Date(now) } } }),
+      this.prisma.googleHandoff.create({ data: { codeHash: hashOf(code), ...row, expiresAt: new Date(now + HANDOFF_TTL_MS) } }),
+    ]);
+    return code;
   }
 
   private config(): GoogleConfig {
