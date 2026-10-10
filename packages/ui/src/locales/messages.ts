@@ -755,6 +755,8 @@ export interface UiMessages {
       earns: string
       /** `{rate}`, `{minimum}`. */
       earnsFrom: string
+      earnsByProduct: string
+      earnsByProductFrom: string
       credits: string
       /** `{number}`. */
       order: string
@@ -2895,6 +2897,8 @@ export interface UiMessages {
       variationsHint: string
       /** Said in the price and stock sections of a product with options, in place of their fields. */
       perCombination: string
+      cashback: string
+      cashbackHint: string
     }
     /** The variations editor: options, their values, and a row per combination. */
     variations: {
@@ -3097,11 +3101,16 @@ export interface UiMessages {
         noCode: string
         /** Said where `trackStock` is off — which is not the same as none left. */
         stockUntracked: string
+        cashback: string
+        addCashback: string
       }
       /** Said when the price typed is not a number, or is zero. */
       priceInvalid: string
       /** Said when the "was" price is not above the price — a discount that is not one. */
       compareInvalid: string
+      cashbackLabel: string
+      cashbackHelp: string
+      cashbackInvalid: string
     }
 
     categories: {
@@ -3571,6 +3580,12 @@ export interface UiMessages {
       exampleOff: string
       /** The switch is on and the rate does not hold yet. */
       exampleRateMissing: string
+      mode: string
+      modeStore: string
+      modeProduct: string
+      modeProductHelp: string
+      modeProductLink: string
+      exampleByProduct: string
       save: string
       saving: string
       saved: string

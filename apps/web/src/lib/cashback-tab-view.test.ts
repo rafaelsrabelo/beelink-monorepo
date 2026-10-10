@@ -72,10 +72,17 @@ describe("cashbackTabViewOf", () => {
 
   it("says the shop's rule while its cashback is on, with the minimum when it has one", () => {
     expect(cashbackTabViewOf(cashback, null, context).rule).toBeNull()
-    expect(cashbackTabViewOf(cashback, { rateBps: 500, minSubtotalCents: 0 }, context).rule).toBe("Nesta loja, 5% do valor dos produtos volta como cashback quando o pedido é entregue.")
-    expect(plain(cashbackTabViewOf(cashback, { rateBps: 250, minSubtotalCents: 5000 }, context).rule)).toBe(
+    expect(cashbackTabViewOf(cashback, { mode: "STORE", rateBps: 500, minSubtotalCents: 0 }, context).rule).toBe("Nesta loja, 5% do valor dos produtos volta como cashback quando o pedido é entregue.")
+    expect(plain(cashbackTabViewOf(cashback, { mode: "STORE", rateBps: 250, minSubtotalCents: 5000 }, context).rule)).toBe(
       "Nesta loja, 2,5% do valor dos produtos volta como cashback quando o pedido é entregue, em pedidos a partir de R$ 50,00.",
     )
+  })
+
+  it("says the cashback is by product, and never the shop's one rate, in a shop that gives by product (BEELINK-313)", () => {
+    expect(cashbackTabViewOf(cashback, { mode: "PRODUCT", rateBps: 500, minSubtotalCents: 0 }, context).rule).toBe(
+      "Nesta loja, o cashback é por produto: a página de cada um diz quanto volta quando o pedido é entregue.",
+    )
+    expect(plain(cashbackTabViewOf(cashback, { mode: "PRODUCT", rateBps: 500, minSubtotalCents: 5000 }, context).rule)).toContain("em pedidos a partir de R$ 50,00")
   })
 })
 

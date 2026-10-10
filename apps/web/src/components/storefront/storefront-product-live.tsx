@@ -12,6 +12,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import { AppLink } from "@/components/app-link"
+import { productCashbackRuleOf } from "@/lib/product-cashback"
 import { StorefrontFavoriteLive } from "./favorites/storefront-favorite-live"
 import { useTrackView } from "./tracking/use-track"
 import { useAddToCart } from "./use-add-to-cart"
@@ -46,7 +47,7 @@ export interface StorefrontProductLiveProps {
   showStock: boolean
   /** The shop takes orders on WhatsApp, which the buy box says. */
   finishesOnWhatsApp: boolean
-  /** Who sells it, and the shop's cashback while on (BEELINK-243). */
+  /** Who sells it, and the shop's cashback while on (BEELINK-243): the box is told what this product earns at (BEELINK-313). */
   seller: { name: string; paymentMethods: readonly PaymentMethod[]; cashback: PublicCashback | null }
   restockCopy: RestockCopy
   messages: UiMessages
@@ -142,7 +143,7 @@ export function StorefrontProductLive({
       showBadge={showBadge}
       showStock={showStock}
       finishesOnWhatsApp={finishesOnWhatsApp}
-      seller={seller}
+      seller={{ ...seller, cashback: productCashbackRuleOf(seller.cashback, product) }}
       messages={messages}
     />
   )

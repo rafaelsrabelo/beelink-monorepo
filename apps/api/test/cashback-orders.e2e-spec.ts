@@ -16,7 +16,7 @@ function shopBody(slug: string) {
 }
 
 const DAY = 24 * 60 * 60 * 1000;
-const RULES = { enabled: true, rateBps: 500, expiresAfterDays: 30, minSubtotalCents: 5000, maxRedeemBps: 10000 };
+const RULES = { enabled: true, mode: 'STORE', rateBps: 500, expiresAfterDays: 30, minSubtotalCents: 5000, maxRedeemBps: 10000 };
 const bia = { name: 'Bia Souza', phone: '(11) 98888-7777' };
 
 describe('an order earns cashback: pending when placed, usable once delivered, taken back when undone', () => {
@@ -91,6 +91,47 @@ describe('an order earns cashback: pending when placed, usable once delivered, t
       // R$ 100,00 less R$ 60,00 by hand is under the R$ 50,00 minimum.
       expect((await sale({ discountCents: 6000 })).cashback).toBeNull();
       expect(await prisma.cashbackCredit.count()).toBe(0);
+    });
+  });
+
+  /** BEELINK-313: each line at its product's own rate; the order's own discounts shared by what each line costs. */
+  describe('placed in a shop that gives by product', () => {
+    let creatine: string;
+    const product = (id: string, change: object) => call('PUT', `/api/stores/lessari/products/${id}`, owner, change);
+
+    beforeEach(async () => {
+      const created = (await call('POST', '/api/stores/lessari/products', owner, { name: 'Creatina', priceCents: 5_000, cashbackRateBps: 1000 })).json<Product>();
+      expect(created.cashbackRateBps).toBe(1000);
+      creatine = (await prisma.productVariant.findFirstOrThrow({ where: { productId: created.id } })).id;
+      await rules({ mode: 'PRODUCT' });
+    });
+
+    it('earns on the products that have a rate, and records the average the order was placed at', async () => {
+      // R$ 100,00 of whey with no rate and R$ 50,00 of creatine at 10%, less R$ 15,00 by hand: 90% of R$ 5,00.
+      const order = await sale({ items: [{ variantId: whey, quantity: 1 }, { variantId: creatine, quantity: 1 }], discountCents: 1500 });
+
+      expect(order.cashback).toMatchObject({ earnedCents: 450, rateBps: 333, status: 'PENDING' });
+      await expectBooksToHold(order.customer.id);
+    });
+
+    it('earns nothing on an order of products with no rate, whatever the one rate the shop had', async () => {
+      expect((await sale()).cashback).toBeNull();
+      expect(await prisma.cashbackCredit.count()).toBe(0);
+    });
+
+    it.each([
+      ['nothing', 0],
+      ['past 100%', 10_001],
+      ['a fraction of a basis point', 2.5],
+    ])("refuses a product's rate of %s", async (_, cashbackRateBps) => {
+      const whole = await prisma.product.findFirstOrThrow({ where: { name: 'Whey' } });
+      expect((await product(whole.id, { cashbackRateBps })).statusCode).toBe(400);
+    });
+
+    it("clears a product's rate with null, and leaves it alone when the key is not sent", async () => {
+      const whole = await prisma.product.findFirstOrThrow({ where: { name: 'Creatina' } });
+      expect((await product(whole.id, { name: 'Creatina pura' })).json<Product>().cashbackRateBps).toBe(1000);
+      expect((await product(whole.id, { cashbackRateBps: null })).json<Product>().cashbackRateBps).toBeNull();
     });
   });
 

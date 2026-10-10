@@ -2,7 +2,7 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 
 // Types
-import type { AuthSession, CustomerOrder, Order, OrderQuote, Product, PublicStore } from '@harness-monorepo/contracts';
+import type { AuthSession, CustomerOrder, Order, OrderQuote, Product, PublicProductDetail, PublicStore } from '@harness-monorepo/contracts';
 
 // App
 import { PrismaService } from '../src/shared/prisma/prisma.service.js';
@@ -15,13 +15,14 @@ function shopBody(slug: string) {
   return { name: slug, slug, type: 'ECOMMERCE', socialNetworks: { whatsapp: '(11) 99999-8888' }, address: { city: 'São Paulo', state: 'sp', zipCode: '01310-930' } };
 }
 
-const RULES = { enabled: true, rateBps: 500, expiresAfterDays: 30, minSubtotalCents: 15_000, maxRedeemBps: 10000 };
+const RULES = { enabled: true, mode: 'STORE', rateBps: 500, expiresAfterDays: 30, minSubtotalCents: 15_000, maxRedeemBps: 10000 };
 
 describe('what a shopper is told they would earn (BEELINK-243)', () => {
   let app: NestFastifyApplication;
   let prisma: PrismaService;
   let owner: AuthSession;
   let whey: string;
+  let wheyProduct: string;
 
   beforeAll(async () => {
     app = await createTestApp();
@@ -38,6 +39,7 @@ describe('what a shopper is told they would earn (BEELINK-243)', () => {
     owner = await signUpAndSignIn(app, newEmail('dona'));
     await call('POST', '/api/stores', owner, shopBody('lessari'));
     const product = (await call('POST', '/api/stores/lessari/products', owner, { name: 'Whey', priceCents: 10_000 })).json<Product>();
+    wheyProduct = product.id;
     whey = (await prisma.productVariant.findFirstOrThrow({ where: { productId: product.id } })).id;
   });
 
@@ -60,7 +62,7 @@ describe('what a shopper is told they would earn (BEELINK-243)', () => {
   it('tells the shop window the rate and the minimum, and never the rest of the rules', async () => {
     await call('PUT', '/api/stores/lessari/cashback', owner, RULES);
 
-    expect((await shopWindow()).cashback).toEqual({ rateBps: 500, minSubtotalCents: 15_000 });
+    expect((await shopWindow()).cashback).toEqual({ mode: 'STORE', rateBps: 500, minSubtotalCents: 15_000 });
   });
 
   it('quotes what the cart would earn, and below the minimum, what is missing', async () => {
@@ -75,6 +77,36 @@ describe('what a shopper is told they would earn (BEELINK-243)', () => {
     await call('POST', '/api/stores/lessari/promotions', owner, { name: 'Semana', scope: 'CART', discountKind: 'PERCENT', percentBps: 1000, startsAt: new Date(Date.now() - 86_400_000).toISOString() });
 
     expect((await quote(1)).cashback).toEqual({ status: 'EARNS', earnedCents: 450, rateBps: 500 });
+  });
+
+  /** BEELINK-313: the shop gives by product — the page reads the product's own rate, and the cart quotes line by line. */
+  describe('by product', () => {
+    const BY_PRODUCT = { ...RULES, mode: 'PRODUCT', minSubtotalCents: 0 };
+    const page = () => call('GET', '/api/stores/lessari/catalog/whey').then((response) => response.json<PublicProductDetail>());
+
+    it("tells the shop window the way it gives, and the product's page its own rate", async () => {
+      await call('PUT', '/api/stores/lessari/cashback', owner, BY_PRODUCT);
+      expect((await shopWindow()).cashback).toMatchObject({ mode: 'PRODUCT' });
+      expect((await page()).cashbackRateBps).toBeNull();
+
+      expect((await call('PUT', `/api/stores/lessari/products/${wheyProduct}`, owner, { cashbackRateBps: 1000 })).statusCode).toBe(200);
+      expect((await page()).cashbackRateBps).toBe(1000);
+    });
+
+    it('quotes nothing for a product with no rate, and its own rate once it has one', async () => {
+      await call('PUT', '/api/stores/lessari/cashback', owner, BY_PRODUCT);
+      expect((await quote(1)).cashback).toBeNull();
+
+      await call('PUT', `/api/stores/lessari/products/${wheyProduct}`, owner, { cashbackRateBps: 1000 });
+      expect((await quote(1)).cashback).toEqual({ status: 'EARNS', earnedCents: 1_000, rateBps: 1000 });
+    });
+
+    it("keeps a product's rate unread while the shop gives one rate", async () => {
+      await call('PUT', `/api/stores/lessari/products/${wheyProduct}`, owner, { cashbackRateBps: 1000 });
+      await call('PUT', '/api/stores/lessari/cashback', owner, { ...RULES, minSubtotalCents: 0 });
+
+      expect((await quote(1)).cashback).toEqual({ status: 'EARNS', earnedCents: 500, rateBps: 500 });
+    });
   });
 
   /** What the cart promised is what the order records: the same pricing, read the same way, at every door. */

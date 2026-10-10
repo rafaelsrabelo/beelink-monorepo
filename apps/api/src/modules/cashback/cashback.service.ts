@@ -36,7 +36,7 @@ export class CashbackService {
   /** The whole of the rules, as the form saves them. The lots already given keep their validity. */
   async save(storeSlug: string, userId: string, dto: CashbackSettingsDto): Promise<CashbackOverview> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
-    const rules = { enabled: dto.enabled, rateBps: dto.rateBps, expiresAfterDays: dto.expiresAfterDays, minSubtotalCents: dto.minSubtotalCents, maxRedeemBps: dto.maxRedeemBps };
+    const rules = { enabled: dto.enabled, mode: dto.mode, rateBps: dto.rateBps, expiresAfterDays: dto.expiresAfterDays, minSubtotalCents: dto.minSubtotalCents, maxRedeemBps: dto.maxRedeemBps };
     await this.prisma.cashbackSettings.upsert({ where: { storeId }, create: { storeId, ...rules }, update: rules });
     return this.overviewOf(storeId);
   }

@@ -128,7 +128,7 @@ export function toPublicStore(
     layoutSettings: parseLayoutSettings(row.layoutSettings),
     paymentMethods: row.paymentMethods,
     // Only while on: a shop window says what comes back, never that nothing does.
-    cashback: row.cashbackSettings?.enabled ? { rateBps: row.cashbackSettings.rateBps, minSubtotalCents: row.cashbackSettings.minSubtotalCents } : null,
+    cashback: row.cashbackSettings?.enabled ? { mode: row.cashbackSettings.mode, rateBps: row.cashbackSettings.rateBps, minSubtotalCents: row.cashbackSettings.minSubtotalCents } : null,
     // Each by its own party's row: with both saved, neither is served in the other's place.
     metaPixelId: row.integrations.find(({ provider }) => provider === 'META_PIXEL')?.pixelId ?? null,
     googleAnalyticsId: row.integrations.find(({ provider }) => provider === 'GOOGLE_ANALYTICS')?.measurementId ?? null,

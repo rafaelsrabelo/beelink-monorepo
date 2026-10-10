@@ -48,6 +48,21 @@ describe("CashbackSettingsForm", () => {
     expect(screen.getByText(EXAMPLE)).toBeInTheDocument()
   })
 
+  /** BEELINK-313: one rate for the shop, or each product's own — and then the one rate is not asked for. */
+  it("chooses between one rate and by product, and asks the one rate only for the first", async () => {
+    const onChange = vi.fn()
+    const { rerender } = render(<CashbackSettingsForm value={settings} onChange={onChange} onSubmit={() => {}} example={EXAMPLE} />)
+
+    await userEvent.click(screen.getByRole("button", { name: "Por produto" }))
+    expect(onChange).toHaveBeenLastCalledWith({ ...settings, mode: "PRODUCT" })
+
+    rerender(<CashbackSettingsForm value={{ ...settings, mode: "PRODUCT" }} onChange={onChange} onSubmit={() => {}} example={EXAMPLE} productsLink={<a href="/produtos">Definir nos produtos</a>} />)
+    expect(screen.queryByLabelText("Quanto volta (%)")).not.toBeInTheDocument()
+    expect(screen.getByText(/Produto sem percentual não gera cashback/)).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Definir nos produtos" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Por produto" })).toHaveAttribute("aria-pressed", "true")
+  })
+
   it("asks for the days only while the credit expires", () => {
     const { rerender } = render(<CashbackSettingsForm value={settings} onChange={() => {}} onSubmit={() => {}} example={EXAMPLE} />)
     expect(screen.getByLabelText("Vence depois de (dias)")).toHaveValue("90")

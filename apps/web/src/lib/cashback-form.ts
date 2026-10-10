@@ -42,6 +42,7 @@ function daysFrom(typed: string): number | null {
 export function cashbackFormOf(settings: CashbackSettings): CashbackSettingsFormValues {
   return {
     enabled: settings.enabled,
+    mode: settings.mode,
     rate: percentFrom(settings.rateBps),
     validity: settings.expiresAfterDays === null ? "NONE" : "DAYS",
     validityDays: settings.expiresAfterDays === null ? "" : String(settings.expiresAfterDays),
@@ -66,7 +67,7 @@ export function cashbackPayloadOf(value: CashbackSettingsFormValues, text: Text[
   }
   if (Object.keys(issues).length > 0 || rateBps === null || maxRedeemBps === null || !minimumHolds) return { issues }
 
-  return { payload: { enabled: value.enabled, rateBps, expiresAfterDays: days, minSubtotalCents: minimum, maxRedeemBps } }
+  return { payload: { enabled: value.enabled, mode: value.mode, rateBps, expiresAfterDays: days, minSubtotalCents: minimum, maxRedeemBps } }
 }
 
 /**
@@ -77,13 +78,16 @@ export function cashbackPayloadOf(value: CashbackSettingsFormValues, text: Text[
  */
 export function cashbackExampleOf(value: CashbackSettingsFormValues, money: (cents: number) => string, text: Text["settings"]): string {
   if (!value.enabled) return text.exampleOff
+  const days = value.validity === "DAYS" ? daysFrom(value.validityDays) : null
+  const validity = days === null ? "" : format(text.exampleValidity, { days: String(days) })
+  // By product there is no one sum to show: each product's own page of the panel holds its rate.
+  if (value.mode === "PRODUCT") return `${text.exampleByProduct}${validity}.`
   const rateBps = bpsFrom(value.rate)
   if (rateBps === null) return text.exampleRateMissing
   const minimum = value.minimum.trim() === "" ? 0 : centsFromStrict(value.minimum)
   const orderCents = minimum !== null && minimum > EXAMPLE_ORDER_CENTS && minimum <= AMOUNT_MAX_CENTS ? minimum : EXAMPLE_ORDER_CENTS
   const earned = Math.floor((orderCents * rateBps) / BPS_MAX)
-  const days = value.validity === "DAYS" ? daysFrom(value.validityDays) : null
-  return `${format(text.example, { order: money(orderCents), earned: money(earned) })}${days === null ? "" : format(text.exampleValidity, { days: String(days) })}.`
+  return `${format(text.example, { order: money(orderCents), earned: money(earned) })}${validity}.`
 }
 
 /**

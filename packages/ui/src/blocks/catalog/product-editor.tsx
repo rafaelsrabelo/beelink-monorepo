@@ -26,6 +26,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // Block
 import { PhotoValuesPicker } from "./photo-values-picker"
 import { ProductBasicsFields } from "./product-basics-fields"
+import { ProductCashbackField } from "./product-cashback-field"
 import type { ProductCategoryOption, ProductFormIssues, ProductFormValues } from "./product-form-types"
 import { ProductInventoryFields } from "./product-inventory-fields"
 import { ProductMediaField } from "./product-media-field"
@@ -59,6 +60,8 @@ export interface ProductEditorProps {
     onChange: (value: VariationsValue) => void
     errors?: VariationIssues
   }
+  /** The shop gives its cashback by product (BEELINK-313): the editor asks this product's rate. */
+  cashback?: boolean
   /** Something is not saved: the footer says so, and Cancel asks before throwing it away. */
   dirty?: boolean
   messages?: UiMessages
@@ -93,6 +96,7 @@ export function ProductEditor({
   pending = false,
   submitLabel,
   variations,
+  cashback = false,
   dirty = false,
   messages = defaultMessages,
 }: ProductEditorProps) {
@@ -162,15 +166,11 @@ export function ProductEditor({
         {perCombination ? (
           <p className="text-muted-foreground text-sm">{sections.perCombination}</p>
         ) : (
-          <ProductPricingFields
-            value={value}
-            onChange={onChange}
-            errors={errors}
-            disabled={pending}
-            messages={messages}
-          />
+          <ProductPricingFields value={value} onChange={onChange} errors={errors} disabled={pending} messages={messages} />
         )}
       </ProductSection>
+
+      {cashback ? <ProductCashbackField value={value} onChange={onChange} errors={errors} disabled={pending} messages={messages} /> : null}
 
       {variations ? (
         <ProductSection title={sections.variations} hint={sections.variationsHint}>

@@ -75,7 +75,10 @@ Every block takes its data, its callbacks and its links through props, which is 
 | `blocks/landing/landing-posters` | `busStop`, `wall` — slots for the app's own images, framed side by side; their alt texts are `landing.posters.*Alt` | Blocos/Landing → Pôsteres |
 | `blocks/landing/landing-cta` | `signupHref` | Blocos/Landing → Chamada e rodapé |
 | `blocks/landing/landing-footer` | `termsHref`, `privacyHref`, `year` | Blocos/Landing → Chamada e rodapé |
-| `blocks/cashback/cashback-settings-form` | `value`, `onChange`, `onSubmit`, `issues`, `example`, `pending`, `error`, `saved` — the rules as typed (`lib/cashback`) | Blocos/Painel/Cashback |
+| `blocks/cashback/cashback-settings-form` | `value`, `onChange`, `onSubmit`, `issues`, `example`, `pending`, `error`, `saved`, `productsLink` — the rules as typed (`lib/cashback`), one rate or by product (BEELINK-313) | Blocos/Painel/Cashback |
+| `blocks/catalog/product-cashback-field` | `value`, `onChange`, `errors` — the product's own cashback, in its card of the product editor; drawn by `catalog/product-editor` when `cashback` | Blocos/Catálogo/Cashback do produto |
+| `blocks/catalog/product-row-actions` | `name`, `draft`, `viewHref`, `onEdit`, `onDelete`, `busy` — a row's eye, pencil and bin; drawn by `catalog/product-table` | Blocos/Catálogo/Ações do produto na lista |
+| `blocks/catalog/product-cashback-cell` | `name`, `rateBps`, `onAdd` — a product's rate in the panel's list, or "Adicionar cashback"; drawn by `catalog/product-table` when `onAddCashback` | Blocos/Catálogo/Cashback do produto na lista |
 | `blocks/cashback/cashback-owed` | `owed`, `money` — what the shop owes in credit | Blocos/Painel/Cashback |
 | `blocks/cashback/customer-cashback` | `cashback`, `money`, `date`, `onAdjust`, `adjustment`, `pager` — a customer's balance and statement | Blocos/Painel/Cashback → Na ficha do cliente |
 | `blocks/cashback/cashback-adjust-form` | `value`, `onChange`, `onSubmit`, `onCancel`, `issues`, `error` | Blocos/Painel/Cashback → Ajuste manual |

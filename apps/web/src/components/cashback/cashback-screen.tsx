@@ -13,6 +13,7 @@ import { formatCents } from "@harness-monorepo/ui/blocks/storefront/storefront-p
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
+import { AppLink } from "@/components/app-link"
 import { cashbackErrorOf, cashbackExampleOf, cashbackFormOf, cashbackPayloadOf } from "@/lib/cashback-form"
 import { CashbackError } from "@/services/cashback/cashback-requests"
 import { useCashback, useSaveCashback } from "@/services/cashback/cashback-hooks"
@@ -68,6 +69,11 @@ export function CashbackScreen({ slug, locale, messages }: CashbackScreenProps) 
         pending={save.isPending}
         error={save.error ? cashbackErrorOf(save.error instanceof CashbackError ? save.error.errorCode : "UNKNOWN", text.errors) : undefined}
         saved={save.isSuccess}
+        productsLink={
+          <AppLink href={`/admin/${slug}/products`} className="text-foreground underline underline-offset-4">
+            {text.settings.modeProductLink}
+          </AppLink>
+        }
         messages={messages}
       />
     </Frame>

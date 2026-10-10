@@ -1,11 +1,7 @@
 "use client"
 
-// Libs
-import { EyeIcon, PencilIcon, Trash2Icon } from "lucide-react"
-
 // UI
 import { Badge } from "@harness-monorepo/ui/components/badge"
-import { Button, buttonVariants } from "@harness-monorepo/ui/components/button"
 import {
   Table,
   TableBody,
@@ -20,7 +16,9 @@ import { defaultLocale, defaultMessages } from "@harness-monorepo/ui/locales/ind
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
+import { ProductCashbackCell } from "./product-cashback-cell"
 import { ProductNameCell } from "./product-name-cell"
+import { ProductRowActions } from "./product-row-actions"
 
 export interface ProductTableItem {
   id: string
@@ -49,12 +47,19 @@ export interface ProductTableItem {
   viewHref?: string | null
   /** What a carrier lacks to quote it (BEELINK-184): said under the name. Null or absent says nothing. */
   carrierGap?: "NO_WEIGHT" | "NO_SIZE" | null
+  /** Its own cashback, in basis points (BEELINK-313); null or absent has none. Shown only with `onAddCashback`. */
+  cashbackRateBps?: number | null
 }
 
 export interface ProductTableProps {
   products: readonly ProductTableItem[]
   onEdit: (productId: string) => void
   onDelete: (productId: string) => void
+  /**
+   * The shop gives its cashback by product (BEELINK-313): the table grows a column that says each
+   * product's rate, and offers this on a product with none. Absent, there is no such column.
+   */
+  onAddCashback?: (productId: string) => void
   /**
    * What to say when there is nothing to show. It is a prop because "no products yet" and "no
    * product matches this filter" are different facts, and telling a shopkeeper with 200 products
@@ -84,6 +89,7 @@ export function ProductTable({
   products,
   onEdit,
   onDelete,
+  onAddCashback,
   emptyTitle,
   emptyHint,
   locale = defaultLocale,
@@ -139,6 +145,7 @@ export function ProductTable({
             <TableHead className="w-40">{columns.category}</TableHead>
             <TableHead className="w-32">{columns.origin}</TableHead>
             <TableHead className="w-32 text-right">{columns.price}</TableHead>
+            {onAddCashback ? <TableHead className="w-40">{columns.cashback}</TableHead> : null}
             {/* Read aloud, never drawn: a visible "Actions" over two icon buttons is a column
                 heading that describes the furniture rather than the data. */}
             <TableHead className="w-32">
@@ -206,62 +213,22 @@ export function ProductTable({
                 ) : null}
               </TableCell>
 
+              {onAddCashback ? (
+                <TableCell>
+                  <ProductCashbackCell name={product.name} rateBps={product.cashbackRateBps ?? null} onAdd={() => onAddCashback(product.id)} disabled={busyId === product.id} locale={locale} messages={messages} />
+                </TableCell>
+              ) : null}
+
               <TableCell>
-                <div className="flex items-center justify-end gap-1">
-                  {/*
-                    An anchor, not a button calling `window.open`. This navigates, so it belongs in
-                    the tab order as a link, opens on a middle click and offers "copy address" on a
-                    right click — none of which a button does. It opens elsewhere because the shop
-                    window is elsewhere: a shopkeeper checking a page wants their list still behind
-                    it.
-                  */}
-                  {product.viewHref ? (
-                    <a
-                      href={product.viewHref}
-                      target="_blank"
-                      rel="noreferrer"
-                      aria-label={`${text.view}: ${product.name}`}
-                      className={buttonVariants({ variant: "ghost", size: "icon" })}
-                    >
-                      <EyeIcon aria-hidden="true" className="size-4" />
-                    </a>
-                  ) : (
-                    // Kept in place rather than left out: a column that loses a control on some
-                    // rows moves the two beside it, and the name says why this one does nothing.
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      disabled
-                      // The reason comes from the row, not from the missing address. A published
-                      // product whose shop has not loaded yet also has no href, and announcing it
-                      // as a draft tells a screen reader the one thing about it that is false.
-                      aria-label={`${product.status === "DRAFT" ? text.viewDraft : text.view}: ${product.name}`}
-                    >
-                      <EyeIcon aria-hidden="true" className="size-4" />
-                    </Button>
-                  )}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    aria-label={`${text.edit}: ${product.name}`}
-                    onClick={() => onEdit(product.id)}
-                    disabled={busyId === product.id}
-                  >
-                    <PencilIcon aria-hidden="true" className="size-4" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    aria-label={`${text.delete}: ${product.name}`}
-                    onClick={() => onDelete(product.id)}
-                    disabled={busyId === product.id}
-                  >
-                    <Trash2Icon aria-hidden="true" className="size-4" />
-                  </Button>
-                </div>
+                <ProductRowActions
+                  name={product.name}
+                  draft={product.status === "DRAFT"}
+                  viewHref={product.viewHref ?? null}
+                  onEdit={() => onEdit(product.id)}
+                  onDelete={() => onDelete(product.id)}
+                  busy={busyId === product.id}
+                  messages={messages}
+                />
               </TableCell>
             </TableRow>
           ))}

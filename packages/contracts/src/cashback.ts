@@ -6,10 +6,18 @@
  * Amounts are whole cents; rates are basis points (500 = 5.00%), as everywhere a discount is stated.
  */
 
+/**
+ * Where a shop's rate comes from (BEELINK-313): `STORE`, one rate for every product; `PRODUCT`, each
+ * product's own (`cashbackRateBps`), and a product without one earns nothing. One or the other, never
+ * a mix: a product's rate is kept while the shop is on `STORE`, and read again when it comes back.
+ */
+export type CashbackMode = "STORE" | "PRODUCT";
+
 /** The rules, as the panel's form edits them. A shop that never saved any reads the defaults, switched off. */
 export interface CashbackSettings {
   enabled: boolean;
-  /** What comes back, 1 to 10000, over what the customer paid for the products. */
+  mode: CashbackMode;
+  /** What comes back, 1 to 10000, over what the customer paid for the products. Read on `STORE`; kept on `PRODUCT`. */
   rateBps: number;
   /** Days a credit stays usable once its order is delivered, 1 to 3650; null never expires. */
   expiresAfterDays: number | null;
@@ -76,8 +84,9 @@ export type CashbackEntryKind = "EARN" | "REDEEM" | "REVERSAL" | "EXPIRE" | "ADJ
  * order that earns nothing.
  */
 export interface OrderCashback {
-  /** Worked out when the order was placed, at `rateBps`, and never changed after. */
+  /** Worked out when the order was placed, and never changed after. */
   earnedCents: number;
+  /** The rate it was worked out at: the shop's, or — its products each at their own — their average, weighted by what was paid for each. */
   rateBps: number;
   status: CashbackCreditStatus;
   /** While pending, what the delivery will make usable; once usable, what is left to spend. */
@@ -177,6 +186,8 @@ export type CashbackErrorCode =
  * earns exactly is the quote's (`QuotedCashback`).
  */
 export interface PublicCashback {
+  mode: CashbackMode;
+  /** The shop's one rate. On `PRODUCT` it is not what a product earns: that is the product's `cashbackRateBps`. */
   rateBps: number;
   minSubtotalCents: number;
 }
@@ -184,7 +195,9 @@ export interface PublicCashback {
 /**
  * What a cart would earn, as its quote answers it (BEELINK-243) — the same calculation the order
  * makes when placed. `EARNS` with the cents; `BELOW_MINIMUM` with what is missing to reach the shop's
- * minimum. Null when the shop's cashback is off, or the cart would earn less than a cent.
+ * minimum. Null when the shop's cashback is off, or the cart would earn less than a cent — as a cart
+ * of products with no rate of their own does, in a shop that gives by product. `rateBps` is the cart's:
+ * the shop's rate, or its products' average, weighted by what each costs after its promotion.
  */
 export type QuotedCashback =
   | { status: "EARNS"; earnedCents: number; rateBps: number }

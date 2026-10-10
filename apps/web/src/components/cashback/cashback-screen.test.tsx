@@ -17,7 +17,7 @@ const mocks = vi.hoisted(() => ({ overview: vi.fn(), save: vi.fn() }))
 vi.mock("@/services/cashback/cashback-hooks", () => ({ useCashback: mocks.overview, useSaveCashback: mocks.save }))
 
 const overview: CashbackOverview = {
-  settings: { enabled: true, rateBps: 500, expiresAfterDays: 90, minSubtotalCents: 0, maxRedeemBps: 10000, updatedAt: "2026-10-01T12:00:00.000Z" },
+  settings: { enabled: true, mode: "STORE", rateBps: 500, expiresAfterDays: 90, minSubtotalCents: 0, maxRedeemBps: 10000, updatedAt: "2026-10-01T12:00:00.000Z" },
   owed: { availableCents: 12_345, pendingCents: 500, expiringSoonCents: 0, expiringSoonDays: 30 },
 }
 const mutate = vi.fn()
@@ -51,7 +51,20 @@ describe("CashbackScreen (BEELINK-242)", () => {
     expect(flat(screen.getByText(/^Num pedido de/).textContent)).toContain("o cliente ganha R$ 7,50 de cashback")
 
     await userEvent.click(screen.getByRole("button", { name: "Salvar regras" }))
-    expect(mutate).toHaveBeenCalledWith({ enabled: true, rateBps: 750, expiresAfterDays: 90, minSubtotalCents: 0, maxRedeemBps: 10000 }, expect.anything())
+    expect(mutate).toHaveBeenCalledWith({ enabled: true, mode: "STORE", rateBps: 750, expiresAfterDays: 90, minSubtotalCents: 0, maxRedeemBps: 10000 }, expect.anything())
+  })
+
+  /** BEELINK-313 */
+  it("saves giving it by product, with the way to the products and no sum for an example", async () => {
+    render(<CashbackScreen slug="loja" locale="pt-BR" messages={ui} />)
+
+    await userEvent.click(screen.getByRole("button", { name: "Por produto" }))
+    expect(screen.queryByLabelText("Quanto volta (%)")).not.toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Definir nos produtos" })).toHaveAttribute("href", "/admin/loja/products")
+    expect(screen.getByText(/^Em cada produto, o cliente ganha o percentual definido no cadastro dele/)).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole("button", { name: "Salvar regras" }))
+    expect(mutate).toHaveBeenCalledWith({ enabled: true, mode: "PRODUCT", rateBps: 500, expiresAfterDays: 90, minSubtotalCents: 0, maxRedeemBps: 10000 }, expect.anything())
   })
 
   it("says what to correct before asking the API, and sends nothing", async () => {

@@ -8,12 +8,9 @@ import { useRouter, useSearchParams } from "next/navigation"
 
 // UI
 import { buttonVariants } from "@harness-monorepo/ui/components/button"
+import { PRODUCT_CASHBACK_FIELD_ID } from "@harness-monorepo/ui/blocks/catalog/product-cashback-field"
 import { ProductTable } from "@harness-monorepo/ui/blocks/catalog/product-table"
-import {
-  EMPTY_PRODUCT_FILTERS,
-  ProductToolbar,
-  type ProductFilters,
-} from "@harness-monorepo/ui/blocks/catalog/product-toolbar"
+import { EMPTY_PRODUCT_FILTERS, ProductToolbar, type ProductFilters } from "@harness-monorepo/ui/blocks/catalog/product-toolbar"
 import { TablePager } from "@harness-monorepo/ui/blocks/catalog/table-pager"
 import { Skeleton } from "@harness-monorepo/ui/components/skeleton"
 import { ConfirmDelete } from "@harness-monorepo/ui/blocks/shared/confirm-delete"
@@ -24,11 +21,8 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { AppLink } from "@/components/app-link"
 import { storefrontRoutes } from "@/lib/storefront-routes"
 import { useDebouncedValue } from "@/services/addresses/use-debounced-value"
-import {
-  useDeleteProduct,
-  useProductCategories,
-  useProducts,
-} from "@/services/catalog/catalog-hooks"
+import { useDeleteProduct, useProductCategories, useProducts } from "@/services/catalog/catalog-hooks"
+import { useGivesCashbackByProduct } from "@/services/cashback/cashback-hooks"
 import { useStore } from "@/services/stores/store-hooks"
 
 export interface ProductScreenProps {
@@ -110,6 +104,7 @@ export function ProductScreen({ slug, messages }: ProductScreenProps) {
   // so the eye costs nothing extra. It is the shop that knows its own route word — `produtos` or
   // `products` — and `storefrontRoutes` is the only place in this app allowed to spell a segment.
   const store = useStore(slug)
+  const byProduct = useGivesCashbackByProduct(slug)
   const remove = useDeleteProduct(slug)
 
   const rows = products.data?.products ?? []
@@ -218,8 +213,11 @@ export function ProductScreen({ slug, messages }: ProductScreenProps) {
                 product.status === "DRAFT" || !routes ? null : routes.product(product.slug),
               // What a carrier lacks to quote it (BEELINK-184); the API says nothing for a shop with no carrier.
               carrierGap: products.data?.carrierGaps?.[product.id] ?? null,
+              cashbackRateBps: product.cashbackRateBps,
             }))}
             onEdit={(productId) => router.push(`/admin/${slug}/products/${productId}`)}
+
+            onAddCashback={byProduct ? (productId) => router.push(`/admin/${slug}/products/${productId}#${PRODUCT_CASHBACK_FIELD_ID}`) : undefined}
             onDelete={(productId) => setPendingDelete({ id: productId, name: rows.find((row) => row.id === productId)?.name ?? "" })}
             busyId={remove.isPending ? remove.variables : null}
             {...(filtered

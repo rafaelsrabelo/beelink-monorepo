@@ -22,6 +22,26 @@ function row(name: string) {
 }
 
 describe("ProductTable", () => {
+  /** BEELINK-313: only a shop that gives its cashback by product has the column. */
+  it("says each product's cashback, and offers to add one where there is none, in a shop that gives by product", async () => {
+    const onAddCashback = vi.fn()
+    renderTable({ products: [{ ...products[0]!, cashbackRateBps: 250 }, products[1]!], onAddCashback })
+
+    expect(screen.getByRole("columnheader", { name: "Cashback" })).toBeInTheDocument()
+    expect(within(row("Whey Concentrado")).getByText("2,5%")).toBeInTheDocument()
+    expect(within(row("Whey Concentrado")).queryByRole("button", { name: /Adicionar cashback/ })).not.toBeInTheDocument()
+
+    await userEvent.click(within(row("Creatina")).getByRole("button", { name: "Adicionar cashback: Creatina" }))
+    expect(onAddCashback).toHaveBeenCalledWith("2")
+  })
+
+  it("has no cashback column in any other shop", () => {
+    renderTable({ products: [{ ...products[0]!, cashbackRateBps: 250 }] })
+
+    expect(screen.queryByRole("columnheader", { name: "Cashback" })).not.toBeInTheDocument()
+    expect(screen.queryByText("2,5%")).not.toBeInTheDocument()
+  })
+
   it("shows the price in the shop's money, from the cents the wire carries", () => {
     renderTable()
 

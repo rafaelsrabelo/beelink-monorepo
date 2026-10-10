@@ -3,7 +3,7 @@ import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
 import { lockLedger, recountCashback } from './cashback-ledger.js';
-import { earningBaseOf, earningOf, type EarningParts } from './cashback-earning.js';
+import { earningOf, type EarningParts } from './cashback-earning.js';
 import { DAY_MS } from './cashback.constants.js';
 import { expiryOf } from './cashback-spending.js';
 
@@ -22,7 +22,7 @@ type Tx = Prisma.TransactionClient;
  */
 export async function earningForOrder(tx: Tx, storeId: string, parts: EarningParts): Promise<{ earnedCents: number; rateBps: number; validityDays: number | null } | null> {
   const rules = await tx.cashbackSettings.findUnique({ where: { storeId } });
-  const earning = earningOf(rules, earningBaseOf(parts), earningBaseOf({ ...parts, cashbackUsedCents: 0 }));
+  const earning = earningOf(rules, parts);
   return earning && rules ? { ...earning, validityDays: rules.expiresAfterDays } : null;
 }
 

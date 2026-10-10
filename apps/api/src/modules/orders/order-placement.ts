@@ -167,7 +167,7 @@ export class OrderPlacement {
       }
       const cashbackUsedCents = priced.cashbackUse?.appliedCents ?? 0;
       // What it will earn, at the shop's rules as they are now (BEELINK-239).
-      const cashback = await earningForOrder(tx, storeId, earningPartsOf(priced, cashbackUsedCents));
+      const cashback = await earningForOrder(tx, storeId, earningPartsOf(lines, priced, cashbackUsedCents));
 
       const order = await tx.order.create({
         data: {
@@ -197,7 +197,7 @@ export class OrderPlacement {
           placedAt: placement.placedAt,
           stockTaken: true,
           items: {
-            create: lines.map(({ categoryIds: _categories, ...line }, position) => ({
+            create: lines.map(({ categoryIds: _categories, cashbackRateBps: _cashback, ...line }, position) => ({
               ...line,
               lineTotalCents: line.unitPriceCents * line.quantity,
               discountCents: priced.lineDiscounts[position]!.discountCents,

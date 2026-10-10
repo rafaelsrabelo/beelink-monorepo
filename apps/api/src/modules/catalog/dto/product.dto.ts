@@ -43,6 +43,7 @@ import {
   PRODUCT_STATUSES,
   STOCK_MAX,
 } from '../catalog.constants.js';
+import { CASHBACK_BPS_MAX } from '../../cashback/cashback.constants.js';
 import { blankToNull, imageUrl, trim } from '../../stores/dto/store-fields.dto.js';
 
 export class ProductImageDto implements ProductImagePayload {
@@ -144,6 +145,14 @@ export class CreateProductDto implements CreateProductPayload {
   @Max(PRICE_CENTS_MAX)
   @Type(() => Number)
   costCents?: number | null;
+
+  @ApiPropertyOptional({ nullable: true, minimum: 1, maximum: CASHBACK_BPS_MAX, example: 500, description: "Basis points (500 = 5.00%); null clears it. Read while the shop's cashback is by product." })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(CASHBACK_BPS_MAX)
+  @Type(() => Number)
+  cashbackRateBps?: number | null;
 
   @ApiPropertyOptional({ nullable: true, maxLength: 64 })
   @IsOptional()

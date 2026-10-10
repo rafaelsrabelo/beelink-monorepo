@@ -7,6 +7,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 
 // UI
+import { PRODUCT_CASHBACK_FIELD_ID } from "@harness-monorepo/ui/blocks/catalog/product-cashback-field"
 import { ProductEditor } from "@harness-monorepo/ui/blocks/catalog/product-editor"
 import { Skeleton } from "@harness-monorepo/ui/components/skeleton"
 import { centsFrom } from "@harness-monorepo/ui/lib/money"
@@ -18,11 +19,12 @@ import type { WebMessages } from "@/locales"
 
 // App
 import { storeErrorCopy } from "@/components/store/store-error-copy"
+import { useGivesCashbackByProduct } from "@/services/cashback/cashback-hooks"
 import { useCreateProductCategory, useProduct, useProductCategories } from "@/services/catalog/catalog-hooks"
 import { SaveProductError, useSaveProduct } from "@/services/catalog/use-save-product"
 import { useStore } from "@/services/stores/store-hooks"
 import { useImageUpload } from "@/services/uploads/upload-hooks"
-import { EMPTY_FORM, fieldsOf, perUnitOf, toForm, type FormIssues, type FormValues } from "./product-form-mapping"
+import { cashbackRateOf, EMPTY_FORM, fieldsOf, perUnitOf, toForm, type FormIssues, type FormValues } from "./product-form-mapping"
 import {
   hasCombinations,
   imagesPayloadOf,
@@ -56,6 +58,7 @@ export function ProductEditorScreen({ slug, productId, ui, web }: ProductEditorS
   const save = useSaveProduct(slug)
   const createCategory = useCreateProductCategory(slug)
   const image = useImageUpload()
+  const byProduct = useGivesCashbackByProduct(slug)
 
   const [value, setValue] = useState<FormValues>(EMPTY_FORM)
   const [variations, setVariations] = useState<VariationsValue>(EMPTY_VARIATIONS)
@@ -95,18 +98,37 @@ export function ProductEditorScreen({ slug, productId, ui, web }: ProductEditorS
     return () => window.removeEventListener("beforeunload", warn)
   }, [dirty])
 
+  const loading = Boolean(productId) && existing.isPending
+
+  // The list's "Adicionar cashback" lands here with the field's id as the hash. The form is drawn
+  // after the product is read, later than the browser looks for the anchor, so the field is found here.
+  useEffect(() => {
+    if (!byProduct || loading || window.location.hash !== `#${PRODUCT_CASHBACK_FIELD_ID}`) return
+    document.getElementById(PRODUCT_CASHBACK_FIELD_ID)?.focus()
+  }, [byProduct, loading])
+
   const list = `/admin/${slug}/products` as Parameters<typeof router.push>[0]
   const text = ui.catalog.products
-  const loading = Boolean(productId) && existing.isPending
   const base = { isActive: true, price: value.price, stock: value.stock, sku: value.sku, weight: value.weight }
   const combinations = hasCombinations(variations)
   const issues = variationIssuesOf(variations, base, ui)
+
+  /** A refusal is of what was typed then: typing again answers it, rather than leave a corrected field marked. */
+  function change(next: FormValues) {
+    if (Object.keys(errors).length > 0) setErrors({})
+    setValue(next)
+  }
 
   function submit() {
     const priceCents = centsFrom(value.price)
     // With combinations the price is theirs, and each row is checked on its own.
     if (priceCents === null && !combinations) {
       setErrors({ price: { message: text.priceInvalid } })
+      return
+    }
+    // Refused only where it is asked: hidden, the field holds what was loaded, which the API took once.
+    if (byProduct && cashbackRateOf(value.cashback) === undefined) {
+      setErrors({ cashback: { message: text.cashbackInvalid } })
       return
     }
     setErrors({})
@@ -155,7 +177,7 @@ export function ProductEditorScreen({ slug, productId, ui, web }: ProductEditorS
 
       <ProductEditor
         value={value}
-        onChange={setValue}
+        onChange={change}
         categories={(categories.data ?? []).map((category) => ({
           id: category.id,
           name: category.name,
@@ -178,6 +200,7 @@ export function ProductEditorScreen({ slug, productId, ui, web }: ProductEditorS
           onChange: setVariations,
           errors: showIssues ? issues : undefined,
         }}
+        cashback={byProduct}
         dirty={dirty && !save.isSuccess}
         messages={ui}
       />

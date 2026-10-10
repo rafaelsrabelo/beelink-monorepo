@@ -2,7 +2,7 @@
 import type { CashbackOwedView, CashbackSettingsFormValues, CustomerCashbackView } from "@harness-monorepo/ui/lib/cashback"
 
 /** 5% back, for 90 days, from R$ 50,00, credit paying up to half an order. */
-export const settings: CashbackSettingsFormValues = { enabled: true, rate: "5", validity: "DAYS", validityDays: "90", minimum: "50,00", maxRedeem: "50" }
+export const settings: CashbackSettingsFormValues = { enabled: true, mode: "STORE", rate: "5", validity: "DAYS", validityDays: "90", minimum: "50,00", maxRedeem: "50" }
 
 export const owed: CashbackOwedView = { availableCents: 184_350, pendingCents: 42_190, expiringSoonCents: 12_800, expiringSoonDays: 30 }
 

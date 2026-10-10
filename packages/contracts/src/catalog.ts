@@ -211,6 +211,11 @@ export interface PublicProduct extends PublicProductCard {
   description: string | null;
   images: PublicProductImage[];
   category: PublicProductCategory | null;
+  /**
+   * The product's own cashback (BEELINK-313), in basis points, 1 to 10000; null has none. Read only
+   * while the shop gives its cashback by product (`CashbackMode`), and kept otherwise.
+   */
+  cashbackRateBps: number | null;
 }
 
 /**
@@ -517,6 +522,8 @@ export interface CreateProductPayload {
   lengthMm?: number | null;
   widthMm?: number | null;
   heightMm?: number | null;
+  /** Basis points, 1 to 10000; null clears it. The product's own, whatever its variations. */
+  cashbackRateBps?: number | null;
   /** Ordered as sent; the first becomes the card's image. */
   images?: ProductImagePayload[];
 }

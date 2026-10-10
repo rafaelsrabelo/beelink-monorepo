@@ -176,10 +176,12 @@ export async function priceOrder(db: Prisma.TransactionClient, input: PricingInp
 
 /**
  * What an order's cashback is worked out from, as it was priced (BEELINK-243): one reading for the
- * quote and the placement, so what the cart promised is what the order records.
+ * quote and the placement, so what the cart promised is what the order records. `lines` are the ones
+ * it was priced from, in their order.
  */
-export function earningPartsOf(priced: PricedOrder, cashbackUsedCents: number): EarningParts {
+export function earningPartsOf(lines: readonly OrderLine[], priced: PricedOrder, cashbackUsedCents: number): EarningParts {
   return {
+    lines: lines.map((line, index) => ({ netCents: line.unitPriceCents * line.quantity - priced.lineDiscounts[index]!.discountCents, rateBps: line.cashbackRateBps })),
     subtotalCents: priced.totals.subtotalCents,
     promotionDiscountCents: priced.promotionDiscountCents,
     couponDiscountCents: priced.couponDiscountCents,

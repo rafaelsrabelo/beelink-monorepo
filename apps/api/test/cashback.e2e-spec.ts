@@ -17,7 +17,7 @@ function shopBody(slug: string) {
 
 const DAY = 24 * 60 * 60 * 1000;
 const MISSING = '0199a1b2-0000-7000-8000-000000000000';
-const RULES: CashbackSettingsPayload = { enabled: true, rateBps: 500, expiresAfterDays: 30, minSubtotalCents: 5000, maxRedeemBps: 5000 };
+const RULES: CashbackSettingsPayload = { enabled: true, mode: 'STORE', rateBps: 500, expiresAfterDays: 30, minSubtotalCents: 5000, maxRedeemBps: 5000 };
 
 describe("a shop's cashback: its rules and each customer's credit", () => {
   let app: NestFastifyApplication;
@@ -78,7 +78,7 @@ describe("a shop's cashback: its rules and each customer's credit", () => {
 
       expect(response.statusCode).toBe(200);
       expect(response.json<CashbackOverview>()).toEqual({
-        settings: { enabled: false, rateBps: 500, expiresAfterDays: null, minSubtotalCents: 0, maxRedeemBps: 10000, updatedAt: null },
+        settings: { enabled: false, mode: 'STORE', rateBps: 500, expiresAfterDays: null, minSubtotalCents: 0, maxRedeemBps: 10000, updatedAt: null },
         owed: { availableCents: 0, pendingCents: 0, expiringSoonCents: 0, expiringSoonDays: 30 },
       });
     });
@@ -93,6 +93,13 @@ describe("a shop's cashback: its rules and each customer's credit", () => {
       expect((await call('GET', '/api/stores/lessari/cashback', owner)).json<CashbackOverview>().settings).toMatchObject({ enabled: false, expiresAfterDays: null });
     });
 
+    it('saves giving it by product, and keeps the one rate for the day the shop comes back', async () => {
+      const saved = await save({ ...RULES, mode: 'PRODUCT' });
+
+      expect(saved.statusCode).toBe(200);
+      expect(saved.json<CashbackOverview>().settings).toMatchObject({ mode: 'PRODUCT', rateBps: 500 });
+    });
+
     it.each([
       ['a rate of nothing', { rateBps: 0 }],
       ['a rate past 100%', { rateBps: 10001 }],
@@ -102,6 +109,7 @@ describe("a shop's cashback: its rules and each customer's credit", () => {
       ['credit paying for nothing', { maxRedeemBps: 0 }],
       ['a fractional rate', { rateBps: 2.5 }],
       ['a switch as a word', { enabled: 'sim' }],
+      ['a way of giving it nobody named', { mode: 'CATEGORY' }],
     ])('refuses %s', async (_, change) => {
       const response = await save({ ...RULES, ...change });
 

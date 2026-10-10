@@ -1,7 +1,7 @@
 "use client"
 
 // React
-import { useId, type FormEvent } from "react"
+import { useId, type FormEvent, type ReactNode } from "react"
 
 // UI
 import { Button } from "@harness-monorepo/ui/components/button"
@@ -29,6 +29,8 @@ export interface CashbackSettingsFormProps {
   error?: string
   /** The last save went through and nothing was typed since. */
   saved?: boolean
+  /** The way to the products, said under "by product": where each rate is typed. The screen's own link. */
+  productsLink?: ReactNode
   messages?: UiMessages
 }
 
@@ -36,12 +38,12 @@ export interface CashbackSettingsFormProps {
 const PRESSED = "aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground"
 
 /**
- * The shop's cashback rules (BEELINK-242): the switch, how much comes back, how long it lasts, the
+ * The shop's cashback rules (BEELINK-242): the switch, one rate or each product's own (BEELINK-313), how much comes back, how long it lasts, the
  * smallest order that earns and how much of an order credit may pay — with what that gives on an
  * order of R$ 100,00, so the shopkeeper sees the rule before saving it. Values are what was typed;
  * the screen reads them, refuses what does not hold field by field, and says why the API refused.
  */
-export function CashbackSettingsForm({ value, onChange, onSubmit, issues = {}, example, pending = false, error, saved = false, messages = defaultMessages }: CashbackSettingsFormProps) {
+export function CashbackSettingsForm({ value, onChange, onSubmit, issues = {}, example, pending = false, error, saved = false, productsLink, messages = defaultMessages }: CashbackSettingsFormProps) {
   const text = messages.cashback.settings
   const id = useId()
   const set = (patch: Partial<CashbackSettingsFormValues>) => onChange({ ...value, ...patch })
@@ -86,7 +88,32 @@ export function CashbackSettingsForm({ value, onChange, onSubmit, issues = {}, e
         </FieldContent>
       </Field>
 
-      {typed("rate", text.rate, text.rateHelp, "5")}
+      <FieldSet className="flex flex-col gap-2">
+        <FieldLegend variant="label">{text.mode}</FieldLegend>
+        <ToggleGroup
+          value={[value.mode]}
+          onValueChange={(next: string[]) => {
+            if (next[0] === "STORE" || next[0] === "PRODUCT") set({ mode: next[0] })
+          }}
+          disabled={pending}
+          className="flex-wrap"
+        >
+          <ToggleGroupItem value="STORE" variant="outline" className={PRESSED}>
+            {text.modeStore}
+          </ToggleGroupItem>
+          <ToggleGroupItem value="PRODUCT" variant="outline" className={PRESSED}>
+            {text.modeProduct}
+          </ToggleGroupItem>
+        </ToggleGroup>
+        {value.mode === "PRODUCT" ? (
+          <p className="text-muted-foreground text-sm">
+            {text.modeProductHelp} {productsLink}
+          </p>
+        ) : null}
+      </FieldSet>
+
+      {/* By product the one rate is not asked for; what was typed stays, for the day the shop comes back. */}
+      {value.mode === "STORE" ? typed("rate", text.rate, text.rateHelp, "5") : null}
 
       <FieldSet className="flex flex-col gap-2">
         <FieldLegend variant="label">{text.validity}</FieldLegend>

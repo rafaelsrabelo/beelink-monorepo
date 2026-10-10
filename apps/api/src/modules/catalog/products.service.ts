@@ -220,6 +220,7 @@ export class ProductsService {
           categoryId: dto.categoryId ?? null,
           status: dto.status ?? 'ACTIVE',
           origin: dto.origin ?? null,
+          cashbackRateBps: dto.cashbackRateBps ?? null,
           ...perUnit,
           maxPriceCents: perUnit.priceCents,
           position: (last._max.position ?? -1) + 1,
@@ -299,6 +300,7 @@ export class ProductsService {
             ...(dto.categoryId !== undefined ? { categoryId: dto.categoryId ?? null } : {}),
             ...(dto.status !== undefined ? { status: dto.status } : {}),
             ...(dto.origin !== undefined ? { origin: dto.origin } : {}),
+            ...(dto.cashbackRateBps !== undefined ? { cashbackRateBps: dto.cashbackRateBps } : {}),
             // Images are replaced whole when the key is sent: the panel's gallery reports the list
             // it now holds, including the order, and reconciling that row by row would be a diff
             // the client already computed. Omitting the key leaves the photos alone.

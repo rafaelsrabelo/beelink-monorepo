@@ -93,6 +93,11 @@ export const Padrao: Story = {
   },
 }
 
+/** A loja dá o cashback por produto: a coluna diz o de cada um, e oferece adicionar onde não há. */
+export const CashbackPorProduto: Story = {
+  args: { products: products.map((product, index) => ({ ...product, cashbackRateBps: index === 0 ? 500 : null })), onAddCashback: () => {} },
+}
+
 export const Vazia: Story = { args: { products: [] } }
 
 /** While a row is being deleted, its two buttons go quiet rather than taking a second click. */
