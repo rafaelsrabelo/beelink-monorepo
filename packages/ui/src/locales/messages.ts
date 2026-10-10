@@ -157,6 +157,8 @@ export interface UiMessages {
     promotion: string
     /** `{price}` — what it cost before, under the product page's price: "De: R$ 149,90". */
     priceWas: string
+    /** `{count}` `{amount}` — under a price, how far the shop splits it on a card: "em até 6x de R$ 14,98 sem juros". */
+    installments: string
     /** `{rating}` `{count}` — what a reader hears for the stars: "Nota 4,7 de 5, 128 avaliações". */
     ratingOf: string
     ratingOfOne: string

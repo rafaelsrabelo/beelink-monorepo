@@ -119,6 +119,7 @@ export const en: UiMessages = {
     discount: "-{percent}%",
     promotion: "Promotion: {name}",
     priceWas: "Was: {price}",
+    installments: "up to {count}x of {amount}, interest-free",
     ratingOf: "Rated {rating} out of 5, {count} reviews",
     ratingOfOne: "Rated {rating} out of 5, 1 review",
     backToShop: "Back to the shop",

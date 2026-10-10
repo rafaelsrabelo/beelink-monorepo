@@ -31,6 +31,18 @@ describe("StorefrontProductCard", () => {
     expect(screen.getByRole("article")).toHaveClass("relative")
   })
 
+  it("says how far the shop splits the price, under it, and nothing when it gives no terms or hides the price", () => {
+    const terms = { maxInstallments: 6, minimumChargeCents: 500, minimumInstallmentCents: 500 }
+    const { rerender } = renderCard({ installments: terms })
+    expect(screen.getByText(/em até 6x de R\$\s31,50 sem juros/)).toBeInTheDocument()
+
+    rerender(<StorefrontProductCard product={product} href="/lessari/produtos/bolsa-amora" locale="pt-BR" />)
+    expect(screen.queryByText(/sem juros/)).not.toBeInTheDocument()
+
+    rerender(<StorefrontProductCard product={product} href="/lessari/produtos/bolsa-amora" locale="pt-BR" installments={terms} showPrice={false} />)
+    expect(screen.queryByText(/sem juros/)).not.toBeInTheDocument()
+  })
+
   it("puts the saving over the photo and the split price under the name", () => {
     renderCard()
 

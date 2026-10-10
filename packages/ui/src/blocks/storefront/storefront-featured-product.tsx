@@ -2,6 +2,7 @@
 import type { ReactNode } from "react"
 
 // UI
+import type { StorefrontInstallmentTerms } from "@harness-monorepo/ui/lib/installments"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Locales
@@ -11,6 +12,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import type { StorefrontSpan } from "./storefront-band-cell"
+import { StorefrontInstallments } from "./storefront-installments"
 import { StorefrontDiscountBadge, StorefrontPrice } from "./storefront-price"
 import { SIDE_BY_SIDE } from "./storefront-span-shape"
 
@@ -35,6 +37,8 @@ export interface StorefrontFeaturedProductProps {
   action?: ReactNode
   span?: StorefrontSpan
   locale: string
+  /** The shop's card terms: given, the price says how far it splits. */
+  installments?: StorefrontInstallmentTerms
   linkComponent?: LinkComponent
   className?: string
   messages?: UiMessages
@@ -55,6 +59,7 @@ export function StorefrontFeaturedProduct({
   action,
   span = "FULL",
   locale,
+  installments,
   linkComponent: Link = AnchorLink,
   className,
   messages = defaultMessages,
@@ -88,6 +93,7 @@ export function StorefrontFeaturedProduct({
         </Name>
         {subtitle ? <p className="max-w-prose opacity-80">{subtitle}</p> : null}
         <StorefrontPrice priceCents={product.priceCents} compareAtPriceCents={product.compareAtPriceCents} locale={locale} size="product" showBadge={false} messages={messages} />
+        {installments ? <StorefrontInstallments priceCents={product.priceCents} terms={installments} locale={locale} size="product" messages={messages} /> : null}
         {product.soldOut ? <p className="text-sm font-semibold text-shop-sale-ink">{text.soldOut}</p> : null}
         {action ? <div className="mt-2 w-full max-w-xs">{action}</div> : null}
       </div>

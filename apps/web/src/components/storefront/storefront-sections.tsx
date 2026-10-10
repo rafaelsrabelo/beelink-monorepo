@@ -5,6 +5,7 @@ import type { ReactNode } from "react"
 import type { PublicComponent, PublicProductCategory, PublicSection } from "@harness-monorepo/contracts"
 
 // UI
+import type { StorefrontInstallmentTerms } from "@harness-monorepo/ui/lib/installments"
 import type { LinkComponent } from "@harness-monorepo/ui/blocks/auth/auth-link"
 import { StorefrontBandCell } from "@harness-monorepo/ui/blocks/storefront/storefront-band-cell"
 import { StorefrontBandGrid } from "@harness-monorepo/ui/blocks/storefront/storefront-band-grid"
@@ -38,6 +39,8 @@ export interface StorefrontSectionsProps {
   categories: readonly PublicProductCategory[]
   routes: StorefrontRoutes
   showPrice: boolean
+  /** The shop's card terms, for "em até 6x" under a price; absent when it splits nothing. */
+  installments?: StorefrontInstallmentTerms
   showBadge: boolean
   /** The cards' rating line — the shop's `showProductRating`; on unless it says otherwise. */
   showRating?: boolean
@@ -86,6 +89,7 @@ export function StorefrontSections({
   categories,
   routes,
   showPrice,
+  installments,
   showBadge,
   showRating = true,
   quickAdd = false,
@@ -136,6 +140,7 @@ export function StorefrontSections({
                     categories={categories}
                     routes={routes}
                     showPrice={showPrice}
+                    {...(installments ? { installments } : {})}
                     showBadge={showBadge}
                     showRating={showRating}
                     quickAdd={quickAdd}

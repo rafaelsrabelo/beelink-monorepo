@@ -11,7 +11,8 @@ import { StorefrontSections } from "@/components/storefront/storefront-sections"
 import { orderHrefOf } from "@/components/storefront/storefront-links"
 import { getMessages } from "@/lib/locale"
 import { shopperAt } from "@/lib/shopper"
-import { navigationAt, shopAt } from "@/lib/storefront-data"
+import { navigationAt, paymentOptionsAt, shopAt } from "@/lib/storefront-data"
+import { installmentTermsOf } from "@/lib/storefront-installments"
 import { storefrontRoutes } from "@/lib/storefront-routes"
 
 /**
@@ -62,11 +63,13 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
   // visitor which shop names are taken is not this page's job.
   if (!store) notFound()
 
-  const [{ ui, web }, { categories, onSale }] = await Promise.all([
+  const [{ ui, web }, { categories, onSale }, paymentOptions] = await Promise.all([
     getMessages(),
     // A site has no catalogue to ask for. The empty answer is what its page draws with anyway.
     store.type === "INSTITUTIONAL" ? { categories: [], onSale: false } : navigationAt(slug),
+    paymentOptionsAt(slug),
   ])
+  const installments = installmentTermsOf(paymentOptions)
 
   const routes = storefrontRoutes(store)
   const layout = store.layoutSettings
@@ -100,6 +103,7 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
             categories={categories}
             routes={routes}
             showPrice={layout.showProductPrice ?? true}
+            {...(installments ? { installments } : {})}
             showBadge={layout.showProductBadges ?? true}
             showRating={layout.showProductRating ?? true}
             quickAdd={layout.showQuickAdd ?? true}

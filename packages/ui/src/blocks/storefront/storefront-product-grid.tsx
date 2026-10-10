@@ -2,6 +2,7 @@
 import type { ReactNode } from "react"
 
 // UI
+import type { StorefrontInstallmentTerms } from "@harness-monorepo/ui/lib/installments"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Locales
@@ -30,6 +31,8 @@ export interface StorefrontProductGridProps {
   /** How many across the grid draws where its cell has the room. Four when the owner said nothing. */
   columns?: StorefrontGridColumns
   showPrice?: boolean
+  /** The shop's card terms, for the line under each price. */
+  installments?: StorefrontInstallmentTerms
   showBadge?: boolean
   /** The cards' rating line; the shop may hide it. */
   showRating?: boolean
@@ -68,6 +71,7 @@ export function StorefrontProductGrid({
   seeAllHref,
   columns = 4,
   showPrice = true,
+  installments,
   showBadge = true,
   showRating = true,
   linkComponent: Link = AnchorLink,
@@ -93,6 +97,7 @@ export function StorefrontProductGrid({
               href={productHref(product.slug)}
               locale={locale}
               showPrice={showPrice}
+              {...(installments ? { installments } : {})}
               showBadge={showBadge}
               showRating={showRating}
               action={cardAction?.(product)}

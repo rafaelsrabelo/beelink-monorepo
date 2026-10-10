@@ -4,6 +4,7 @@
 import type { PaymentMethod, PublicCashback, PublicProductDetail } from "@harness-monorepo/contracts"
 
 // UI
+import type { StorefrontInstallmentTerms } from "@harness-monorepo/ui/lib/installments"
 import { StorefrontProductDetail } from "@harness-monorepo/ui/blocks/storefront/storefront-product"
 import { PRODUCT_REVIEWS_ID } from "@harness-monorepo/ui/blocks/storefront/storefront-product-reviews"
 import { StorefrontRating } from "@harness-monorepo/ui/blocks/storefront/storefront-rating"
@@ -36,6 +37,8 @@ export interface StorefrontProductLiveProps {
   /** The cart's address, for "Comprar agora" and "Ver carrinho". */
   cartHref: string
   showPrice: boolean
+  /** The shop's card terms, for "em até 6x" under a price; absent when it splits nothing. */
+  installments?: StorefrontInstallmentTerms
   showBadge: boolean
   /** The rating line under the title, when the product has reviews; the shop may hide it. */
   showRating?: boolean
@@ -73,6 +76,7 @@ export function StorefrontProductLive({
   orderHref,
   cartHref,
   showPrice,
+  installments,
   showBadge,
   showRating = true,
   showStock,
@@ -134,6 +138,7 @@ export function StorefrontProductLive({
       }}
       locale="pt-BR"
       showPrice={showPrice}
+      {...(installments ? { installments } : {})}
       showBadge={showBadge}
       showStock={showStock}
       finishesOnWhatsApp={finishesOnWhatsApp}

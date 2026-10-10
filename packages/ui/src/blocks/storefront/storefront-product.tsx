@@ -4,6 +4,7 @@
 import { useState, type ReactNode } from "react"
 
 // UI
+import type { StorefrontInstallmentTerms } from "@harness-monorepo/ui/lib/installments"
 import { optionOfValue, photosOf } from "@harness-monorepo/ui/lib/photo-choice"
 import {
   initialVariantOf,
@@ -22,6 +23,7 @@ import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
+import { StorefrontInstallments } from "./storefront-installments"
 import { StorefrontDiscountBadge, StorefrontPrice } from "./storefront-price"
 import { StorefrontProductGallery, type StorefrontProductImage } from "./storefront-product-gallery"
 import { StorefrontRestockDialog, type RestockSubmission } from "./storefront-restock-dialog"
@@ -84,6 +86,8 @@ export interface StorefrontProductDetailProps {
   }
   locale: string
   showPrice?: boolean
+  /** The shop's card terms: given, the chosen price says how far it splits. */
+  installments?: StorefrontInstallmentTerms
   showBadge?: boolean
   /** "Em estoque" in the buy box; the shop's layout may hide it. */
   showStock?: boolean
@@ -124,6 +128,7 @@ export function StorefrontProductDetail({
   restock,
   locale,
   showPrice = true,
+  installments,
   showBadge = true,
   showStock,
   finishesOnWhatsApp,
@@ -164,6 +169,7 @@ export function StorefrontProductDetail({
     // Announced as it changes with the choice, so a screen reader hears the new price.
     <div aria-live="polite" className="flex flex-col gap-1">
       <StorefrontPrice priceCents={cents} compareAtPriceCents={was} locale={locale} size="product" showBadge={showBadge} messages={messages} />
+      {installments ? <StorefrontInstallments priceCents={cents} terms={installments} locale={locale} size="product" messages={messages} /> : null}
       {promotion && was !== null && was > cents ? <p className="text-sm font-medium">{format(messages.storefront.promotion, { name: promotion })}</p> : null}
     </div>
   ) : undefined

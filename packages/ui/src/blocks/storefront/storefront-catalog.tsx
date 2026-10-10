@@ -1,6 +1,9 @@
 // React
 import type { ReactNode } from "react"
 
+// UI
+import type { StorefrontInstallmentTerms } from "@harness-monorepo/ui/lib/installments"
+
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
@@ -29,6 +32,8 @@ export interface StorefrontCatalogProps {
   locale: string
   productsPerRow?: 2 | 3 | 4
   showPrice?: boolean
+  /** The shop's card terms, for the line under each price. */
+  installments?: StorefrontInstallmentTerms
   showBadge?: boolean
   /** The cards' rating line; the shop may hide it. */
   showRating?: boolean
@@ -72,6 +77,7 @@ export function StorefrontCatalog({
   locale,
   productsPerRow = 3,
   showPrice = true,
+  installments,
   showBadge = true,
   showRating = true,
   linkComponent: Link = AnchorLink,
@@ -91,6 +97,7 @@ export function StorefrontCatalog({
                 href={productHref(product.slug)}
                 locale={locale}
                 showPrice={showPrice}
+                {...(installments ? { installments } : {})}
                 showBadge={showBadge}
                 showRating={showRating}
                 action={cardAction?.(product)}

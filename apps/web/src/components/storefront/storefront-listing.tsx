@@ -1,4 +1,5 @@
 // UI
+import type { StorefrontInstallmentTerms } from "@harness-monorepo/ui/lib/installments"
 import { StorefrontCatalog as StorefrontCatalogGrid } from "@harness-monorepo/ui/blocks/storefront/storefront-catalog"
 import { StorefrontCategories } from "@harness-monorepo/ui/blocks/storefront/storefront-categories"
 import { StorefrontCategoryFilter } from "@harness-monorepo/ui/blocks/storefront/storefront-category-filter"
@@ -30,6 +31,8 @@ export interface StorefrontListingProps {
    * request stays in the page, the one lane a Server Component reads the catalogue through.
    */
   catalogue: Promise<StorefrontShelf>
+  /** The shop's card terms, for "em até 6x" under a price; absent when it splits nothing. */
+  installments?: StorefrontInstallmentTerms
   locale: string
 }
 
@@ -37,7 +40,7 @@ export interface StorefrontListingProps {
  * A shelf of products — the catalogue, a category, a search — as 5a lays it out on the canvas: the
  * filter column beside the grid and the pager. The results band above it is the page's.
  */
-export async function StorefrontListing({ place, routes, catalogue: pending, locale }: StorefrontListingProps) {
+export async function StorefrontListing({ place, routes, catalogue: pending, installments, locale }: StorefrontListingProps) {
   const catalogue = await pending
   const { section, store, category, navigation, messages: ui, page, term } = place
   const layout = store.layoutSettings
@@ -111,6 +114,7 @@ export async function StorefrontListing({ place, routes, catalogue: pending, loc
           locale={locale}
           productsPerRow={layout.productsPerRow ?? 4}
           showPrice={layout.showProductPrice ?? true}
+          {...(installments ? { installments } : {})}
           showBadge={layout.showProductBadges ?? true}
           showRating={layout.showProductRating ?? true}
           {...(layout.showQuickAdd ?? true ? { cardAction: (product: StorefrontProduct) => <StorefrontCardCartLive product={product} messages={ui} /> } : {})}
