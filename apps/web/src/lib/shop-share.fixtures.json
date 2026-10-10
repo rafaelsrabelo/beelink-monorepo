@@ -1,0 +1,6 @@
+{
+  "$comment": "Sample shop colours for shop-share.test.ts. A shop's palette is a row of the database, not a token, so it is kept as data in a JSON file rather than written into a module — the reason packages/ui keeps store-palettes.json: `web/no-hex-colors` scans every .ts here, tests included, and a .json file can hold no className, no style attribute and no component.",
+  "colors": { "background": "#FFFFFF", "primary": "#3B7AF7", "header": "#3B7AF7", "footer": "#101828" },
+  "darkHeader": "#190358",
+  "notSixDigits": ["#FFF", "#190358CC", "rebeccapurple", "#19035", "#190358,w_1", "#190358/x"]
+}

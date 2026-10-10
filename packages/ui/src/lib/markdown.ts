@@ -125,13 +125,31 @@ function inlineText(nodes: readonly MarkdownInline[]): string {
   return nodes.map((node) => (node.kind === "text" ? node.text : inlineText(node.children))).join("")
 }
 
+/** A word, or the mark a sentence goes on after with a space. Not a hyphen or an opening bracket, which hold the next word to them. */
+const ENDS_A_WORD = /[\p{L}\p{N}.,:;!?]$/u
+const STARTS_A_WORD = /^[\p{L}\p{N}]/u
+
+/**
+ * A line's words, with the edge of a mark read as the edge of a word.
+ *
+ * A heading pasted into the editor is stored with nothing after it — `**Fogo Roxo**Mais energia` —
+ * because `markdownFromDom` knows `P` and `DIV` as blocks and no other tag, and the mark's edge is
+ * all that is left of the break. The price is a word emphasised by halves: `**Bo**la` reads "Bo la".
+ */
+function wordsOf(nodes: readonly MarkdownInline[]): string {
+  return nodes.reduce((text, node) => {
+    const piece = node.kind === "text" ? node.text : wordsOf(node.children)
+    return ENDS_A_WORD.test(text) && STARTS_A_WORD.test(piece) ? `${text} ${piece}` : text + piece
+  }, "")
+}
+
 /**
  * The words alone, one space between them: what a `<meta name="description">` and an Open Graph
  * card can carry, which is no formatting at all. The caller cuts it to length.
  */
 export function plainTextOf(markdown: string): string {
   return parseMarkdown(markdown)
-    .flatMap((block) => (block.kind === "paragraph" ? block.lines : block.items).map(inlineText))
+    .flatMap((block) => (block.kind === "paragraph" ? block.lines : block.items).map(wordsOf))
     .join(" ")
     .replace(/\s+/g, " ")
     .trim()

@@ -36,7 +36,9 @@ import { reorderNoticeOf } from "@/lib/reorder-view"
 import { ADDRESS_KEY, checkoutAddressesOf, checkoutAddressIdOf, DELIVER_TO_KEY, NEW_ADDRESS } from "@/lib/saved-address"
 import { cartInvitationOf, pathWithQuery } from "@/lib/offer-strip"
 import { shopBaseOf } from "@/lib/shop-address"
+import { shopShareOf } from "@/lib/shop-share"
 import { shopperAt } from "@/lib/shopper"
+import { siteOrigin } from "@/lib/site-origin"
 import { catalogueAt, offersAt, paymentOptionsAt } from "@/lib/storefront-data"
 import { installmentTermsOf } from "@/lib/storefront-installments"
 import { BACK_KEY, orderNumberOf, paramOf, REORDER_FAILED_KEY, REORDER_TRIMMED_KEY, REORDERED_KEY, storefrontRoutes } from "@/lib/storefront-routes"
@@ -66,10 +68,17 @@ export async function generateMetadata({ params, searchParams }: PageProps<"/[sl
 
   if (!place) return {}
 
+  const { store } = place
+  const address = canonicalOf(place, storefrontRoutes(store))
+  const title = `${headingOf(place)} · ${store.name}`
+  const description = store.description ?? undefined
+
   return {
-    title: `${headingOf(place)} · ${place.store.name}`,
-    description: place.store.description ?? undefined,
-    alternates: { canonical: canonicalOf(place, storefrontRoutes(place.store)) },
+    title,
+    description,
+    alternates: { canonical: address },
+    // The page's own title, shop and all: these pages declared no card, so it is what a preview already read of them.
+    openGraph: shopShareOf(store, { origin: await siteOrigin(), path: address, title, description }),
     // A paged or searched shelf is not a landing page; it is the same shelf, reached differently. Nor
     // is a deep combination of filters: three narrowings of one shelf are not a page of their own.
     robots:

@@ -1,5 +1,5 @@
 // Next
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { cookies } from "next/headers"
 
 // App
@@ -17,6 +17,7 @@ import { funnelCountedAt } from "@/lib/funnel-count"
 import { getMessages } from "@/lib/locale"
 import { REFRESH_COOKIE } from "@/lib/session-cookies"
 import { shopIconsOf } from "@/lib/shop-icon"
+import { shopThemeColorOf } from "@/lib/shop-share"
 import { shopperAt } from "@/lib/shopper"
 import { quietPathsOf } from "@/lib/storefront-event"
 import { shopAt } from "@/lib/storefront-data"
@@ -67,6 +68,18 @@ export async function generateMetadata({ params }: Pick<LayoutProps<"/[slug]">, 
   const { slug } = await params
 
   return shopIconsOf(await shopAt(slug))
+}
+
+/**
+ * The colour of the browser's own bar over every page of the shop (BEELINK-248): the header's, so
+ * the bar and the band under it read as one. Here for the reason the icon is: said once, over the
+ * landings and the shop's own domain too. A viewport is merged by key, so a page that sets another
+ * part of it keeps this one.
+ */
+export async function generateViewport({ params }: Pick<LayoutProps<"/[slug]">, "params">): Promise<Viewport> {
+  const { slug } = await params
+
+  return shopThemeColorOf(await shopAt(slug))
 }
 
 export default async function StorefrontLayout({ children, params }: LayoutProps<"/[slug]">) {

@@ -8,7 +8,9 @@ import { contactCopyOf } from "@/components/storefront/storefront-contact-copy"
 import { StorefrontSections } from "@/components/storefront/storefront-sections"
 import { orderHrefOf } from "@/components/storefront/storefront-links"
 import { getMessages } from "@/lib/locale"
+import { shopShareOf } from "@/lib/shop-share"
 import { shopperAt } from "@/lib/shopper"
+import { siteOrigin } from "@/lib/site-origin"
 import { landingAt, navigationAt, paymentOptionsAt, shopAt } from "@/lib/storefront-data"
 import { installmentTermsOf } from "@/lib/storefront-installments"
 import { storefrontRoutes } from "@/lib/storefront-routes"
@@ -33,12 +35,13 @@ export async function generateMetadata({ params }: PageProps<"/[slug]/lp/[page]"
   // The shopkeeper's words for a search result, and the page's own name beside the shop's when they wrote none.
   const title = landing.seo.title ?? `${landing.title} · ${store.name}`
   const description = landing.seo.description ?? store.description ?? undefined
+  const address = storefrontRoutes(store).landing(landing.slug)
 
   return {
     title,
     description,
-    alternates: { canonical: storefrontRoutes(store).landing(landing.slug) },
-    openGraph: { title, description, images: landing.seo.imageUrl ?? store.logoUrl ?? undefined, type: "website" },
+    alternates: { canonical: address },
+    openGraph: shopShareOf(store, { origin: await siteOrigin(), path: address, title, description, image: landing.seo.imageUrl }),
   }
 }
 

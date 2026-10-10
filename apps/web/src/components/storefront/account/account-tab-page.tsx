@@ -20,7 +20,9 @@ import { customerFavoritesAt } from "@/lib/customer-favorites"
 import { customerOrdersAt } from "@/lib/customer-orders"
 import { pendingReviewsAt } from "@/lib/customer-reviews"
 import { getMessages } from "@/lib/locale"
+import { shopShareOf } from "@/lib/shop-share"
 import { shopperAt } from "@/lib/shopper"
+import { siteOrigin } from "@/lib/site-origin"
 import { navigationAt, shopAt } from "@/lib/storefront-data"
 import { conversationOrderOf, sectionOf, storefrontRoutes } from "@/lib/storefront-routes"
 import type { SectionQuery } from "@/lib/storefront-section"
@@ -57,10 +59,15 @@ export async function accountTabMetadata(slug: string, section: string, item: st
   const loaded = await load(slug, section, item)
   if (!loaded) return {}
 
+  const { store, tab } = loaded
   const { ui } = await getMessages()
+  const address = storefrontRoutes(store).accountTab(tab)
+  const title = `${accountTabTitleOf(tab, ui.storefront)} · ${store.name}`
+
   return {
-    title: `${accountTabTitleOf(loaded.tab, ui.storefront)} · ${loaded.store.name}`,
-    alternates: { canonical: storefrontRoutes(loaded.store).accountTab(loaded.tab) },
+    title,
+    alternates: { canonical: address },
+    openGraph: shopShareOf(store, { origin: await siteOrigin(), path: address, title, description: store.description ?? undefined }),
     // The shopper's own pages are nobody's search result.
     robots: { index: false, follow: true },
   }
