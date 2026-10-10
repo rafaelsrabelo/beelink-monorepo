@@ -10,7 +10,9 @@ import { contactCopyOf } from "@/components/storefront/storefront-contact-copy"
 import { StorefrontSections } from "@/components/storefront/storefront-sections"
 import { orderHrefOf } from "@/components/storefront/storefront-links"
 import { getMessages } from "@/lib/locale"
+import { shopShareOf } from "@/lib/shop-share"
 import { shopperAt } from "@/lib/shopper"
+import { siteOrigin } from "@/lib/site-origin"
 import { navigationAt, paymentOptionsAt, shopAt } from "@/lib/storefront-data"
 import { installmentTermsOf } from "@/lib/storefront-installments"
 import { storefrontRoutes } from "@/lib/storefront-routes"
@@ -41,17 +43,15 @@ export async function generateMetadata({ params }: PageProps<"/[slug]">): Promis
 
   if (!store) return {}
 
+  const home = storefrontRoutes(store).home
+  const description = store.description ?? undefined
+
   // The shop's own name and words, not a product's: this page is indexed as the shop.
   return {
     title: store.name,
-    description: store.description ?? undefined,
-    alternates: { canonical: storefrontRoutes(store).home },
-    openGraph: {
-      title: store.name,
-      description: store.description ?? undefined,
-      images: store.bannerImageUrl ?? store.logoUrl ?? undefined,
-      type: "website",
-    },
+    description,
+    alternates: { canonical: home },
+    openGraph: shopShareOf(store, { origin: await siteOrigin(), path: home, title: store.name, description }),
   }
 }
 

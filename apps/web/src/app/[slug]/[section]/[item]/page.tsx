@@ -6,15 +6,13 @@ import { notFound } from "next/navigation"
 import type { Metadata } from "next"
 
 // Types
-import type { PublicProductDetail, PublicStore } from "@harness-monorepo/contracts"
+import type { PublicStore } from "@harness-monorepo/contracts"
 
 // UI
 import { StorefrontProductReviewsSkeleton } from "@harness-monorepo/ui/blocks/storefront/storefront-product-reviews-skeleton"
 import { StorefrontBreadcrumb } from "@harness-monorepo/ui/blocks/storefront/storefront-breadcrumb"
 import { StorefrontProductDetails } from "@harness-monorepo/ui/blocks/storefront/storefront-product-details"
 import { StorefrontRelatedSkeleton } from "@harness-monorepo/ui/blocks/storefront/storefront-related-skeleton"
-import { plainTextOf } from "@harness-monorepo/ui/lib/markdown"
-import { optionOfValue, photosOf } from "@harness-monorepo/ui/lib/photo-choice"
 import { specRowsOf } from "@harness-monorepo/ui/lib/product-specs"
 import { ORDER_VARIANT_MARK } from "@harness-monorepo/ui/lib/variant-choice"
 
@@ -27,7 +25,10 @@ import { StorefrontProductLive } from "@/components/storefront/storefront-produc
 import { StorefrontRelated } from "@/components/storefront/storefront-related"
 import { getMessages } from "@/lib/locale"
 import { jsonLdText, productJsonLd } from "@/lib/product-json-ld"
+import { sharedAddressOf, sharedDescriptionOf, sharedPhotoOf, sharedVariantOf } from "@/lib/product-share"
+import { shopShareOf } from "@/lib/shop-share"
 import { shopperAt } from "@/lib/shopper"
+import { siteOrigin } from "@/lib/site-origin"
 import { finishesOnWhatsAppOf } from "@/lib/checkout-payment"
 import { catalogueAt, navigationAt, paymentOptionsAt, productAt, shopAt } from "@/lib/storefront-data"
 import { installmentTermsOf } from "@/lib/storefront-installments"
@@ -70,42 +71,25 @@ export async function generateMetadata({ params, searchParams }: PageProps<"/[sl
   if (!loaded) return {}
 
   const { store, product } = loaded
+  const address = storefrontRoutes(store).product(product.slug)
+  const chosen = sharedVariantOf(product, variant)
+  const description = sharedDescriptionOf(product.description)
 
   return {
     // The shop's name after the product's: a search result reads "Bolsa Amora · Lessari", which is
     // the order someone scanning a page of results needs them in.
     title: `${product.name} · ${store.name}`,
-    // The words alone: the description is Markdown at rest, and a search result showing `**` is
-    // a search result nobody clicks.
-    description: descriptionOf(product.description) ?? store.description ?? undefined,
-    alternates: { canonical: storefrontRoutes(store).product(product.slug) },
-    openGraph: {
+    description: description ?? store.description ?? undefined,
+    alternates: { canonical: address },
+    openGraph: shopShareOf(store, {
+      origin: await siteOrigin(),
+      path: sharedAddressOf(address, chosen),
       title: product.name,
-      description: descriptionOf(product.description),
+      description,
       // A shared link to "Uva · 300 g" shows that tub, not the product's first photo.
-      images: sharedPhotoOf(product, typeof variant === "string" ? variant : null) ?? store.logoUrl ?? undefined,
-      type: "website",
-    },
+      image: sharedPhotoOf(product, chosen),
+    }),
   }
-}
-
-/** The chosen combination's own photo, or the most specific one tagged for it, or the first. */
-function sharedPhotoOf(product: PublicProductDetail, variantId: string | null): string | undefined {
-  const chosen = product.variants.find((entry) => entry.id === variantId)
-  if (!chosen) return product.images[0]?.url
-  if (chosen.imageUrl) return chosen.imageUrl
-  const optionOf = optionOfValue(product.options, (option) => option.values, (value) => value.id)
-  return photosOf(product.images, optionOf, chosen.optionValueIds)[0]?.url ?? product.images[0]?.url
-}
-
-/** Cut where a search result cuts, on a word, so the tail is never half a sentence. */
-const DESCRIPTION_MAX_LENGTH = 160
-
-function descriptionOf(markdown: string | null): string | undefined {
-  if (!markdown) return undefined
-  const text = plainTextOf(markdown)
-  if (text.length <= DESCRIPTION_MAX_LENGTH) return text || undefined
-  return `${text.slice(0, DESCRIPTION_MAX_LENGTH).replace(/\s+\S*$/, "")}…`
 }
 
 export default async function ProductPage({ params, searchParams }: PageProps<"/[slug]/[section]/[item]">) {

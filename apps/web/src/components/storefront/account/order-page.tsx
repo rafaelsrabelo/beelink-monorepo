@@ -29,7 +29,9 @@ import { holdsMoney, orderPaymentLabelOf } from "@/lib/order-payment-label"
 import { purchaseOf, purchaseOrderOf } from "@/lib/purchase"
 import { fullMomentOf, orderHandoverOf, orderHistoryOf, orderItemsOf, orderPaymentOf, orderPlacedLineOf, orderStatusViewOf, orderTrackingOf } from "@/lib/order-page-view"
 import { reorderActionOf } from "@/lib/reorder-view"
+import { shopShareOf } from "@/lib/shop-share"
 import { shopperAt } from "@/lib/shopper"
+import { siteOrigin } from "@/lib/site-origin"
 import { navigationAt, shopAt } from "@/lib/storefront-data"
 import { accountOrderNumberOf, BACK_KEY, paramOf, PAYMENT_KEY, RECEIPT_KEY, sectionOf, storefrontRoutes } from "@/lib/storefront-routes"
 import type { SectionQuery } from "@/lib/storefront-section"
@@ -62,9 +64,13 @@ export async function orderPageMetadata(params: Omit<OrderPageProps, "query">): 
   const loaded = await load(params)
   if (!loaded) return {}
 
+  const { store, number } = loaded
   const { ui } = await getMessages()
+  const title = `${format(ui.storefront.orderNumber, { number: String(number) })} · ${store.name}`
+
   return {
-    title: `${format(ui.storefront.orderNumber, { number: String(loaded.number) })} · ${loaded.store.name}`,
+    title,
+    openGraph: shopShareOf(store, { origin: await siteOrigin(), path: storefrontRoutes(store).accountOrder(number), title, description: store.description ?? undefined }),
     // The shopper's own order is nobody's search result, and nothing on it is worth following.
     robots: { index: false, follow: false },
   }
