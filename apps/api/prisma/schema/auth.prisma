@@ -75,11 +75,33 @@ model OAuthState {
   codeVerifier String
   storeId      String   @db.Uuid
   returnTo     String?
+  /// Set when the flow began at the shop's own domain (BEELINK-284): the SHA-256 of a secret that
+  /// browser keeps there. The sign-in then ends as a `GoogleHandoff`, held to this challenge.
+  handoffChallenge String? @db.Char(43)
   expiresAt    DateTime
   createdAt    DateTime @default(now())
 
   @@index([expiresAt])
   @@map("oauth_states")
+}
+
+/// A Google sign-in on its way from the platform's host to the shop's own domain (BEELINK-284): the
+/// code the browser carries there, which that domain's handler trades for the session. No session
+/// exists until the trade, and no token is ever kept here. Taken by the delete that reads it, a
+/// minute at most after it was made; no foreign key, as with `oauth_states`.
+model GoogleHandoff {
+  /// sha256 of the code: the code itself is never stored.
+  codeHash  String   @id @db.Char(64)
+  /// The flow's `handoffChallenge`: the trade must bring the secret it is the hash of.
+  challenge String   @db.Char(43)
+  storeId   String   @db.Uuid
+  /// The shop's account Google signed in.
+  userId    String   @db.Uuid
+  returnTo  String?
+  expiresAt DateTime
+
+  @@index([expiresAt])
+  @@map("google_handoffs")
 }
 
 /// One signed-in device. Every refresh token it was ever given belongs to it, so reusing a spent

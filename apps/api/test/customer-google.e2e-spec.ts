@@ -1,16 +1,17 @@
 // Node
-import { randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 
 // Nest
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 
 // Types
-import type { AuthSession, GoogleAuthorization, GoogleSignIn } from '@harness-monorepo/contracts';
+import type { AuthSession, GoogleAuthorization, GoogleHandoffSession, GoogleSignIn } from '@harness-monorepo/contracts';
 
 // App
 import { LEGAL_VERSION } from '../src/modules/auth/auth.constants.js';
 import { codeChallengeOf, GoogleOAuthClient, type GoogleClaims } from '../src/modules/customers/google/google-oauth.client.js';
 import { PrismaService } from '../src/shared/prisma/prisma.service.js';
+import { HANDOFF_TTL_MS } from '../src/modules/customers/google/customer-google.service.js';
 import { PASSWORD, newEmail, signUpAndSignIn, verifyEmailOf } from './support/auth-flow.js';
 import { createTestApp } from './support/create-test-app.js';
 import { clearInbox } from './support/mailpit.js';
@@ -79,7 +80,7 @@ describe("a shopper's Google door into a shop", () => {
   }
 
   it('offers Google when it is set up', async () => {
-    expect((await app.inject({ method: 'GET', url: '/api/customer/sign-in-options' })).json()).toEqual({ google: true });
+    expect((await app.inject({ method: 'GET', url: '/api/customer/sign-in-options' })).json()).toEqual({ google: true, platformOrigin: 'http://localhost:3000' });
   });
 
   it("opens a verified account with no password on a first sign-in, and the shop's record of it", async () => {
@@ -90,7 +91,7 @@ describe("a shopper's Google door into a shop", () => {
     expect(response.statusCode).toBe(200);
     const signedIn = response.json<GoogleSignIn>();
     expect(signedIn).toMatchObject({ storeSlug: 'lessari', returnTo: '/lessari/carrinho' });
-    expect(signedIn.session.accessToken).toBeTruthy();
+    expect(signedIn.session?.accessToken).toBeTruthy();
 
     const user = await prisma.user.findFirstOrThrow({ where: { email }, include: { store: true, identities: true, customers: true, legalAcceptances: true } });
     expect(user.store?.slug).toBe('lessari');
@@ -101,7 +102,7 @@ describe("a shopper's Google door into a shop", () => {
     expect(user.identities).toHaveLength(1);
     expect(user.customers).toHaveLength(1);
     // The shopper's own page answers to the session Google opened.
-    const me = await app.inject({ method: 'GET', url: '/api/stores/lessari/customer/me', headers: { authorization: `Bearer ${signedIn.session.accessToken}` } });
+    const me = await app.inject({ method: 'GET', url: '/api/stores/lessari/customer/me', headers: { authorization: `Bearer ${signedIn.session?.accessToken}` } });
     expect(me.json()).toMatchObject({ name: 'Bia Google', email });
   });
 
@@ -169,7 +170,7 @@ describe("a shopper's Google door into a shop", () => {
 
     expect([opened.statusCode, again.statusCode]).toEqual([200, 200]);
     // The second sign-in lands on the account the first one opened, e-mail and all.
-    expect(again.json<GoogleSignIn>().session.user).toMatchObject({ id: opened.json<GoogleSignIn>().session.user.id, email: before });
+    expect(again.json<GoogleSignIn>().session?.user).toMatchObject({ id: opened.json<GoogleSignIn>().session?.user.id, email: before });
     expect(await prisma.user.count({ where: { identities: { some: {} } } })).toBe(1);
   });
 
@@ -265,8 +266,151 @@ describe("a shopper's Google door into a shop", () => {
     const { state } = await start();
     const signedIn = (await finish(google.grant({ email: newEmail('renova') }), state)).json<GoogleSignIn>();
 
-    const refreshed = await app.inject({ method: 'POST', url: '/api/stores/lessari/customer/refresh', payload: { refreshToken: signedIn.session.refreshToken } });
+    const refreshed = await app.inject({ method: 'POST', url: '/api/stores/lessari/customer/refresh', payload: { refreshToken: signedIn.session?.refreshToken } });
     expect(refreshed.statusCode).toBe(200);
-    expect(refreshed.json<AuthSession>().refreshToken).not.toBe(signedIn.session.refreshToken);
+    expect(refreshed.json<AuthSession>().refreshToken).not.toBe(signedIn.session?.refreshToken);
+  });
+
+  /**
+   * BEELINK-284: a flow begun at the shop's own domain. The callback is still the platform's, and
+   * answers with a code that domain trades for the session — with the secret its browser kept.
+   */
+  describe("from the shop's own domain", () => {
+    const secret = () => randomBytes(32).toString('base64url');
+    const challengeOf = (verifier: string) => createHash('sha256').update(verifier).digest('base64url');
+
+    async function ownDomain(slug: string, host: string, status: 'ACTIVE' | 'PENDING' = 'ACTIVE') {
+      await prisma.store.update({ where: { slug }, data: { customDomain: host, customDomainStatus: status } });
+    }
+
+    /** As far as the platform's callback: Google consented, and the API answered it. */
+    async function arrive(verifier: string, email = newEmail('dominio'), slug = 'lessari') {
+      const begun = await app.inject({ method: 'POST', url: `/api/stores/${slug}/customer/google/authorize`, payload: { returnTo: `/${slug}/carrinho`, handoffChallenge: challengeOf(verifier) } });
+      expect(begun.statusCode).toBe(200);
+      const response = await finish(google.grant({ email }), begun.json<GoogleAuthorization>().state);
+      expect(response.statusCode).toBe(200);
+      return response.json<GoogleSignIn>();
+    }
+
+    function trade(code: string, verifier: string, slug = 'lessari') {
+      return app.inject({ method: 'POST', url: `/api/stores/${slug}/customer/google/handoff`, payload: { code, verifier } });
+    }
+
+    it('ends at the callback with a code for the active domain and no session, and trades it there for one', async () => {
+      await ownDomain('lessari', 'lessari.example');
+      const verifier = secret();
+      const email = newEmail('dominio');
+
+      const signedIn = await arrive(verifier, email);
+      expect(signedIn).toMatchObject({ session: null, storeSlug: 'lessari', returnTo: '/lessari/carrinho', handoff: { host: 'lessari.example' } });
+      // No session exists until the trade: nothing to steal off the way.
+      expect(await prisma.session.count({ where: { user: { email } } })).toBe(0);
+
+      const traded = await trade(signedIn.handoff?.code ?? '', verifier);
+      expect(traded.statusCode).toBe(200);
+      const { session, returnTo } = traded.json<GoogleHandoffSession>();
+      expect(returnTo).toBe('/lessari/carrinho');
+      const me = await app.inject({ method: 'GET', url: '/api/stores/lessari/customer/me', headers: { authorization: `Bearer ${session.accessToken}` } });
+      expect(me.json()).toMatchObject({ email });
+      expect(await prisma.session.count({ where: { user: { email }, audience: 'CUSTOMER' } })).toBe(1);
+    });
+
+    it('keeps only the hash of the code, and nothing of a session', async () => {
+      await ownDomain('lessari', 'lessari.example');
+      const { handoff } = await arrive(secret());
+
+      const [row] = await prisma.googleHandoff.findMany();
+      expect(row?.codeHash).toBe(createHash('sha256').update(handoff?.code ?? '').digest('hex'));
+      expect(JSON.stringify(row)).not.toContain(handoff?.code);
+      expect(Object.keys(row ?? {}).sort()).toEqual(['challenge', 'codeHash', 'expiresAt', 'returnTo', 'storeId', 'userId']);
+      expect((row?.expiresAt.getTime() ?? 0) - Date.now()).toBeLessThanOrEqual(HANDOFF_TTL_MS);
+    });
+
+    it('trades a code once', async () => {
+      await ownDomain('lessari', 'lessari.example');
+      const verifier = secret();
+      const { handoff } = await arrive(verifier);
+
+      expect((await trade(handoff?.code ?? '', verifier)).statusCode).toBe(200);
+      const again = await trade(handoff?.code ?? '', verifier);
+      expect(again.statusCode).toBe(400);
+      expect(again.json()).toMatchObject({ errorCode: 'GOOGLE_STATE_INVALID' });
+    });
+
+    it('gives one session to two trades at once', async () => {
+      await ownDomain('lessari', 'lessari.example');
+      const verifier = secret();
+      const email = newEmail('corrida');
+      const { handoff } = await arrive(verifier, email);
+
+      const both = await Promise.all([trade(handoff?.code ?? '', verifier), trade(handoff?.code ?? '', verifier)]);
+      expect(both.map((response) => response.statusCode).sort()).toEqual([200, 400]);
+      expect(await prisma.session.count({ where: { user: { email } } })).toBe(1);
+    });
+
+    it('refuses alike a code past its minute, one of another shop, one with another secret, and one nobody gave', async () => {
+      await ownDomain('lessari', 'lessari.example');
+      await ownDomain('outra', 'outra.example');
+      const verifier = secret();
+      const refusals: unknown[] = [];
+
+      const late = await arrive(verifier);
+      await prisma.googleHandoff.updateMany({ data: { expiresAt: new Date(Date.now() - 1000) } });
+      refusals.push((await trade(late.handoff?.code ?? '', verifier)).json());
+
+      const elsewhere = await arrive(verifier);
+      refusals.push((await trade(elsewhere.handoff?.code ?? '', verifier, 'outra')).json());
+      // Asked for at the wrong shop, it is spent all the same.
+      refusals.push((await trade(elsewhere.handoff?.code ?? '', verifier)).json());
+
+      const stolen = await arrive(verifier);
+      refusals.push((await trade(stolen.handoff?.code ?? '', secret())).json());
+      refusals.push((await trade(stolen.handoff?.code ?? '', verifier)).json());
+
+      refusals.push((await trade(secret(), verifier)).json());
+
+      expect(refusals).toHaveLength(6);
+      for (const refusal of refusals) expect(refusal).toEqual(refusals[0]);
+      expect(refusals[0]).toMatchObject({ statusCode: 400, errorCode: 'GOOGLE_STATE_INVALID' });
+      expect(await prisma.session.count({ where: { audience: 'CUSTOMER' } })).toBe(0);
+    });
+
+    it('refuses a code or a secret that is not shaped like one, before looking for it', async () => {
+      const response = await trade('curto', secret());
+      expect(response.statusCode).toBe(400);
+      const challenge = await app.inject({ method: 'POST', url: '/api/stores/lessari/customer/google/authorize', payload: { handoffChallenge: 'https://evil.example' } });
+      expect(challenge.statusCode).toBe(400);
+    });
+
+    it('ends on the platform, with a session, when the shop has no active domain by the time Google answers', async () => {
+      const verifier = secret();
+      const none = await arrive(verifier);
+      expect(none.handoff).toBeNull();
+      expect(none.session?.accessToken).toBeTruthy();
+
+      await ownDomain('lessari', 'lessari.example', 'PENDING');
+      const pending = await arrive(verifier);
+      expect(pending.handoff).toBeNull();
+      expect(pending.session?.accessToken).toBeTruthy();
+    });
+
+    it('ends on the platform for a flow begun there, active domain or not', async () => {
+      await ownDomain('lessari', 'lessari.example');
+      const { state } = await start('/lessari/carrinho');
+
+      const signedIn = (await finish(google.grant({ email: newEmail('plataforma') }), state)).json<GoogleSignIn>();
+      expect(signedIn.handoff).toBeNull();
+      expect(signedIn.session?.accessToken).toBeTruthy();
+      expect(await prisma.googleHandoff.count()).toBe(0);
+    });
+
+    it('sweeps the codes nobody traded when the next one is made', async () => {
+      await ownDomain('lessari', 'lessari.example');
+      await arrive(secret());
+      await prisma.googleHandoff.updateMany({ data: { expiresAt: new Date(Date.now() - 1000) } });
+
+      await arrive(secret());
+      expect(await prisma.googleHandoff.count()).toBe(1);
+    });
   });
 });

@@ -68,12 +68,16 @@ test.describe("a shop at its own domain", () => {
     const at = (pathname: string) => `http://${domain}:${port}${pathname}`
     let productSlug = ""
 
-    /** Every address a page offers: none of the shop's own may carry the slug. `/<slug>/api/…` is a form's action, never a link. */
+    /**
+     * Every page a page offers: none of the shop's own may carry the slug. The shop's handlers keep
+     * theirs on every host (`/<slug>/api/…`) — a form's action, and one link: "Continuar com Google",
+     * drawn where the API has Google set up, which leads to the shop's own handler (BEELINK-284).
+     */
     const slugInAnAddress = async () =>
-      page.locator("a[href]").evaluateAll(
-        (anchors, shop) => anchors.map((anchor) => anchor.getAttribute("href") ?? "").filter((href) => new URL(href, window.location.href).pathname.split("/")[1] === shop),
-        slug,
-      )
+      page.locator("a[href]").evaluateAll((anchors, shop) => {
+        const segmentsOf = (href: string) => new URL(href, window.location.href).pathname.split("/")
+        return anchors.map((anchor) => anchor.getAttribute("href") ?? "").filter((href) => segmentsOf(href)[1] === shop && segmentsOf(href)[2] !== "api")
+      }, slug)
     /**
      * The product's card, by where it leads: its address with no slug. By name it would be the heart
      * beside it too — "Entre para curtir <product>" — which leads to the sign-in.

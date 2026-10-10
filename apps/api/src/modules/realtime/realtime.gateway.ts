@@ -7,7 +7,6 @@ import type { RealtimeErrorCode } from '@harness-monorepo/contracts';
 import type { RealtimeServer, RealtimeSocket } from './realtime-socket.js';
 
 // App
-import { env } from '../../shared/config/env.js';
 import { SessionService } from '../auth/session.service.js';
 import { RealtimePublisher } from './realtime-publisher.js';
 import { RealtimeTicketsService } from './realtime-tickets.service.js';
@@ -21,11 +20,12 @@ const TICKET_REFUSED = 'REALTIME_TICKET_INVALID' satisfies RealtimeErrorCode;
  * page's server asked for, joins its room — the shop's panel, or a shopper's own at the shop — and
  * hears what changed there. Nothing is written through it; the REST does that, with its checks.
  *
- * `cors` only lets the long-polling transport answer the web's origin; it guards nothing, since a
- * WebSocket is not subject to it. The ticket is the guard, and it travels in the handshake, not in a
- * cookie: a page on another site has nothing of the visitor's to open a socket with.
+ * CORS only lets the long-polling transport answer the web's origin and a shop's own active domain
+ * (`RealtimeOrigins`, set by `RealtimeIoAdapter` — a decorator cannot read the database); it guards
+ * nothing, since a WebSocket is not subject to it. The ticket is the guard, and it travels in the
+ * handshake, not in a cookie: a page on another site has nothing of the visitor's to open a socket with.
  */
-@WebSocketGateway({ path: REALTIME_PATH, serveClient: false, cors: { origin: env.CORS_ORIGINS } })
+@WebSocketGateway({ path: REALTIME_PATH, serveClient: false })
 export class RealtimeGateway implements OnGatewayInit<RealtimeServer>, OnGatewayConnection<RealtimeSocket> {
   private readonly logger = new Logger(RealtimeGateway.name);
 

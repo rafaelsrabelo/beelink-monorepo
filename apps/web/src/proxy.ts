@@ -14,6 +14,7 @@ import { serverEnv } from "@/lib/server-env"
 import { ACCESS_COOKIE, REFRESH_COOKIE, clearSessionCookies, setSessionCookies } from "@/lib/session-cookies"
 import { SHOP_DOMAIN_HEADER, type ShopAddress } from "@/lib/shop-address"
 import { hostNameOf, shopHosts } from "@/lib/shop-hosts"
+import { hostAskedOf, shopOriginOf } from "@/lib/shop-origin"
 
 /**
  * A shopper's e-mailed link — confirming the address, or setting a new password — names the shop it
@@ -127,30 +128,11 @@ async function keepShopperSignedIn(request: NextRequest, shop: ShopAddress, forw
   return answer
 }
 
-/** The host the visitor addressed, as `publicOriginOf()` takes it, port and all. */
-function hostAskedOf(request: NextRequest): string {
-  return request.headers.get("x-forwarded-host")?.split(",")[0]?.trim() || request.headers.get("host") || request.nextUrl.host
-}
-
 /**
  * The platform's own host, when the deployment names it: a request by it never asks the table of
  * shop hosts whose host it is. Unset — development, the e2e — every host is looked up.
  */
 const PLATFORM_HOST = serverEnv.WEB_DOMAIN ? hostNameOf(serverEnv.WEB_DOMAIN) : null
-
-/**
- * Where a shop's own domain is, as an origin to redirect to. Https and no port, always — but for a
- * request that arrived by a local host, where nothing terminates TLS and the port is the server's
- * own: development and the e2e go on by the request's scheme and port.
- */
-function shopOriginOf(request: NextRequest, domain: string): string {
-  const asked = hostAskedOf(request)
-  const name = hostNameOf(asked)
-  if (name !== "localhost" && !name.endsWith(".localhost") && name !== "127.0.0.1" && name !== "[::1]") return `https://${domain}`
-
-  const port = /:(\d+)$/.exec(asked)?.[1]
-  return `${request.nextUrl.protocol}//${domain}${port ? `:${port}` : ""}`
-}
 
 /**
  * A request that arrived by a shop's own, active domain (BEELINK-283). The shop's pages are at the

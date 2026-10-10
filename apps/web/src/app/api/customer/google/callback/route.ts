@@ -8,6 +8,7 @@ import type { GoogleSignIn } from "@harness-monorepo/contracts"
 import { callApi, isApiErrorBody } from "@/lib/api"
 import { clientIpOf, publicOriginOf } from "@/lib/bff"
 import { clearGoogleStateCookie, googleFlightOf, GOOGLE_STATE_COOKIE, setCustomerSessionCookies } from "@/lib/customer-session-cookies"
+import { shopOriginOf } from "@/lib/shop-origin"
 import { BACK_KEY, safeBackOf } from "@/lib/storefront-routes"
 
 /**
@@ -17,6 +18,12 @@ import { BACK_KEY, safeBackOf } from "@/lib/storefront-routes"
  *
  * Signed in, it stores the same session cookies the password door does and goes back to where the
  * shopper was, inside that shop. The cart is a cookie of its own and is never touched here.
+ *
+ * A flow begun at the shop's own domain (BEELINK-284) stores nothing here: a cookie of this host is
+ * none of that domain's. The API answers with a handoff instead of a session, and the browser is
+ * sent to that domain's handler with its code. The domain is the one the API read from the shop —
+ * nothing in this request, its cookie included, says where a sign-in is sent. A refusal goes to the
+ * shop's sign-in page here as ever, which `src/proxy.ts` leads to the domain.
  */
 export async function GET(request: NextRequest) {
   const query = request.nextUrl.searchParams
@@ -47,6 +54,20 @@ export async function GET(request: NextRequest) {
   }
 
   const signedIn = (await response.json()) as GoogleSignIn
+  if (signedIn.handoff) {
+    const { host, code } = signedIn.handoff
+    if (!/^[a-z0-9-]+$/.test(signedIn.storeSlug) || !/^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$/.test(host)) return fail("UNKNOWN")
+
+    const door = new URL(`/${signedIn.storeSlug}/api/customer/google/session`, shopOriginOf(request, host))
+    door.searchParams.set("code", code)
+    const handed = NextResponse.redirect(door, 303)
+    handed.headers.set("cache-control", "no-store")
+    handed.headers.set("referrer-policy", "no-referrer")
+    clearGoogleStateCookie(handed.cookies)
+    return handed
+  }
+  if (!signedIn.session) return fail("UNKNOWN")
+
   const answer = NextResponse.redirect(new URL(safeBackOf({ slug: signedIn.storeSlug }, signedIn.returnTo ?? undefined), publicOriginOf(request)), 303)
   clearGoogleStateCookie(answer.cookies)
   // On the shop's path, as the password door stores them: the account Google opened is that shop's.

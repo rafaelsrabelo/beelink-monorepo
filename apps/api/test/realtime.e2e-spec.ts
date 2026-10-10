@@ -225,4 +225,38 @@ describe('the real-time channel', () => {
     expect((await handshake(web)).headers.get('access-control-allow-origin')).toBe(web);
     expect((await handshake('https://outro-site.example')).headers.get('access-control-allow-origin')).toBeNull();
   });
+
+  /**
+   * BEELINK-284: at a shop's own domain the page's origin is the shop's and the socket is still the
+   * platform's. The transport answers that origin while the domain is active — and no other.
+   */
+  it("answers the origin of a shop's active domain, never a pending one's, a look-alike's or a wildcard", async () => {
+    await prisma.store.update({ where: { slug: 'lessari' }, data: { customDomain: 'lessari-realtime.example', customDomainStatus: 'ACTIVE' } });
+    await prisma.store.update({ where: { slug: 'outra' }, data: { customDomain: 'pendente-realtime.example', customDomainStatus: 'PENDING' } });
+    // An app of its own: the gateway keeps a copy of the domains for a minute, and the suite's app has one already.
+    const fresh = await createTestApp();
+    await fresh.listen(0, '127.0.0.1');
+    const at = await fresh.getUrl();
+    const handshake = (origin?: string) => fetch(`${at}/api/socket.io/?EIO=4&transport=polling`, { headers: origin ? { origin } : {} });
+    const allowed = async (origin?: string) => (await handshake(origin)).headers.get('access-control-allow-origin');
+
+    try {
+      expect(await allowed('https://lessari-realtime.example')).toBe('https://lessari-realtime.example');
+      // Under test the scheme and the port are whatever came, as in development.
+      expect(await allowed('http://lessari-realtime.example:3100')).toBe('http://lessari-realtime.example:3100');
+      expect(await allowed('https://pendente-realtime.example')).toBeNull();
+      expect(await allowed('https://lessari-realtime.example.evil.example')).toBeNull();
+      expect(await allowed('https://evil.lessari-realtime.example')).toBeNull();
+      expect(await allowed('https://outro-site.example')).toBeNull();
+      expect(await allowed()).toBeNull();
+      const [web = ''] = env.CORS_ORIGINS;
+      expect(await allowed(web)).toBe(web);
+      // The preflight a browser sends before a polling POST is answered the same way.
+      const preflight = (origin: string) => fetch(`${at}/api/socket.io/?EIO=4&transport=polling`, { method: 'OPTIONS', headers: { origin, 'access-control-request-method': 'POST' } });
+      expect((await preflight('https://lessari-realtime.example')).headers.get('access-control-allow-origin')).toBe('https://lessari-realtime.example');
+      expect((await preflight('https://outro-site.example')).headers.get('access-control-allow-origin')).toBeNull();
+    } finally {
+      await fresh.close();
+    }
+  });
 });

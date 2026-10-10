@@ -7,7 +7,7 @@ import type { GoogleAuthorization } from "@harness-monorepo/contracts"
 // App
 import { callApi, isApiErrorBody } from "@/lib/api"
 import { clientIpOf, publicOriginOf } from "@/lib/bff"
-import { setGoogleStateCookie } from "@/lib/customer-session-cookies"
+import { GOOGLE_HANDOFF_KEY, GOOGLE_HANDOFF_VALUE, setGoogleStateCookie } from "@/lib/customer-session-cookies"
 import { BACK_KEY, safeBackOf } from "@/lib/storefront-routes"
 
 /**
@@ -25,14 +25,17 @@ export async function GET(request: NextRequest, { params }: RouteContext<"/api/s
   if (!/^[a-z0-9-]+$/.test(slug)) return NextResponse.redirect(new URL("/", publicOriginOf(request)), 303)
 
   const query = request.nextUrl.searchParams
-  // The platform's addresses: this flow ends at one fixed callback on the platform's host, and a
-  // shop's own domain does not offer it (BEELINK-283, until BEELINK-284).
+  // The platform's addresses: this flow ends at one fixed callback on the platform's host. A shop's
+  // own domain sends its shopper here to begin one, with these spelled under `/<slug>` (BEELINK-284).
   const back = safeBackOf({ slug }, query.get(BACK_KEY) ?? undefined)
   const signIn = safeBackOf({ slug }, query.get("retorno") ?? undefined)
+  // From a flow begun at the shop's own domain: the hash of a secret that browser keeps there. It
+  // names no host — where such a flow ends is the shop's active domain, which the API reads.
+  const challenge = query.get(GOOGLE_HANDOFF_KEY) ?? ""
 
   const response = await callApi({
     path: `/stores/${encodeURIComponent(slug)}/customer/google/authorize`,
-    body: { returnTo: back },
+    body: { returnTo: back, ...(GOOGLE_HANDOFF_VALUE.test(challenge) ? { handoffChallenge: challenge } : {}) },
     clientIp: clientIpOf(request),
   }).catch(() => null)
 

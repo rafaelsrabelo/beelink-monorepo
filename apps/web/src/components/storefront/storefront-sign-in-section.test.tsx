@@ -31,7 +31,8 @@ const google = () => screen.queryByRole("link", { name: ptBR.storefront.continue
 
 afterEach(() => {
   cleanup()
-  asked.signInOptionsAt.mockClear()
+  asked.signInOptionsAt.mockReset()
+  asked.signInOptionsAt.mockResolvedValue({ google: true })
 })
 
 describe("the shop's sign-in page, and Google", () => {
@@ -44,15 +45,27 @@ describe("the shop's sign-in page, and Google", () => {
   })
 
   /**
-   * The flow ends at one fixed address on the platform's host, where the cookie it would store is
-   * no cookie of the shop's domain (BEELINK-283, until BEELINK-284): offered there, it would sign
-   * nobody in.
+   * BEELINK-284: the shop's own handler first, which holds the flow to this browser at this domain
+   * before the platform's host begins it — and the addresses it carries are this host's, with no slug.
    */
-  it("does not offer it at the shop's own domain, nor ask the API whether it could", async () => {
+  it("offers it at the shop's own domain through the shop's own handler", async () => {
     await drawn(true, { voltar: "/carrinho" })
 
+    const href = google()?.getAttribute("href") ?? ""
+    expect(href.startsWith("/loja/api/customer/google?")).toBe(true)
+    const query = new URLSearchParams(href.split("?")[1])
+    expect(query.get("voltar")).toBe("/carrinho")
+    expect(query.get("retorno")).toBe("/entrar")
+  })
+
+  it("offers it nowhere when the API has no Google set up", async () => {
+    asked.signInOptionsAt.mockResolvedValue({ google: false })
+
+    await drawn(true)
     expect(google()).toBeNull()
-    expect(asked.signInOptionsAt).not.toHaveBeenCalled()
+    cleanup()
+    await drawn(false)
+    expect(google()).toBeNull()
   })
 
   it("posts to the shop's handler, which keeps its slug on every host, and returns to an address with none", async () => {

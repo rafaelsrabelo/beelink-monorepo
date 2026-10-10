@@ -1,7 +1,6 @@
 // Nest
 import { HttpException } from '@nestjs/common';
 import { FastifyAdapter } from '@nestjs/platform-fastify';
-import { IoAdapter } from '@nestjs/platform-socket.io';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 
 // Libs
@@ -14,6 +13,7 @@ import rateLimit from '@fastify/rate-limit';
 import { env } from './shared/config/env.js';
 import { ApiExceptionFilter } from './shared/http/api-exception.filter.js';
 import { ApiValidationPipe } from './shared/http/api-validation.pipe.js';
+import { RealtimeIoAdapter } from './modules/realtime/realtime-io.adapter.js';
 import { MAX_UPLOAD_BYTES } from './modules/uploads/uploads.constants.js';
 
 /**
@@ -68,7 +68,7 @@ export async function configureApp(app: NestFastifyApplication): Promise<void> {
   });
 
   // Socket.IO on Fastify's own server: the real-time channel (BEELINK-161), at its own path.
-  app.useWebSocketAdapter(new IoAdapter(app));
+  app.useWebSocketAdapter(new RealtimeIoAdapter(app));
   app.setGlobalPrefix(env.API_PREFIX);
   app.useGlobalPipes(
     new ApiValidationPipe({

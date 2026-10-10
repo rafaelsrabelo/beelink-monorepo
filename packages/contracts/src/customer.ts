@@ -286,6 +286,11 @@ export interface StoreCustomerListQuery {
 /** How a shopper may sign in at a shop besides e-mail and password: Google, when it is set up. */
 export interface CustomerSignInOptions {
   google: boolean;
+  /**
+   * The platform's own origin (`https://beelink.biz`), where every Google sign-in starts and ends:
+   * a shop's own domain sends its shopper there to begin one (BEELINK-284).
+   */
+  platformOrigin: string;
 }
 
 /** Where a Google sign-in starts: the address to send the browser to, and the state to hold it to. */
@@ -297,6 +302,12 @@ export interface GoogleAuthorization {
 export interface GoogleAuthorizePayload {
   /** Where to return inside the shop once signed in; the web keeps it inside the shop again. */
   returnTo?: string;
+  /**
+   * Set when the flow began at the shop's own domain (BEELINK-284): the SHA-256, in base64url, of a
+   * secret that browser holds in a cookie of that domain. The sign-in then ends as a `GoogleHandoff`,
+   * which only that secret turns into a session.
+   */
+  handoffChallenge?: string;
 }
 
 /** What Google sent back to the fixed callback address. */
@@ -305,10 +316,39 @@ export interface GoogleCallbackPayload {
   state: string;
 }
 
-/** A finished Google sign-in: the shopper's session at the shop the flow began in, and where to go. */
+/**
+ * A Google sign-in on its way from the platform's host to the shop's own domain (BEELINK-284), where
+ * the session's cookies have to be stored: the shop's active domain, read from the shop and never
+ * from a request, and a code that domain's handler trades for the session.
+ */
+export interface GoogleHandoff {
+  /** The shop's `ACTIVE` domain: no scheme, no port, no path. */
+  host: string;
+  /** Good once, for a minute, at this shop, with the secret the flow's challenge was made from. */
+  code: string;
+}
+
+/**
+ * A finished Google sign-in: the shop the flow began in, where to go, and either the shopper's
+ * session or — for a flow that began at the shop's own, still active domain — the handoff that
+ * carries it there. Exactly one of the two is set.
+ */
 export interface GoogleSignIn {
-  session: AuthSession;
+  session: AuthSession | null;
+  handoff: GoogleHandoff | null;
   storeSlug: string;
+  returnTo: string | null;
+}
+
+/** What the shop's own domain trades for the session: the code it was sent, and the secret its browser kept. */
+export interface GoogleHandoffPayload {
+  code: string;
+  verifier: string;
+}
+
+/** The session a handoff carried to the shop's own domain, and where the shopper was going. */
+export interface GoogleHandoffSession {
+  session: AuthSession;
   returnTo: string | null;
 }
 
@@ -333,7 +373,10 @@ export type CustomerErrorCode =
   | "CUSTOMER_DELETE_EMAIL_MISMATCH"
   /** Google sign-in is not set up on this deployment. */
   | "GOOGLE_SIGN_IN_UNAVAILABLE"
-  /** The state is unknown, used or expired: the flow was not started here, or took too long. */
+  /**
+   * The state is unknown, used or expired: the flow was not started here, or took too long. A
+   * handoff code that is unknown, used, expired, another shop's or another browser's says the same.
+   */
   | "GOOGLE_STATE_INVALID"
   /** Google refused the code — a wrong PKCE verifier among the reasons. */
   | "GOOGLE_EXCHANGE_FAILED"

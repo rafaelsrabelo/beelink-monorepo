@@ -209,14 +209,14 @@ describe("catalogueAt — a shelf that could not be read", () => {
 
 describe("signInOptionsAt — whether the shop window offers Google", () => {
   it("says what the API says, and no Google when the API cannot answer", async () => {
-    vi.stubGlobal("fetch", () => Promise.resolve(Response.json({ google: true })))
-    expect(await signInOptionsAt()).toEqual({ google: true })
+    vi.stubGlobal("fetch", () => Promise.resolve(Response.json({ google: true, platformOrigin: "https://beelink.biz" })))
+    expect(await signInOptionsAt()).toEqual({ google: true, platformOrigin: "https://beelink.biz" })
 
     vi.stubGlobal("fetch", () => Promise.reject(new TypeError("Failed to fetch")))
-    expect(await signInOptionsAt()).toEqual({ google: false })
+    expect(await signInOptionsAt()).toEqual({ google: false, platformOrigin: "" })
 
     vi.stubGlobal("fetch", () => Promise.resolve(new Response("{}", { status: 500 })))
-    expect(await signInOptionsAt()).toEqual({ google: false })
+    expect(await signInOptionsAt()).toEqual({ google: false, platformOrigin: "" })
   })
 })
 
