@@ -68,6 +68,9 @@ export const ComOpcoes: Story = {
   },
 }
 
+/** A loja parcela no cartão: sob o preço, até quantas vezes e de quanto. */
+export const ComParcelas: Story = { args: { installments: { maxInstallments: 6, minimumChargeCents: 500, minimumInstallmentCents: 500 } } }
+
 /** Com avaliações: a média, as estrelas e a contagem sob o nome, quando a loja mostra a nota. */
 export const ComNota: Story = {
   args: {

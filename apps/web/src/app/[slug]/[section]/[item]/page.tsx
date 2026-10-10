@@ -30,6 +30,7 @@ import { jsonLdText, productJsonLd } from "@/lib/product-json-ld"
 import { shopperAt } from "@/lib/shopper"
 import { finishesOnWhatsAppOf } from "@/lib/checkout-payment"
 import { catalogueAt, navigationAt, paymentOptionsAt, productAt, shopAt } from "@/lib/storefront-data"
+import { installmentTermsOf } from "@/lib/storefront-installments"
 import { sectionOf, storefrontRoutes } from "@/lib/storefront-routes"
 
 /**
@@ -126,6 +127,7 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
   const related = product.category ? catalogueAt(slug, { category: product.category.slug, pageSize: 19 }).catch(() => null) : null
   // The menu on this page as on every other: cached under the catalogue's tag, like the product.
   const [{ ui, web }, { categories, onSale }, paymentOptions] = await Promise.all([getMessages(), navigationAt(slug), paymentOptionsAt(slug)])
+  const installments = installmentTermsOf(paymentOptions)
   const routes = storefrontRoutes(store)
   const layout = store.layoutSettings
 
@@ -204,6 +206,7 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
         orderHref={orderHref}
         cartHref={routes.cart()}
         showPrice={layout.showProductPrice ?? true}
+        {...(installments ? { installments } : {})}
         showBadge={layout.showProductBadges ?? true}
         showRating={layout.showProductRating ?? true}
         showStock={layout.showProductStock ?? true}
@@ -226,6 +229,7 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
             productId={product.id}
             productHref={(productSlug) => routes.product(productSlug)}
             showPrice={layout.showProductPrice ?? true}
+            {...(installments ? { installments } : {})}
             quickAdd={layout.showQuickAdd ?? true}
             messages={ui}
           />

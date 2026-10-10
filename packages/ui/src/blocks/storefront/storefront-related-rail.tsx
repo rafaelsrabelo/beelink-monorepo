@@ -2,6 +2,7 @@
 import type { ReactNode } from "react"
 
 // UI
+import type { StorefrontInstallmentTerms } from "@harness-monorepo/ui/lib/installments"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Locales
@@ -20,6 +21,8 @@ export interface StorefrontRelatedRailProps {
   productHref: (productSlug: string) => string
   locale: string
   showPrice?: boolean
+  /** The shop's card terms, for the line under each price. */
+  installments?: StorefrontInstallmentTerms
   /** Over each card's photo: the web's "+", which adds the product to the cart. Absent, a card is its link alone. */
   cardAction?: (product: StorefrontProduct) => ReactNode
   linkComponent?: LinkComponent
@@ -34,7 +37,7 @@ export const RELATED_CARD_WIDTH = "w-40 shop-sm:w-[calc((100%-32px)/3)] shop-lg:
  * time with "Página 1 de 3" beside the title. Named for what it is — 5b's "Clientes que viram este
  * item também viram" would claim a tracking the shop does not do.
  */
-export function StorefrontRelatedRail({ products, productHref, locale, showPrice = true, cardAction, linkComponent: Link = AnchorLink, messages = defaultMessages }: StorefrontRelatedRailProps) {
+export function StorefrontRelatedRail({ products, productHref, locale, showPrice = true, installments, cardAction, linkComponent: Link = AnchorLink, messages = defaultMessages }: StorefrontRelatedRailProps) {
   const text = messages.storefront
   if (products.length === 0) return null
 
@@ -55,6 +58,7 @@ export function StorefrontRelatedRail({ products, productHref, locale, showPrice
                 href={productHref(product.slug)}
                 locale={locale}
                 showPrice={showPrice}
+                {...(installments ? { installments } : {})}
                 density="compact"
                 {...(cardAction ? { action: cardAction(product) } : {})}
                 linkComponent={Link}

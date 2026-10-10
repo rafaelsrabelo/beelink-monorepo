@@ -9,7 +9,8 @@ import { StorefrontSections } from "@/components/storefront/storefront-sections"
 import { orderHrefOf } from "@/components/storefront/storefront-links"
 import { getMessages } from "@/lib/locale"
 import { shopperAt } from "@/lib/shopper"
-import { landingAt, navigationAt, shopAt } from "@/lib/storefront-data"
+import { landingAt, navigationAt, paymentOptionsAt, shopAt } from "@/lib/storefront-data"
+import { installmentTermsOf } from "@/lib/storefront-installments"
 import { storefrontRoutes } from "@/lib/storefront-routes"
 
 /**
@@ -47,10 +48,12 @@ export default async function LandingPage({ params }: PageProps<"/[slug]/lp/[pag
 
   if (!store || !landing) notFound()
 
-  const [{ ui, web }, { categories, onSale }] = await Promise.all([
+  const [{ ui, web }, { categories, onSale }, paymentOptions] = await Promise.all([
     getMessages(),
     store.type === "INSTITUTIONAL" ? { categories: [], onSale: false } : navigationAt(slug),
+    paymentOptionsAt(slug),
   ])
+  const installments = installmentTermsOf(paymentOptions)
 
   const routes = storefrontRoutes(store)
   const layout = store.layoutSettings
@@ -75,6 +78,7 @@ export default async function LandingPage({ params }: PageProps<"/[slug]/lp/[pag
             categories={categories}
             routes={routes}
             showPrice={layout.showProductPrice ?? true}
+            {...(installments ? { installments } : {})}
             showBadge={layout.showProductBadges ?? true}
             showRating={layout.showProductRating ?? true}
             // Without the shop's header and footer there is no cart to reach: a card that added to one

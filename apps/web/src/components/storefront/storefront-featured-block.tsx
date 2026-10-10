@@ -5,6 +5,7 @@ import type { ReactNode } from "react"
 import type { PublicComponent, PublicFeaturedProduct } from "@harness-monorepo/contracts"
 
 // UI
+import type { StorefrontInstallmentTerms } from "@harness-monorepo/ui/lib/installments"
 import type { LinkComponent } from "@harness-monorepo/ui/blocks/auth/auth-link"
 import { StorefrontFeaturedBuy } from "@harness-monorepo/ui/blocks/storefront/storefront-featured-buy"
 import { StorefrontFeaturedProduct } from "@harness-monorepo/ui/blocks/storefront/storefront-featured-product"
@@ -18,6 +19,8 @@ export interface StorefrontFeaturedBlockProps {
   component: PublicComponent
   routes: StorefrontRoutes
   cartReachable: boolean
+  /** The shop's card terms, for "em até 6x" under a price; absent when it splits nothing. */
+  installments?: StorefrontInstallmentTerms
   /** Design mode's preview: the button is drawn where it will be, and puts nothing in a cart. */
   editing: boolean
   linkComponent?: LinkComponent
@@ -28,7 +31,7 @@ export interface StorefrontFeaturedBlockProps {
  * A featured product, drawn: nothing when the read found none on sale, and otherwise the product
  * with its button — the live one in the shop, which fills the cart, and an inert one in the editor.
  */
-export function StorefrontFeaturedBlock({ component, routes, cartReachable, editing, linkComponent, messages }: StorefrontFeaturedBlockProps): ReactNode {
+export function StorefrontFeaturedBlock({ component, routes, cartReachable, installments, editing, linkComponent, messages }: StorefrontFeaturedBlockProps): ReactNode {
   const [card] = component.items as PublicFeaturedProduct[]
   if (!card) return null
 
@@ -52,6 +55,7 @@ export function StorefrontFeaturedBlock({ component, routes, cartReachable, edit
       }
       span={component.span}
       locale="pt-BR"
+      {...(installments ? { installments } : {})}
       {...link}
       messages={messages}
     />

@@ -44,6 +44,12 @@ describe("StorefrontProductDetail", () => {
   })
 
 
+  it("says how far the shop splits the price, when given its terms", () => {
+    renderProduct({ installments: { maxInstallments: 2, minimumChargeCents: 500, minimumInstallmentCents: 500 } })
+
+    expect(screen.getByText(/em até 2x de .* sem juros/)).toBeInTheDocument()
+  })
+
   it("names the promotion under the price while the price shows a cut, and not otherwise", () => {
     const { rerender } = renderProduct({ promotionName: "Semana do Whey" })
     expect(screen.getByText("Promoção: Semana do Whey")).toBeInTheDocument()

@@ -14,6 +14,7 @@ import type {
 } from "@harness-monorepo/contracts"
 
 // UI
+import type { StorefrontInstallmentTerms } from "@harness-monorepo/ui/lib/installments"
 import { BenefitIcon } from "@harness-monorepo/ui/blocks/design/benefit-icons"
 import { defaultAlignOf } from "@harness-monorepo/ui/blocks/design/text-align"
 import type { LinkComponent } from "@harness-monorepo/ui/blocks/auth/auth-link"
@@ -52,6 +53,8 @@ export interface StorefrontComponentProps {
   categories: readonly PublicProductCategory[]
   routes: StorefrontRoutes
   showPrice: boolean
+  /** The shop's card terms, for "em até 6x" under a price; absent when it splits nothing. */
+  installments?: StorefrontInstallmentTerms
   showBadge: boolean
   showRating?: boolean
   /** "Adicionar ao carrinho" on each card of a showcase. */
@@ -81,6 +84,7 @@ export function StorefrontComponent({
   categories,
   routes,
   showPrice,
+  installments,
   showBadge,
   showRating = true,
   quickAdd = false,
@@ -192,6 +196,7 @@ export function StorefrontComponent({
           routes={routes}
           cartReachable={cartReachable}
           editing={editing}
+          {...(showPrice && installments ? { installments } : {})}
           {...link}
           messages={messages}
         />
@@ -224,6 +229,7 @@ export function StorefrontComponent({
           component={component}
           routes={routes}
           showPrice={showPrice}
+          {...(installments ? { installments } : {})}
           showBadge={showBadge}
           showRating={showRating}
           quickAdd={quickAdd}

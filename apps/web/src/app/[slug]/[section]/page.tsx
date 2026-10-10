@@ -38,6 +38,7 @@ import { cartInvitationOf, pathWithQuery } from "@/lib/offer-strip"
 import { shopBaseOf } from "@/lib/shop-address"
 import { shopperAt } from "@/lib/shopper"
 import { catalogueAt, offersAt, paymentOptionsAt } from "@/lib/storefront-data"
+import { installmentTermsOf } from "@/lib/storefront-installments"
 import { BACK_KEY, orderNumberOf, paramOf, REORDER_FAILED_KEY, REORDER_TRIMMED_KEY, REORDERED_KEY, storefrontRoutes } from "@/lib/storefront-routes"
 import { canonicalOf, headingOf, isShelf, listingAskOf, placeOf } from "@/lib/storefront-section"
 import { filterCountOf } from "@/lib/storefront-filters"
@@ -94,7 +95,8 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
   const catalogue = isShelf(place) ? catalogueAt(store.slug, listingAskOf(place)) : undefined
   // The basket: its lines from the cookie, priced by the catalogue, so the HTML already has them.
   // With it, how the shop's checkout is paid (BEELINK-205): what it charges online is read by the cart alone.
-  const [cart, shopper, paymentOptions] = await Promise.all([place.section.kind === "cart" ? cartAt(store.slug) : null, shopperAt(store.slug), place.section.kind === "cart" ? paymentOptionsAt(store.slug) : undefined])
+  const [cart, shopper, paymentOptions] = await Promise.all([place.section.kind === "cart" ? cartAt(store.slug) : null, shopperAt(store.slug), place.section.kind === "cart" || isShelf(place) ? paymentOptionsAt(store.slug) : undefined])
+  const installments = paymentOptions ? installmentTermsOf(paymentOptions) : undefined
   // And its totals, priced by the API as the order would be (BEELINK-194) and for whoever is reading
   // (BEELINK-245): the promotions' rows are in the HTML too — and to the address a delivery would go
   // to (BEELINK-178), so the fee is as well.
@@ -152,7 +154,7 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
           {/* A search made, told once per term (BEELINK-272): the header's suggestions ask at every key and are not one. */}
           {place.section.kind === "search" && place.term ? <TrackView event={{ name: "Search", term: place.term }} viewKey={place.term} /> : null}
           <Suspense fallback={<StorefrontListingSkeleton productsPerRow={productsPerRow} withColumn className="pt-5 pb-10" messages={ui} />}>
-            <StorefrontListing place={place} routes={routes} catalogue={catalogue} locale={locale} />
+            <StorefrontListing place={place} routes={routes} catalogue={catalogue} {...(installments ? { installments } : {})} locale={locale} />
           </Suspense>
         </>
       ) : place.section.kind === "account" && shopper ? (

@@ -2,12 +2,14 @@
 import type { ReactNode } from "react"
 
 // UI
+import type { StorefrontInstallmentTerms } from "@harness-monorepo/ui/lib/installments"
 import { optionCountOf } from "@harness-monorepo/ui/lib/option-count"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import { StorefrontCardPhotos } from "./storefront-card-photos"
+import { StorefrontInstallments } from "./storefront-installments"
 import { StorefrontDiscountBadge, StorefrontPrice } from "./storefront-price"
 import { StorefrontRating } from "./storefront-rating"
 
@@ -41,6 +43,8 @@ export interface StorefrontProductCardProps {
   href: string
   locale: string
   showPrice?: boolean
+  /** The shop's card terms: given, a price they split says so under itself. */
+  installments?: StorefrontInstallmentTerms
   showBadge?: boolean
   /** The rating line under the name, when the product has reviews; the shop may hide it. */
   showRating?: boolean
@@ -79,6 +83,7 @@ export function StorefrontProductCard({
   href,
   locale,
   showPrice = true,
+  installments,
   showBadge = true,
   showRating = true,
   action,
@@ -106,6 +111,7 @@ export function StorefrontProductCard({
         {showPrice ? (
           <StorefrontPrice priceCents={product.priceCents} compareAtPriceCents={product.compareAtPriceCents} locale={locale} size="compact" className="leading-[1.2]" messages={messages} />
         ) : null}
+        {showPrice && installments ? <StorefrontInstallments priceCents={product.priceCents} terms={installments} locale={locale} className="text-shop-on-background/70" messages={messages} /> : null}
       </Link>
     )
     if (!action) return card
@@ -170,6 +176,8 @@ export function StorefrontProductCard({
             messages={messages}
           />
         ) : null}
+
+        {showPrice && installments ? <StorefrontInstallments priceCents={product.priceCents} terms={installments} locale={locale} messages={messages} /> : null}
 
         {/* Under the price and not the name: a card with it and one without keep their prices in line. */}
         {options ? <p className="text-xs text-shop-muted">{options}</p> : null}

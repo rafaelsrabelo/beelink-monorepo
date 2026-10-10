@@ -2,6 +2,7 @@
 import type { StorefrontCatalog } from "@harness-monorepo/contracts"
 
 // UI
+import type { StorefrontInstallmentTerms } from "@harness-monorepo/ui/lib/installments"
 import { StorefrontRelatedRail } from "@harness-monorepo/ui/blocks/storefront/storefront-related-rail"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
@@ -18,6 +19,8 @@ export interface StorefrontRelatedProps {
   productId: string
   productHref: (productSlug: string) => string
   showPrice: boolean
+  /** The shop's card terms, for "em até 6x" under a price; absent when it splits nothing. */
+  installments?: StorefrontInstallmentTerms
   /** "+" on each card — the shop's `showQuickAdd`, as on its shelves. */
   quickAdd?: boolean
   messages: UiMessages
@@ -32,7 +35,7 @@ export interface StorefrontRelatedProps {
  * so the same `useAddToCart`, and one "added to cart" told from one place. The read is the listing's,
  * which says whether a product sells combinations and never lists a sold-out one.
  */
-export async function StorefrontRelated({ catalogue, productId, productHref, showPrice, quickAdd = false, messages }: StorefrontRelatedProps) {
+export async function StorefrontRelated({ catalogue, productId, productHref, showPrice, installments, quickAdd = false, messages }: StorefrontRelatedProps) {
   const found = await catalogue
   const products = (found?.products ?? []).filter((product) => product.id !== productId).slice(0, RELATED_MAX)
 
@@ -42,6 +45,7 @@ export async function StorefrontRelated({ catalogue, productId, productHref, sho
       productHref={productHref}
       locale="pt-BR"
       showPrice={showPrice}
+      {...(installments ? { installments } : {})}
       {...(quickAdd ? { cardAction: (product) => <StorefrontCardCartLive product={product} size="icon" messages={messages} /> } : {})}
       messages={messages}
     />

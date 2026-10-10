@@ -2,6 +2,7 @@
 import type { PublicComponent, PublicProductCard } from "@harness-monorepo/contracts"
 
 // UI
+import type { StorefrontInstallmentTerms } from "@harness-monorepo/ui/lib/installments"
 import type { LinkComponent } from "@harness-monorepo/ui/blocks/auth/auth-link"
 import type { StorefrontProduct } from "@harness-monorepo/ui/blocks/storefront/storefront-product-card"
 import { StorefrontProductGrid } from "@harness-monorepo/ui/blocks/storefront/storefront-product-grid"
@@ -19,6 +20,8 @@ export interface StorefrontShelfProps {
   component: PublicComponent
   routes: StorefrontRoutes
   showPrice: boolean
+  /** The shop's card terms, for "em até 6x" under a price; absent when it splits nothing. */
+  installments?: StorefrontInstallmentTerms
   showBadge: boolean
   /** The cards' rating line — the shop's `showProductRating`. */
   showRating?: boolean
@@ -60,6 +63,7 @@ export function StorefrontShelf({
   component,
   routes,
   showPrice,
+  installments,
   showBadge,
   showRating = true,
   quickAdd = false,
@@ -77,6 +81,7 @@ export function StorefrontShelf({
     seeAllHref: category ? routes.category(category.slug) : routes.catalog(),
     locale: "pt-BR",
     showPrice,
+    ...(installments ? { installments } : {}),
     showBadge,
     showRating,
     ...(quickAdd ? { cardAction: (product: StorefrontProduct) => <StorefrontCardCartLive product={product} messages={messages} /> } : {}),

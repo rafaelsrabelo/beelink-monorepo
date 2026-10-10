@@ -119,6 +119,7 @@ export const ptBR: UiMessages = {
     discount: "-{percent}%",
     promotion: "Promoção: {name}",
     priceWas: "De: {price}",
+    installments: "em até {count}x de {amount} sem juros",
     ratingOf: "Nota {rating} de 5, {count} avaliações",
     ratingOfOne: "Nota {rating} de 5, 1 avaliação",
     backToShop: "Voltar para a loja",
