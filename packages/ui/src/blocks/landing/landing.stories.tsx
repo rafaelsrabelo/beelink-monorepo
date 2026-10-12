@@ -13,6 +13,7 @@ import { LandingFaq } from "./landing-faq"
 import { LandingFooter } from "./landing-footer"
 import { LandingHeader } from "./landing-header"
 import { LandingHero } from "./landing-hero"
+import { LandingIntegrations } from "./landing-integrations"
 import { LandingPosters } from "./landing-posters"
 import { LandingShell } from "./landing-shell"
 import { LandingSteps } from "./landing-steps"
@@ -36,6 +37,18 @@ const bannerPhotos = {
   shipping: photo("beelink-entrega", 1214, 1295),
 }
 
+/** The brands' own marks, served here from the app's `public/` (`.storybook/main.ts`): the files the page draws. */
+function mark(file: string, alt: string) {
+  return <img src={`/brand/integrations/${file}`} alt={alt} width={56} height={56} className="size-full object-cover" />
+}
+
+const integrationLogos = {
+  asaas: mark("asaas-icon.png", ptBR.landing.integrations.items.asaas.alt),
+  melhorEnvio: mark("melhor-envio-icon.png", ptBR.landing.integrations.items.melhorEnvio.alt),
+  googleAnalytics: mark("google-analytics-icon.svg", ptBR.landing.integrations.items.googleAnalytics.alt),
+  meta: mark("meta-icon.svg", ptBR.landing.integrations.items.meta.alt),
+}
+
 const meta = {
   title: "Blocos/Landing",
   component: LandingShell,
@@ -55,6 +68,7 @@ export const Pagina: Story = {
         <LandingHero signupHref={hrefs.signupHref} />
         <LandingBanners signupHref={hrefs.signupHref} exampleHref="#loja-de-exemplo" photos={bannerPhotos} />
         <LandingEcosystem />
+        <LandingIntegrations logos={integrationLogos} />
         <LandingSteps />
         <LandingCouriers photo={photos.courier} termsHref={hrefs.termsHref} privacyHref={hrefs.privacyHref} />
         <LandingFaq />
@@ -93,6 +107,16 @@ export const Ecossistema: Story = {
   render: () => (
     <LandingShell className="min-h-0">
       <LandingEcosystem />
+    </LandingShell>
+  ),
+}
+
+/** As quatro integrações e a Beelia, que ainda vem: nenhum cartão é link. Empilhados no celular, cinco numa linha a partir de 1280 px. */
+export const Integracoes: Story = {
+  args: { children: null },
+  render: () => (
+    <LandingShell className="min-h-0">
+      <LandingIntegrations logos={integrationLogos} />
     </LandingShell>
   ),
 }

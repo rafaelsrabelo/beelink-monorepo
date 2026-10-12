@@ -2927,7 +2927,7 @@ export const en: UiMessages = {
     brand: "Beelink",
     homeLabel: "Beelink, home",
     auth: { back: "Back to the site", label: "Beelink’s photos", position: "Photo {current} of {total}" },
-    nav: { label: "Main", solutions: "Solutions", ecosystem: "Ecosystem", how: "How it works", couriers: "For couriers", faq: "Questions" },
+    nav: { label: "Main", solutions: "Solutions", ecosystem: "Ecosystem", integrations: "Integrations", how: "How it works", couriers: "For couriers", faq: "Questions" },
     menu: "Menu",
     signIn: "Sign in",
     createStore: "Create my shop",
@@ -2980,6 +2980,19 @@ export const en: UiMessages = {
       text: "Each part talks to the others: the shop's order becomes a charge at checkout, a message in the chat, a delivery in shipping and a campaign in marketing. No spreadsheet, no copy and paste.",
       kicker: "Beelink",
       kickerText: "The ecosystem for your e-commerce.",
+    },
+    integrations: {
+      titleLight: "Connect the shop",
+      titleStrong: "to your accounts",
+      lead: "Payment, shipping and measurement. You connect each service in the panel, with the account that is yours.",
+      items: {
+        asaas: { name: "Asaas", text: "Pix and credit card at checkout. The money goes straight to your Asaas account.", alt: "Asaas logo" },
+        melhorEnvio: { name: "Melhor Envio", text: "Shipping by Correios, Jadlog and other carriers at checkout, with the label and the tracking in the panel.", alt: "Melhor Envio logo" },
+        googleAnalytics: { name: "Google Analytics", text: "Your GA4 measurement ID, entered in the panel with no code to paste. The reports stay at Google.", alt: "Google Analytics logo" },
+        meta: { name: "Meta", text: "The pixel of your Facebook and Instagram ads and the purchase through the Conversions API, from whoever accepts the cookies.", alt: "Meta logo" },
+      },
+      beelia: { name: "Beelia", text: "Order updates, coupons and customer service on the shop's WhatsApp." },
+      soon: "Coming soon",
     },
     steps: {
       titleLight: "From sign-up to",

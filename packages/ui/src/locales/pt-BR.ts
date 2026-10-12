@@ -2928,7 +2928,7 @@ export const ptBR: UiMessages = {
     brand: "Beelink",
     homeLabel: "Beelink, início",
     auth: { back: "Voltar para o site", label: "Fotos da Beelink", position: "Foto {current} de {total}" },
-    nav: { label: "Principal", solutions: "Soluções", ecosystem: "Ecossistema", how: "Como funciona", couriers: "Para entregadores", faq: "Perguntas" },
+    nav: { label: "Principal", solutions: "Soluções", ecosystem: "Ecossistema", integrations: "Integrações", how: "Como funciona", couriers: "Para entregadores", faq: "Perguntas" },
     menu: "Menu",
     signIn: "Entrar",
     createStore: "Criar minha loja",
@@ -2981,6 +2981,19 @@ export const ptBR: UiMessages = {
       text: "Cada parte conversa com a outra: o pedido da loja vira cobrança no checkout, mensagem no chat, entrega no envio e campanha no marketing. Sem planilha, sem copiar e colar.",
       kicker: "Beelink",
       kickerText: "O ecossistema para o seu e-commerce.",
+    },
+    integrations: {
+      titleLight: "Conecte a loja",
+      titleStrong: "às suas contas",
+      lead: "Pagamento, frete e medição. Você conecta cada serviço pelo painel, com a conta que é sua.",
+      items: {
+        asaas: { name: "Asaas", text: "Pix e cartão de crédito no checkout. O dinheiro cai direto na sua conta Asaas.", alt: "Logo do Asaas" },
+        melhorEnvio: { name: "Melhor Envio", text: "Frete de Correios, Jadlog e outras transportadoras no checkout, com etiqueta e rastreio pelo painel.", alt: "Logo do Melhor Envio" },
+        googleAnalytics: { name: "Google Analytics", text: "O ID de medição do seu GA4, informado no painel sem colar código. Os relatórios ficam no Google.", alt: "Logo do Google Analytics" },
+        meta: { name: "Meta", text: "O pixel dos seus anúncios no Facebook e no Instagram e a compra pela API de Conversões, de quem aceita os cookies.", alt: "Logo da Meta" },
+      },
+      beelia: { name: "Beelia", text: "Avisos de pedido, cupons e atendimento no WhatsApp da loja." },
+      soon: "Em breve",
     },
     steps: {
       titleLight: "Do cadastro à",
