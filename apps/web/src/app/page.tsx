@@ -10,6 +10,7 @@ import { LandingFaq } from "@harness-monorepo/ui/blocks/landing/landing-faq"
 import { LandingFooter } from "@harness-monorepo/ui/blocks/landing/landing-footer"
 import { LandingHeader } from "@harness-monorepo/ui/blocks/landing/landing-header"
 import { LandingHero } from "@harness-monorepo/ui/blocks/landing/landing-hero"
+import { LandingIntegrations } from "@harness-monorepo/ui/blocks/landing/landing-integrations"
 import { LandingPosters } from "@harness-monorepo/ui/blocks/landing/landing-posters"
 import { LandingShell } from "@harness-monorepo/ui/blocks/landing/landing-shell"
 import { LandingSteps } from "@harness-monorepo/ui/blocks/landing/landing-steps"
@@ -18,6 +19,7 @@ import { LandingSteps } from "@harness-monorepo/ui/blocks/landing/landing-steps"
 import { AppLink } from "@/components/app-link"
 import { brandFontStyle, jakarta } from "@/components/landing/brand-font"
 import { BrandPhoto } from "@/components/landing/brand-photo"
+import { integrationMarksOf } from "@/components/landing/integration-mark"
 import courierStreet from "@/assets/images/courier-street.jpg"
 import courierSunny from "@/assets/images/courier-sunny.jpg"
 import panelLaptop from "@/assets/images/panel-laptop.jpg"
@@ -97,6 +99,7 @@ export default async function LandingPage() {
             messages={ui}
           />
           <LandingEcosystem messages={ui} />
+          <LandingIntegrations logos={integrationMarksOf(ui.landing.integrations.items)} messages={ui} />
           <LandingSteps messages={ui} />
           <LandingCouriers
             photo={<BrandPhoto image={courierStreet} alt="" sizes="(min-width: 80rem) 820px, 100vw" />}
