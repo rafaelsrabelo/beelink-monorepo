@@ -192,3 +192,12 @@ Acima está escrito que um sétimo link "não cabe a 1280 px com nenhum espaço"
 medido é a folga com os espaços de agora: 21 px. Um sétimo link pede a largura dele mais um espaço
 de 16 px, e a largura de "Planos" não foi medida. Com espaços bem menores ele pode caber, mas os
 links ficariam colados. A escolha continua sendo do AA2.
+
+### Mais duas coisas vistas depois (12/10)
+
+- **A seção em inglês**, que acima consta como não vista: com `bl_locale=en`, a 1280 e a 390 px, o
+  título ("Connect the shop to your accounts."), os cinco cartões, os quatro textos alternativos e
+  "Coming soon" aparecem, e nada passa da borda.
+- **A pergunta do `e2e/accessibility.spec.ts` feita à mão.** A suíte não rodou, mas a consulta dela
+  (axe na página inteira, WCAG 2.x A e AA, com contraste) foi feita contra o `next dev` em `/`, a
+  1280 × 720 e a 390 × 844: nenhuma violação. Não substitui a suíte, que roda sobre o build.
