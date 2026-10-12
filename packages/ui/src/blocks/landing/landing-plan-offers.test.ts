@@ -18,17 +18,17 @@ describe("planOfferOf", () => {
   })
 
   /**
-   * 323,99 over six months is 53,998… a month and 9,85% under the monthly price. Said as 53,99 and
-   * 10% it would promise a cent and a fraction of a point that nobody gets.
+   * 431,99 over six months is 71,998… a month, and 9,89% under six months at 79,90. Said as 71,99
+   * and 10% it would promise a cent and a fraction of a point that nobody gets.
    */
   it("rounds the month's share up and the saving's share down, never in its own favour", () => {
-    const prices: LandingPlanPrices = { ...examplePlanPrices, beelink: { monthly: 5990, semiannual: 32399, annual: 71880 } }
+    const prices: LandingPlanPrices = { ...examplePlanPrices, beelink: { monthly: 7990, semiannual: 43199, annual: 95880 } }
 
-    expect(planOfferOf(prices, "semiannual")).toMatchObject({ monthlyCents: 5400, savingCents: 3541, savingPercent: 9 })
+    expect(planOfferOf(prices, "semiannual")).toMatchObject({ monthlyCents: 7200, savingCents: 4741, savingPercent: 9 })
   })
 
   it("claims no saving of a period that costs as much as paying month by month, or more", () => {
-    const prices: LandingPlanPrices = { ...examplePlanPrices, beelink: { monthly: 5990, semiannual: 35940, annual: 71881 } }
+    const prices: LandingPlanPrices = { ...examplePlanPrices, beelink: { monthly: 7990, semiannual: 47940, annual: 95881 } }
 
     expect(planOfferOf(prices, "semiannual")).toMatchObject({ savingCents: 0, savingPercent: 0 })
     expect(planOfferOf(prices, "annual")).toMatchObject({ savingCents: 0, savingPercent: 0 })
