@@ -31,6 +31,7 @@ src/
 │   ├── app-link.tsx            # next/link behind the design system's plain-string href
 │   ├── landing/brand-font.ts   # Plus Jakarta Sans, loaded by the landing alone
 │   ├── landing/brand-photo.tsx # next/image over a photo from src/assets/images — drop a file there, import it
+│   ├── landing/integration-mark.tsx # next/image over a brand's mark from public/brand/integrations — the files the panel draws
 │   └── locale-switcher.tsx
 ├── lib/
 │   ├── api.ts                  # the session-bearing caller — `cache: "no-store"`
@@ -61,7 +62,7 @@ src/
 
 | Path | Who sees it | What |
 |---|---|---|
-| `/` | anyone | redirects to `/dashboard`, which the proxy guards |
+| `/` | anyone, signed in or not | Beelink's landing page (BEELINK-256), which the proxy passes untouched: the blocks of `blocks/landing`, its sections in the order the header names them — "Soluções", "Ecossistema", "Integrações", "Como funciona", "Para entregadores", "Perguntas" — between the hero and the posters and the last call. "Entrar" and "Criar minha loja" lead to `/login` and `/signup`, and the proxy sends a signed-in shopkeeper on to the panel from there. "Integrações" (BEELINK-317, `#integracoes`) says what a shop connects to — Asaas, Melhor Envio, Google Analytics, Meta — and announces Beelia as "Em breve"; no card leads anywhere. Its four marks are the files the panel's Integrations page draws (`INTEGRATION_LOGOS`), handed to the block by `integrationMarksOf` (`components/landing/integration-mark.tsx`) through `next/image`: the PNGs optimised at the size drawn, the SVGs served as they are — the optimiser refuses an SVG with a 400. The page asks the API for nothing |
 | `/login` · `/signup` | signed out | the auth blocks, wired to the route handlers |
 | `/verify-email` | anyone | spends the link's token **on the server**, then offers a new link |
 | `/forgot-password` · `/reset-password` | signed out | request and set a new password |

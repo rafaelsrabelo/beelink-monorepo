@@ -108,3 +108,80 @@ descobre ali que pode usá-las.
 - Uma página por integração, ou qualquer link saindo dos cartões.
 - Carregar o Google Analytics na vitrine (BEELINK-303) e o bloqueio do Melhor Envio.
 - Suíte e2e e `next build`: o Docker está desligado e o disco tem cerca de 3 GB livres.
+
+## 12/10, depois do código — o que mudou e o que foi visto
+
+O texto acima fica como foi escrito. O que segue é o que a construção e o navegador mostraram.
+
+### O menu do topo não cabia a 1280 px (decisão 10, confirmada com medida)
+
+Com o sexto link e os espaços do desenho (30 px entre os links, 44 px entre a logo, os links e os
+botões), "Criar minha loja" passava 89 px da coluna da página a 1280 px com barra de rolagem
+clássica, e a moldura cortava o botão. Os espaços ficaram em 16 px e 24 px a partir de 1280 px, e
+24 px e 36 px a partir de 1440 px. Folga medida num navegador com barra clássica, em pt-BR: 21 px a
+1280 px e 53 px a 1440 px. Em inglês os rótulos são mais curtos: 92 px e 124 px.
+
+**Para o AA2:** um sétimo link ("Planos") não cabe a 1280 px com nenhum espaço. Ele precisa de uns
+70 px e a barra tem 21. O AA2 vai ter de escolher: letra menor nos links, rótulo mais curto, ou
+mostrar os links só a partir de uma largura maior e deixar o menu de botão até lá.
+
+### O que o plano não dizia
+
+- **O título e o apoio** ficaram "Conecte a loja / às suas contas." e "Pagamento, frete e medição.
+  Você conecta cada serviço pelo painel, com a conta que é sua."
+- **A frase da Meta** cita Facebook e Instagram, para o lojista reconhecer o que é "Meta": "O pixel
+  dos seus anúncios no Facebook e no Instagram e a compra pela API de Conversões, de quem aceita os
+  cookies."
+- **Um teste segura duas frases no que o produto faz** (`landing-integrations.test.tsx`): a do Asaas
+  não pode dizer "boleto", e a do Google Analytics não pode falar de visitas, vendas ou compras. Quem
+  entregar o boleto ou o BEELINK-303 muda a frase e o teste juntos.
+- **Um teste no app** (`integration-mark.test.tsx`) confere que as quatro marcas são os endereços de
+  `INTEGRATION_LOGOS` e que cada arquivo existe em `public/`. A página `/` não tem teste próprio, e
+  um endereço errado só apareceria num navegador.
+- **A linha de `/` em `apps/web/docs/README.md`** dizia que a raiz redireciona para `/dashboard`. Isso
+  deixou de ser verdade no BEELINK-256. A linha foi reescrita, e não só acrescida.
+
+### O que foi visto
+
+`next dev` na porta 3200, sem a API (a 3201 não tinha nada escutando; a landing não pede nada a
+ela). Dois navegadores: o do Playwright compartilhado, para as capturas, e um Chromium headless
+próprio, para as medidas de rolagem.
+
+- **1280 px:** os seis links e os dois botões numa linha; os cinco cartões numa linha (218 px cada),
+  com as quatro marcas carregadas e o selo "EM BREVE" ao lado de "Beelia". Nada passa da largura da
+  página.
+- **390 px:** os cinco cartões empilhados, 342 px de largura, alinhados à margem de 24 px;
+  `scrollWidth` igual a `clientWidth` (390), no alto da página e na seção, e nenhum elemento da seção,
+  do topo (com o menu aberto) ou do rodapé passa da borda. O mesmo a 320, 360 e 375 px.
+- **Larguras entre as duas:** 1 por linha até 639 px; 2 + 2 + 1 de 640 a 1023 px, com a Beelia na
+  largura toda; 3 + 2 de 1024 a 1279 px; 5 a partir de 1280 px. Em todas a última linha fecha a
+  largura da lista.
+- **Teclado a 1280 px:** Tab chega a "Integrações" no quarto passo (logo, Soluções, Ecossistema,
+  Integrações), com o anel de foco de 2 px. Enter muda o endereço para `#integracoes` e a página
+  desliza até a seção parar a 24 px do alto, com o título visível. Dentro da seção não há nada que
+  receba foco. O link do rodapé leva ao mesmo lugar.
+- **Teclado a 390 px:** Tab chega ao botão do menu; Enter abre; três Tabs chegam a "Integrações";
+  Enter fecha o menu e leva à seção (24 px do alto). Com o menu aberto, Esc fecha e devolve o foco ao
+  botão.
+- **Imagens:** os PNG do Asaas e do Melhor Envio vêm pelo otimizador do Next, em AVIF (1010 bytes o
+  do Asaas a 64 px, 748 bytes o do Melhor Envio a 128 px), com 64 px para tela comum e 128 px para
+  tela de densidade dupla; os SVG do Google Analytics e da Meta vêm do próprio endereço. Pedir um SVG
+  ao otimizador responde 400, conferido com `curl`.
+- **Contraste (axe com `color-contrast` ligado, na página desenhada):** nenhuma violação na seção, no
+  topo (com o menu aberto a 390 px) e no rodapé. A 1280 px o axe não conseguiu decidir o contraste
+  de "Entrar", porque a linha amarela do canto passa atrás dele; isso já era assim antes deste
+  ticket.
+- **Storybook:** a história "Blocos/Landing → Integrações" abriu a 1280 e a 390 px, com as marcas
+  servidas pela pasta que o Storybook já expõe. A fonte lá é a do Storybook, como nas outras
+  histórias da landing.
+- **Console:** sem erros nem avisos.
+
+### O que não foi exercitado
+
+- `next build`, `turbo build` e as suítes e2e (API e Playwright): o Docker está desligado e o disco
+  tinha 3,2 GB livres. O `e2e/accessibility.spec.ts` e o `e2e/screenshots.spec.ts` não rodaram.
+- `build-storybook`, que o CI roda. O Storybook foi aberto em modo de desenvolvimento.
+- Safari, Firefox e um celular de verdade. Só Chromium.
+- Tela de densidade dupla: o PNG de 128 px está no `srcset`, mas nenhuma captura foi feita nela.
+- A página em inglês foi medida no topo (o menu cabe); a seção em inglês só passou pelos testes.
+- Tema escuro: a landing não tem.
