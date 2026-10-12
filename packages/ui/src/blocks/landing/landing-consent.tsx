@@ -91,12 +91,13 @@ export function LandingConsent({ privacyHref, current = null, onAccept, onRefuse
       aria-labelledby={headingId}
       className="sticky bottom-0 z-15 order-last border-t-[1.5px] border-brand-ink bg-brand-surface text-brand-ink focus-visible:-outline-offset-4"
     >
-      <div className={cn(LANDING_CONTAINER, "flex flex-col gap-3 py-4 lg:flex-row lg:items-center lg:justify-between lg:gap-10")}>
+      <div className={cn(LANDING_CONTAINER, "flex flex-col gap-2.5 py-3 sm:gap-3 sm:py-4 lg:flex-row lg:items-center lg:justify-between lg:gap-10")}>
         <div className="flex max-w-3xl flex-col gap-1">
           <h2 id={headingId} className="text-[15px] font-extrabold">
             {text.title}
           </h2>
-          <p className="text-sm leading-snug text-brand-text">
+          {/* Smaller on a phone, where every line it takes is a line of the page it stands over. */}
+          <p className="text-[13px] leading-snug text-brand-text sm:text-sm">
             {withParts(text.body, {
               privacy: (
                 <Link href={privacyHref} className="font-semibold text-brand-ink underline underline-offset-2">
@@ -105,7 +106,7 @@ export function LandingConsent({ privacyHref, current = null, onAccept, onRefuse
               ),
             })}
           </p>
-          {current ? <p className="text-sm font-bold">{text.current[current]}</p> : null}
+          {current ? <p className="text-[13px] font-bold sm:text-sm">{text.current[current]}</p> : null}
         </div>
 
         <div className="flex shrink-0 gap-3">
