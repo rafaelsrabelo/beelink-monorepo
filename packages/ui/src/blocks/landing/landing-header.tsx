@@ -27,31 +27,41 @@ export interface LandingHeaderProps {
 }
 
 /** The page's own sections, by the anchors the blocks below carry. */
-export const LANDING_ANCHORS = { solutions: "#solucoes", ecosystem: "#ecossistema", how: "#como", couriers: "#entregadores", faq: "#perguntas" } as const
+export const LANDING_ANCHORS = { solutions: "#solucoes", ecosystem: "#ecossistema", integrations: "#integracoes", how: "#como", plans: "#planos", couriers: "#entregadores", faq: "#perguntas" } as const
 
 /**
- * The landing's top: the mark, the way to each section, and the two ways in — signing in, and
- * creating a shop. Below the width the five links fit in, they move into a menu behind one button,
+ * The landing's top: the mark, the way to the page's sections, and the two ways in — signing in, and
+ * creating a shop. Below the width the links fit in, they move into a menu behind one button,
  * with the terms and the privacy policy — which the wide screen has in its footer, a long scroll
  * away on a phone.
+ *
+ * The bar shows six of the seven sections, because six is what fits where the links first show: at
+ * 1280px, under a classic scrollbar, they leave 46px, and "Perguntas" with its gap asks for 89. So
+ * "Planos" stands where "Perguntas" stood (BEELINK-318), and the questions are reached from the
+ * menu, which lists all seven, and from the footer. The gaps are part of what lets the six fit: with
+ * the design's 30px and 44px "Criar minha loja" ran off the page's column.
  */
 export function LandingHeader({ homeHref = "/", loginHref, signupHref, termsHref, privacyHref, linkComponent: Link = AnchorLink, messages = defaultMessages }: LandingHeaderProps) {
   const text = messages.landing
   const sections = [
     [LANDING_ANCHORS.solutions, text.nav.solutions],
     [LANDING_ANCHORS.ecosystem, text.nav.ecosystem],
+    [LANDING_ANCHORS.integrations, text.nav.integrations],
     [LANDING_ANCHORS.how, text.nav.how],
+    [LANDING_ANCHORS.plans, text.nav.plans],
     [LANDING_ANCHORS.couriers, text.nav.couriers],
     [LANDING_ANCHORS.faq, text.nav.faq],
   ] as const
+  // The seventh has no room in the bar (see above): the menu and the footer lead to it.
+  const bar = sections.filter(([href]) => href !== LANDING_ANCHORS.faq)
 
   return (
-    <header className={cn(LANDING_CONTAINER, "relative z-20 flex h-[76px] items-center gap-6 md:h-[92px] xl:gap-11")}>
+    <header className={cn(LANDING_CONTAINER, "relative z-20 flex h-[76px] items-center gap-6 md:h-[92px] min-[90rem]:gap-9")}>
       <Link href={homeHref} aria-label={text.homeLabel} className="flex shrink-0 items-center">
         <BeelinkLogo className="h-9 md:h-11" />
       </Link>
-      <nav aria-label={text.nav.label} className="hidden gap-[30px] text-[15px] font-medium whitespace-nowrap xl:flex">
-        {sections.map(([href, label]) => (
+      <nav aria-label={text.nav.label} className="hidden gap-4 text-[15px] font-medium whitespace-nowrap xl:flex min-[90rem]:gap-6">
+        {bar.map(([href, label]) => (
           <a key={href} href={href} className="hover:underline">
             {label}
           </a>

@@ -1,20 +1,29 @@
+// React
+import type { ReactNode } from "react"
+
 // Libs
 import { render, screen, within } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 // Locales
-import { en } from "@harness-monorepo/ui/locales/index"
+import { en, ptBR } from "@harness-monorepo/ui/locales/index"
 
 // Block
 import { expectNoA11yViolations } from "../../test/a11y"
 import { LandingBanners } from "./landing-banners"
+import { LandingConsent } from "./landing-consent"
 import { LandingCouriers } from "./landing-couriers"
 import { LandingCta } from "./landing-cta"
 import { LandingEcosystem } from "./landing-ecosystem"
 import { LandingFaq } from "./landing-faq"
 import { LandingFooter } from "./landing-footer"
+import { LandingFooterAction } from "./landing-footer-action"
 import { LANDING_ANCHORS, LandingHeader } from "./landing-header"
 import { LandingHero } from "./landing-hero"
+import { LandingIntegrations } from "./landing-integrations"
+import { LandingPlans } from "./landing-plans"
+import { examplePlanPrices } from "./landing-plans.fixtures"
 import { LandingShell } from "./landing-shell"
 import { LandingSteps } from "./landing-steps"
 import { LandingTitle } from "./landing-title"
@@ -24,6 +33,12 @@ const photos = {
   store: <img src="/loja.jpg" alt="" />,
   panel: <img src="/painel.jpg" alt="O painel no notebook" />,
   shipping: <img src="/entrega.jpg" alt="" />,
+}
+const logos = {
+  asaas: <img src="/asaas.png" alt="Logo do Asaas" />,
+  melhorEnvio: <img src="/melhor-envio.png" alt="Logo do Melhor Envio" />,
+  googleAnalytics: <img src="/google-analytics.svg" alt="Logo do Google Analytics" />,
+  meta: <img src="/meta.svg" alt="Logo da Meta" />,
 }
 
 // jsdom has no ResizeObserver, and the banners' row watches its own size.
@@ -41,20 +56,22 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-function Page() {
+function Page({ notice, cookies }: { notice?: ReactNode; cookies?: ReactNode }) {
   return (
-    <LandingShell>
+    <LandingShell notice={notice}>
       <LandingHeader {...hrefs} />
       <main>
-        <LandingHero signupHref={hrefs.signupHref} />
+        <LandingHero signupHref={hrefs.signupHref} trialDays={examplePlanPrices.trialDays} />
         <LandingBanners signupHref={hrefs.signupHref} photos={photos} />
         <LandingEcosystem />
+        <LandingIntegrations logos={logos} />
         <LandingSteps />
+        <LandingPlans prices={examplePlanPrices} locale="pt-BR" signupHref={hrefs.signupHref} />
         <LandingCouriers termsHref={hrefs.termsHref} privacyHref={hrefs.privacyHref} />
-        <LandingFaq />
-        <LandingCta signupHref={hrefs.signupHref} />
+        <LandingFaq prices={examplePlanPrices} locale="pt-BR" />
+        <LandingCta signupHref={hrefs.signupHref} trialDays={examplePlanPrices.trialDays} />
       </main>
-      <LandingFooter termsHref={hrefs.termsHref} privacyHref={hrefs.privacyHref} year={2026} />
+      <LandingFooter termsHref={hrefs.termsHref} privacyHref={hrefs.privacyHref} year={2026} cookies={cookies} />
     </LandingShell>
   )
 }
@@ -84,15 +101,32 @@ describe("LandingTitle", () => {
 })
 
 describe("LandingHeader", () => {
-  it("leads to each section, to the sign-in and to the sign-up", () => {
+  /** Six of the seven sections: "Planos" stands where "Perguntas" stood, which the menu and the footer still lead to. */
+  it("leads to six sections in the page's order, to the sign-in and to the sign-up", () => {
     render(<LandingHeader {...hrefs} />)
 
     const nav = screen.getByRole("navigation", { name: "Principal" })
-    expect(within(nav).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["#solucoes", "#ecossistema", "#como", "#entregadores", "#perguntas"])
+    expect(within(nav).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["#solucoes", "#ecossistema", "#integracoes", "#como", "#planos", "#entregadores"])
     expect(screen.getByRole("link", { name: "Beelink, início" })).toHaveAttribute("href", "/")
     // Twice each: in the bar, and in the menu a narrow screen opens.
     expect(screen.getAllByRole("link", { name: "Entrar" }).map((link) => link.getAttribute("href"))).toEqual(["/login", "/login"])
     expect(screen.getAllByRole("link", { name: "Criar minha loja" }).map((link) => link.getAttribute("href"))).toEqual(["/signup", "/signup"])
+  })
+
+  /**
+   * Measured in a browser, which jsdom cannot do: at 1280px, where the links first show, the six and
+   * the two ways in leave 46px under a classic scrollbar with these gaps — and a seventh, "Perguntas"
+   * with its gap, asks for 89. With the design's wider gaps "Criar minha loja" ran past the page's
+   * column, and the shell clipped it.
+   */
+  it("keeps its six links close enough to fit beside the two ways in at the width they first show", () => {
+    render(<LandingHeader {...hrefs} />)
+
+    const nav = screen.getByRole("navigation", { name: "Principal" })
+    expect(nav).toHaveClass("hidden", "xl:flex", "gap-4", "min-[90rem]:gap-6", "whitespace-nowrap")
+    expect(nav.closest("header")).toHaveClass("gap-6", "min-[90rem]:gap-9")
+    expect(nav.closest("header")?.className).not.toMatch(/xl:gap-/)
+    expect(within(nav).getAllByRole("link")).toHaveLength(6)
   })
 
   /** On a wide screen the legal texts are in the footer; on a phone the menu is where they are within reach. */
@@ -105,7 +139,9 @@ describe("LandingHeader", () => {
     expect(within(menu).getAllByRole("link").map((link) => [link.textContent, link.getAttribute("href")])).toEqual([
       ["Soluções", "#solucoes"],
       ["Ecossistema", "#ecossistema"],
+      ["Integrações", "#integracoes"],
       ["Como funciona", "#como"],
+      ["Planos", "#planos"],
       ["Para entregadores", "#entregadores"],
       ["Perguntas", "#perguntas"],
       ["Termos de uso", "/termos"],
@@ -126,16 +162,27 @@ describe("LandingHeader", () => {
 
 describe("LandingHero", () => {
   it("says what Beelink is in the page's one h1, and offers the way in and the way down", () => {
-    render(<LandingHero signupHref="/signup" />)
+    render(<LandingHero signupHref="/signup" trialDays={14} />)
 
     expect(screen.getByRole("heading", { level: 1, name: "Tudo o que o seu e-commerce precisa" })).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Começar agora" })).toHaveAttribute("href", "/signup")
     expect(screen.getByRole("link", { name: "Ver soluções" })).toHaveAttribute("href", "#solucoes")
   })
 
+  /** The trial is the plan's own sentence, with the days it is handed: under the two buttons, which keep their words. */
+  it("says the free trial under the way in, for as many days as it is handed", () => {
+    const { rerender } = render(<LandingHero signupHref="/signup" trialDays={14} />)
+
+    const trial = screen.getByText("14 dias grátis, sem cartão")
+    expect(trial.previousElementSibling).toContainElement(screen.getByRole("link", { name: "Começar agora" }))
+
+    rerender(<LandingHero signupHref="/signup" trialDays={30} messages={en} />)
+    expect(screen.getByText("30 days free, no card")).toBeInTheDocument()
+  })
+
   /** The ecosystem's own section is where the five are said: the hub is its picture. */
   it("draws the hub as a picture: a reader is not told the five twice", () => {
-    const { container } = render(<LandingHero signupHref="/signup" />)
+    const { container } = render(<LandingHero signupHref="/signup" trialDays={14} />)
 
     const hub = screen.getByText("eMarketing").closest<HTMLElement>("[aria-hidden='true']")!
     expect(hub).not.toBeNull()
@@ -245,7 +292,7 @@ describe("LandingCouriers", () => {
       <>
         <LandingBanners signupHref="/signup" photos={photos} messages={messages} />
         <LandingCouriers termsHref="/termos" privacyHref="/privacidade" messages={messages} />
-        <LandingFaq messages={messages} />
+        <LandingFaq prices={examplePlanPrices} locale="pt-BR" messages={messages} />
         <LandingFooter termsHref="/termos" privacyHref="/privacidade" year={2026} messages={messages} />
       </>,
     )
@@ -256,33 +303,73 @@ describe("LandingCouriers", () => {
 
 describe("LandingFaq", () => {
   it("marks each question by whose it is, the shopkeeper's first, with every answer in the page", () => {
-    const { container } = render(<LandingFaq />)
+    const { container } = render(<LandingFaq prices={examplePlanPrices} locale="pt-BR" />)
 
     const questions = [...container.querySelectorAll("details")]
     expect(questions.map((question) => question.querySelector("summary")!.textContent)).toEqual([
       "LojistaPreciso de site ou desenvolvedor?",
       "LojistaComo recebo os pedidos?",
       "LojistaPosso usar meus próprios entregadores?",
+      "LojistaQuanto custa?",
+      "LojistaComo funciona o teste de 14 dias?",
+      "LojistaO que acontece quando o teste acaba?",
       "EntregadorQuem pode se cadastrar como entregador?",
       "EntregadorQuanto tempo leva a aprovação?",
       "EntregadorComo recebo pelos serviços?",
     ])
     expect(questions.every((question) => (question.querySelector("p")?.textContent ?? "").length > 20)).toBe(true)
   })
+
+  /**
+   * The prices handed over here are not Beelink's (see the fixture): an amount or a trial typed into
+   * an answer would stand beside them. Every figure the answers say is one the plan's own card says.
+   */
+  it("answers what the plan costs and how its trial works from the prices it is handed, and writes none", () => {
+    const { container } = render(<LandingFaq prices={examplePlanPrices} locale="pt-BR" />)
+    const answerTo = (question: string) => (screen.getByText(question).closest("details")?.querySelector("p")?.textContent ?? "").replace(/\u00a0/g, " ")
+
+    expect(answerTo("Quanto custa?")).toBe(
+      "O plano Beelink custa R$ 100,00 por mês. Pagando 6 meses de uma vez sai por R$ 540,00, que dá R$ 90,00 por mês; pagando o ano, R$ 960,00, que dá R$ 80,00 por mês. O plano com a Beelia ainda não está disponível e vai custar R$ 150,00 por mês.",
+    )
+    expect(answerTo("Como funciona o teste de 14 dias?")).toBe("Você cria a conta e usa a loja e o painel por 14 dias sem pagar nada. Não pedimos cartão no cadastro.")
+    expect(answerTo("O que acontece quando o teste acaba?")).toBe("Passados os 14 dias, a conta fica travada até você escolher um plano e pagar. Nada é cobrado sozinho.")
+
+    const page = (container.textContent ?? "").replace(/\u00a0/g, " ")
+    expect([...new Set(page.match(/R\$ ?[\d.]+,\d{2}/g))].sort()).toEqual(["R$ 100,00", "R$ 150,00", "R$ 540,00", "R$ 80,00", "R$ 90,00", "R$ 960,00"])
+    expect([...new Set(page.match(/\d+ dias/g))]).toEqual(["14 dias"])
+  })
+
+  it.each([
+    ["pt-BR", undefined],
+    ["en", en],
+  ])("leaves no placeholder unfilled, in %s", (locale, messages) => {
+    const { container } = render(<LandingFaq prices={examplePlanPrices} locale={locale} messages={messages} />)
+
+    expect(container.textContent).not.toMatch(/[{}]/)
+  })
 })
 
 describe("LandingCta", () => {
   it("calls for the shop first, and points a courier to their section", () => {
-    render(<LandingCta signupHref="/signup" />)
+    render(<LandingCta signupHref="/signup" trialDays={14} />)
 
     expect(screen.getByRole("heading", { level: 2, name: "Seu e-commerce começa hoje." })).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Criar minha loja" })).toHaveAttribute("href", "/signup")
     expect(screen.getByRole("link", { name: "Quero ser entregador" })).toHaveAttribute("href", "#entregadores")
   })
+
+  it("says the free trial under its heading, for as many days as it is handed", () => {
+    const { rerender } = render(<LandingCta signupHref="/signup" trialDays={14} />)
+
+    expect(screen.getByRole("heading", { level: 2 }).nextElementSibling).toHaveTextContent("14 dias grátis, sem cartão")
+
+    rerender(<LandingCta signupHref="/signup" trialDays={30} messages={en} />)
+    expect(screen.getByText("30 days free, no card")).toBeInTheDocument()
+  })
 })
 
 describe("LandingFooter", () => {
-  it("leads only to what exists: the solutions' section, the couriers' sign-up and the two legal texts", () => {
+  it("leads only to what exists: the solutions' section, the integrations', the couriers' sign-up, the questions and the two legal texts", () => {
     render(<LandingFooter termsHref="/termos" privacyHref="/privacidade" year={2026} />)
 
     expect(within(screen.getByRole("navigation", { name: "Soluções" })).getAllByRole("link").map((link) => [link.textContent, link.getAttribute("href")])).toEqual([
@@ -291,13 +378,26 @@ describe("LandingFooter", () => {
       ["Chat", "#ecossistema"],
       ["Envios", "#ecossistema"],
       ["eMarketing", "#ecossistema"],
+      ["Integrações", "#integracoes"],
     ])
     expect(within(screen.getByRole("navigation", { name: "Entregadores" })).getByRole("link", { name: "Cadastro" })).toHaveAttribute("href", "#entregadores")
-    expect(screen.getByRole("link", { name: "Termos de uso" })).toHaveAttribute("href", "/termos")
-    expect(screen.getByRole("link", { name: "Privacidade" })).toHaveAttribute("href", "/privacidade")
+    // The questions' link is the wide screen's only one: its header shows six sections, and they are the seventh.
+    expect(within(screen.getByRole("navigation", { name: "Empresa" })).getAllByRole("link").map((link) => [link.textContent, link.getAttribute("href")])).toEqual([
+      ["Perguntas", "#perguntas"],
+      ["Termos de uso", "/termos"],
+      ["Privacidade", "/privacidade"],
+    ])
     expect(screen.getByText("© 2026 Beelink")).toBeInTheDocument()
     // No link leads nowhere.
     expect(screen.getAllByRole("link").every((link) => (link.getAttribute("href") ?? "#") !== "#")).toBe(true)
+  })
+
+  // BEELINK-319: "Cookies" is the screen's to hand over, and only a site that asks hands one.
+  it("has no way back to a cookie choice unless the screen hands it one", () => {
+    render(<LandingFooter termsHref="/termos" privacyHref="/privacidade" year={2026} />)
+
+    expect(screen.queryByRole("button")).not.toBeInTheDocument()
+    expect(screen.queryByText("Cookies")).not.toBeInTheDocument()
   })
 })
 
@@ -332,16 +432,70 @@ describe("the landing page, whole", () => {
     expect(screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent)).toEqual([
       "Uma plataforma. Três formas de crescer com a Beelink.",
       "Seu e-commerce. Conectado.",
+      "Conecte a loja às suas contas.",
       "Do cadastro à primeira venda.",
+      "Escolha o seu plano.",
       "Entregue com a Beelink.",
       "Perguntas frequentes.",
       "Seu e-commerce começa hoje.",
     ])
   })
 
+  /** The header's links are in the page's own order: a reader who follows them one by one only travels down. */
+  it("lays its sections in the order the header names them", () => {
+    const { container } = render(<Page />)
+
+    const sections = [...container.querySelectorAll("main > section[id]")].map((section) => `#${section.id}`)
+    expect(sections).toEqual(Object.values(LANDING_ANCHORS))
+    expect(sections.slice(1, 6)).toEqual(["#ecossistema", "#integracoes", "#como", "#planos", "#entregadores"])
+  })
+
+  /**
+   * The prices live in the app, in one place, and this page is handed others that are not Beelink's
+   * (see the fixture). So an amount, a share or a trial typed into any block or any sentence of the
+   * landing would stand here beside the ones worked out from them.
+   */
+  it("says no amount, share or trial but the ones worked out from the prices it was handed", () => {
+    const { container } = render(<Page />)
+    const page = (container.textContent ?? "").replace(/\u00a0/g, " ")
+
+    expect([...new Set(page.match(/R\$ ?[\d.]+,\d{2}/g))].sort()).toEqual(["R$ 100,00", "R$ 150,00", "R$ 240,00", "R$ 540,00", "R$ 60,00", "R$ 80,00", "R$ 90,00", "R$ 960,00"])
+    expect([...new Set(page.match(/\d+ ?%/g))].sort()).toEqual(["10%", "20%"])
+    expect([...new Set(page.match(/\d+ dias/g))]).toEqual(["14 dias"])
+    expect(page).not.toMatch(/[{}]/)
+  })
+
   it("has no accessibility violations", async () => {
     const { container } = render(<Page />)
 
     await expectNoA11yViolations(container)
+  })
+
+  /** BEELINK-319: the page as a visitor who was not asked yet finds it — the notice first in the document, "Cookies" in the footer. */
+  describe("with its cookie notice", () => {
+    const asking = <Page notice={<LandingConsent privacyHref={hrefs.privacyHref} onAccept={() => {}} onRefuse={() => {}} text={ptBR.landing.consent} />} cookies={<LandingFooterAction onClick={() => {}}>Cookies</LandingFooterAction>} />
+
+    it("meets a keyboard with the notice before the header, and still has one h1", async () => {
+      const user = userEvent.setup()
+      render(asking)
+
+      const notice = within(screen.getByRole("region", { name: "Cookies de medição" }))
+
+      await user.tab()
+      expect(notice.getByRole("link", { name: "política de privacidade" })).toHaveFocus()
+      await user.tab()
+      await user.tab()
+      expect(notice.getByRole("button", { name: "Aceitar" })).toHaveFocus()
+      await user.tab()
+      expect(screen.getByRole("link", { name: "Beelink, início" })).toHaveFocus()
+      expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1)
+    })
+
+    it("fills every placeholder and has no accessibility violations", async () => {
+      const { container } = render(asking)
+
+      expect(container.textContent).not.toMatch(/[{}]/)
+      await expectNoA11yViolations(container)
+    })
   })
 })

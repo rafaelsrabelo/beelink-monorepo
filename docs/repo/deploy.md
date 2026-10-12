@@ -75,6 +75,15 @@ bee-link has **no app** at Meta either: each shop gives its own pixel's ID (BEEL
 - **A shop's token is a secret.** It is sealed with the key, never returned, and never written to a log: it travels in request bodies alone, which neither the API nor the web logs. Keep request bodies out of any access log in front of the web.
 - **What was sent, and what was not, is in the database:** `SELECT "outcome", "lastError", "processedAt" FROM order_meta_purchases WHERE "orderId" = …` — `SENT`, `SKIPPED` (no token then, the buyer's consent gone, the order cancelled) or `GIVEN_UP` (Meta's own words, or too old). No row is an order that owed nothing: no consent kept, or registered in the panel.
 
+## The landing's own measurement
+
+Beelink measures its own site with Google Analytics — the landing, and the two screens a shopkeeper signs in and signs up at — and only for a visitor who accepted the landing's cookie notice (BEELINK-319; the script itself is BEELINK-320).
+
+- **`SITE_GA_MEASUREMENT_ID` is the switch**, a GA4 measurement ID (`G-…`), read at runtime by the `web` service. Set, the landing shows the notice and a "Cookies" in its footer; unset, it asks nothing, writes no cookie and measures nothing. A value that is not a GA4 ID stops the web from starting, on purpose.
+- **Production only, and only once the script is deployed.** The notice says a yes sends data to Google: with the ID set before BEELINK-320 is live it would say so while nothing is sent.
+- **The ID lives in Dokploy's Environment**, never in the repository.
+- **In the GA4 property, leave Google Ads unlinked and Google signals off.** The privacy policy says the measurement is not for advertising and names two cookies, `_ga` and `_ga_<id>`; a linked Ads account writes more.
+
 ## Shop domains
 
 A shop may have a domain of its own (BEELINK-281): its owner saves it (`PUT /api/stores/:slug/custom-domain`), points its DNS at this server, and the API checks it — the DNS first, then an answer over HTTPS — and tells the web which host is which shop's. The web opens the shop at that host once the domain is `ACTIVE` (BEELINK-283); the panel's screen is BEELINK-285, and until it is in a domain is saved through the API's route alone.
@@ -104,6 +113,7 @@ A second Compose service in Dokploy, on the branch `homolog`, from the same file
 | `MELHOR_ENVIO_ENV` | `sandbox`, with the **sandbox app's** id and secret and `MELHOR_ENVIO_REDIRECT_URI` on this domain. The sandbox app registers this domain's callback and webhook |
 | `ASAAS_ENV` | `sandbox` (or unset, which is the same). Shops paste `$aact_hmlg_…` keys |
 | `GOOGLE_*` | left out, or a client with this domain's redirect URI registered |
+| `SITE_GA_MEASUREMENT_ID` | left out: made-up visits to a made-up site are not production's to count, and the landing then asks nothing |
 
 **Two stacks share `dokploy-network`, and a service name is an alias on it.** The web reaches its API as `api-internal`, an alias on the stack's own network alone; `http://api:3001` would resolve to either stack's API once both are up, and production would read homologation's database (06/10/2026: it did). Anything else one service calls another by must be on `internal` only — `postgres` is — or go by an alias of its own.
 

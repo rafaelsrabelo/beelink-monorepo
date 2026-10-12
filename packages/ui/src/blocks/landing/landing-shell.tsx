@@ -10,6 +10,12 @@ import { LANDING_FOCUS_RING } from "./landing-styles"
 
 export interface LandingShellProps {
   children: ReactNode
+  /**
+   * What stands at the foot of the screen while the page scrolls under it — the cookie notice. It is
+   * written first in the document, so a keyboard and a screen reader meet it before the page, and is
+   * laid last by its own `order`.
+   */
+  notice?: ReactNode
   className?: string
 }
 
@@ -22,10 +28,16 @@ export interface LandingShellProps {
  * `data-smooth-anchors` is what `globals.css` reads to make the page's own links — "Soluções",
  * "Ecossistema" — travel to their section instead of cutting to it. The page scrolls, not this
  * element, so the rule has to sit on the document and be asked for from here.
+ *
+ * A column, with or without a notice: `landing-consent` goes to its end by `order` and sticks to the
+ * foot of the screen from there, which only a flex item can do. `overflow-x-clip` and never
+ * `overflow-x-hidden` for the same notice — a clip makes no scroll container, and a sticky child
+ * of one would stick to the shell instead of to the screen.
  */
-export function LandingShell({ children, className }: LandingShellProps) {
+export function LandingShell({ children, notice, className }: LandingShellProps) {
   return (
-    <div data-smooth-anchors="" className={cn(LANDING_FOCUS_RING, "relative min-h-svh overflow-x-clip bg-brand-ground text-brand-ink", className)} style={{ fontFamily: "var(--font-brand, inherit)" }}>
+    <div data-smooth-anchors="" className={cn(LANDING_FOCUS_RING, "relative flex min-h-svh flex-col overflow-x-clip bg-brand-ground text-brand-ink", className)} style={{ fontFamily: "var(--font-brand, inherit)" }}>
+      {notice}
       <BrandLines className="-top-10 -right-[60px] hidden md:block" />
       {children}
     </div>

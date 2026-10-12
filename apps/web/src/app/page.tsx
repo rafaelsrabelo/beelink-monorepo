@@ -10,6 +10,8 @@ import { LandingFaq } from "@harness-monorepo/ui/blocks/landing/landing-faq"
 import { LandingFooter } from "@harness-monorepo/ui/blocks/landing/landing-footer"
 import { LandingHeader } from "@harness-monorepo/ui/blocks/landing/landing-header"
 import { LandingHero } from "@harness-monorepo/ui/blocks/landing/landing-hero"
+import { LandingIntegrations } from "@harness-monorepo/ui/blocks/landing/landing-integrations"
+import { LandingPlans } from "@harness-monorepo/ui/blocks/landing/landing-plans"
 import { LandingPosters } from "@harness-monorepo/ui/blocks/landing/landing-posters"
 import { LandingShell } from "@harness-monorepo/ui/blocks/landing/landing-shell"
 import { LandingSteps } from "@harness-monorepo/ui/blocks/landing/landing-steps"
@@ -18,6 +20,10 @@ import { LandingSteps } from "@harness-monorepo/ui/blocks/landing/landing-steps"
 import { AppLink } from "@/components/app-link"
 import { brandFontStyle, jakarta } from "@/components/landing/brand-font"
 import { BrandPhoto } from "@/components/landing/brand-photo"
+import { integrationMarksOf } from "@/components/landing/integration-mark"
+import { LandingConsentLive } from "@/components/landing/landing-consent-live"
+import { LandingConsentReopen } from "@/components/landing/landing-consent-reopen"
+import { SiteConsentGate } from "@/components/landing/site-consent-gate"
 import courierStreet from "@/assets/images/courier-street.jpg"
 import courierSunny from "@/assets/images/courier-sunny.jpg"
 import panelLaptop from "@/assets/images/panel-laptop.jpg"
@@ -26,7 +32,9 @@ import posterBusStop from "@/assets/images/poster-bus-stop.jpg"
 import posterWall from "@/assets/images/poster-wall.jpg"
 import { LEGAL_ROUTES } from "@/lib/legal-routes"
 import { getMessages } from "@/lib/locale"
+import { PLAN_PRICES } from "@/lib/plans"
 import { serverEnv } from "@/lib/server-env"
+import { siteConsentAt } from "@/lib/site-consent"
 import { siteOrigin } from "@/lib/site-origin"
 
 /** The panel's own doors. A signed-in shopkeeper who follows either is sent on to the panel by the proxy. */
@@ -74,47 +82,62 @@ export async function generateMetadata(): Promise<Metadata> {
  * Beelink's landing page (BEELINK-256): what the product is, to someone who has never seen it, and
  * the two ways in. "/" is outside the proxy matcher — bee-link serves a public site — so anyone
  * reaches it, signed in or not; it used to send everyone to the panel, and so to the sign-in.
+ *
+ * `SiteConsentGate` decides whether the visitor is asked about being measured (BEELINK-319): only
+ * where a measurement ID is configured. The notice and the footer's "Cookies" are mounted either
+ * way, and draw nothing outside it. Nothing of Google's is loaded here.
  */
 export default async function LandingPage() {
-  const { ui } = await getMessages()
+  const [{ ui, locale }, consent] = await Promise.all([getMessages(), siteConsentAt()])
   const exampleHref = serverEnv.EXAMPLE_STORE_SLUG ? `/${serverEnv.EXAMPLE_STORE_SLUG}` : null
 
   return (
     <div className={jakarta.variable} style={brandFontStyle}>
-      <LandingShell>
-        <LandingHeader loginHref={LOGIN} signupHref={SIGNUP} termsHref={LEGAL_ROUTES.terms} privacyHref={LEGAL_ROUTES.privacy} linkComponent={AppLink} messages={ui} />
-        <main>
-          <LandingHero signupHref={SIGNUP} linkComponent={AppLink} messages={ui} />
-          <LandingBanners
-            signupHref={SIGNUP}
-            exampleHref={exampleHref}
-            photos={{
-              store: <BrandPhoto image={parcelPhoneTruck} alt="" sizes={BANNER_SIZES} />,
-              panel: <BrandPhoto image={panelLaptop} alt={ui.landing.banners.panel.alt} sizes={WIDE_BANNER_SIZES} />,
-              shipping: <BrandPhoto image={courierSunny} alt="" sizes={BANNER_SIZES} />,
-            }}
-            linkComponent={AppLink}
-            messages={ui}
-          />
-          <LandingEcosystem messages={ui} />
-          <LandingSteps messages={ui} />
-          <LandingCouriers
-            photo={<BrandPhoto image={courierStreet} alt="" sizes="(min-width: 80rem) 820px, 100vw" />}
+      <SiteConsentGate measurementId={serverEnv.SITE_GA_MEASUREMENT_ID} choice={consent}>
+        <LandingShell notice={<LandingConsentLive privacyHref={LEGAL_ROUTES.privacy} text={ui.landing.consent} />}>
+          <LandingHeader loginHref={LOGIN} signupHref={SIGNUP} termsHref={LEGAL_ROUTES.terms} privacyHref={LEGAL_ROUTES.privacy} linkComponent={AppLink} messages={ui} />
+          <main>
+            <LandingHero signupHref={SIGNUP} trialDays={PLAN_PRICES.trialDays} linkComponent={AppLink} messages={ui} />
+            <LandingBanners
+              signupHref={SIGNUP}
+              exampleHref={exampleHref}
+              photos={{
+                store: <BrandPhoto image={parcelPhoneTruck} alt="" sizes={BANNER_SIZES} />,
+                panel: <BrandPhoto image={panelLaptop} alt={ui.landing.banners.panel.alt} sizes={WIDE_BANNER_SIZES} />,
+                shipping: <BrandPhoto image={courierSunny} alt="" sizes={BANNER_SIZES} />,
+              }}
+              linkComponent={AppLink}
+              messages={ui}
+            />
+            <LandingEcosystem messages={ui} />
+            <LandingIntegrations logos={integrationMarksOf(ui.landing.integrations.items)} messages={ui} />
+            <LandingSteps messages={ui} />
+            <LandingPlans prices={PLAN_PRICES} locale={locale} signupHref={SIGNUP} linkComponent={AppLink} messages={ui} />
+            <LandingCouriers
+              photo={<BrandPhoto image={courierStreet} alt="" sizes="(min-width: 80rem) 820px, 100vw" />}
+              termsHref={LEGAL_ROUTES.terms}
+              privacyHref={LEGAL_ROUTES.privacy}
+              linkComponent={AppLink}
+              messages={ui}
+            />
+            <LandingFaq prices={PLAN_PRICES} locale={locale} messages={ui} />
+            <LandingPosters
+              busStop={<BrandPhoto image={posterBusStop} alt={ui.landing.posters.busStopAlt} sizes={POSTER_SIZES} />}
+              wall={<BrandPhoto image={posterWall} alt={ui.landing.posters.wallAlt} sizes={POSTER_SIZES} />}
+              messages={ui}
+            />
+            <LandingCta signupHref={SIGNUP} trialDays={PLAN_PRICES.trialDays} linkComponent={AppLink} messages={ui} />
+          </main>
+          <LandingFooter
             termsHref={LEGAL_ROUTES.terms}
             privacyHref={LEGAL_ROUTES.privacy}
+            year={new Date().getFullYear()}
+            cookies={<LandingConsentReopen label={ui.landing.consent.footerLink} />}
             linkComponent={AppLink}
             messages={ui}
           />
-          <LandingFaq messages={ui} />
-          <LandingPosters
-            busStop={<BrandPhoto image={posterBusStop} alt={ui.landing.posters.busStopAlt} sizes={POSTER_SIZES} />}
-            wall={<BrandPhoto image={posterWall} alt={ui.landing.posters.wallAlt} sizes={POSTER_SIZES} />}
-            messages={ui}
-          />
-          <LandingCta signupHref={SIGNUP} linkComponent={AppLink} messages={ui} />
-        </main>
-        <LandingFooter termsHref={LEGAL_ROUTES.terms} privacyHref={LEGAL_ROUTES.privacy} year={new Date().getFullYear()} linkComponent={AppLink} messages={ui} />
-      </LandingShell>
+        </LandingShell>
+      </SiteConsentGate>
     </div>
   )
 }
