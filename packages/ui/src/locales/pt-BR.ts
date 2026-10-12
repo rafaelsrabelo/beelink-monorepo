@@ -3089,6 +3089,13 @@ export const ptBR: UiMessages = {
         { question: "Preciso de site ou desenvolvedor?", answer: "Não. Você cria a loja pelo painel, escolhe as seções prontas e publica. Funciona no navegador do celular e do computador." },
         { question: "Como recebo os pedidos?", answer: "Os pedidos chegam no painel e no seu WhatsApp, com itens, variações, endereço e forma de pagamento." },
         { question: "Posso usar meus próprios entregadores?", answer: "Sim. Você pode fazer a entrega você mesmo ou usar uma transportadora, e informa o prazo e o rastreio no pedido." },
+        {
+          question: "Quanto custa?",
+          answer:
+            "O plano Beelink custa {monthly} por mês. Pagando 6 meses de uma vez sai por {semiannual}, que dá {semiannualMonthly} por mês; pagando o ano, {annual}, que dá {annualMonthly} por mês. O plano com a Beelia ainda não está disponível e vai custar {withBeelia} por mês.",
+        },
+        { question: "Como funciona o teste de {days} dias?", answer: "Você cria a conta e usa a loja e o painel por {days} dias sem pagar nada. Não pedimos cartão no cadastro." },
+        { question: "O que acontece quando o teste acaba?", answer: "Passados os {days} dias, a conta fica travada até você escolher um plano e pagar. Nada é cobrado sozinho." },
       ],
       courier: [
         { question: "Quem pode se cadastrar como entregador?", answer: "O cadastro de entregadores ainda não está aberto. Os requisitos serão publicados aqui quando abrir." },

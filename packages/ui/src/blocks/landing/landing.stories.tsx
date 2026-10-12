@@ -72,7 +72,7 @@ export const Pagina: Story = {
         <LandingIntegrations logos={integrationLogos} />
         <LandingSteps />
         <LandingCouriers photo={photos.courier} termsHref={hrefs.termsHref} privacyHref={hrefs.privacyHref} />
-        <LandingFaq />
+        <LandingFaq prices={examplePlanPrices} locale="pt-BR" />
         <LandingPosters busStop={photos.busStop} wall={photos.wall} />
         <LandingCta signupHref={hrefs.signupHref} trialDays={examplePlanPrices.trialDays} />
       </main>
@@ -165,7 +165,7 @@ export const Perguntas: Story = {
   args: { children: null },
   render: () => (
     <LandingShell className="min-h-0">
-      <LandingFaq />
+      <LandingFaq prices={examplePlanPrices} locale="pt-BR" />
     </LandingShell>
   ),
 }

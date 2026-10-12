@@ -111,7 +111,7 @@ export default async function LandingPage() {
             linkComponent={AppLink}
             messages={ui}
           />
-          <LandingFaq messages={ui} />
+          <LandingFaq prices={PLAN_PRICES} locale={locale} messages={ui} />
           <LandingPosters
             busStop={<BrandPhoto image={posterBusStop} alt={ui.landing.posters.busStopAlt} sizes={POSTER_SIZES} />}
             wall={<BrandPhoto image={posterWall} alt={ui.landing.posters.wallAlt} sizes={POSTER_SIZES} />}

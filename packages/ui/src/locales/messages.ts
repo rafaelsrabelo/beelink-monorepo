@@ -3580,6 +3580,7 @@ export interface UiMessages {
       lead: string
       shopkeeperTag: string
       courierTag: string
+      /** The ones about the plan carry its placeholders (see `plans`): no amount and no trial's length is written in them. */
       shopkeeper: readonly LandingQuestion[]
       courier: readonly LandingQuestion[]
     }

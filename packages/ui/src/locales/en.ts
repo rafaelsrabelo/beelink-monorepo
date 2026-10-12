@@ -3088,6 +3088,13 @@ export const en: UiMessages = {
         { question: "Do I need a website or a developer?", answer: "No. You create the shop in the panel, pick the ready-made sections and publish. It works in a phone's or a computer's browser." },
         { question: "How do I receive the orders?", answer: "Orders reach the panel and your WhatsApp, with the items, variations, address and payment method." },
         { question: "Can I use my own couriers?", answer: "Yes. You can deliver yourself or use a carrier, and tell the window and the tracking on the order." },
+        {
+          question: "How much does it cost?",
+          answer:
+            "The Beelink plan costs {monthly} a month. Paying 6 months at once it is {semiannual}, which comes to {semiannualMonthly} a month; paying the year, {annual}, which comes to {annualMonthly} a month. The plan with Beelia is not available yet and will cost {withBeelia} a month.",
+        },
+        { question: "How does the {days}-day trial work?", answer: "You create the account and use the shop and the panel for {days} days without paying anything. We ask for no card at sign-up." },
+        { question: "What happens when the trial ends?", answer: "After the {days} days, the account is locked until you choose a plan and pay. Nothing is charged on its own." },
       ],
       courier: [
         { question: "Who can sign up as a courier?", answer: "The courier sign-up is not open yet. The requirements will be published here when it opens." },

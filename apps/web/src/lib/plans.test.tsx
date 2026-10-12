@@ -3,6 +3,7 @@ import { render, screen, within } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
 
 // UI
+import { LandingFaq } from "@harness-monorepo/ui/blocks/landing/landing-faq"
 import { LandingPlans } from "@harness-monorepo/ui/blocks/landing/landing-plans"
 
 // App
@@ -47,6 +48,15 @@ describe("PLAN_PRICES, on the landing", () => {
     const card = screen.getByRole("heading", { level: 3, name: "Beelink + Beelia" }).closest("li")!
     expect(plain(card.textContent)).toContain("R$ 89,90 por mês")
     expect(within(card).getByText("Em breve")).toBeInTheDocument()
+  })
+
+  it("answers \"Quanto custa?\" with the same amounts, and names the trial's seven days", () => {
+    render(<LandingFaq prices={PLAN_PRICES} locale="pt-BR" />)
+
+    expect(plain(screen.getByText("Quanto custa?").closest("details")?.querySelector("p")?.textContent)).toBe(
+      "O plano Beelink custa R$ 59,90 por mês. Pagando 6 meses de uma vez sai por R$ 323,40, que dá R$ 53,90 por mês; pagando o ano, R$ 574,80, que dá R$ 47,90 por mês. O plano com a Beelia ainda não está disponível e vai custar R$ 89,90 por mês.",
+    )
+    expect(screen.getByText("Como funciona o teste de 7 dias?")).toBeInTheDocument()
   })
 
   /** What a search result and a shared link say of the landing is written here, in the app: it names no price either. */

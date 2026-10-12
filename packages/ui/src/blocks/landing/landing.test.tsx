@@ -62,7 +62,7 @@ function Page() {
         <LandingSteps />
         <LandingPlans prices={examplePlanPrices} locale="pt-BR" signupHref={hrefs.signupHref} />
         <LandingCouriers termsHref={hrefs.termsHref} privacyHref={hrefs.privacyHref} />
-        <LandingFaq />
+        <LandingFaq prices={examplePlanPrices} locale="pt-BR" />
         <LandingCta signupHref={hrefs.signupHref} trialDays={examplePlanPrices.trialDays} />
       </main>
       <LandingFooter termsHref={hrefs.termsHref} privacyHref={hrefs.privacyHref} year={2026} />
@@ -286,7 +286,7 @@ describe("LandingCouriers", () => {
       <>
         <LandingBanners signupHref="/signup" photos={photos} messages={messages} />
         <LandingCouriers termsHref="/termos" privacyHref="/privacidade" messages={messages} />
-        <LandingFaq messages={messages} />
+        <LandingFaq prices={examplePlanPrices} locale="pt-BR" messages={messages} />
         <LandingFooter termsHref="/termos" privacyHref="/privacidade" year={2026} messages={messages} />
       </>,
     )
@@ -297,18 +297,49 @@ describe("LandingCouriers", () => {
 
 describe("LandingFaq", () => {
   it("marks each question by whose it is, the shopkeeper's first, with every answer in the page", () => {
-    const { container } = render(<LandingFaq />)
+    const { container } = render(<LandingFaq prices={examplePlanPrices} locale="pt-BR" />)
 
     const questions = [...container.querySelectorAll("details")]
     expect(questions.map((question) => question.querySelector("summary")!.textContent)).toEqual([
       "LojistaPreciso de site ou desenvolvedor?",
       "LojistaComo recebo os pedidos?",
       "LojistaPosso usar meus próprios entregadores?",
+      "LojistaQuanto custa?",
+      "LojistaComo funciona o teste de 14 dias?",
+      "LojistaO que acontece quando o teste acaba?",
       "EntregadorQuem pode se cadastrar como entregador?",
       "EntregadorQuanto tempo leva a aprovação?",
       "EntregadorComo recebo pelos serviços?",
     ])
     expect(questions.every((question) => (question.querySelector("p")?.textContent ?? "").length > 20)).toBe(true)
+  })
+
+  /**
+   * The prices handed over here are not Beelink's (see the fixture): an amount or a trial typed into
+   * an answer would stand beside them. Every figure the answers say is one the plan's own card says.
+   */
+  it("answers what the plan costs and how its trial works from the prices it is handed, and writes none", () => {
+    const { container } = render(<LandingFaq prices={examplePlanPrices} locale="pt-BR" />)
+    const answerTo = (question: string) => (screen.getByText(question).closest("details")?.querySelector("p")?.textContent ?? "").replace(/\u00a0/g, " ")
+
+    expect(answerTo("Quanto custa?")).toBe(
+      "O plano Beelink custa R$ 100,00 por mês. Pagando 6 meses de uma vez sai por R$ 540,00, que dá R$ 90,00 por mês; pagando o ano, R$ 960,00, que dá R$ 80,00 por mês. O plano com a Beelia ainda não está disponível e vai custar R$ 150,00 por mês.",
+    )
+    expect(answerTo("Como funciona o teste de 14 dias?")).toBe("Você cria a conta e usa a loja e o painel por 14 dias sem pagar nada. Não pedimos cartão no cadastro.")
+    expect(answerTo("O que acontece quando o teste acaba?")).toBe("Passados os 14 dias, a conta fica travada até você escolher um plano e pagar. Nada é cobrado sozinho.")
+
+    const page = (container.textContent ?? "").replace(/\u00a0/g, " ")
+    expect([...new Set(page.match(/R\$ ?[\d.]+,\d{2}/g))].sort()).toEqual(["R$ 100,00", "R$ 150,00", "R$ 540,00", "R$ 80,00", "R$ 90,00", "R$ 960,00"])
+    expect([...new Set(page.match(/\d+ dias/g))]).toEqual(["14 dias"])
+  })
+
+  it.each([
+    ["pt-BR", undefined],
+    ["en", en],
+  ])("leaves no placeholder unfilled, in %s", (locale, messages) => {
+    const { container } = render(<LandingFaq prices={examplePlanPrices} locale={locale} messages={messages} />)
+
+    expect(container.textContent).not.toMatch(/[{}]/)
   })
 })
 
