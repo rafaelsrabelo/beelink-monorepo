@@ -14,6 +14,7 @@ import { LandingFooter } from "./landing-footer"
 import { LandingHeader } from "./landing-header"
 import { LandingHero } from "./landing-hero"
 import { LandingIntegrations } from "./landing-integrations"
+import { LandingPlans } from "./landing-plans"
 import { examplePlanPrices } from "./landing-plans.fixtures"
 import { LandingPosters } from "./landing-posters"
 import { LandingShell } from "./landing-shell"
@@ -59,7 +60,7 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** A landing inteira, como a rota inicial monta. O tipo da marca (Plus Jakarta Sans) é carregado pela tela; aqui vale o do Storybook. */
+/** A landing inteira, como a rota inicial monta. O tipo da marca (Plus Jakarta Sans) é carregado pela tela; aqui vale o do Storybook. Os preços e os dias de teste são de exemplo: os da Beelink ficam no app. */
 export const Pagina: Story = {
   args: { children: null },
   render: () => (
@@ -71,6 +72,7 @@ export const Pagina: Story = {
         <LandingEcosystem />
         <LandingIntegrations logos={integrationLogos} />
         <LandingSteps />
+        <LandingPlans prices={examplePlanPrices} locale="pt-BR" signupHref={hrefs.signupHref} />
         <LandingCouriers photo={photos.courier} termsHref={hrefs.termsHref} privacyHref={hrefs.privacyHref} />
         <LandingFaq prices={examplePlanPrices} locale="pt-BR" />
         <LandingPosters busStop={photos.busStop} wall={photos.wall} />
