@@ -14,6 +14,8 @@ import { LandingFooter } from "./landing-footer"
 import { LandingHeader } from "./landing-header"
 import { LandingHero } from "./landing-hero"
 import { LandingIntegrations } from "./landing-integrations"
+import { LandingPlans } from "./landing-plans"
+import { examplePlanPrices } from "./landing-plans.fixtures"
 import { LandingPosters } from "./landing-posters"
 import { LandingShell } from "./landing-shell"
 import { LandingSteps } from "./landing-steps"
@@ -58,22 +60,23 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** A landing inteira, como a rota inicial monta. O tipo da marca (Plus Jakarta Sans) é carregado pela tela; aqui vale o do Storybook. */
+/** A landing inteira, como a rota inicial monta. O tipo da marca (Plus Jakarta Sans) é carregado pela tela; aqui vale o do Storybook. Os preços e os dias de teste são de exemplo: os da Beelink ficam no app. */
 export const Pagina: Story = {
   args: { children: null },
   render: () => (
     <LandingShell>
       <LandingHeader {...hrefs} />
       <main>
-        <LandingHero signupHref={hrefs.signupHref} />
+        <LandingHero signupHref={hrefs.signupHref} trialDays={examplePlanPrices.trialDays} />
         <LandingBanners signupHref={hrefs.signupHref} exampleHref="#loja-de-exemplo" photos={bannerPhotos} />
         <LandingEcosystem />
         <LandingIntegrations logos={integrationLogos} />
         <LandingSteps />
+        <LandingPlans prices={examplePlanPrices} locale="pt-BR" signupHref={hrefs.signupHref} />
         <LandingCouriers photo={photos.courier} termsHref={hrefs.termsHref} privacyHref={hrefs.privacyHref} />
-        <LandingFaq />
+        <LandingFaq prices={examplePlanPrices} locale="pt-BR" />
         <LandingPosters busStop={photos.busStop} wall={photos.wall} />
-        <LandingCta signupHref={hrefs.signupHref} />
+        <LandingCta signupHref={hrefs.signupHref} trialDays={examplePlanPrices.trialDays} />
       </main>
       <LandingFooter termsHref={hrefs.termsHref} privacyHref={hrefs.privacyHref} year={2026} />
     </LandingShell>
@@ -86,7 +89,7 @@ export const TopoEHero: Story = {
   render: () => (
     <LandingShell className="min-h-0">
       <LandingHeader {...hrefs} />
-      <LandingHero signupHref={hrefs.signupHref} />
+      <LandingHero signupHref={hrefs.signupHref} trialDays={examplePlanPrices.trialDays} />
     </LandingShell>
   ),
 }
@@ -154,7 +157,7 @@ export const Posteres: Story = {
 export const FormularioDoEntregador: Story = {
   args: { children: null },
   render: () => (
-    <LandingShell className="flex min-h-0 justify-center bg-brand-ink p-10">
+    <LandingShell className="min-h-0 items-center bg-brand-ink p-10">
       <LandingCourierForm termsHref={hrefs.termsHref} privacyHref={hrefs.privacyHref} text={ptBR.landing.couriers.form} />
     </LandingShell>
   ),
@@ -164,7 +167,7 @@ export const Perguntas: Story = {
   args: { children: null },
   render: () => (
     <LandingShell className="min-h-0">
-      <LandingFaq />
+      <LandingFaq prices={examplePlanPrices} locale="pt-BR" />
     </LandingShell>
   ),
 }
@@ -174,7 +177,7 @@ export const ChamadaERodape: Story = {
   args: { children: null },
   render: () => (
     <LandingShell className="min-h-0 pt-10">
-      <LandingCta signupHref={hrefs.signupHref} />
+      <LandingCta signupHref={hrefs.signupHref} trialDays={examplePlanPrices.trialDays} />
       <LandingFooter termsHref={hrefs.termsHref} privacyHref={hrefs.privacyHref} year={2026} />
     </LandingShell>
   ),

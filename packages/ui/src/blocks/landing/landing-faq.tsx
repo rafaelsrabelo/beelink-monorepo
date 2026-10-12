@@ -5,27 +5,36 @@ import { PlusIcon } from "lucide-react"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Locales
-import { defaultMessages } from "@harness-monorepo/ui/locales/index"
+import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
+import { planValuesOf, type LandingPlanPrices } from "./landing-plan-offers"
 import { LANDING_CONTAINER } from "./landing-styles"
 import { LandingTitle } from "./landing-title"
 
 export interface LandingFaqProps {
+  /** What the questions about the plan say of its amounts and its trial: the app's one copy, never written here. */
+  prices: LandingPlanPrices
+  /** The page's language: it decides how an amount is written. */
+  locale: string
   messages?: UiMessages
 }
 
 /**
  * "Perguntas": the shopkeeper's, then the courier's, each marked by whose it is. Native
  * `<details>`: every answer is in the page for a crawler, and opens with no script.
+ *
+ * A sentence that says what the plan costs, or how long its trial is, carries a placeholder and is
+ * filled here from the prices handed over (BEELINK-318) — the same ones "Planos" draws.
  */
-export function LandingFaq({ messages = defaultMessages }: LandingFaqProps) {
+export function LandingFaq({ prices, locale, messages = defaultMessages }: LandingFaqProps) {
   const text = messages.landing.faq
+  const values = planValuesOf(prices, locale)
   const questions = [
     ...text.shopkeeper.map((item) => ({ ...item, tag: text.shopkeeperTag, tone: "bg-brand-ink text-brand-yellow" })),
     ...text.courier.map((item) => ({ ...item, tag: text.courierTag, tone: "bg-brand-yellow text-brand-ink" })),
-  ]
+  ].map((item) => ({ ...item, question: format(item.question, values), answer: format(item.answer, values) }))
 
   return (
     <section id="perguntas" className={cn(LANDING_CONTAINER, "flex scroll-mt-6 flex-col gap-10 pt-20 pb-20 md:pt-[120px] md:pb-[100px] lg:flex-row lg:gap-20")}>
