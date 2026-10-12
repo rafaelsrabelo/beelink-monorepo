@@ -185,3 +185,10 @@ próprio, para as medidas de rolagem.
 - Tela de densidade dupla: o PNG de 128 px está no `srcset`, mas nenhuma captura foi feita nela.
 - A página em inglês foi medida no topo (o menu cabe); a seção em inglês só passou pelos testes.
 - Tema escuro: a landing não tem.
+
+### Correção do recado para o AA2 (12/10)
+
+Acima está escrito que um sétimo link "não cabe a 1280 px com nenhum espaço". É exagero. O que foi
+medido é a folga com os espaços de agora: 21 px. Um sétimo link pede a largura dele mais um espaço
+de 16 px, e a largura de "Planos" não foi medida. Com espaços bem menores ele pode caber, mas os
+links ficariam colados. A escolha continua sendo do AA2.

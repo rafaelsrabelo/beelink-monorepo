@@ -37,7 +37,7 @@ export const LANDING_ANCHORS = { solutions: "#solucoes", ecosystem: "#ecossistem
  *
  * The gaps are what lets the six fit at that width: at 1280px, under a classic scrollbar, the bar
  * has 21px to spare with them, and with the design's 30px and 44px "Criar minha loja" ran 89px off
- * the page's column. A seventh link does not fit there at any gap.
+ * the page's column. A seventh link needs more room than is left.
  */
 export function LandingHeader({ homeHref = "/", loginHref, signupHref, termsHref, privacyHref, linkComponent: Link = AnchorLink, messages = defaultMessages }: LandingHeaderProps) {
   const text = messages.landing
