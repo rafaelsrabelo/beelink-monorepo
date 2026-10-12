@@ -45,6 +45,23 @@ const schema = z.object({
       .regex(/^[a-z0-9]([a-z0-9.-]*[a-z0-9])?(:\d+)?$/i)
       .optional(),
   ),
+  /**
+   * Beelink's own GA4 measurement ID (BEELINK-319): what the landing would measure its visits with.
+   * Optional, and what decides whether a visitor is asked at all — unset, the landing draws no cookie
+   * notice and no "Cookies" in its footer, and writes no cookie. The shape is the one the product
+   * takes for a shop's ID (`GOOGLE_ANALYTICS_ID` in the API): `G-` and 6 to 16 capitals or digits.
+   *
+   * Read at runtime and never `NEXT_PUBLIC_`: one image is production and homologation, and only
+   * production measures. Blank counts as unset, as compose hands an unset variable over. The ID
+   * itself is written nowhere in this repository.
+   */
+  SITE_GA_MEASUREMENT_ID: z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    z
+      .string()
+      .regex(/^G-[A-Z0-9]{6,16}$/)
+      .optional(),
+  ),
 })
 
 const parsed = schema.safeParse(process.env)
