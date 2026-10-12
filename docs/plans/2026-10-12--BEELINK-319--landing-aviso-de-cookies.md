@@ -60,7 +60,7 @@ O modelo é o aviso das lojas (BEELINK-271), que não muda.
    como ausente, como as outras: o compose entrega uma variável não definida como `""`. Nunca
    `NEXT_PUBLIC_`: a mesma imagem serve produção e homologação, e só produção vai medir.
 2. **O formato é o que o produto já aceita como ID do GA4:** `G-` e de 6 a 16 letras maiúsculas ou
-   dígitos (`GOOGLE_ANALYTICS_ID`, na API, e `googleAnalyticsIdOf`, no painel). `G-JL73KN2ZR9` e
+   dígitos (`GOOGLE_ANALYTICS_ID`, na API, e `googleAnalyticsIdOf`, no painel). O ID de produção e
    `G-TEST000000` passam.
 3. **Um valor fora do formato impede o web de subir**, como já acontece com `EXAMPLE_STORE_SLUG`,
    `APP_ENVIRONMENT` e `WEB_DOMAIN`. A alternativa seria tratar o erro como "sem ID": a página subiria
@@ -234,3 +234,121 @@ O modelo é o aviso das lojas (BEELINK-271), que não muda.
   homologação fica sem a variável.
 - Os `[PREENCHER: …]` do BEELINK-171 continuam no texto; "Transferência internacional" tem mais um
   fornecedor para considerar (o Google, pelo Google Analytics).
+
+## 12/10, depois do código — o que mudou e o que foi visto
+
+O texto acima fica como foi escrito. O que segue é o que a construção e o navegador mostraram.
+
+### O que mudou no caminho
+
+- **O aviso reserva o pé do documento para o teclado.** Com o aviso em pé, percorrer a página com Tab
+  deixava controles inteiros atrás dele: a 390 px, 19 dos 44, entre eles "Testar 7 dias grátis" e
+  os links do rodapé. Agora, enquanto está na tela, o bloco põe no documento um
+  `scroll-padding-bottom` igual à própria altura, medida (ela muda com a largura e com o idioma), e o
+  navegador rola o que recebe foco para cima do aviso. É o que a barra de compra da página de
+  produto já faz, com uma altura fixa. Por causa disso o bloco virou um bloco de cliente. Depois da
+  mudança, nenhum controle fica atrás do aviso a 1280 × 800; a 390 × 844 só a fileira de banners, que
+  é mais alta (597 px) do que o espaço que sobra.
+- **O aviso recebe só as frases dele**, como os outros blocos de cliente da landing: `text` é
+  `messages.landing.consent`, e o bloco não importa dicionário. Por isso o nome do link mora nesse
+  pedaço (`consent.privacy`, "política de privacidade"), e não em `legal.privacy`. Essas frases
+  viajam no HTML mesmo quando o aviso não é desenhado; o que o servidor deixa de mandar é o aviso.
+- **Mais apertado no celular.** A 390 × 844 o aviso tinha 250 px (30% da tela). Abaixo de 640 px o
+  texto ficou em 13 px e as margens diminuíram: 213 px (25%). Os botões continuam com 44 px de altura.
+- **A decisão 14 foi medida e vale:** com a moldura em coluna e sem ela, a altura do documento e a
+  posição do topo, das dez seções e do rodapé são as mesmas a 390, 768, 1024, 1280 e 1440 px.
+- **Uma história usava a moldura como linha** (`className="flex … justify-center"`, a do formulário de
+  entregador). Passou a centralizar com `items-center`; o formulário continua com 460 px, no meio.
+- **O guia de deploy ganhou uma seção** ("The landing's own measurement") e uma linha na tabela da
+  homologação. Não estava na lista do ticket, mas é onde a variável precisa estar escrita.
+- **O texto da política diz "as telas em que o lojista entra e cria a conta"**, e não "as telas de
+  entrar e criar conta": uma loja também tem telas de entrar e de criar conta, as do cliente, e
+  nelas o Google Analytics do bee-link não é carregado.
+- **A política não promete o que não é enviado ao Google** (nome, e-mail, senha). No GA4 existe uma
+  opção da propriedade que recolhe dados de formulários; com ela ligada a promessa seria falsa. O
+  texto diz só o que é enviado, como o BEELINK-271 fez com a Meta.
+- **Um teste segura "nada do Google"** (`site-consent-gate.test.tsx`): nenhum arquivo do app cita
+  `googletagmanager`, `google-analytics.com` ou `gtag(`. **Para o AA4:** esse teste precisa passar a
+  dizer qual é o único arquivo que cita, como `meta-pixel.ts` é o único que cita `fbq`.
+- **Para o AA4, sobre as telas:** a política fala em duas telas além da landing, `/login` e `/signup`.
+  As outras telas do grupo `(auth)` (esqueci a senha, confirmar e-mail, redefinir a senha) não estão
+  no texto. Se o script for montado no layout do grupo, a política fica errada.
+
+- **Este plano citava o ID de produção** na decisão 2, contra a própria Definição de Pronto ("o ID
+  não está escrito em nenhum arquivo do repositório"). A frase foi corrigida; o commit `470b569f`
+  ainda o mostra no histórico da branch. O ID não é segredo (ele vai no HTML de quem aceita), mas a
+  regra é que ele more só no ambiente de produção.
+
+### O que foi visto
+
+`next dev` na porta 3200, sem a API, com `SITE_GA_MEASUREMENT_ID=G-TEST000000` no `.env.local` do
+worktree. Dois navegadores: o do Playwright compartilhado, para usar a página e fazer as capturas, e
+um Chromium headless próprio, para rodar o spec. O navegador compartilhado desenha a barra de
+rolagem clássica (15 px): "390 px" ali são 375 px de página.
+
+- **Quem não respondeu, a 1280 × 800:** o aviso é o primeiro elemento da moldura e fica no pé da
+  tela (117 px de altura), com "Recusar" e "Aceitar" de 112 × 44 px e o mesmo estilo calculado. O
+  botão "Começar agora" do hero fica inteiro acima dele. Nenhum cookie gravado.
+- **A 390 × 844:** 213 px de altura, os dois botões lado a lado com 158 × 44 px. Os dois botões do
+  hero e "7 dias grátis, sem cartão" ficam acima do aviso. `scrollWidth` igual a `clientWidth`, e
+  nada do aviso passa da borda; o mesmo a 320, 360, 414, 768, 1024, 1440 e 1920 px.
+- **A 320 × 640,** o aviso tem 249 px (39% da tela) e "Começar agora" começa atrás dele: aparece ao
+  rolar 50 px.
+- **Teclado:** o primeiro Tab cai em "política de privacidade", o segundo em "Recusar", o terceiro em
+  "Aceitar" e o quarto na logo do topo. Enter em "Aceitar" tira o aviso da tela.
+- **Aceitar e recusar:** `bl_site_consent=granted` e `=denied`, `Path=/`, 180 dias, `SameSite=Lax`,
+  sem `httpOnly`. A linha de status diz "Escolha salva: você aceitou os cookies de medição da
+  Beelink." (ou "recusou"). O `scroll-padding-bottom` do documento volta a vazio.
+- **Visita seguinte:** sem aviso. O HTML do servidor já vem sem ele (conferido com `curl` e o cookie).
+  Um valor inventado (`bl_site_consent=yes`) e um `bl_consent=granted` de loja mostram o aviso de novo.
+- **"Cookies" no rodapé:** Enter reabre o aviso com "Sua escolha atual: você aceitou." e o foco vai
+  para a região, com o anel desenhado por dentro da faixa. Dois Tabs chegam a "Recusar"; Enter grava
+  `denied` e o foco volta para "Cookies".
+- **Reaberto com a página no fim,** o aviso aparece sobre as últimas linhas do rodapé, inclusive sobre
+  o próprio "Cookies": a página ficou mais longa e ainda não foi rolada. Responder desfaz isso.
+- **Fim da página, com o aviso em pé:** o rodapé termina onde o aviso começa (683 px a 1280 × 800, 631
+  px a 390 × 844). Nada do rodapé fica atrás.
+- **Menu do celular:** a 390 × 844 ele termina 32 px acima do aviso. A 390 × 664 os dois se cruzam e o
+  menu fica por cima, com os 11 links clicáveis.
+- **Formulário de entregador, a 390 px, com o aviso em pé:** "Continuar cadastro" recebe o clique e o
+  formulário mostra as quatro recusas.
+- **Sobre o preto da seção dos entregadores, a 1280 px:** a faixa branca com a linha preta em cima se
+  destaca, com o formulário e "Continuar cadastro" inteiros acima dela. Sobre o amarelo da chamada
+  final não fiz captura.
+- **Em inglês** (`bl_locale=en`), a 1280 e a 390 px: "Measurement cookies", "Refuse" e "Accept", sem
+  marcador por preencher e com a mesma altura.
+- **`/login`, `/signup` e `/privacidade`:** nenhum aviso, nenhum "Cookies", nenhum cookie gravado.
+- **`/privacidade` e `/termos`:** "Vigente desde 12 de outubro de 2026", a seção "Google Analytics no
+  site do bee-link", a linha do `bl_site_consent` e o parágrafo dos cookies `_ga`.
+- **Sem a variável** (o `.env.local` como estava): nenhum aviso, nenhuma linha de status, nenhum
+  "Cookies" no rodapé, nenhum cookie; o primeiro Tab cai na logo. Um `bl_site_consent=granted`
+  deixado de antes não muda nada. A página tem a 1280 px os mesmos 9126 px que tem com a variável e
+  a resposta já dada.
+- **Nenhuma requisição saiu de `localhost`** em nenhum dos passos, e o ID não aparece no HTML.
+- **O spec `e2e/site-consent.spec.ts`, rodado contra o `next dev`** com uma configuração solta, fora do
+  repositório: 14 testes, 14 passaram, entre eles o axe (WCAG 2.x A e AA, com contraste) com o aviso
+  em pé e reaberto. Conferi que o teste do teclado pega: sem o `scroll-padding-bottom` ele falha com
+  19 controles escondidos. Na primeira rodada quatro testes falharam por erro do spec, e isso mudou
+  o spec: ele espera o script da página chegar antes de apertar uma tecla, e procura o aviso pelo
+  título no HTML, não pela frase.
+- **Storybook** (modo de desenvolvimento): as seis histórias de "Blocos/Landing/Aviso de cookies"
+  abrem, a história "Com o rodapé" responde e reabre, e as outras 19 histórias da landing continuam
+  abrindo. Sem erro no console.
+- **Console da página:** sem erros nem avisos.
+
+### O que não foi exercitado
+
+- `next build`, `turbo build` e as suítes e2e (API e Playwright): o Docker está desligado e o disco
+  tinha 3,0 GB livres. O spec rodou contra o `next dev`, sem a API; na suíte ele roda sobre o build,
+  com a API, e isso não rodou. O `e2e/accessibility.spec.ts` passa a ver `/` com o aviso e não rodou.
+- `build-storybook`, que o CI roda.
+- **O atributo `Secure`:** só em teste de unidade. A página foi aberta em `http://localhost`.
+- **Um leitor de tela de verdade.** A região, o nome dela e a linha de status foram conferidos na
+  árvore de acessibilidade, não com o VoiceOver nem com o NVDA.
+- Safari, Firefox e um celular de verdade. Só Chromium, com barra de rolagem clássica.
+- **Sem JavaScript:** o aviso é desenhado pelo servidor, mas os botões precisam do script, como os do
+  aviso das lojas. Não abri a página com o script desligado.
+- **Duas abas:** a resposta dada numa aba chega à outra na próxima carga. Não testei.
+- A troca de versão ao vivo (uma conta ganhando a linha `2026-10-12` em `legal_acceptances`): precisa
+  da API e do banco. A API compila e os testes de unidade dela passam.
+- Tema escuro: a landing não tem.
