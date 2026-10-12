@@ -157,7 +157,7 @@ export const Posteres: Story = {
 export const FormularioDoEntregador: Story = {
   args: { children: null },
   render: () => (
-    <LandingShell className="flex min-h-0 justify-center bg-brand-ink p-10">
+    <LandingShell className="min-h-0 items-center bg-brand-ink p-10">
       <LandingCourierForm termsHref={hrefs.termsHref} privacyHref={hrefs.privacyHref} text={ptBR.landing.couriers.form} />
     </LandingShell>
   ),

@@ -3109,6 +3109,22 @@ export const en: UiMessages = {
       wallAlt: "Beelink poster on a wall: “Your e-commerce further, with those who understand it.” A shopkeeper smiles at a laptop among boxes of orders.",
     },
     cta: { titleLight: "Your e-commerce", titleStrong: "starts today.", courier: "I want to be a courier" },
+    consent: {
+      title: "Measurement cookies",
+      body: "Beelink uses Google Analytics to measure visits to this page and accounts being created. If you accept, Google receives data about your browsing here and on the sign-in and sign-up screens. If you refuse, nothing is sent and the site works just the same. Learn more in the {privacy}.",
+      privacy: "privacy policy",
+      refuse: "Refuse",
+      accept: "Accept",
+      current: {
+        granted: "Your current choice: you accepted.",
+        denied: "Your current choice: you refused.",
+      },
+      saved: {
+        granted: "Choice saved: you accepted Beelink's measurement cookies.",
+        denied: "Choice saved: you refused Beelink's measurement cookies.",
+      },
+      footerLink: "Cookies",
+    },
     footer: {
       tagline: "The ecosystem for your e-commerce.",
       solutions: "Solutions",
