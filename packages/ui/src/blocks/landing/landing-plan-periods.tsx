@@ -36,6 +36,10 @@ const SHOWN: Record<LandingPlanPeriodValue, string> = {
  *
  * Native radios and no script: the stylesheet shows the figures of the checked one, so the choice
  * works before the page's JavaScript arrives, and a browser that restores a form restores it too.
+ * That is why `components/radio-group` is not what draws them: it is Base UI's, a Client Component
+ * that holds the choice in script, and a price is the one thing on this page that may not wait for
+ * one. The couriers' form makes the same trade for its vehicles.
+ *
  * The three sets of figures share one cell and the two not chosen are only made invisible, so the
  * card keeps its height from one choice to the next. Each radio is described by its own figures —
  * hidden or not — which is how a reader hears a period's price on reaching it.

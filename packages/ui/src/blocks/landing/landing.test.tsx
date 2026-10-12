@@ -436,6 +436,21 @@ describe("the landing page, whole", () => {
     expect(sections.slice(1, 6)).toEqual(["#ecossistema", "#integracoes", "#como", "#planos", "#entregadores"])
   })
 
+  /**
+   * The prices live in the app, in one place, and this page is handed others that are not Beelink's
+   * (see the fixture). So an amount, a share or a trial typed into any block or any sentence of the
+   * landing would stand here beside the ones worked out from them.
+   */
+  it("says no amount, share or trial but the ones worked out from the prices it was handed", () => {
+    const { container } = render(<Page />)
+    const page = (container.textContent ?? "").replace(/\u00a0/g, " ")
+
+    expect([...new Set(page.match(/R\$ ?[\d.]+,\d{2}/g))].sort()).toEqual(["R$ 100,00", "R$ 150,00", "R$ 240,00", "R$ 540,00", "R$ 60,00", "R$ 80,00", "R$ 90,00", "R$ 960,00"])
+    expect([...new Set(page.match(/\d+ ?%/g))].sort()).toEqual(["10%", "20%"])
+    expect([...new Set(page.match(/\d+ dias/g))]).toEqual(["14 dias"])
+    expect(page).not.toMatch(/[{}]/)
+  })
+
   it("has no accessibility violations", async () => {
     const { container } = render(<Page />)
 
