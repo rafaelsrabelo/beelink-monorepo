@@ -55,7 +55,7 @@ function Page() {
     <LandingShell>
       <LandingHeader {...hrefs} />
       <main>
-        <LandingHero signupHref={hrefs.signupHref} />
+        <LandingHero signupHref={hrefs.signupHref} trialDays={examplePlanPrices.trialDays} />
         <LandingBanners signupHref={hrefs.signupHref} photos={photos} />
         <LandingEcosystem />
         <LandingIntegrations logos={logos} />
@@ -63,7 +63,7 @@ function Page() {
         <LandingPlans prices={examplePlanPrices} locale="pt-BR" signupHref={hrefs.signupHref} />
         <LandingCouriers termsHref={hrefs.termsHref} privacyHref={hrefs.privacyHref} />
         <LandingFaq />
-        <LandingCta signupHref={hrefs.signupHref} />
+        <LandingCta signupHref={hrefs.signupHref} trialDays={examplePlanPrices.trialDays} />
       </main>
       <LandingFooter termsHref={hrefs.termsHref} privacyHref={hrefs.privacyHref} year={2026} />
     </LandingShell>
@@ -156,16 +156,27 @@ describe("LandingHeader", () => {
 
 describe("LandingHero", () => {
   it("says what Beelink is in the page's one h1, and offers the way in and the way down", () => {
-    render(<LandingHero signupHref="/signup" />)
+    render(<LandingHero signupHref="/signup" trialDays={14} />)
 
     expect(screen.getByRole("heading", { level: 1, name: "Tudo o que o seu e-commerce precisa" })).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Começar agora" })).toHaveAttribute("href", "/signup")
     expect(screen.getByRole("link", { name: "Ver soluções" })).toHaveAttribute("href", "#solucoes")
   })
 
+  /** The trial is the plan's own sentence, with the days it is handed: under the two buttons, which keep their words. */
+  it("says the free trial under the way in, for as many days as it is handed", () => {
+    const { rerender } = render(<LandingHero signupHref="/signup" trialDays={14} />)
+
+    const trial = screen.getByText("14 dias grátis, sem cartão")
+    expect(trial.previousElementSibling).toContainElement(screen.getByRole("link", { name: "Começar agora" }))
+
+    rerender(<LandingHero signupHref="/signup" trialDays={30} messages={en} />)
+    expect(screen.getByText("30 days free, no card")).toBeInTheDocument()
+  })
+
   /** The ecosystem's own section is where the five are said: the hub is its picture. */
   it("draws the hub as a picture: a reader is not told the five twice", () => {
-    const { container } = render(<LandingHero signupHref="/signup" />)
+    const { container } = render(<LandingHero signupHref="/signup" trialDays={14} />)
 
     const hub = screen.getByText("eMarketing").closest<HTMLElement>("[aria-hidden='true']")!
     expect(hub).not.toBeNull()
@@ -303,11 +314,20 @@ describe("LandingFaq", () => {
 
 describe("LandingCta", () => {
   it("calls for the shop first, and points a courier to their section", () => {
-    render(<LandingCta signupHref="/signup" />)
+    render(<LandingCta signupHref="/signup" trialDays={14} />)
 
     expect(screen.getByRole("heading", { level: 2, name: "Seu e-commerce começa hoje." })).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Criar minha loja" })).toHaveAttribute("href", "/signup")
     expect(screen.getByRole("link", { name: "Quero ser entregador" })).toHaveAttribute("href", "#entregadores")
+  })
+
+  it("says the free trial under its heading, for as many days as it is handed", () => {
+    const { rerender } = render(<LandingCta signupHref="/signup" trialDays={14} />)
+
+    expect(screen.getByRole("heading", { level: 2 }).nextElementSibling).toHaveTextContent("14 dias grátis, sem cartão")
+
+    rerender(<LandingCta signupHref="/signup" trialDays={30} messages={en} />)
+    expect(screen.getByText("30 days free, no card")).toBeInTheDocument()
   })
 })
 

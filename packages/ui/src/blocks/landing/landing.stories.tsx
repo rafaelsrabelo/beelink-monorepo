@@ -14,6 +14,7 @@ import { LandingFooter } from "./landing-footer"
 import { LandingHeader } from "./landing-header"
 import { LandingHero } from "./landing-hero"
 import { LandingIntegrations } from "./landing-integrations"
+import { examplePlanPrices } from "./landing-plans.fixtures"
 import { LandingPosters } from "./landing-posters"
 import { LandingShell } from "./landing-shell"
 import { LandingSteps } from "./landing-steps"
@@ -65,7 +66,7 @@ export const Pagina: Story = {
     <LandingShell>
       <LandingHeader {...hrefs} />
       <main>
-        <LandingHero signupHref={hrefs.signupHref} />
+        <LandingHero signupHref={hrefs.signupHref} trialDays={examplePlanPrices.trialDays} />
         <LandingBanners signupHref={hrefs.signupHref} exampleHref="#loja-de-exemplo" photos={bannerPhotos} />
         <LandingEcosystem />
         <LandingIntegrations logos={integrationLogos} />
@@ -73,7 +74,7 @@ export const Pagina: Story = {
         <LandingCouriers photo={photos.courier} termsHref={hrefs.termsHref} privacyHref={hrefs.privacyHref} />
         <LandingFaq />
         <LandingPosters busStop={photos.busStop} wall={photos.wall} />
-        <LandingCta signupHref={hrefs.signupHref} />
+        <LandingCta signupHref={hrefs.signupHref} trialDays={examplePlanPrices.trialDays} />
       </main>
       <LandingFooter termsHref={hrefs.termsHref} privacyHref={hrefs.privacyHref} year={2026} />
     </LandingShell>
@@ -86,7 +87,7 @@ export const TopoEHero: Story = {
   render: () => (
     <LandingShell className="min-h-0">
       <LandingHeader {...hrefs} />
-      <LandingHero signupHref={hrefs.signupHref} />
+      <LandingHero signupHref={hrefs.signupHref} trialDays={examplePlanPrices.trialDays} />
     </LandingShell>
   ),
 }
@@ -174,7 +175,7 @@ export const ChamadaERodape: Story = {
   args: { children: null },
   render: () => (
     <LandingShell className="min-h-0 pt-10">
-      <LandingCta signupHref={hrefs.signupHref} />
+      <LandingCta signupHref={hrefs.signupHref} trialDays={examplePlanPrices.trialDays} />
       <LandingFooter termsHref={hrefs.termsHref} privacyHref={hrefs.privacyHref} year={2026} />
     </LandingShell>
   ),

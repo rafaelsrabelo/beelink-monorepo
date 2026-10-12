@@ -88,7 +88,7 @@ export default async function LandingPage() {
       <LandingShell>
         <LandingHeader loginHref={LOGIN} signupHref={SIGNUP} termsHref={LEGAL_ROUTES.terms} privacyHref={LEGAL_ROUTES.privacy} linkComponent={AppLink} messages={ui} />
         <main>
-          <LandingHero signupHref={SIGNUP} linkComponent={AppLink} messages={ui} />
+          <LandingHero signupHref={SIGNUP} trialDays={PLAN_PRICES.trialDays} linkComponent={AppLink} messages={ui} />
           <LandingBanners
             signupHref={SIGNUP}
             exampleHref={exampleHref}
@@ -117,7 +117,7 @@ export default async function LandingPage() {
             wall={<BrandPhoto image={posterWall} alt={ui.landing.posters.wallAlt} sizes={POSTER_SIZES} />}
             messages={ui}
           />
-          <LandingCta signupHref={SIGNUP} linkComponent={AppLink} messages={ui} />
+          <LandingCta signupHref={SIGNUP} trialDays={PLAN_PRICES.trialDays} linkComponent={AppLink} messages={ui} />
         </main>
         <LandingFooter termsHref={LEGAL_ROUTES.terms} privacyHref={LEGAL_ROUTES.privacy} year={new Date().getFullYear()} linkComponent={AppLink} messages={ui} />
       </LandingShell>
