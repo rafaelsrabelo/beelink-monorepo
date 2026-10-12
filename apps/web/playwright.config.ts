@@ -55,7 +55,13 @@ export default defineConfig({
       cwd: "../..",
       reuseExistingServer: false,
       timeout: 120_000,
-      env: { ...process.env, API_URL: `http://localhost:${API_PORT}/api` },
+      env: {
+        ...process.env,
+        API_URL: `http://localhost:${API_PORT}/api`,
+        // What makes the landing ask its visitor about being measured (BEELINK-319): with no ID it
+        // draws no notice, and `site-consent.spec.ts` would have nothing to see. A made-up ID.
+        SITE_GA_MEASUREMENT_ID: "G-TEST000000",
+      },
     },
   ],
 })
