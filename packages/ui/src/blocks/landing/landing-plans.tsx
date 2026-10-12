@@ -66,9 +66,10 @@ export function LandingPlans({ prices, locale, signupHref, linkComponent: Link =
                 <p className={TEXT}>{text.beelink.text}</p>
               </div>
               <LandingPlanPeriods offers={LANDING_PLAN_PERIODS.map((period) => planOfferOf(prices, period))} locale={locale} text={text} />
-              <Link href={signupHref} className={cn(LANDING_CTA, "h-[58px] bg-brand-ink px-[30px] text-[17px] font-extrabold text-brand-on-ink")}>
+              {/* Narrower padding on a phone: at 320px the sentence and its arrow take the whole button. */}
+              <Link href={signupHref} className={cn(LANDING_CTA, "h-[58px] bg-brand-ink px-4 text-base font-extrabold text-brand-on-ink sm:px-[30px] sm:text-[17px]")}>
                 {format(text.beelink.cta, values)}
-                <ArrowRightIcon aria-hidden="true" className="size-[18px]" />
+                <ArrowRightIcon aria-hidden="true" className="size-[18px] shrink-0" />
               </Link>
             </div>
             <div className={cn(INCLUDES, "border-brand-line")}>

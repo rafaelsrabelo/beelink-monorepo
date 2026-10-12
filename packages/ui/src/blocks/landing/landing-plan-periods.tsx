@@ -51,9 +51,10 @@ export function LandingPlanPeriods({ offers, locale, text }: LandingPlanPeriodsP
         {offers.map((offer, at) => (
           // The whole card is the radio's label, as the couriers' form draws a vehicle. Its border and its
           // weight are the same chosen or not: a wider one would rewrap the label and move the card under it.
+          // One line, with little padding: three share a 320px phone's row, where "6 meses" would break in two.
           <label
             key={offer.period}
-            className="flex min-h-16 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[14px] border-[1.5px] border-brand-line-strong bg-brand-surface px-1.5 py-2 text-center text-[15px] font-bold hover:border-brand-ink has-checked:border-brand-ink has-checked:bg-brand-yellow has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-brand-ink"
+            className="flex min-h-16 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[14px] border-[1.5px] border-brand-line-strong bg-brand-surface px-1 py-2 text-center text-sm font-bold whitespace-nowrap hover:border-brand-ink sm:text-[15px] has-checked:border-brand-ink has-checked:bg-brand-yellow has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-brand-ink"
           >
             <input type="radio" name={id} value={offer.period} defaultChecked={at === 0} aria-describedby={`${id}-${offer.period}`} className="sr-only" />
             {text.beelink.periods[offer.period]}
