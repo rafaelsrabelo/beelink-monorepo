@@ -3463,7 +3463,7 @@ export interface UiMessages {
     homeLabel: string
     /** Around the signed-out forms: the way back to the landing, and the brand's photographs beside them — the carousel's name, and each dot's, `{current}` of `{total}`. */
     auth: { back: string; label: string; position: string }
-    nav: { label: string; solutions: string; ecosystem: string; integrations: string; how: string; couriers: string; faq: string }
+    nav: { label: string; solutions: string; ecosystem: string; integrations: string; how: string; plans: string; couriers: string; faq: string }
     /** Names the button that opens the links on a narrow screen. */
     menu: string
     signIn: string
@@ -3501,6 +3501,47 @@ export interface UiMessages {
       soon: string
     }
     steps: { titleLight: string; titleStrong: string; lead: string; items: readonly [LandingStep, LandingStep, LandingStep] }
+    /**
+     * "Planos" (BEELINK-318): what Beelink costs, and the free trial before it. No sentence writes an
+     * amount or the trial's length — both are data the page hands over, and a sentence that says one
+     * carries its placeholder: `{days}` here, and in the shopkeeper's questions `{monthly}`,
+     * `{semiannual}`, `{semiannualMonthly}`, `{annual}`, `{annualMonthly}` and `{withBeelia}` too.
+     */
+    plans: {
+      titleLight: string
+      titleStrong: string
+      /** `{days}`. */
+      lead: string
+      /** `{days}`. The plan's card says it, and so do the hero and the last call. */
+      trial: string
+      /** After an amount that is a month's. */
+      perMonth: string
+      /** Heads what a plan includes. */
+      includesLabel: string
+      beelink: {
+        name: string
+        text: string
+        /** The legend of the three periods. */
+        periodLabel: string
+        periods: Record<LandingPlanPeriodValue, string>
+        /** `{percent}`: on a period that costs less than paying month by month. */
+        less: string
+        /** What a period is paid with, `{total}` at once. */
+        billed: Record<LandingPlanPeriodValue, string>
+        /** `{amount}`, `{percent}`: against paying month by month. */
+        saving: string
+        /** `{days}`. */
+        cta: string
+        /** Only what the product does today. */
+        includes: readonly string[]
+      }
+      /** Beelink with Beelia, which is still to come: nothing here is offered yet. */
+      withBeelia: { name: string; text: string; includes: readonly string[] }
+      /** The badge on what is still to come. */
+      soon: string
+      /** `{days}`: what follows the trial. */
+      after: string
+    }
     couriers: {
       tag: string
       titleLight: string
@@ -4170,6 +4211,9 @@ export type LandingProductValue = "store" | "chat" | "checkout" | "shipping" | "
 
 /** The third parties the landing says a shop connects to, in the order it lists them. */
 export type LandingIntegrationValue = "asaas" | "melhorEnvio" | "googleAnalytics" | "meta"
+
+/** How often Beelink's plan is paid, in the order the landing offers the three. */
+export type LandingPlanPeriodValue = "monthly" | "semiannual" | "annual"
 
 /** How a courier delivers, as the landing's form offers it. */
 export type LandingVehicleValue = "MOTORCYCLE" | "BICYCLE" | "CAR" | "VAN"
