@@ -11,6 +11,7 @@ import { LandingFooter } from "@harness-monorepo/ui/blocks/landing/landing-foote
 import { LandingHeader } from "@harness-monorepo/ui/blocks/landing/landing-header"
 import { LandingHero } from "@harness-monorepo/ui/blocks/landing/landing-hero"
 import { LandingIntegrations } from "@harness-monorepo/ui/blocks/landing/landing-integrations"
+import { LandingPlans } from "@harness-monorepo/ui/blocks/landing/landing-plans"
 import { LandingPosters } from "@harness-monorepo/ui/blocks/landing/landing-posters"
 import { LandingShell } from "@harness-monorepo/ui/blocks/landing/landing-shell"
 import { LandingSteps } from "@harness-monorepo/ui/blocks/landing/landing-steps"
@@ -28,6 +29,7 @@ import posterBusStop from "@/assets/images/poster-bus-stop.jpg"
 import posterWall from "@/assets/images/poster-wall.jpg"
 import { LEGAL_ROUTES } from "@/lib/legal-routes"
 import { getMessages } from "@/lib/locale"
+import { PLAN_PRICES } from "@/lib/plans"
 import { serverEnv } from "@/lib/server-env"
 import { siteOrigin } from "@/lib/site-origin"
 
@@ -78,7 +80,7 @@ export async function generateMetadata(): Promise<Metadata> {
  * reaches it, signed in or not; it used to send everyone to the panel, and so to the sign-in.
  */
 export default async function LandingPage() {
-  const { ui } = await getMessages()
+  const { ui, locale } = await getMessages()
   const exampleHref = serverEnv.EXAMPLE_STORE_SLUG ? `/${serverEnv.EXAMPLE_STORE_SLUG}` : null
 
   return (
@@ -101,6 +103,7 @@ export default async function LandingPage() {
           <LandingEcosystem messages={ui} />
           <LandingIntegrations logos={integrationMarksOf(ui.landing.integrations.items)} messages={ui} />
           <LandingSteps messages={ui} />
+          <LandingPlans prices={PLAN_PRICES} locale={locale} signupHref={SIGNUP} linkComponent={AppLink} messages={ui} />
           <LandingCouriers
             photo={<BrandPhoto image={courierStreet} alt="" sizes="(min-width: 80rem) 820px, 100vw" />}
             termsHref={LEGAL_ROUTES.terms}

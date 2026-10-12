@@ -16,6 +16,8 @@ import { LandingFooter } from "./landing-footer"
 import { LANDING_ANCHORS, LandingHeader } from "./landing-header"
 import { LandingHero } from "./landing-hero"
 import { LandingIntegrations } from "./landing-integrations"
+import { LandingPlans } from "./landing-plans"
+import { examplePlanPrices } from "./landing-plans.fixtures"
 import { LandingShell } from "./landing-shell"
 import { LandingSteps } from "./landing-steps"
 import { LandingTitle } from "./landing-title"
@@ -58,6 +60,7 @@ function Page() {
         <LandingEcosystem />
         <LandingIntegrations logos={logos} />
         <LandingSteps />
+        <LandingPlans prices={examplePlanPrices} locale="pt-BR" signupHref={hrefs.signupHref} />
         <LandingCouriers termsHref={hrefs.termsHref} privacyHref={hrefs.privacyHref} />
         <LandingFaq />
         <LandingCta signupHref={hrefs.signupHref} />
@@ -92,11 +95,12 @@ describe("LandingTitle", () => {
 })
 
 describe("LandingHeader", () => {
-  it("leads to each section, to the sign-in and to the sign-up", () => {
+  /** Six of the seven sections: "Planos" stands where "Perguntas" stood, which the menu and the footer still lead to. */
+  it("leads to six sections in the page's order, to the sign-in and to the sign-up", () => {
     render(<LandingHeader {...hrefs} />)
 
     const nav = screen.getByRole("navigation", { name: "Principal" })
-    expect(within(nav).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["#solucoes", "#ecossistema", "#integracoes", "#como", "#entregadores", "#perguntas"])
+    expect(within(nav).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["#solucoes", "#ecossistema", "#integracoes", "#como", "#planos", "#entregadores"])
     expect(screen.getByRole("link", { name: "Beelink, início" })).toHaveAttribute("href", "/")
     // Twice each: in the bar, and in the menu a narrow screen opens.
     expect(screen.getAllByRole("link", { name: "Entrar" }).map((link) => link.getAttribute("href"))).toEqual(["/login", "/login"])
@@ -105,8 +109,9 @@ describe("LandingHeader", () => {
 
   /**
    * Measured in a browser, which jsdom cannot do: at 1280px, where the links first show, the six and
-   * the two ways in leave 21px under a classic scrollbar with these gaps. With the design's wider
-   * ones "Criar minha loja" ran 89px past the page's column, and the shell clipped it.
+   * the two ways in leave 46px under a classic scrollbar with these gaps — and a seventh, "Perguntas"
+   * with its gap, asks for 89. With the design's wider gaps "Criar minha loja" ran past the page's
+   * column, and the shell clipped it.
    */
   it("keeps its six links close enough to fit beside the two ways in at the width they first show", () => {
     render(<LandingHeader {...hrefs} />)
@@ -115,6 +120,7 @@ describe("LandingHeader", () => {
     expect(nav).toHaveClass("hidden", "xl:flex", "gap-4", "min-[90rem]:gap-6", "whitespace-nowrap")
     expect(nav.closest("header")).toHaveClass("gap-6", "min-[90rem]:gap-9")
     expect(nav.closest("header")?.className).not.toMatch(/xl:gap-/)
+    expect(within(nav).getAllByRole("link")).toHaveLength(6)
   })
 
   /** On a wide screen the legal texts are in the footer; on a phone the menu is where they are within reach. */
@@ -129,6 +135,7 @@ describe("LandingHeader", () => {
       ["Ecossistema", "#ecossistema"],
       ["Integrações", "#integracoes"],
       ["Como funciona", "#como"],
+      ["Planos", "#planos"],
       ["Para entregadores", "#entregadores"],
       ["Perguntas", "#perguntas"],
       ["Termos de uso", "/termos"],
@@ -305,7 +312,7 @@ describe("LandingCta", () => {
 })
 
 describe("LandingFooter", () => {
-  it("leads only to what exists: the solutions' section, the integrations', the couriers' sign-up and the two legal texts", () => {
+  it("leads only to what exists: the solutions' section, the integrations', the couriers' sign-up, the questions and the two legal texts", () => {
     render(<LandingFooter termsHref="/termos" privacyHref="/privacidade" year={2026} />)
 
     expect(within(screen.getByRole("navigation", { name: "Soluções" })).getAllByRole("link").map((link) => [link.textContent, link.getAttribute("href")])).toEqual([
@@ -317,8 +324,12 @@ describe("LandingFooter", () => {
       ["Integrações", "#integracoes"],
     ])
     expect(within(screen.getByRole("navigation", { name: "Entregadores" })).getByRole("link", { name: "Cadastro" })).toHaveAttribute("href", "#entregadores")
-    expect(screen.getByRole("link", { name: "Termos de uso" })).toHaveAttribute("href", "/termos")
-    expect(screen.getByRole("link", { name: "Privacidade" })).toHaveAttribute("href", "/privacidade")
+    // The questions' link is the wide screen's only one: its header shows six sections, and they are the seventh.
+    expect(within(screen.getByRole("navigation", { name: "Empresa" })).getAllByRole("link").map((link) => [link.textContent, link.getAttribute("href")])).toEqual([
+      ["Perguntas", "#perguntas"],
+      ["Termos de uso", "/termos"],
+      ["Privacidade", "/privacidade"],
+    ])
     expect(screen.getByText("© 2026 Beelink")).toBeInTheDocument()
     // No link leads nowhere.
     expect(screen.getAllByRole("link").every((link) => (link.getAttribute("href") ?? "#") !== "#")).toBe(true)
@@ -358,6 +369,7 @@ describe("the landing page, whole", () => {
       "Seu e-commerce. Conectado.",
       "Conecte a loja às suas contas.",
       "Do cadastro à primeira venda.",
+      "Escolha o seu plano.",
       "Entregue com a Beelink.",
       "Perguntas frequentes.",
       "Seu e-commerce começa hoje.",
@@ -370,7 +382,7 @@ describe("the landing page, whole", () => {
 
     const sections = [...container.querySelectorAll("main > section[id]")].map((section) => `#${section.id}`)
     expect(sections).toEqual(Object.values(LANDING_ANCHORS))
-    expect(sections.slice(1, 4)).toEqual(["#ecossistema", "#integracoes", "#como"])
+    expect(sections.slice(1, 6)).toEqual(["#ecossistema", "#integracoes", "#como", "#planos", "#entregadores"])
   })
 
   it("has no accessibility violations", async () => {

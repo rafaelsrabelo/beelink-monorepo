@@ -26,8 +26,9 @@ const LINK = "text-brand-text hover:underline"
 
 /**
  * The page's foot: the brand, the five solutions — each leading to where the page describes it —
- * and what a shop connects to, the couriers' sign-up, and the two legal texts. Only what has somewhere to lead: the design's
+ * and what a shop connects to, the couriers' sign-up, the questions and the two legal texts. Only what has somewhere to lead: the design's
  * help centre, contact and couriers' terms have no page yet, and a link to nowhere is worse than none.
+ * The questions' link is the wide screen's only one: its header has no room for a seventh.
  */
 export function LandingFooter({ termsHref, privacyHref, year, linkComponent: Link = AnchorLink, messages = defaultMessages }: LandingFooterProps) {
   const text = messages.landing.footer
@@ -59,6 +60,9 @@ export function LandingFooter({ termsHref, privacyHref, year, linkComponent: Lin
         </nav>
         <nav aria-label={text.company} className={COLUMN}>
           <b>{text.company}</b>
+          <a href={LANDING_ANCHORS.faq} className={LINK}>
+            {messages.landing.nav.faq}
+          </a>
           <Link href={termsHref} className={LINK}>
             {text.terms}
           </Link>
