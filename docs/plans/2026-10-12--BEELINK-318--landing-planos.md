@@ -133,3 +133,118 @@ nada no painel. Não repito a palavra aqui. Corrigir aqueles dois textos é outr
 - Corrigir "combos" nos textos antigos da landing.
 - Consentimento e medição da landing, e o formulário de entregador (tickets seguintes do épico).
 - Suíte e2e e `next build`: o Docker está desligado e o disco tem cerca de 3 GB livres.
+
+## 12/10, depois do código — o que mudou e o que foi visto
+
+O texto acima fica como foi escrito. O que segue é o que a construção e o navegador mostraram.
+
+### O que mudou no caminho
+
+- **Os dois cartões ficam um sobre o outro, e não lado a lado.** Lado a lado, o cartão da Beelia
+  esticava até a altura do outro (946 px para 420 px de conteúdo) e sobrava meio cartão vazio. Agora
+  cada cartão ocupa a largura da página e, a partir de 1024 px, divide-se em dois: o plano de um
+  lado, o que ele inclui do outro. A 1280 px o cartão Beelink tem 547 px de altura e o da Beelia, 218.
+- **O selo do período é "-10%" e "-20%", só desenhado.** "10% a menos" quebrava em duas linhas dentro
+  do rótulo num celular. A forma curta é a mesma do selo de desconto de um produto na vitrine
+  (`-{percent}%`). O selo é `aria-hidden`: o rádio se chama "6 meses" e é descrito pela frase que diz a
+  economia por extenso.
+- **O rótulo marcado não engrossa mais.** A receita do formulário de entregador (borda de 2 px e
+  letra mais pesada no item marcado) fazia o rótulo quebrar de outro jeito a 390 px, e o cartão
+  mudava 2 px de altura ao trocar de período. A borda e o peso agora são os mesmos, marcado ou não;
+  o que muda é a cor da borda e o fundo amarelo.
+- **A 320 px** "6 meses" quebrava em "6" e "meses", e a seta do botão sumia espremida. Os rótulos
+  ficaram numa linha só, com letra de 14 px abaixo de 640 px, e o botão ganhou margem menor no
+  celular.
+- **As três perguntas novas entram depois das três que o lojista já tinha**, e não antes. Subir o
+  preço para o topo da lista é trocar a ordem de três linhas no dicionário.
+- **A história da página inteira** (`Blocos/Landing → Página`) também desenha a seção, senão o link
+  "Planos" do topo não levaria a lugar nenhum dentro dela.
+- **O seletor não usa o `components/radio-group` do design system.** Ele é do Base UI, um componente
+  cliente que guarda a escolha em script; antes de o script chegar, clicar nele não faz nada. O
+  arquivo do seletor diz isso, como a regra de estilo pede quando um primitivo não serve.
+- **Três testes seguram "nenhum valor escrito à mão"**, e não um: o do bloco, o da FAQ e um da página
+  inteira (`landing.test.tsx`), que cobre todos os blocos de uma vez, hero e chamada final
+  incluídos. Mais um varre as frases de `messages.landing` nos dois idiomas. Conferi que pegam:
+  escrevi "R$ 59,90" no hero e depois numa frase do dicionário, os testes falharam nos dois casos, e
+  desfiz as duas mudanças.
+
+### O menu do topo, medido
+
+Num Chromium com a barra de rolagem clássica desenhada de verdade (15 px; a 1280 px a página tem
+1265 px de largura útil): os seis links e os dois botões deixam **46 px** de folga a 1280 px e 78 px
+a 1440 px, em pt-BR. Em inglês, 128 px e 160 px. "Perguntas" mede 73 px e pede mais 16 px de espaço:
+89 px, que não cabem nos 46. Com "Perguntas" no lugar de "Planos" a folga era de 21 px (AA1).
+
+O AA1 chegou aos 21 px medindo sem barra e descontando 15 px. Aqui a barra foi desenhada, e a conta
+bate: 46 − (73 − 48) = 21.
+
+### O que foi visto
+
+`next dev` na porta 3200, sem a API. Dois navegadores: o do Playwright compartilhado, para usar a
+página e fazer as capturas, e um Chromium headless próprio, para as medidas.
+
+- **1280 px:** a barra do topo com Soluções, Ecossistema, Integrações, Como funciona, Planos e Para
+  entregadores. A seção com os dois cartões, o mensal marcado e "R$ 59,90 por mês"; o cartão com a
+  Beelia com "R$ 89,90 por mês" e "EM BREVE". Nada passa da largura da página.
+- **O seletor pelo ponteiro:** clicar em "6 meses" mostra "R$ 53,90 por mês", "R$ 323,40 pelos 6
+  meses." e "Você economiza R$ 36,00 (10%) em relação ao mensal."; clicar em "Anual" mostra
+  "R$ 47,90 por mês", "R$ 574,80 pelo ano." e "Você economiza R$ 144,00 (20%) em relação ao
+  mensal.". Sem recarregar, e o cartão continua com 547 px.
+- **O seletor pelo teclado:** depois do link "Planos", o próximo Tab cai no rádio marcado ("Mensal"),
+  com o anel de foco de 2 px em volta do rótulo. Seta para a direita marca "6 meses" e depois
+  "Anual"; seta para a esquerda volta. O Tab seguinte cai em "Testar 7 dias grátis", e Enter leva a
+  `/signup`.
+- **O seletor sem script:** com o JavaScript desligado no navegador, clicar em "6 meses" e em "Anual"
+  troca os números do mesmo jeito. É o CSS que mostra o painel do rádio marcado.
+- **Teclado a 1280 px:** Tab chega a "Planos" no sexto passo (logo, Soluções, Ecossistema,
+  Integrações, Como funciona, Planos). Enter muda o endereço para `#planos` e a seção para a 24 px do
+  alto, com o título e o cartão Beelink inteiro à vista.
+- **390 px:** tudo numa coluna, cartões de 342 px, os três períodos numa linha (91 px cada), a faixa
+  "7 dias grátis, sem cartão" numa linha só. `scrollWidth` igual a `clientWidth`, no alto e na seção,
+  e nenhum elemento da seção, do topo (com o menu aberto) ou do rodapé passa da borda. O mesmo a 320,
+  360, 375 e 414 px. Tocar em "Anual" troca os números e o cartão continua com 1120 px.
+- **Menu do celular:** Tab chega ao botão, Enter abre, e ele lista as sete seções, com "Planos" e
+  "Perguntas". Cinco Tabs chegam a "Planos"; Enter fecha o menu e leva à seção (24 px do alto).
+- **Larguras entre as duas:** cartões em uma coluna até 1023 px (a lista do que inclui em duas
+  colunas a partir de 640 px); a partir de 1024 px cada cartão se divide em dois. Em nenhuma largura
+  de 320 a 1920 px a altura do cartão muda entre o mensal e o anual.
+- **Hero e chamada final:** "7 dias grátis, sem cartão" sob os dois botões do hero e sob o título da
+  chamada final, a 1280 e a 390 px. Os botões continuam com os mesmos rótulos.
+- **Perguntas:** o link "Perguntas" do rodapé leva à seção (24 px do alto). As três respostas novas
+  aparecem com os valores: "O plano Beelink custa R$ 59,90 por mês. Pagando 6 meses de uma vez sai
+  por R$ 323,40, que dá R$ 53,90 por mês; pagando o ano, R$ 574,80, que dá R$ 47,90 por mês. O plano
+  com a Beelia ainda não está disponível e vai custar R$ 89,90 por mês."
+- **Em inglês** (pelo `Accept-Language`), a 1280 e a 390 px: "Choose your plan.", "R$59.90 a month",
+  "Try 7 days free", e nenhum marcador sem preencher. A 320 px os três rótulos cabem numa linha
+  também em inglês.
+- **A pergunta do `e2e/accessibility.spec.ts` feita à mão** (axe na página inteira, WCAG 2.x A e AA,
+  com contraste), a 1280 × 720 e a 390 × 844, em pt-BR e em inglês, com a página como abre e de novo
+  com o anual marcado e todas as perguntas abertas: nenhuma violação, e nada que o axe não tenha
+  conseguido decidir dentro da seção.
+- **Storybook** (modo de desenvolvimento): as quatro histórias de "Blocos/Landing/Planos" abriram,
+  o seletor troca os números na história, e as histórias da landing que mudaram (página inteira,
+  topo e hero, perguntas, chamada e rodapé) continuam abrindo. Sem erro no console.
+- **Console da página:** sem erros nem avisos.
+
+### O que não foi exercitado
+
+- `next build`, `turbo build` e as suítes e2e (API e Playwright): o Docker está desligado e o disco
+  tinha 3,2 GB livres. O `e2e/accessibility.spec.ts` de verdade roda sobre o build, e não rodou.
+- `build-storybook`, que o CI roda.
+- **Um leitor de tela de verdade.** A descrição de cada rádio (`aria-describedby` apontando para um
+  painel que pode estar invisível) foi conferida na árvore de acessibilidade dos testes, não com o
+  VoiceOver nem com o NVDA.
+- Safari, Firefox e um celular de verdade. Só Chromium. O seletor depende de `:has()`, que os três
+  têm desde 2023; num navegador mais antigo o painel do período não apareceria.
+- A tela `/signup` depois do botão: ela depende da API. Conferi só que o endereço muda para `/signup`.
+- Tema escuro: a landing não tem.
+
+### Achados fora do ticket
+
+- **"Combos" na landing.** O banner da loja e o passo "Monte a vitrine" falam em combos, e não achei
+  combo no produto. Não mexi.
+- **"Pedidos direto no seu WhatsApp"** (banner da loja) e "os pedidos chegam no painel e no seu
+  WhatsApp" (FAQ): o produto abre a conversa no WhatsApp, não envia mensagem
+  (`docs/product/README.md`, "What the product does not do"). Com a Beelia anunciada como o que
+  avisa pelo WhatsApp, as duas frases antigas e o cartão novo dizem coisas parecidas de produtos
+  diferentes. Não mexi.
