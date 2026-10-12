@@ -34,6 +34,10 @@ export const LANDING_ANCHORS = { solutions: "#solucoes", ecosystem: "#ecossistem
  * creating a shop. Below the width the six links fit in, they move into a menu behind one button,
  * with the terms and the privacy policy — which the wide screen has in its footer, a long scroll
  * away on a phone.
+ *
+ * The gaps are what lets the six fit at that width: at 1280px, under a classic scrollbar, the bar
+ * has 21px to spare with them, and with the design's 30px and 44px "Criar minha loja" ran 89px off
+ * the page's column. A seventh link does not fit there at any gap.
  */
 export function LandingHeader({ homeHref = "/", loginHref, signupHref, termsHref, privacyHref, linkComponent: Link = AnchorLink, messages = defaultMessages }: LandingHeaderProps) {
   const text = messages.landing
@@ -47,11 +51,11 @@ export function LandingHeader({ homeHref = "/", loginHref, signupHref, termsHref
   ] as const
 
   return (
-    <header className={cn(LANDING_CONTAINER, "relative z-20 flex h-[76px] items-center gap-6 md:h-[92px] xl:gap-11")}>
+    <header className={cn(LANDING_CONTAINER, "relative z-20 flex h-[76px] items-center gap-6 md:h-[92px] min-[90rem]:gap-9")}>
       <Link href={homeHref} aria-label={text.homeLabel} className="flex shrink-0 items-center">
         <BeelinkLogo className="h-9 md:h-11" />
       </Link>
-      <nav aria-label={text.nav.label} className="hidden gap-[30px] text-[15px] font-medium whitespace-nowrap xl:flex">
+      <nav aria-label={text.nav.label} className="hidden gap-4 text-[15px] font-medium whitespace-nowrap xl:flex min-[90rem]:gap-6">
         {sections.map(([href, label]) => (
           <a key={href} href={href} className="hover:underline">
             {label}

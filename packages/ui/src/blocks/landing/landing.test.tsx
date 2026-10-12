@@ -103,6 +103,20 @@ describe("LandingHeader", () => {
     expect(screen.getAllByRole("link", { name: "Criar minha loja" }).map((link) => link.getAttribute("href"))).toEqual(["/signup", "/signup"])
   })
 
+  /**
+   * Measured in a browser, which jsdom cannot do: at 1280px, where the links first show, the six and
+   * the two ways in leave 21px under a classic scrollbar with these gaps. With the design's wider
+   * ones "Criar minha loja" ran 89px past the page's column, and the shell clipped it.
+   */
+  it("keeps its six links close enough to fit beside the two ways in at the width they first show", () => {
+    render(<LandingHeader {...hrefs} />)
+
+    const nav = screen.getByRole("navigation", { name: "Principal" })
+    expect(nav).toHaveClass("hidden", "xl:flex", "gap-4", "min-[90rem]:gap-6", "whitespace-nowrap")
+    expect(nav.closest("header")).toHaveClass("gap-6", "min-[90rem]:gap-9")
+    expect(nav.closest("header")?.className).not.toMatch(/xl:gap-/)
+  })
+
   /** On a wide screen the legal texts are in the footer; on a phone the menu is where they are within reach. */
   it("keeps a menu for the narrow screen: every section, the terms, the privacy policy and the two ways in", () => {
     render(<LandingHeader {...hrefs} />)
