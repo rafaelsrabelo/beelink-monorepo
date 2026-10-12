@@ -15,6 +15,7 @@ import { LandingFaq } from "./landing-faq"
 import { LandingFooter } from "./landing-footer"
 import { LANDING_ANCHORS, LandingHeader } from "./landing-header"
 import { LandingHero } from "./landing-hero"
+import { LandingIntegrations } from "./landing-integrations"
 import { LandingShell } from "./landing-shell"
 import { LandingSteps } from "./landing-steps"
 import { LandingTitle } from "./landing-title"
@@ -24,6 +25,12 @@ const photos = {
   store: <img src="/loja.jpg" alt="" />,
   panel: <img src="/painel.jpg" alt="O painel no notebook" />,
   shipping: <img src="/entrega.jpg" alt="" />,
+}
+const logos = {
+  asaas: <img src="/asaas.png" alt="Logo do Asaas" />,
+  melhorEnvio: <img src="/melhor-envio.png" alt="Logo do Melhor Envio" />,
+  googleAnalytics: <img src="/google-analytics.svg" alt="Logo do Google Analytics" />,
+  meta: <img src="/meta.svg" alt="Logo da Meta" />,
 }
 
 // jsdom has no ResizeObserver, and the banners' row watches its own size.
@@ -49,6 +56,7 @@ function Page() {
         <LandingHero signupHref={hrefs.signupHref} />
         <LandingBanners signupHref={hrefs.signupHref} photos={photos} />
         <LandingEcosystem />
+        <LandingIntegrations logos={logos} />
         <LandingSteps />
         <LandingCouriers termsHref={hrefs.termsHref} privacyHref={hrefs.privacyHref} />
         <LandingFaq />
@@ -88,7 +96,7 @@ describe("LandingHeader", () => {
     render(<LandingHeader {...hrefs} />)
 
     const nav = screen.getByRole("navigation", { name: "Principal" })
-    expect(within(nav).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["#solucoes", "#ecossistema", "#como", "#entregadores", "#perguntas"])
+    expect(within(nav).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["#solucoes", "#ecossistema", "#integracoes", "#como", "#entregadores", "#perguntas"])
     expect(screen.getByRole("link", { name: "Beelink, início" })).toHaveAttribute("href", "/")
     // Twice each: in the bar, and in the menu a narrow screen opens.
     expect(screen.getAllByRole("link", { name: "Entrar" }).map((link) => link.getAttribute("href"))).toEqual(["/login", "/login"])
@@ -105,6 +113,7 @@ describe("LandingHeader", () => {
     expect(within(menu).getAllByRole("link").map((link) => [link.textContent, link.getAttribute("href")])).toEqual([
       ["Soluções", "#solucoes"],
       ["Ecossistema", "#ecossistema"],
+      ["Integrações", "#integracoes"],
       ["Como funciona", "#como"],
       ["Para entregadores", "#entregadores"],
       ["Perguntas", "#perguntas"],
@@ -282,7 +291,7 @@ describe("LandingCta", () => {
 })
 
 describe("LandingFooter", () => {
-  it("leads only to what exists: the solutions' section, the couriers' sign-up and the two legal texts", () => {
+  it("leads only to what exists: the solutions' section, the integrations', the couriers' sign-up and the two legal texts", () => {
     render(<LandingFooter termsHref="/termos" privacyHref="/privacidade" year={2026} />)
 
     expect(within(screen.getByRole("navigation", { name: "Soluções" })).getAllByRole("link").map((link) => [link.textContent, link.getAttribute("href")])).toEqual([
@@ -291,6 +300,7 @@ describe("LandingFooter", () => {
       ["Chat", "#ecossistema"],
       ["Envios", "#ecossistema"],
       ["eMarketing", "#ecossistema"],
+      ["Integrações", "#integracoes"],
     ])
     expect(within(screen.getByRole("navigation", { name: "Entregadores" })).getByRole("link", { name: "Cadastro" })).toHaveAttribute("href", "#entregadores")
     expect(screen.getByRole("link", { name: "Termos de uso" })).toHaveAttribute("href", "/termos")
@@ -332,11 +342,21 @@ describe("the landing page, whole", () => {
     expect(screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent)).toEqual([
       "Uma plataforma. Três formas de crescer com a Beelink.",
       "Seu e-commerce. Conectado.",
+      "Conecte a loja às suas contas.",
       "Do cadastro à primeira venda.",
       "Entregue com a Beelink.",
       "Perguntas frequentes.",
       "Seu e-commerce começa hoje.",
     ])
+  })
+
+  /** The header's links are in the page's own order: a reader who follows them one by one only travels down. */
+  it("lays its sections in the order the header names them", () => {
+    const { container } = render(<Page />)
+
+    const sections = [...container.querySelectorAll("main > section[id]")].map((section) => `#${section.id}`)
+    expect(sections).toEqual(Object.values(LANDING_ANCHORS))
+    expect(sections.slice(1, 4)).toEqual(["#ecossistema", "#integracoes", "#como"])
   })
 
   it("has no accessibility violations", async () => {

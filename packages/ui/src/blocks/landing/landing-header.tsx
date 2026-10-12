@@ -27,11 +27,11 @@ export interface LandingHeaderProps {
 }
 
 /** The page's own sections, by the anchors the blocks below carry. */
-export const LANDING_ANCHORS = { solutions: "#solucoes", ecosystem: "#ecossistema", how: "#como", couriers: "#entregadores", faq: "#perguntas" } as const
+export const LANDING_ANCHORS = { solutions: "#solucoes", ecosystem: "#ecossistema", integrations: "#integracoes", how: "#como", couriers: "#entregadores", faq: "#perguntas" } as const
 
 /**
  * The landing's top: the mark, the way to each section, and the two ways in — signing in, and
- * creating a shop. Below the width the five links fit in, they move into a menu behind one button,
+ * creating a shop. Below the width the six links fit in, they move into a menu behind one button,
  * with the terms and the privacy policy — which the wide screen has in its footer, a long scroll
  * away on a phone.
  */
@@ -40,6 +40,7 @@ export function LandingHeader({ homeHref = "/", loginHref, signupHref, termsHref
   const sections = [
     [LANDING_ANCHORS.solutions, text.nav.solutions],
     [LANDING_ANCHORS.ecosystem, text.nav.ecosystem],
+    [LANDING_ANCHORS.integrations, text.nav.integrations],
     [LANDING_ANCHORS.how, text.nav.how],
     [LANDING_ANCHORS.couriers, text.nav.couriers],
     [LANDING_ANCHORS.faq, text.nav.faq],
