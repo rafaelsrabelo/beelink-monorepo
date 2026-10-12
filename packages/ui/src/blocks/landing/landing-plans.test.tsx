@@ -52,7 +52,10 @@ describe("LandingPlans", () => {
     renderPlans()
 
     const periods = within(screen.getByRole("group", { name: "Período do plano" })).getAllByRole("radio")
-    expect(periods.map((period) => period.closest("label")?.textContent)).toEqual(["Mensal", "6 meses 10% a menos", "Anual 20% a menos"])
+    expect(periods.map((period) => period.closest("label")?.textContent)).toEqual(["Mensal", "6 meses-10%", "Anual-20%"])
+    // The badge is drawn only: a period is named by its name, and its saving is said in the sentence that describes it.
+    expect(periods.map((period) => period.closest("label")?.querySelector("[aria-hidden='true']")?.textContent)).toEqual([undefined, "-10%", "-20%"])
+    expect(periods.map((period) => period.getAttribute("aria-describedby") !== null)).toEqual([true, true, true])
     expect(periods.map((period) => (period as HTMLInputElement).checked)).toEqual([true, false, false])
     expect(new Set(periods.map((period) => period.getAttribute("name"))).size).toBe(1)
   })
@@ -67,7 +70,7 @@ describe("LandingPlans", () => {
       ["R$ 90,00 por mês", "R$ 540,00 pelos 6 meses.", "Você economiza R$ 60,00 (10%) em relação ao mensal."],
       ["R$ 80,00 por mês", "R$ 960,00 pelo ano.", "Você economiza R$ 240,00 (20%) em relação ao mensal."],
     ])
-    expect(screen.getByRole("radio", { name: "Anual 20% a menos" })).toHaveAccessibleDescription(/^R\$\s80,00 por mês R\$\s960,00 pelo ano\. Você economiza R\$\s240,00 \(20%\) em relação ao mensal\.$/)
+    expect(screen.getByRole("radio", { name: "Anual" })).toHaveAccessibleDescription(/^R\$\s80,00 por mês R\$\s960,00 pelo ano\. Você economiza R\$\s240,00 \(20%\) em relação ao mensal\.$/)
   })
 
   /**

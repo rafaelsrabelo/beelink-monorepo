@@ -3017,7 +3017,7 @@ export const ptBR: UiMessages = {
         text: "A loja, o painel e as integrações num plano só.",
         periodLabel: "Período do plano",
         periods: { monthly: "Mensal", semiannual: "6 meses", annual: "Anual" },
-        less: "{percent} a menos",
+        less: "-{percent}",
         billed: { monthly: "Pago mês a mês.", semiannual: "{total} pelos 6 meses.", annual: "{total} pelo ano." },
         saving: "Você economiza {amount} ({percent}) em relação ao mensal.",
         cta: "Testar {days} dias grátis",

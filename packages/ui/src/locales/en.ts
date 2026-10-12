@@ -3016,7 +3016,7 @@ export const en: UiMessages = {
         text: "The shop, the panel and the integrations in one plan.",
         periodLabel: "Plan period",
         periods: { monthly: "Monthly", semiannual: "6 months", annual: "Yearly" },
-        less: "{percent} less",
+        less: "-{percent}",
         billed: { monthly: "Paid month by month.", semiannual: "{total} for the 6 months.", annual: "{total} for the year." },
         saving: "You save {amount} ({percent}) against paying monthly.",
         cta: "Try {days} days free",

@@ -3524,7 +3524,7 @@ export interface UiMessages {
         /** The legend of the three periods. */
         periodLabel: string
         periods: Record<LandingPlanPeriodValue, string>
-        /** `{percent}`: on a period that costs less than paying month by month. */
+        /** `{percent}`: the badge on a period that costs less than paying month by month, as a product's discount is written. */
         less: string
         /** What a period is paid with, `{total}` at once. */
         billed: Record<LandingPlanPeriodValue, string>

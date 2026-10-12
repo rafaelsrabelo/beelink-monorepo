@@ -27,10 +27,10 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** Os dois cartões lado a lado a partir de 1024 px. O seletor troca o valor sem script: é o rádio marcado que mostra os números. */
+/** Um cartão sobre o outro; a partir de 1024 px, cada um se divide em dois: o plano de um lado, o que ele inclui do outro. O seletor troca o valor sem script: é o rádio marcado que mostra os números. */
 export const Planos: Story = {}
 
-/** No celular: um cartão sobre o outro, e os três períodos numa linha. */
+/** No celular: tudo numa coluna, com os três períodos numa linha. */
 export const NoCelular: Story = { globals: { viewport: { value: "mobile1", isRotated: false } } }
 
 /** Em inglês, os valores seguem a escrita do idioma e continuam em reais. */

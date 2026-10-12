@@ -28,7 +28,9 @@ export interface LandingPlansProps {
 }
 
 const CARD = "flex min-w-0 flex-col rounded-[28px]"
-const BODY = "flex flex-1 flex-col gap-7 p-6 md:p-8"
+/** A card's two halves: what the plan is and costs, then what it includes — one over the other, and side by side from `lg`. */
+const HALVES = "grid gap-7 p-6 md:p-8 lg:grid-cols-2 lg:gap-12 lg:p-10"
+const INCLUDES = "flex flex-col gap-3.5 border-t-[1.5px] pt-6 lg:border-t-0 lg:border-l-[1.5px] lg:pt-0 lg:pl-12"
 const NAME = "text-[26px] font-extrabold tracking-[-0.02em]"
 const TEXT = "leading-[1.55] text-brand-text"
 const KICKER = "text-[13px] font-bold tracking-[0.12em] uppercase"
@@ -37,10 +39,10 @@ const INCLUDED = "flex items-start gap-2.5 text-[15px] leading-[1.45] text-brand
 /**
  * "Planos" (BEELINK-318): what Beelink costs, the free trial before it, and what follows the trial.
  *
- * Two cards. Beelink's is the one on offer: the trial said first, the three ways of paying
- * (`LandingPlanPeriods`), the way into the sign-up, and what the plan includes — only what the
- * product does today. Beelink with Beelia is announced with its price and nothing to press, like
- * Beelia's card in "Integrações": there is nothing yet for a button to lead to.
+ * Two cards, one under the other. Beelink's is the one on offer: the trial said first, the three
+ * ways of paying (`LandingPlanPeriods`), the way into the sign-up, and what the plan includes — only
+ * what the product does today. Beelink with Beelia is announced under it with its price and nothing
+ * to press, like Beelia's card in "Integrações": there is nothing yet for a button to lead to.
  *
  * The sign-up is told nothing of the period chosen: no billing exists to receive it.
  */
@@ -54,22 +56,24 @@ export function LandingPlans({ prices, locale, signupHref, linkComponent: Link =
         <LandingTitle light={text.titleLight} strong={text.titleStrong} className="text-4xl md:text-[56px]" />
         <p className="max-w-[420px] text-lg leading-[1.55] text-brand-text lg:mb-2 lg:ml-auto">{format(text.lead, values)}</p>
       </div>
-      <ul className="grid gap-5 lg:grid-cols-2">
+      <ul className="flex flex-col gap-5">
         <li className={cn(CARD, "overflow-hidden border-2 border-brand-ink bg-brand-surface shadow-sm")}>
           <p className="bg-brand-yellow px-6 py-3.5 text-center text-[17px] font-extrabold tracking-[-0.01em]">{format(text.trial, values)}</p>
-          <div className={BODY}>
-            <div className="flex flex-col gap-1.5">
-              <h3 className={NAME}>{text.beelink.name}</h3>
-              <p className={TEXT}>{text.beelink.text}</p>
+          <div className={HALVES}>
+            <div className="flex min-w-0 flex-col gap-7">
+              <div className="flex flex-col gap-1.5">
+                <h3 className={NAME}>{text.beelink.name}</h3>
+                <p className={TEXT}>{text.beelink.text}</p>
+              </div>
+              <LandingPlanPeriods offers={LANDING_PLAN_PERIODS.map((period) => planOfferOf(prices, period))} locale={locale} text={text} />
+              <Link href={signupHref} className={cn(LANDING_CTA, "h-[58px] bg-brand-ink px-[30px] text-[17px] font-extrabold text-brand-on-ink")}>
+                {format(text.beelink.cta, values)}
+                <ArrowRightIcon aria-hidden="true" className="size-[18px]" />
+              </Link>
             </div>
-            <LandingPlanPeriods offers={LANDING_PLAN_PERIODS.map((period) => planOfferOf(prices, period))} locale={locale} text={text} />
-            <Link href={signupHref} className={cn(LANDING_CTA, "h-[58px] bg-brand-ink px-[30px] text-[17px] font-extrabold text-brand-on-ink")}>
-              {format(text.beelink.cta, values)}
-              <ArrowRightIcon aria-hidden="true" className="size-[18px]" />
-            </Link>
-            <div className="flex flex-col gap-3.5 border-t-[1.5px] border-brand-line pt-6">
+            <div className={cn(INCLUDES, "border-brand-line")}>
               <h4 className={KICKER}>{text.includesLabel}</h4>
-              <ul className="grid gap-x-6 gap-y-2.5 sm:grid-cols-2">
+              <ul className="grid gap-x-6 gap-y-2.5 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
                 {text.beelink.includes.map((item) => (
                   <li key={item} className={INCLUDED}>
                     <CheckIcon aria-hidden="true" className="mt-0.5 size-[18px] shrink-0 text-brand-ink" />
@@ -80,23 +84,25 @@ export function LandingPlans({ prices, locale, signupHref, linkComponent: Link =
             </div>
           </div>
         </li>
-        {/* Dashed and on the sand: drawn as what is not here yet, beside the card that can be bought. */}
+        {/* Dashed and on the sand: drawn as what is not here yet, under the card that can be bought. */}
         <li className={cn(CARD, "border-[1.5px] border-dashed border-brand-line-strong bg-brand-sand-soft")}>
-          <div className={BODY}>
-            <div className="flex flex-col gap-1.5">
-              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
-                <h3 className={NAME}>{text.withBeelia.name}</h3>
-                <span className="rounded-full bg-brand-ink px-2.5 py-1 text-xs font-extrabold tracking-[0.12em] whitespace-nowrap text-brand-yellow uppercase">{text.soon}</span>
+          <div className={HALVES}>
+            <div className="flex min-w-0 flex-col gap-5">
+              <div className="flex flex-col gap-1.5">
+                <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+                  <h3 className={NAME}>{text.withBeelia.name}</h3>
+                  <span className="rounded-full bg-brand-ink px-2.5 py-1 text-xs font-extrabold tracking-[0.12em] whitespace-nowrap text-brand-yellow uppercase">{text.soon}</span>
+                </div>
+                <p className={TEXT}>{text.withBeelia.text}</p>
               </div>
-              <p className={TEXT}>{text.withBeelia.text}</p>
+              <p className="flex flex-wrap items-baseline gap-x-2">
+                <span className="text-[44px] leading-none font-extrabold tracking-[-0.03em] whitespace-nowrap">{values.withBeelia}</span>{" "}
+                <span className="font-semibold text-brand-text">{text.perMonth}</span>
+              </p>
             </div>
-            <p className="flex flex-wrap items-baseline gap-x-2">
-              <span className="text-[44px] leading-none font-extrabold tracking-[-0.03em] whitespace-nowrap">{values.withBeelia}</span>{" "}
-              <span className="font-semibold text-brand-text">{text.perMonth}</span>
-            </p>
-            <div className="flex flex-col gap-3.5 border-t-[1.5px] border-brand-line-strong pt-6">
+            <div className={cn(INCLUDES, "border-brand-line-strong")}>
               <h4 className={KICKER}>{text.includesLabel}</h4>
-              <ul className="grid gap-y-2.5">
+              <ul className="grid gap-x-6 gap-y-2.5 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
                 {text.withBeelia.includes.map((item) => (
                   <li key={item} className={INCLUDED}>
                     <CheckIcon aria-hidden="true" className="mt-0.5 size-[18px] shrink-0 text-brand-ink" />

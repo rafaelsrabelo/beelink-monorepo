@@ -49,18 +49,19 @@ export function LandingPlanPeriods({ offers, locale, text }: LandingPlanPeriodsP
       <legend className="mb-3 text-sm font-bold">{text.beelink.periodLabel}</legend>
       <div className="grid grid-cols-3 gap-2">
         {offers.map((offer, at) => (
-          // The whole card is the radio's label, as the couriers' form draws a vehicle.
+          // The whole card is the radio's label, as the couriers' form draws a vehicle. Its border and its
+          // weight are the same chosen or not: a wider one would rewrap the label and move the card under it.
           <label
             key={offer.period}
-            className="flex min-h-[68px] cursor-pointer flex-col items-center justify-center gap-0.5 rounded-[14px] border-[1.5px] border-brand-line-strong bg-brand-surface px-1.5 py-2 text-center text-[15px] font-semibold hover:border-brand-ink has-checked:border-2 has-checked:border-brand-ink has-checked:bg-brand-yellow has-checked:font-bold has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-brand-ink"
+            className="flex min-h-16 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[14px] border-[1.5px] border-brand-line-strong bg-brand-surface px-1.5 py-2 text-center text-[15px] font-bold hover:border-brand-ink has-checked:border-brand-ink has-checked:bg-brand-yellow has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-brand-ink"
           >
             <input type="radio" name={id} value={offer.period} defaultChecked={at === 0} aria-describedby={`${id}-${offer.period}`} className="sr-only" />
             {text.beelink.periods[offer.period]}
+            {/* Drawn only: the radio is described by its figures, which say the saving in a sentence. */}
             {offer.savingPercent > 0 ? (
-              <>
-                {/* A reader's space: the two are stacked, and the radio's name would run them into one word. */}{" "}
-                <span className="text-xs leading-tight font-bold">{format(text.beelink.less, { percent: planPercent(offer.savingPercent, locale) })}</span>
-              </>
+              <span aria-hidden="true" className="rounded-full bg-brand-ink px-2 py-1 text-[11px] leading-none font-extrabold whitespace-nowrap text-brand-yellow">
+                {format(text.beelink.less, { percent: planPercent(offer.savingPercent, locale) })}
+              </span>
             ) : null}
           </label>
         ))}
