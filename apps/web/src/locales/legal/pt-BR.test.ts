@@ -158,8 +158,93 @@ describe("bee-link's legal texts (BEELINK-171)", () => {
 
       expect(all).not.toMatch(/pixels de publicidade nem scripts de terceiros/)
       expect(all).not.toMatch(/não usa cookies de análise, de publicidade ou de rastreamento/)
-      expect(textOf("Dados técnicos")).toMatch(/O único script de terceiros que uma página do bee-link pode carregar é o Pixel da Meta/)
+      // BEELINK-319: the pixel is no longer the only one — Beelink's own Google Analytics is the other.
+      expect(textOf("Dados técnicos")).toMatch(/Os únicos scripts de terceiros que uma página do bee-link pode carregar são esse, do Google, e o Pixel da Meta de uma loja que o conectou, cada um só depois que você aceita/)
       expect(textOf("Com quem os dados são compartilhados")).toMatch(/A Meta só recebe dados numa loja que conectou um Pixel da Meta, e só depois que você aceita/)
+    })
+  })
+
+  /** BEELINK-319: Beelink measures its own site with Google Analytics, on three screens, and only after a yes. */
+  describe("the policy, on bee-link's own Google Analytics", () => {
+    const textOf = (heading: string) => {
+      const section = legalTexts.privacy.sections.find((entry) => entry.heading === heading)
+      return section?.blocks.map((block) => (block.kind === "paragraph" ? block.text : block.items.join(" "))).join(" ") ?? ""
+    }
+    const analytics = textOf("Google Analytics no site do bee-link")
+    const all = JSON.stringify(legalTexts.privacy)
+
+    it("says who measures and what for, and that it is not for ads", () => {
+      expect(analytics).toMatch(/quem decide medir é o próprio bee-link, e não uma loja/)
+      expect(analytics).toMatch(/quantas pessoas chegam à página inicial e quantas criam uma conta, e não para anúncios/)
+      expect(textOf("Controlador e operador")).toMatch(/a medição das visitas ao seu próprio site: o bee-link é o controlador/)
+      expect(textOf("Para que os dados são usados")).toMatch(/O bee-link não usa dados pessoais para publicidade própria: o Google Analytics do site dele serve para contar as visitas e as contas criadas/)
+    })
+
+    it("says it is loaded on three screens, never at a shop, and only after a yes", () => {
+      expect(analytics).toMatch(/só é carregado em três telas: a página inicial do bee-link e as duas telas em que o lojista entra e cria a conta/)
+      expect(analytics).toMatch(/Ele nunca é carregado numa loja/)
+      expect(analytics).toMatch(/Enquanto você não responde, e se você recusa, o script do Google não é carregado no seu navegador e nada é enviado ao Google/)
+      expect(analytics).toMatch(/O site funciona do mesmo jeito nos dois casos/)
+    })
+
+    it("says the sign-in and the sign-up ask nothing, and measure nobody who was not asked", () => {
+      expect(analytics).toMatch(/As telas de entrar e de criar conta não perguntam de novo: vale a resposta que você deu na página inicial/)
+      expect(analytics).toMatch(/Quem chega direto a elas, sem ter respondido, não é medido/)
+    })
+
+    it("says what is sent to Google", () => {
+      expect(analytics).toMatch(/as páginas abertas, de onde você veio e o que você faz nelas, como criar uma conta/)
+      expect(analytics).toMatch(/o endereço IP e a identificação do navegador/)
+      expect(analytics).toMatch(/os identificadores que o Google Analytics guarda em cookies no seu navegador/)
+    })
+
+    it("says the answer is the site's and never a shop's, nor a shop's the site's", () => {
+      expect(analytics).toMatch(/aceitar ali não vale como aceite do aviso de cookies de nenhuma loja, e aceitar numa loja não libera a medição do site/)
+    })
+
+    it("says how a yes is taken back, where the answer is kept, and what stays in the browser", () => {
+      expect(analytics).toMatch(/o link "Cookies", no rodapé da página inicial, abre o aviso de novo e mostra a sua escolha atual/)
+      expect(analytics).toMatch(/Se você retira o aceite, o bee-link deixa de carregar o Google Analytics no seu navegador e de enviar dados ao Google/)
+      expect(analytics).toMatch(/Os cookies do Google Analytics continuam no seu navegador até vencerem ou até você apagá-los/)
+      expect(analytics).toMatch(/no cookie bl_site_consent, e o bee-link pergunta de novo depois de 180 dias\. Ela não é registrada no banco de dados/)
+    })
+
+    it("names Google among who receives data, for the sign-in and for the measurement, and the measurement among what rests on consent", () => {
+      const shared = textOf("Com quem os dados são compartilhados")
+      expect(shared).toMatch(/Google, em dois casos: quando você usa o "Continuar com Google"/)
+      expect(shared).toMatch(/pelo Google Analytics, o Google recebe os dados da sua navegação na página inicial do bee-link e nas telas em que o lojista entra e cria a conta, só depois que você aceita/)
+
+      const basis = textOf("Para que os dados são usados")
+      expect(basis).toMatch(/no site do bee-link, medir as visitas com o Google Analytics, que recebe os dados da sua navegação ali, só depois que você aceita no aviso de cookies da página inicial/)
+      expect(basis).toMatch(/o da medição, no link "Cookies", no rodapé da página inicial do bee-link/)
+    })
+
+    it("names the cookie that keeps the answer, and Google's own, in the list of cookies", () => {
+      const cookies = textOf("Cookies")
+
+      expect(cookies).toMatch(/bl_site_consent: a sua resposta, aceitar ou recusar, ao aviso de cookies do site do bee-link, que pergunta sobre o Google Analytics/)
+      expect(cookies).toMatch(/nunca como resposta ao aviso de uma loja, e dura 180 dias/)
+      expect(cookies).toMatch(/_ga e outro cujo nome começa por _ga_ e termina com o identificador da medição do bee-link/)
+      expect(cookies).toMatch(/Quem os grava é o script do Google Analytics, e só depois que você aceita o aviso de cookies da página inicial/)
+      expect(cookies).toMatch(/cada um dura até 2 anos/)
+    })
+
+    // The briefing's two caveats on Google's cookies: they are the whole address's, and the script is three screens'.
+    it("says Google's cookies are the whole address's, while the script is loaded on those screens and never at a shop", () => {
+      expect(textOf("Cookies")).toMatch(/Eles valem para o endereço inteiro do bee-link, e não só para as telas em que o script é carregado; mas o Google Analytics do bee-link só é carregado na página inicial e nas telas em que o lojista entra e cria a conta, nunca numa loja/)
+    })
+
+    it("no longer says no analytics cookie is written, no audience tool is used, or that every cookie is essential", () => {
+      expect(all).not.toMatch(/não grava cookies de análise, de publicidade ou de rastreamento/)
+      expect(all).not.toMatch(/não usa, por conta própria, ferramentas de análise de audiência/)
+      expect(all).not.toMatch(/usa só cookies essenciais e próprios/)
+      expect(all).not.toMatch(/Google: só quando você usa o/)
+      expect(textOf("Cookies")).toMatch(/O bee-link não grava cookies de publicidade\. Cookies de análise só existem no caso descrito a seguir, o do Google Analytics, e só depois do seu aceite/)
+      expect(textOf("Dados técnicos")).toMatch(/A única ferramenta de análise de audiência que ele usa é o Google Analytics, só no seu próprio site e só depois que você aceita/)
+    })
+
+    it("is for whoever visits bee-link's own site too", () => {
+      expect(legalTexts.privacy.intro.join(" ")).toMatch(/para quem visita o site do bee-link ou uma loja sem criar conta/)
     })
   })
 

@@ -16,11 +16,11 @@ export interface LegalTexts {
  * keeps or shares is a new version of these texts, with a new `version`.
  */
 export const legalTexts = {
-  version: "2026-10-07",
+  version: "2026-10-12",
   terms: {
     lang: "pt-BR",
     title: "Termos de uso",
-    effective: "Vigente desde 7 de outubro de 2026",
+    effective: "Vigente desde 12 de outubro de 2026",
     intro: [
       "Estes Termos de uso são as regras para usar o bee-link. Eles explicam o que a plataforma faz, o que ela não faz e o que se espera de cada pessoa que a usa.",
       "Eles valem para dois públicos: o lojista, que cria uma conta no painel para publicar a sua loja, e o cliente, que cria uma conta numa loja para comprar dela. Quando uma regra vale só para um dos dois, o texto diz.",
@@ -360,10 +360,10 @@ export const legalTexts = {
   privacy: {
     lang: "pt-BR",
     title: "Política de privacidade",
-    effective: "Vigente desde 7 de outubro de 2026",
+    effective: "Vigente desde 12 de outubro de 2026",
     intro: [
       "Esta Política de privacidade explica quais dados pessoais o bee-link trata, para quê, com quem os compartilha, por quanto tempo os guarda e como você exerce os seus direitos, conforme a Lei Geral de Proteção de Dados (Lei nº 13.709/2018, a LGPD).",
-      "Ela vale para os lojistas, para os clientes das lojas e para quem visita uma loja sem criar conta. Ao criar uma conta, ou ao definir uma senha pelo link enviado por e-mail, você declara que leu esta Política.",
+      "Ela vale para os lojistas, para os clientes das lojas e para quem visita o site do bee-link ou uma loja sem criar conta. Ao criar uma conta, ou ao definir uma senha pelo link enviado por e-mail, você declara que leu esta Política.",
     ],
     sections: [
       {
@@ -388,7 +388,7 @@ export const legalTexts = {
               "Dados do lojista: o bee-link é o controlador dos dados da conta do lojista e das lojas que ele cria.",
               "Dados dos clientes de uma loja: a loja é a controladora, e o bee-link é o operador, que trata esses dados em nome dela para prestar o serviço. A conta de cliente pertence à loja em que foi criada.",
               "Dados de quem usa o formulário de contato ou o \"Avise-me\" de uma loja: a loja é a controladora, e o bee-link é o operador.",
-              "Dados que o bee-link trata para fins próprios, como o registro do aceite dos Termos de uso, a segurança da plataforma e os registros técnicos de acesso: o bee-link é o controlador, seja de quem for o dado.",
+              "Dados que o bee-link trata para fins próprios, como o registro do aceite dos Termos de uso, a segurança da plataforma, os registros técnicos de acesso e a medição das visitas ao seu próprio site: o bee-link é o controlador, seja de quem for o dado.",
             ],
           },
           {
@@ -478,7 +478,7 @@ export const legalTexts = {
           },
           {
             kind: "paragraph",
-            text: "O bee-link não usa, por conta própria, ferramentas de análise de audiência, rastreadores nem pixels de publicidade, e não pede a sua localização ao navegador. O único script de terceiros que uma página do bee-link pode carregar é o Pixel da Meta de uma loja que o conectou, e só depois que você aceita, como explica a seção \"Pixel da Meta nas lojas\". As fontes das páginas são servidas pelo próprio bee-link, e os e-mails não têm imagens de rastreamento.",
+            text: "O bee-link não usa, por conta própria, pixels de publicidade, e não pede a sua localização ao navegador. A única ferramenta de análise de audiência que ele usa é o Google Analytics, só no seu próprio site e só depois que você aceita, como explica a seção \"Google Analytics no site do bee-link\". Os únicos scripts de terceiros que uma página do bee-link pode carregar são esse, do Google, e o Pixel da Meta de uma loja que o conectou, cada um só depois que você aceita no aviso de cookies correspondente, como explica a seção \"Pixel da Meta nas lojas\". As fontes das páginas são servidas pelo próprio bee-link, e os e-mails não têm imagens de rastreamento.",
           },
         ],
       },
@@ -492,12 +492,12 @@ export const legalTexts = {
               "Execução de contrato: criar e manter contas, confirmar o e-mail, redefinir a senha, publicar a loja e localizá-la no mapa, preencher endereços pelo CEP, registrar pedidos e conversas, enviar os e-mails de andamento dos pedidos, registrar o aceite dos Termos de uso e atender o que você pede pelo formulário de contato ou pelo \"Avise-me\".",
               "Cumprimento de obrigação legal: guardar registros de acesso e atender ordens de autoridades, quando a lei exigir.",
               "Legítimo interesse: proteger as contas e a plataforma, prevenir fraudes e abusos, limitar tentativas repetidas e investigar erros, sempre dentro do que se espera de um serviço como este.",
-              "Consentimento: enviar ofertas e novidades de uma loja por e-mail, só a quem aceitou, e, numa loja que conectou um Pixel da Meta, enviar à Meta os dados da sua navegação naquela loja e a compra que você fizer ali, pelo seu navegador ou pelo servidor do bee-link, só depois que você aceita no aviso de cookies. Você pode retirar o consentimento quando quiser: o das ofertas, em \"Avisos por e-mail\", na sua conta na loja; o do pixel, no link \"Cookies\", no rodapé da loja.",
+              "Consentimento: enviar ofertas e novidades de uma loja por e-mail, só a quem aceitou; numa loja que conectou um Pixel da Meta, enviar à Meta os dados da sua navegação naquela loja e a compra que você fizer ali, pelo seu navegador ou pelo servidor do bee-link, só depois que você aceita no aviso de cookies; e, no site do bee-link, medir as visitas com o Google Analytics, que recebe os dados da sua navegação ali, só depois que você aceita no aviso de cookies da página inicial. Você pode retirar o consentimento quando quiser: o das ofertas, em \"Avisos por e-mail\", na sua conta na loja; o do pixel, no link \"Cookies\", no rodapé da loja; o da medição, no link \"Cookies\", no rodapé da página inicial do bee-link.",
             ],
           },
           {
             kind: "paragraph",
-            text: "Para os dados dos clientes, a loja, como controladora, responde pelas bases legais dos usos que fizer deles. O bee-link não usa dados pessoais para publicidade própria. A loja que conecta um Pixel da Meta usa os dados da navegação e das compras de quem aceitou para medir e direcionar os anúncios dela, e responde por esse uso.",
+            text: "Para os dados dos clientes, a loja, como controladora, responde pelas bases legais dos usos que fizer deles. O bee-link não usa dados pessoais para publicidade própria: o Google Analytics do site dele serve para contar as visitas e as contas criadas, e não para anúncios. A loja que conecta um Pixel da Meta usa os dados da navegação e das compras de quem aceitou para medir e direcionar os anúncios dela, e responde por esse uso.",
           },
         ],
       },
@@ -516,7 +516,7 @@ export const legalTexts = {
               "MapTiler: recebe o endereço que o lojista digita na busca de endereço do painel e fornece o mapa dessas telas, que o navegador do lojista carrega direto dela;",
               "OpenStreetMap, pelo serviço Nominatim: recebe o endereço da loja para calcular a posição dela no mapa;",
               "ViaCEP: recebe o CEP digitado no endereço da loja ou num endereço de entrega da sua conta, a partir do servidor do bee-link e sem o seu IP, para preencher rua, bairro e cidade;",
-              "Google: só quando você usa o \"Continuar com Google\"; o Google confirma quem você é e informa ao bee-link o identificador da sua conta, o seu nome, o seu e-mail e a sua foto de perfil, e o bee-link guarda só o identificador, o nome e o e-mail;",
+              "Google, em dois casos: quando você usa o \"Continuar com Google\", o Google confirma quem você é e informa ao bee-link o identificador da sua conta, o seu nome, o seu e-mail e a sua foto de perfil, e o bee-link guarda só o identificador, o nome e o e-mail; e, pelo Google Analytics, o Google recebe os dados da sua navegação na página inicial do bee-link e nas telas em que o lojista entra e cria a conta, só depois que você aceita no aviso de cookies da página inicial, como explica a seção \"Google Analytics no site do bee-link\";",
               "hospedagem: o servidor onde o bee-link funciona e onde fica o banco de dados, [PREENCHER: provedor e país do servidor].",
             ],
           },
@@ -593,6 +593,44 @@ export const legalTexts = {
         ],
       },
       {
+        heading: "Google Analytics no site do bee-link",
+        blocks: [
+          {
+            kind: "paragraph",
+            text: "O bee-link mede as visitas ao seu próprio site com o Google Analytics, uma ferramenta do Google. Aqui quem decide medir é o próprio bee-link, e não uma loja. A medição serve para o bee-link saber quantas pessoas chegam à página inicial e quantas criam uma conta, e não para anúncios.",
+          },
+          {
+            kind: "paragraph",
+            text: "O Google Analytics do bee-link só é carregado em três telas: a página inicial do bee-link e as duas telas em que o lojista entra e cria a conta. Ele nunca é carregado numa loja. E só é carregado depois que você aceita: na página inicial, um aviso de cookies pergunta se você aceita ou recusa. Enquanto você não responde, e se você recusa, o script do Google não é carregado no seu navegador e nada é enviado ao Google por causa da sua visita. O site funciona do mesmo jeito nos dois casos.",
+          },
+          {
+            kind: "paragraph",
+            text: "As telas de entrar e de criar conta não perguntam de novo: vale a resposta que você deu na página inicial. Quem chega direto a elas, sem ter respondido, não é medido.",
+          },
+          { kind: "paragraph", text: "Se você aceita, o seu navegador carrega o script do Google nessas telas e passa a enviar a ele, direto:" },
+          {
+            kind: "list",
+            items: [
+              "a sua navegação nessas telas: as páginas abertas, de onde você veio e o que você faz nelas, como criar uma conta;",
+              "os dados técnicos que toda conexão leva, como o endereço IP e a identificação do navegador;",
+              "os identificadores que o Google Analytics guarda em cookies no seu navegador, descritos na seção \"Cookies\".",
+            ],
+          },
+          {
+            kind: "paragraph",
+            text: "A sua resposta a esse aviso é do site do bee-link, e não das lojas: aceitar ali não vale como aceite do aviso de cookies de nenhuma loja, e aceitar numa loja não libera a medição do site. Cada um pergunta por conta própria.",
+          },
+          {
+            kind: "paragraph",
+            text: "Você pode mudar de ideia quando quiser: o link \"Cookies\", no rodapé da página inicial, abre o aviso de novo e mostra a sua escolha atual. Se você retira o aceite, o bee-link deixa de carregar o Google Analytics no seu navegador e de enviar dados ao Google. Os cookies do Google Analytics continuam no seu navegador até vencerem ou até você apagá-los nas configurações do navegador, e o que já foi enviado ao Google passa a seguir a política de privacidade dele.",
+          },
+          {
+            kind: "paragraph",
+            text: "A sua resposta fica no seu navegador, no cookie bl_site_consent, e o bee-link pergunta de novo depois de 180 dias. Ela não é registrada no banco de dados do bee-link.",
+          },
+        ],
+      },
+      {
         heading: "Transferência internacional",
         blocks: [
           {
@@ -610,7 +648,7 @@ export const legalTexts = {
         blocks: [
           {
             kind: "paragraph",
-            text: "O bee-link usa só cookies essenciais e próprios, com nomes que começam por bl_. Eles guardam o que o serviço precisa para funcionar:",
+            text: "Os cookies do próprio bee-link são essenciais e têm nomes que começam por bl_. Eles guardam o que o serviço precisa para funcionar:",
           },
           {
             kind: "list",
@@ -621,6 +659,7 @@ export const legalTexts = {
               "bl_cart: o carrinho de cada loja, só com os produtos, as variações e as quantidades; dura 30 dias, renovados a cada mudança;",
               "bl_shop: o CEP informado em \"Entregar em\", em cada loja; dura 1 ano;",
               "bl_consent: a sua resposta, aceitar ou recusar, ao aviso de cookies de uma loja que usa o Pixel da Meta; vale só para aquela loja e dura 180 dias;",
+              "bl_site_consent: a sua resposta, aceitar ou recusar, ao aviso de cookies do site do bee-link, que pergunta sobre o Google Analytics; vale para a página inicial e para as telas em que o lojista entra e cria a conta, nunca como resposta ao aviso de uma loja, e dura 180 dias;",
               "bl_purchases: numa loja que usa o Pixel da Meta, e só depois que você aceita, os códigos dos seus últimos pedidos já informados à Meta, para que o mesmo pedido não seja informado duas vezes; vale só para aquela loja e dura 7 dias, renovados a cada pedido informado;",
               "bl_origin: a campanha do link pelo qual você chegou a uma loja, isto é, os parâmetros utm_source, utm_medium, utm_campaign, utm_content e utm_term do endereço, para que o pedido que você fizer ali registre de qual campanha veio; e, numa loja que usa o Pixel da Meta, só depois que você aceita, o identificador do clique no anúncio (fbclid) com que você chegou; vale só para aquela loja e dura 30 dias a partir da chegada;",
               "bl_popup: numa loja que mostra um aviso de primeira compra (pop-up ou faixa), que você já fechou esse aviso ou apertou o botão dele, para que ele não apareça de novo; guarda só um número que identifica o aviso fechado, e nada sobre você; vale só para aquela loja e dura 30 dias;",
@@ -630,7 +669,11 @@ export const legalTexts = {
           },
           {
             kind: "paragraph",
-            text: "O bee-link não grava cookies de análise, de publicidade ou de rastreamento, nem usa outros meios de guardar dados no seu navegador.",
+            text: "O bee-link não grava cookies de publicidade. Cookies de análise só existem no caso descrito a seguir, o do Google Analytics, e só depois do seu aceite. Fora os cookies, o bee-link não usa outros meios de guardar dados no seu navegador.",
+          },
+          {
+            kind: "paragraph",
+            text: "Os únicos cookies de análise que podem existir no endereço do bee-link são os do Google Analytics: _ga e outro cujo nome começa por _ga_ e termina com o identificador da medição do bee-link. Quem os grava é o script do Google Analytics, e só depois que você aceita o aviso de cookies da página inicial do bee-link. Eles identificam o seu navegador e a sua visita para o Google Analytics, e cada um dura até 2 anos. Eles valem para o endereço inteiro do bee-link, e não só para as telas em que o script é carregado; mas o Google Analytics do bee-link só é carregado na página inicial e nas telas em que o lojista entra e cria a conta, nunca numa loja.",
           },
           {
             kind: "paragraph",
@@ -638,7 +681,7 @@ export const legalTexts = {
           },
           {
             kind: "paragraph",
-            text: "Você pode apagar os cookies nas configurações do navegador. Apagar os do bee-link, que são essenciais, encerra as suas sessões, esvazia o carrinho e faz as lojas que usam pixel perguntarem de novo. Apagar os da Meta não muda nada no funcionamento das lojas.",
+            text: "Você pode apagar os cookies nas configurações do navegador. Apagar os do bee-link, que são essenciais, encerra as suas sessões, esvazia o carrinho e faz o site do bee-link e as lojas que usam pixel perguntarem de novo. Apagar os da Meta e os do Google Analytics não muda nada no funcionamento do site nem das lojas.",
           },
         ],
       },

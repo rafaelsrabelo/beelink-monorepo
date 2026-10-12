@@ -3110,6 +3110,22 @@ export const ptBR: UiMessages = {
       wallAlt: "Pôster da Beelink num muro: “Seu e-commerce mais longe, com quem entende.” Um lojista sorri diante do notebook, entre caixas de pedidos.",
     },
     cta: { titleLight: "Seu e-commerce", titleStrong: "começa hoje.", courier: "Quero ser entregador" },
+    consent: {
+      title: "Cookies de medição",
+      body: "A Beelink usa o Google Analytics para medir as visitas a esta página e a criação de contas. Se você aceitar, o Google recebe dados da sua navegação aqui e nas telas de entrar e de criar conta. Se recusar, nada é enviado e o site funciona do mesmo jeito. Saiba mais na {privacy}.",
+      privacy: "política de privacidade",
+      refuse: "Recusar",
+      accept: "Aceitar",
+      current: {
+        granted: "Sua escolha atual: você aceitou.",
+        denied: "Sua escolha atual: você recusou.",
+      },
+      saved: {
+        granted: "Escolha salva: você aceitou os cookies de medição da Beelink.",
+        denied: "Escolha salva: você recusou os cookies de medição da Beelink.",
+      },
+      footerLink: "Cookies",
+    },
     footer: {
       tagline: "O ecossistema para o seu e-commerce.",
       solutions: "Soluções",

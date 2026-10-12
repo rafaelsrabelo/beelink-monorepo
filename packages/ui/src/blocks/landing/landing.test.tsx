@@ -1,18 +1,24 @@
+// React
+import type { ReactNode } from "react"
+
 // Libs
 import { render, screen, within } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 // Locales
-import { en } from "@harness-monorepo/ui/locales/index"
+import { en, ptBR } from "@harness-monorepo/ui/locales/index"
 
 // Block
 import { expectNoA11yViolations } from "../../test/a11y"
 import { LandingBanners } from "./landing-banners"
+import { LandingConsent } from "./landing-consent"
 import { LandingCouriers } from "./landing-couriers"
 import { LandingCta } from "./landing-cta"
 import { LandingEcosystem } from "./landing-ecosystem"
 import { LandingFaq } from "./landing-faq"
 import { LandingFooter } from "./landing-footer"
+import { LandingFooterAction } from "./landing-footer-action"
 import { LANDING_ANCHORS, LandingHeader } from "./landing-header"
 import { LandingHero } from "./landing-hero"
 import { LandingIntegrations } from "./landing-integrations"
@@ -50,9 +56,9 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-function Page() {
+function Page({ notice, cookies }: { notice?: ReactNode; cookies?: ReactNode }) {
   return (
-    <LandingShell>
+    <LandingShell notice={notice}>
       <LandingHeader {...hrefs} />
       <main>
         <LandingHero signupHref={hrefs.signupHref} trialDays={examplePlanPrices.trialDays} />
@@ -65,7 +71,7 @@ function Page() {
         <LandingFaq prices={examplePlanPrices} locale="pt-BR" />
         <LandingCta signupHref={hrefs.signupHref} trialDays={examplePlanPrices.trialDays} />
       </main>
-      <LandingFooter termsHref={hrefs.termsHref} privacyHref={hrefs.privacyHref} year={2026} />
+      <LandingFooter termsHref={hrefs.termsHref} privacyHref={hrefs.privacyHref} year={2026} cookies={cookies} />
     </LandingShell>
   )
 }
@@ -385,6 +391,14 @@ describe("LandingFooter", () => {
     // No link leads nowhere.
     expect(screen.getAllByRole("link").every((link) => (link.getAttribute("href") ?? "#") !== "#")).toBe(true)
   })
+
+  // BEELINK-319: "Cookies" is the screen's to hand over, and only a site that asks hands one.
+  it("has no way back to a cookie choice unless the screen hands it one", () => {
+    render(<LandingFooter termsHref="/termos" privacyHref="/privacidade" year={2026} />)
+
+    expect(screen.queryByRole("button")).not.toBeInTheDocument()
+    expect(screen.queryByText("Cookies")).not.toBeInTheDocument()
+  })
 })
 
 describe("the landing page, whole", () => {
@@ -455,5 +469,33 @@ describe("the landing page, whole", () => {
     const { container } = render(<Page />)
 
     await expectNoA11yViolations(container)
+  })
+
+  /** BEELINK-319: the page as a visitor who was not asked yet finds it — the notice first in the document, "Cookies" in the footer. */
+  describe("with its cookie notice", () => {
+    const asking = <Page notice={<LandingConsent privacyHref={hrefs.privacyHref} onAccept={() => {}} onRefuse={() => {}} text={ptBR.landing.consent} />} cookies={<LandingFooterAction onClick={() => {}}>Cookies</LandingFooterAction>} />
+
+    it("meets a keyboard with the notice before the header, and still has one h1", async () => {
+      const user = userEvent.setup()
+      render(asking)
+
+      const notice = within(screen.getByRole("region", { name: "Cookies de medição" }))
+
+      await user.tab()
+      expect(notice.getByRole("link", { name: "política de privacidade" })).toHaveFocus()
+      await user.tab()
+      await user.tab()
+      expect(notice.getByRole("button", { name: "Aceitar" })).toHaveFocus()
+      await user.tab()
+      expect(screen.getByRole("link", { name: "Beelink, início" })).toHaveFocus()
+      expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1)
+    })
+
+    it("fills every placeholder and has no accessibility violations", async () => {
+      const { container } = render(asking)
+
+      expect(container.textContent).not.toMatch(/[{}]/)
+      await expectNoA11yViolations(container)
+    })
   })
 })

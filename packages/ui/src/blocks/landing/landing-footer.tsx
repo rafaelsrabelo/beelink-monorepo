@@ -1,3 +1,6 @@
+// React
+import type { ReactNode } from "react"
+
 // UI
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
@@ -16,6 +19,11 @@ export interface LandingFooterProps {
   privacyHref: string
   /** The year the rights line says: the screen's clock, never this block's. */
   year: number
+  /**
+   * The way back to the cookie choice, ready-made by the screen: a `landing-footer-action` wired to
+   * the visitor's answer. Only a site that asks hands one over; without it nothing stands there.
+   */
+  cookies?: ReactNode
   linkComponent?: LinkComponent
   messages?: UiMessages
 }
@@ -30,7 +38,7 @@ const LINK = "text-brand-text hover:underline"
  * help centre, contact and couriers' terms have no page yet, and a link to nowhere is worse than none.
  * The questions' link is the wide screen's only one: its header has no room for a seventh.
  */
-export function LandingFooter({ termsHref, privacyHref, year, linkComponent: Link = AnchorLink, messages = defaultMessages }: LandingFooterProps) {
+export function LandingFooter({ termsHref, privacyHref, year, cookies, linkComponent: Link = AnchorLink, messages = defaultMessages }: LandingFooterProps) {
   const text = messages.landing.footer
   const products = messages.landing.products
 
@@ -69,6 +77,7 @@ export function LandingFooter({ termsHref, privacyHref, year, linkComponent: Lin
           <Link href={privacyHref} className={LINK}>
             {text.privacy}
           </Link>
+          {cookies}
         </nav>
         <span className="text-brand-muted md:ml-auto md:self-end">{format(text.rights, { year: String(year) })}</span>
       </div>

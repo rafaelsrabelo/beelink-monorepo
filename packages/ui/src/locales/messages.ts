@@ -3586,6 +3586,25 @@ export interface UiMessages {
     }
     posters: { titleLight: string; titleStrong: string; busStopAlt: string; wallAlt: string }
     cta: { titleLight: string; titleStrong: string; courier: string }
+    /**
+     * The landing's cookie notice (BEELINK-319): what a yes lets Beelink's own Google Analytics do, on
+     * which screens, and that a no changes nothing. It never calls one of the answers the better one.
+     * The notice is drawn in the browser and is handed this slice alone, so the link's words are here.
+     */
+    consent: {
+      title: string
+      /** `{privacy}` is the link to the privacy policy, worded by `privacy`. */
+      body: string
+      privacy: string
+      refuse: string
+      accept: string
+      /** On a notice opened again from the footer: the answer in force. */
+      current: Record<"granted" | "denied", string>
+      /** Said aloud once an answer is given, since the notice leaves the page with it. */
+      saved: Record<"granted" | "denied", string>
+      /** The footer's way back to the choice. */
+      footerLink: string
+    }
     footer: {
       tagline: string
       solutions: string
