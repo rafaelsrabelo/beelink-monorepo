@@ -46,7 +46,8 @@ export class CourierApplicationsController {
     description:
       'A person is on the list once. A CPF, an e-mail or a WhatsApp number already there is a 409 that names which, and the row it belongs to is left as it was. ' +
       'The version of the terms recorded is the one in force on the server. An application kept is owed one e-mail, to its address, saying it arrived (BEELINK-326): ' +
-      'it leaves after the answer, and one that does not go changes no answer here. A 409, the trap and a refusal owe none. Nothing is read back.',
+      'it leaves after the answer, and one that does not go changes no answer here. A 409, the trap and a refusal owe none. ' +
+      'The e-mail may be left out (BEELINK-328): the application is kept with no address, is not looked for by one, and owes no e-mail. Nothing is read back.',
   })
   @ApiNoContentResponse()
   @ApiBadRequestResponse({

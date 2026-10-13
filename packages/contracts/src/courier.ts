@@ -19,14 +19,20 @@ export type CourierCity = "FORTALEZA_CE";
  * Each field is checked by the API, which has the last word; a refusal is a 400 with the field's own
  * `CourierApplicationErrorCode`. A person is on the list once (BEELINK-325): a CPF, an e-mail or a
  * WhatsApp number already there is a 409 that names which, and what was kept is left as it was.
+ *
+ * The e-mail may be left out (BEELINK-328): the landing's first step does not ask for it, and an
+ * application kept without one is owed no e-mail.
  */
 export interface CourierApplicationPayload {
   /** The full name, as on the document: at least a first name and a surname, 120 characters at most. */
   name: string;
   /** The CPF, with its points and dash or without. Its check digits are verified; kept as eleven digits. */
   document: string;
-  /** Kept trimmed and lower-cased. */
-  email: string;
+  /**
+   * Kept trimmed and lower-cased. Left out, the application has no address: the key absent, never
+   * an empty text — that one is an address that is wrong.
+   */
+  email?: string;
   /**
    * A Brazilian mobile with its area code, as typed: `(85) 98888-7777`, with `+55` in front or not.
    * Kept as digits with the country code, the way a shop's WhatsApp is: `5585988887777`.

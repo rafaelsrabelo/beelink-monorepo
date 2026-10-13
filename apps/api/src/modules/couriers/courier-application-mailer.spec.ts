@@ -21,9 +21,12 @@ const owed = {
 /** Every way that person could show up in a line of the log. */
 const PERSONAL = /Zuleica|Tavares|Lima|exemplo\.test|FORTALEZA/i;
 
+/** The same notice, of an application kept with no address (BEELINK-328). */
+const addressless = { ...owed, application: { ...owed.application, email: null } };
+
 interface Scene {
   /** What the outbox finds under the id it claimed; null is a notice taken out since. */
-  notice?: typeof owed | null;
+  notice?: typeof owed | typeof addressless | null;
   /** Another notice of the same address, older than this one. */
   older?: { id: string } | null;
   /** Whether the provider took the e-mail. */
@@ -115,6 +118,19 @@ describe('CourierApplicationMailer', () => {
 
       expect(send).toHaveBeenCalledTimes(1);
     });
+  });
+
+  // The service writes no notice for one, so this is a row written some other way. Asked for the
+  // older notice of "no address", the list would answer with any other application that has none.
+  it('sends nothing for a notice whose application has no address, looks for no older one, and is done with it', async () => {
+    const { mailer, send, findFirst, update } = build({ notice: addressless });
+
+    await expect(mailer.flush()).resolves.toBe(0);
+
+    expect(send).not.toHaveBeenCalled();
+    expect(findFirst).not.toHaveBeenCalled();
+    expect(update).toHaveBeenCalledTimes(1);
+    expect(update).toHaveBeenCalledWith({ where: { id: NOTICE }, data: { sentAt: NOW } });
   });
 
   // Deleting an application deletes what it is owed: a row claimed a moment before is simply gone.

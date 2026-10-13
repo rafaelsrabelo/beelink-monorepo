@@ -17,6 +17,9 @@ import { courierCityNameOf } from './couriers.constants.js';
  * — so two sweeps at once cannot send two. The service and the migration already write one notice an
  * address; this holds for a row written any other way.
  *
+ * An application kept with no address (BEELINK-328) is owed nothing, and the service writes it no
+ * notice; one that has a notice all the same is done without sending, for there is nowhere to send.
+ *
  * Nothing of the application is logged: a notice given up is named by its own id.
  */
 @Injectable()
@@ -41,14 +44,17 @@ export class CourierApplicationMailer extends OutboxMailer {
 
     const { name, email, city } = notice.application;
     // Compared as kept, like the list itself (BEELINK-325): the DTO keeps an address trimmed and lower-cased.
-    const older = await this.prisma.courierApplicationNotice.findFirst({
-      where: {
-        application: { email },
-        OR: [{ createdAt: { lt: notice.createdAt } }, { createdAt: notice.createdAt, id: { lt: id } }],
-      },
-      select: { id: true },
-    });
-    if (older) {
+    // With no address there is none to compare: asked for one, the list would answer with every application that has none.
+    const older = email
+      ? await this.prisma.courierApplicationNotice.findFirst({
+          where: {
+            application: { email },
+            OR: [{ createdAt: { lt: notice.createdAt } }, { createdAt: notice.createdAt, id: { lt: id } }],
+          },
+          select: { id: true },
+        })
+      : null;
+    if (!email || older) {
       await this.prisma.courierApplicationNotice.update({ where: { id }, data: { sentAt: new Date() } }).catch(() => null);
       return false;
     }

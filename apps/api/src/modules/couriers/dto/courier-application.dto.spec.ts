@@ -49,6 +49,29 @@ describe('CourierApplicationDto', () => {
     });
   });
 
+  describe('the e-mail left out (BEELINK-328)', () => {
+    const { email: _email, ...withoutEmail } = typed;
+
+    it('is let through, and nothing is handed over in its place', async () => {
+      const dto = await check(withoutEmail);
+
+      expect(dto.email).toBeUndefined();
+      expect(dto).toEqual({
+        name: 'Zuleica Tavares',
+        document: '52998224725',
+        whatsapp: '5585987654321',
+        city: 'FORTALEZA_CE',
+        vehicle: 'MOTORCYCLE',
+        acceptedTerms: true,
+      });
+    });
+
+    // JSON's way of saying the same: the service reads it as one left out.
+    it('is let through as a null too', async () => {
+      await expect(check({ ...withoutEmail, email: null })).resolves.toMatchObject({ document: '52998224725', email: null });
+    });
+  });
+
   it.each(['52998224725', '529.982.247-25', ' 529 982 247 25 '])('reads the CPF %j as its eleven digits', async (document) => {
     expect((await check({ ...typed, document })).document).toBe('52998224725');
   });
@@ -86,6 +109,10 @@ describe('CourierApplicationDto', () => {
       ['an address with no domain', { email: 'zuleica@' }, 'COURIER_EMAIL_INVALID'],
       ['an address with no at', { email: 'zuleica.exemplo.test' }, 'COURIER_EMAIL_INVALID'],
       ['an address past the column', { email: `${'a'.repeat(250)}@exemplo.test` }, 'COURIER_EMAIL_INVALID'],
+      // Left out is the key absent. A key that is there and empty is an address that is wrong.
+      ['an address that is there and empty', { email: '' }, 'COURIER_EMAIL_INVALID'],
+      ['an address of spaces', { email: '   ' }, 'COURIER_EMAIL_INVALID'],
+      ['an address that is no text', { email: 42 }, 'COURIER_EMAIL_INVALID'],
       ['a landline', { whatsapp: '(85) 3222-1111' }, 'COURIER_WHATSAPP_INVALID'],
       ['a mobile with no area code', { whatsapp: '98765-4321' }, 'COURIER_WHATSAPP_INVALID'],
       ['an area code with a zero in it', { whatsapp: '(80) 98765-4321' }, 'COURIER_WHATSAPP_INVALID'],
@@ -106,7 +133,6 @@ describe('CourierApplicationDto', () => {
     it.each([
       ['name', 'COURIER_NAME_INVALID'],
       ['document', 'COURIER_DOCUMENT_INVALID'],
-      ['email', 'COURIER_EMAIL_INVALID'],
       ['whatsapp', 'COURIER_WHATSAPP_INVALID'],
       ['city', 'COURIER_CITY_NOT_OPEN'],
       ['vehicle', 'COURIER_VEHICLE_INVALID'],

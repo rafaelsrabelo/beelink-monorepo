@@ -23,7 +23,7 @@ const application = {
 
 const NOW = new Date('2026-10-12T15:00:00.000Z');
 
-type Listed = { document: string; email: string; whatsapp: string };
+type Listed = { document: string; email: string | null; whatsapp: string };
 
 /**
  * The service over a list that holds `listed`, with the transaction's own client stood in for.
@@ -176,6 +176,63 @@ describe('CourierApplicationsService', () => {
       const { body } = await refusalOf(service.receive(application));
 
       expect(JSON.stringify(body)).not.toMatch(/52998224725|11144477735|exemplo\.test|5585/);
+    });
+  });
+
+  describe('an application with no e-mail (BEELINK-328)', () => {
+    const { email: _email, ...withoutEmail } = application;
+
+    // To Prisma a filter on nothing is no filter: an `OR` that held one would match the whole list.
+    it('is looked for by its CPF and its WhatsApp alone', async () => {
+      const { service, findMany } = build();
+
+      await service.receive(withoutEmail);
+
+      expect((findMany.mock.calls[0]![0] as { where: object }).where).toEqual({ OR: [{ document: '52998224725' }, { whatsapp: '5585987654321' }] });
+    });
+
+    it('is kept with no address, and owes no e-mail: none is written and none is asked to be sent', async () => {
+      const { service, create, dispatch } = build();
+
+      await expect(service.receive(withoutEmail)).resolves.toBeUndefined();
+
+      const written = (create.mock.calls[0]![0] as { data: { email: unknown; notice?: unknown } }).data;
+      expect(written).toMatchObject({ document: '52998224725', name: 'Zuleica Tavares', whatsapp: '5585987654321' });
+      expect(written.email).toBeNull();
+      expect(written.notice).toBeUndefined();
+      expect(dispatch).not.toHaveBeenCalled();
+    });
+
+    // JSON has a null where a key may also be left out, and the pipe lets both through.
+    it('reads a null as one left out', async () => {
+      const { service, findMany, create, dispatch } = build();
+
+      await service.receive({ ...withoutEmail, email: null } as unknown as CourierApplicationDto);
+
+      expect((findMany.mock.calls[0]![0] as { where: object }).where).toEqual({ OR: [{ document: '52998224725' }, { whatsapp: '5585987654321' }] });
+      expect((create.mock.calls[0]![0] as { data: { email: unknown } }).data.email).toBeNull();
+      expect(dispatch).not.toHaveBeenCalled();
+    });
+
+    it('is not taken for someone on the list who has no address either', async () => {
+      const { service, create } = build({ listed: [{ document: '11144477735', email: null, whatsapp: '5585912345678' }] });
+
+      await expect(service.receive(withoutEmail)).resolves.toBeUndefined();
+
+      expect(create).toHaveBeenCalledTimes(1);
+    });
+
+    it.each([
+      ['the CPF', { document: application.document }, 'COURIER_DOCUMENT_TAKEN'],
+      ['the WhatsApp', { whatsapp: application.whatsapp }, 'COURIER_WHATSAPP_TAKEN'],
+    ])('is still refused by %s, with its own code', async (_what, shared, errorCode) => {
+      const { service, create } = build({ listed: [{ document: '11144477735', email: null, whatsapp: '5585912345678', ...shared }] });
+
+      const { status, body } = await refusalOf(service.receive(withoutEmail));
+
+      expect(status).toBe(409);
+      expect(body).toMatchObject({ errorCode });
+      expect(create).not.toHaveBeenCalled();
     });
   });
 

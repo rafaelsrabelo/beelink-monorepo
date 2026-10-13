@@ -45,6 +45,9 @@ export class CourierApplicationsService {
    * An application kept owes its person an e-mail (BEELINK-326), written with it or not at all. The
    * sending is asked for once that committed and waited for by nobody: an e-mail that does not go
    * changes no answer of this route, and its outbox tries again.
+   *
+   * The e-mail may be left out (BEELINK-328). Such an application is not looked for by an address
+   * it does not have, is kept without one, and owes no e-mail.
    */
   async receive(dto: CourierApplicationDto): Promise<void> {
     // The trap, sprung: a field no person sees was filled in. Answered exactly like a save, and
@@ -61,25 +64,29 @@ export class CourierApplicationsService {
         // be built over them, and a migration that fails stops the API from starting.
         await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended('courier_applications', 0))`;
 
+        // Only what the body carries is looked for. To Prisma a filter on nothing is no filter: an
+        // `OR` holding one for an e-mail left out would match the whole list.
+        const carried = TAKEN.filter(({ field }) => dto[field] != null);
         const listed = await tx.courierApplication.findMany({
-          where: { OR: TAKEN.map(({ field }) => ({ [field]: dto[field] })) },
+          where: { OR: carried.map(({ field }) => ({ [field]: dto[field] })) },
           select: { document: true, email: true, whatsapp: true },
         });
-        const already = TAKEN.find(({ field }) => listed.some((row) => row[field] === dto[field]));
+        const already = carried.find(({ field }) => listed.some((row) => row[field] === dto[field]));
         if (already) return already;
 
         await tx.courierApplication.create({
           data: {
             document: dto.document,
             name: dto.name,
-            email: dto.email,
+            email: dto.email ?? null,
             whatsapp: dto.whatsapp,
             city: dto.city,
             vehicle: dto.vehicle,
             termsVersion: LEGAL_VERSION,
             termsAcceptedAt: new Date(),
-            // One write: an application and the e-mail it owes exist together or not at all.
-            notice: { create: {} },
+            // One write: an application and the e-mail it owes exist together or not at all — and
+            // one kept with no address owes none.
+            notice: dto.email ? { create: {} } : undefined,
           },
           select: { id: true },
         });
@@ -97,7 +104,7 @@ export class CourierApplicationsService {
     // Thrown out here, past the catch that turns everything into a 500: it says which of the three, and nothing of whose.
     if (taken) throw new ConflictException({ errorCode: taken.errorCode, message: taken.message });
 
-    this.mailer.dispatch();
+    if (dto.email) this.mailer.dispatch();
   }
 }
 
