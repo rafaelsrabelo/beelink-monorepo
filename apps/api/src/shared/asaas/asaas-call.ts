@@ -64,8 +64,9 @@ export async function asaasCall(endpoint: AsaasEndpoint, apiKey: string, method:
   if (response.status >= 500) throw new AsaasUnreachable(`Asaas failed (${response.status})`);
   if (!response.ok) {
     const { code, reason } = refusalOf(answer);
-    // Asaas's words, never the request's — and the key cut out should they ever echo it.
-    throw new AsaasRefused(response.status, code, apiKey ? reason.split(apiKey).join('[key]') : reason);
+    // Asaas's words, never the request's — and the key cut out of both should they ever echo it.
+    const keyless = (said: string): string => (apiKey ? said.split(apiKey).join('[key]') : said);
+    throw new AsaasRefused(response.status, code === null ? null : keyless(code), keyless(reason));
   }
   return answer;
 }

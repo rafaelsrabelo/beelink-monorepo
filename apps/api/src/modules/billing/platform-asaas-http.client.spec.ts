@@ -381,6 +381,12 @@ describe("PlatformAsaasHttpClient — bee-link's own Asaas account (BEELINK-291)
         expect(printed(refused), name).toContain('[key]');
       }
 
+      // In the code Asaas names its refusal by, too: every field of the error is read by something.
+      answer(400, { errors: [{ code: `invalid_${KEY}`, description: 'recusado' }] });
+      const coded = await thrownBy(clientOf().customers(REFERENCE));
+      expect(coded).toMatchObject({ status: 400, code: 'invalid_[key]' });
+      expect(printed(coded)).not.toContain(KEY);
+
       for (const [name, call] of calls(clientOf())) {
         silence(new TypeError(`Headers.append: "${KEY}" is an invalid header value.`, { cause: new Error(`invalid header ${KEY}`) }));
         const unsent = await thrownBy(call());
