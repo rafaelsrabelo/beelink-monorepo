@@ -11,7 +11,7 @@ export default async function SignupPage() {
   const { ui, web } = await getMessages()
 
   return (
-    <SiteMeasured>
+    <SiteMeasured title={web.metadata.title}>
       <SignupScreen ui={ui} web={web} />
     </SiteMeasured>
   )

@@ -9,6 +9,8 @@ import { siteAnalyticsIdFor } from "@/lib/site-analytics"
 import { siteConsentAt } from "@/lib/site-consent"
 
 export interface SiteMeasuredProps {
+  /** The page's title, as it is told: the one the page gives itself. */
+  title: string
   /** The whole page. */
   children: ReactNode
 }
@@ -23,13 +25,13 @@ export interface SiteMeasuredProps {
  * handed the measurement ID at all. Asking is the landing's alone — the page inside decides whether
  * a notice is drawn; the sign-in and the sign-up draw none and use the answer already given.
  */
-export async function SiteMeasured({ children }: SiteMeasuredProps) {
+export async function SiteMeasured({ title, children }: SiteMeasuredProps) {
   const consent = await siteConsentAt()
   const measurementId = serverEnv.SITE_GA_MEASUREMENT_ID
 
   return (
     <SiteConsentGate measurementId={measurementId} choice={consent}>
-      <SiteAnalytics measurementId={siteAnalyticsIdFor(measurementId, consent)} drawnFor={consent}>
+      <SiteAnalytics measurementId={siteAnalyticsIdFor(measurementId, consent)} drawnFor={consent} title={title}>
         {children}
       </SiteAnalytics>
     </SiteConsentGate>

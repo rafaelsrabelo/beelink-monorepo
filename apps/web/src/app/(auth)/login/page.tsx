@@ -13,7 +13,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const back = query[RETURN_KEY]
 
   return (
-    <SiteMeasured>
+    <SiteMeasured title={web.metadata.title}>
       <LoginScreen ui={ui} web={web} back={panelReturnOf(typeof back === "string" ? back : null)} />
     </SiteMeasured>
   )

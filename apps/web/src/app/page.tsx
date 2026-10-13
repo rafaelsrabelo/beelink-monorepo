@@ -88,12 +88,12 @@ export async function generateMetadata(): Promise<Metadata> {
  * draw nothing where nobody is asked.
  */
 export default async function LandingPage() {
-  const { ui, locale } = await getMessages()
+  const { ui, web, locale } = await getMessages()
   const exampleHref = serverEnv.EXAMPLE_STORE_SLUG ? `/${serverEnv.EXAMPLE_STORE_SLUG}` : null
 
   return (
     <div className={jakarta.variable} style={brandFontStyle}>
-      <SiteMeasured>
+      <SiteMeasured title={web.landing.title}>
         <LandingShell notice={<LandingConsentLive privacyHref={LEGAL_ROUTES.privacy} text={ui.landing.consent} />}>
           <LandingHeader loginHref={LOGIN} signupHref={SIGNUP} termsHref={LEGAL_ROUTES.terms} privacyHref={LEGAL_ROUTES.privacy} linkComponent={AppLink} messages={ui} />
           <main>

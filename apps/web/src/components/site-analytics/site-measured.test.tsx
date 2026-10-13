@@ -31,11 +31,12 @@ function arriveWith(answer: SiteConsentChoice | null, others: Record<string, str
 }
 
 /** What the server hands the component that runs in the browser — which is what is written into the page. */
-async function handedOver(): Promise<{ measurementId: string | null; drawnFor: SiteConsentChoice | null } | null> {
-  const tree: ReactElement<{ children: ReactElement<{ measurementId: string | null; drawnFor: SiteConsentChoice | null }> }> = await SiteMeasured({ children: <p>a página</p> })
+async function handedOver(): Promise<{ measurementId: string | null; drawnFor: SiteConsentChoice | null }> {
+  const tree: ReactElement<{ children: ReactElement<{ measurementId: string | null; drawnFor: SiteConsentChoice | null; title: string }> }> = await SiteMeasured({ title: "A página", children: <p>a página</p> })
   const analytics = tree.props.children
 
   expect(analytics.type).toBe(SiteAnalytics)
+  expect(analytics.props.title).toBe("A página")
   return { measurementId: analytics.props.measurementId, drawnFor: analytics.props.drawnFor }
 }
 
@@ -62,7 +63,7 @@ describe("SiteMeasured", () => {
 
     expect(await handedOver()).toEqual({ measurementId: ID, drawnFor: "granted" })
 
-    render(await SiteMeasured({ children: <p>a página</p> }))
+    render(await SiteMeasured({ title: "A página", children: <p>a página</p> }))
     await settled()
     expect(screen.getByText("a página")).toBeInTheDocument()
     expect(library()).toHaveAttribute("data-src", `https://www.googletagmanager.com/gtag/js?id=${ID}`)
@@ -77,7 +78,7 @@ describe("SiteMeasured", () => {
 
     expect(await handedOver()).toEqual({ measurementId: null, drawnFor: answer })
 
-    const { container } = render(await SiteMeasured({ children: <p>a página</p> }))
+    const { container } = render(await SiteMeasured({ title: "A página", children: <p>a página</p> }))
     await settled()
     expect(screen.getByText("a página")).toBeInTheDocument()
     expect(library()).toBeNull()
@@ -87,7 +88,7 @@ describe("SiteMeasured", () => {
 
   it("is not answered by a shop's yes, nor by a cookie somebody edited", async () => {
     arriveWith(null, { bl_consent: "granted" })
-    expect((await handedOver())?.measurementId).toBeNull()
+    expect((await handedOver()).measurementId).toBeNull()
 
     mocks.jar = { [SITE_CONSENT_COOKIE]: "yes" }
     expect(await handedOver()).toEqual({ measurementId: null, drawnFor: null })
@@ -99,7 +100,7 @@ describe("SiteMeasured", () => {
 
     expect(await handedOver()).toEqual({ measurementId: null, drawnFor: "granted" })
 
-    const { container } = render(await SiteMeasured({ children: <p>a página</p> }))
+    const { container } = render(await SiteMeasured({ title: "A página", children: <p>a página</p> }))
     await settled()
     expect(container.innerHTML).toBe("<p>a página</p>")
     expect(window.dataLayer).toBeUndefined()

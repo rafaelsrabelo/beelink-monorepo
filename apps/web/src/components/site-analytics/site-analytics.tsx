@@ -19,15 +19,14 @@ export interface SiteAnalyticsProps {
   measurementId: string | null
   /** The answer the server drew this page for. */
   drawnFor: SiteConsentChoice | null
+  /** The page's own title, as the page names it. */
+  title: string
   /** The page that is measured. */
   children: ReactNode
 }
 
 /** A cookie has no change event. It is read again at every render, and an answer given on the page brings one. */
 const never = () => () => {}
-
-/** Where the visitor is, as it is told: no parameter of the address but a campaign's labels. */
-const pageNow = () => sitePageOf(window.location.href, document.referrer, document.title)
 
 /**
  * Beelink's own measurement of its own site (BEELINK-320): around a page that is measured, and
@@ -44,7 +43,7 @@ const pageNow = () => sitePageOf(window.location.href, document.referrer, docume
  * start of any navigation away (`instrumentation-client.ts`): it is open only while the visitor
  * stands on a measured page.
  */
-export function SiteAnalytics({ measurementId, drawnFor, children }: SiteAnalyticsProps) {
+export function SiteAnalytics({ measurementId, drawnFor, title, children }: SiteAnalyticsProps) {
   const asks = useSiteAsks()
   const choice = useSiteConsent((consent) => consent.choice)
   const held = useSyncExternalStore(
@@ -63,6 +62,12 @@ export function SiteAnalytics({ measurementId, drawnFor, children }: SiteAnalyti
     // The page was drawn for another answer than the browser's: the server draws it again, with the ID or without it.
     if (asks && held !== drawnFor) router.refresh()
   }, [asks, held, drawnFor, router])
+
+  /**
+   * Where the visitor is, as it is told: no parameter of the address but a campaign's labels, and
+   * the title the page was given — never the document's, where the page before may still stand.
+   */
+  const pageNow = useCallback(() => sitePageOf(window.location.href, document.referrer, title), [title])
 
   useEffect(() => {
     if (!id) return
@@ -88,7 +93,7 @@ export function SiteAnalytics({ measurementId, drawnFor, children }: SiteAnalyti
       window.removeEventListener("popstate", stay)
       shutGoogleAnalytics(id)
     }
-  }, [id, pathname])
+  }, [id, pathname, pageNow])
 
   useEffect(() => {
     if (!refused) return
@@ -104,7 +109,7 @@ export function SiteAnalytics({ measurementId, drawnFor, children }: SiteAnalyti
       // Asked of the cookie again at the moment of telling: another tab may have taken the yes back.
       if (id && siteConsentIn(document.cookie) === "granted") sendToGoogleAnalytics(id, { name: event.name, params: pageNow() })
     },
-    [id],
+    [id, pageNow],
   )
 
   return (

@@ -49,7 +49,7 @@ function page(input: Visit) {
 
   return (
     <SiteConsentGate measurementId={configured} choice={answer}>
-      <SiteAnalytics measurementId={siteAnalyticsIdFor(configured, answer)} drawnFor={answer}>
+      <SiteAnalytics measurementId={siteAnalyticsIdFor(configured, answer)} drawnFor={answer} title="A página">
         <LandingConsentLive privacyHref="/privacidade" text={ptBR.landing.consent} />
         <SignUp />
         <LandingConsentReopen label="Cookies" />
@@ -207,7 +207,16 @@ describe("SiteAnalytics, with a yes", () => {
     await click("Criar conta")
 
     expect(sent()).toEqual([`page_view → ${ID} @ http://localhost:3000/signup`, `sign_up → ${ID} @ http://localhost:3000/signup`])
-    expect(calls().at(-1)).toEqual(["event", "sign_up", { page_location: "http://localhost:3000/signup", send_to: ID }])
+    expect(calls().at(-1)).toEqual(["event", "sign_up", { page_location: "http://localhost:3000/signup", page_title: "A página", send_to: ID }])
+  })
+
+  // On arriving without a reload the document still holds the title of the page before, or none: it is never read.
+  it("tells the title the page was given, whatever the document's says", async () => {
+    document.title = "Pedido 1042 — Loja da Ana"
+    await visit({ answer: "granted" })
+
+    expect(calls().filter(([command]) => command === "config" || command === "event").map(([, , params]) => (params as { page_title?: string }).page_title)).toEqual(["A página", "A página"])
+    expect(JSON.stringify(calls())).not.toContain("Loja da Ana")
   })
 
   it("shuts the library when the page is left", async () => {
