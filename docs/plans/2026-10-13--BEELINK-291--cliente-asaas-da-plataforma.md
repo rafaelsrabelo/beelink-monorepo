@@ -451,3 +451,13 @@ shell do comando. Duas contas inventadas, criadas pela rota de cadastro e apagad
    Compose. A documentação de deploy manda trocar a chave se ela aparecer num log.
 8. **A política de privacidade não cita o CPF/CNPJ do lojista guardado para cobrança.** Não mexi nos
    textos legais: não há tela ainda. Fica para o S11 ou para quem decidir o texto.
+
+### Mais um acréscimo de 13/10/2026: a chave também é cortada do código da recusa
+
+Relendo o diff: a chamada comum cortava a chave do **texto** da recusa do Asaas (`description`) e não
+do **código** (`code`), que também vai para o erro e, daí, para o log. Passou a cortar dos dois. É a
+única diferença de comportamento na parte comum em relação ao que o cliente das lojas fazia, e
+nenhuma resposta real a exercita: os códigos do Asaas são palavras como `invalid_object`. Os specs
+das lojas seguem passando sem alteração (9 arquivos, 81 testes), e um erro plantado (deixar o código
+como veio) faz o spec do cliente da plataforma falhar. Com esse, são 29 erros plantados, todos
+pegos.
