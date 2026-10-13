@@ -3009,7 +3009,7 @@ export const en: UiMessages = {
       titleStrong: "your plan",
       lead: "Start with {days} days free, no card. Then you choose how to pay.",
       trial: "{days} days free, no card",
-      perMonth: "a month",
+      perMonth: "a month, per page",
       includesLabel: "What it includes",
       beelink: {
         name: "Beelink",
@@ -3041,7 +3041,7 @@ export const en: UiMessages = {
         includes: ["Everything in the Beelink plan", "Order updates on WhatsApp", "Coupons on WhatsApp", "Customer service on the shop's WhatsApp"],
       },
       soon: "Coming soon",
-      after: "After the {days} days, the account is locked until you choose a plan and pay. Nothing is charged on its own.",
+      after: "After the {days} days, the page is locked until you choose a plan and pay. Nothing is charged on its own. The plan is per page created: each page has its own {days} days free and its own plan.",
     },
     couriers: {
       tag: "For couriers",
@@ -3110,10 +3110,11 @@ export const en: UiMessages = {
         {
           question: "How much does it cost?",
           answer:
-            "The Beelink plan costs {monthly} a month. Paying 6 months at once it is {semiannual}, which comes to {semiannualMonthly} a month; paying the year, {annual}, which comes to {annualMonthly} a month. The plan with Beelia is not available yet and will cost {withBeelia} a month.",
+            "The Beelink plan costs {monthly} a month, per page created. Paying 6 months at once it is {semiannual}, which comes to {semiannualMonthly} a month; paying the year, {annual}, which comes to {annualMonthly} a month. The plan with Beelia is not available yet and will cost {withBeelia} a month.",
         },
-        { question: "How does the {days}-day trial work?", answer: "You create the account and use the shop and the panel for {days} days without paying anything. We ask for no card at sign-up." },
-        { question: "What happens when the trial ends?", answer: "After the {days} days, the account is locked until you choose a plan and pay. Nothing is charged on its own." },
+        { question: "How does the {days}-day trial work?", answer: "You create the account and use the shop and the panel for {days} days without paying anything. We ask for no card at sign-up. Each page you create has its own {days} days." },
+        { question: "What happens when the trial ends?", answer: "After the {days} days, the page is locked until you choose a plan and pay. Nothing is charged on its own." },
+        { question: "Can I have more than one page?", answer: "Yes. Each page has its own link, and the plan is per page created: each one has its own {days} days free and its own plan." },
       ],
       courier: [
         {

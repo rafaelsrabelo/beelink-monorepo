@@ -44,7 +44,7 @@ describe("LandingPlans", () => {
     const card = cardOf("Beelink")
     expect(card.firstElementChild).toHaveTextContent("14 dias grátis, sem cartão")
     expect(card.firstElementChild).toHaveClass("bg-brand-yellow")
-    expect(plain(figuresOf(within(card).getByRole("radio", { name: "Mensal" })).querySelector("p")?.textContent)).toBe("R$ 100,00 por mês")
+    expect(plain(figuresOf(within(card).getByRole("radio", { name: "Mensal" })).querySelector("p")?.textContent)).toBe("R$ 100,00 por mês, por página")
     expect(within(card).getAllByRole("link").map((link) => [link.textContent, link.getAttribute("href")])).toEqual([["Testar 14 dias grátis", "/signup"]])
   })
 
@@ -66,11 +66,11 @@ describe("LandingPlans", () => {
 
     const figures = screen.getAllByRole("radio").map((period) => [...figuresOf(period).querySelectorAll("p")].map((line) => plain(line.textContent)))
     expect(figures).toEqual([
-      ["R$ 100,00 por mês", "Pago mês a mês."],
-      ["R$ 90,00 por mês", "R$ 540,00 pelos 6 meses.", "Você economiza R$ 60,00 (10%) em relação ao mensal."],
-      ["R$ 80,00 por mês", "R$ 960,00 pelo ano.", "Você economiza R$ 240,00 (20%) em relação ao mensal."],
+      ["R$ 100,00 por mês, por página", "Pago mês a mês."],
+      ["R$ 90,00 por mês, por página", "R$ 540,00 pelos 6 meses.", "Você economiza R$ 60,00 (10%) em relação ao mensal."],
+      ["R$ 80,00 por mês, por página", "R$ 960,00 pelo ano.", "Você economiza R$ 240,00 (20%) em relação ao mensal."],
     ])
-    expect(screen.getByRole("radio", { name: "Anual" })).toHaveAccessibleDescription(/^R\$\s80,00 por mês R\$\s960,00 pelo ano\. Você economiza R\$\s240,00 \(20%\) em relação ao mensal\.$/)
+    expect(screen.getByRole("radio", { name: "Anual" })).toHaveAccessibleDescription(/^R\$\s80,00 por mês, por página R\$\s960,00 pelo ano\. Você economiza R\$\s240,00 \(20%\) em relação ao mensal\.$/)
   })
 
   /**
@@ -108,7 +108,7 @@ describe("LandingPlans", () => {
 
     const card = cardOf("Beelink + Beelia")
     expect(within(card).getByText("Em breve")).toBeInTheDocument()
-    expect(plain(card.textContent)).toContain("R$ 150,00 por mês")
+    expect(plain(card.textContent)).toContain("R$ 150,00 por mês, por página")
     expect(within(card).getByText("Tudo do plano Beelink, mais a Beelia no WhatsApp da loja.")).toBeInTheDocument()
     expect(card.querySelector("a, button, input, [tabindex], [role='link'], [role='button']")).toBeNull()
   })
@@ -126,10 +126,14 @@ describe("LandingPlans", () => {
     expect(ptBR.landing.plans.beelink.includes).toHaveLength(12)
   })
 
-  it("says what follows the trial: a locked account, and no charge on its own", () => {
+  it("says what follows the trial: a locked page, no charge on its own, and a plan and a trial for each page created", () => {
     renderPlans()
 
-    expect(screen.getByText("Passados os 14 dias, a conta fica travada até você escolher um plano e pagar. Nada é cobrado sozinho.")).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        "Passados os 14 dias, a página fica travada até você escolher um plano e pagar. Nada é cobrado sozinho. O plano é por página criada: cada página tem os seus 14 dias grátis e o seu plano.",
+      ),
+    ).toBeInTheDocument()
   })
 
   /**
@@ -150,8 +154,8 @@ describe("LandingPlans", () => {
   it("follows the prices it is handed", () => {
     renderPlans({ prices: { trialDays: 30, beelink: { monthly: 20000, semiannual: 90000, annual: 120000 }, withBeelia: { monthly: 31000 } } })
 
-    expect(plain(figuresOf(screen.getByRole("radio", { name: /Anual/ })).textContent)).toBe("R$ 100,00 por mêsR$ 1.200,00 pelo ano.Você economiza R$ 1.200,00 (50%) em relação ao mensal.")
-    expect(plain(cardOf("Beelink + Beelia").textContent)).toContain("R$ 310,00 por mês")
+    expect(plain(figuresOf(screen.getByRole("radio", { name: /Anual/ })).textContent)).toBe("R$ 100,00 por mês, por páginaR$ 1.200,00 pelo ano.Você economiza R$ 1.200,00 (50%) em relação ao mensal.")
+    expect(plain(cardOf("Beelink + Beelia").textContent)).toContain("R$ 310,00 por mês, por página")
     expect(screen.getByRole("link", { name: "Testar 30 dias grátis" })).toBeInTheDocument()
   })
 

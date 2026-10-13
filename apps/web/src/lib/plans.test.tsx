@@ -26,10 +26,10 @@ function figuresOf(period: string) {
  * and 20%. A price changed on purpose changes here too.
  */
 describe("PLAN_PRICES, on the landing", () => {
-  it("sells Beelink at R$ 59,90 a month, with seven days free and no card", () => {
+  it("sells Beelink at R$ 59,90 a month for each page, with seven days free and no card", () => {
     render(<LandingPlans prices={PLAN_PRICES} locale="pt-BR" signupHref="/signup" />)
 
-    expect(figuresOf("Mensal")).toEqual(["R$ 59,90 por mês", "Pago mês a mês."])
+    expect(figuresOf("Mensal")).toEqual(["R$ 59,90 por mês, por página", "Pago mês a mês."])
     expect(screen.getByText("7 dias grátis, sem cartão")).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Testar 7 dias grátis" })).toHaveAttribute("href", "/signup")
   })
@@ -37,16 +37,16 @@ describe("PLAN_PRICES, on the landing", () => {
   it("comes to R$ 53,90 a month and 10% less over six months, R$ 47,90 and 20% less over the year", () => {
     render(<LandingPlans prices={PLAN_PRICES} locale="pt-BR" signupHref="/signup" />)
 
-    expect(figuresOf("6 meses")).toEqual(["R$ 53,90 por mês", "R$ 323,40 pelos 6 meses.", "Você economiza R$ 36,00 (10%) em relação ao mensal."])
-    expect(figuresOf("Anual")).toEqual(["R$ 47,90 por mês", "R$ 574,80 pelo ano.", "Você economiza R$ 144,00 (20%) em relação ao mensal."])
+    expect(figuresOf("6 meses")).toEqual(["R$ 53,90 por mês, por página", "R$ 323,40 pelos 6 meses.", "Você economiza R$ 36,00 (10%) em relação ao mensal."])
+    expect(figuresOf("Anual")).toEqual(["R$ 47,90 por mês, por página", "R$ 574,80 pelo ano.", "Você economiza R$ 144,00 (20%) em relação ao mensal."])
     expect(screen.getAllByRole("radio").map((period) => period.closest("label")?.textContent)).toEqual(["Mensal", "6 meses-10%", "Anual-20%"])
   })
 
-  it("announces Beelink with Beelia at R$ 89,90 a month", () => {
+  it("announces Beelink with Beelia at R$ 89,90 a month for each page", () => {
     render(<LandingPlans prices={PLAN_PRICES} locale="pt-BR" signupHref="/signup" />)
 
     const card = screen.getByRole("heading", { level: 3, name: "Beelink + Beelia" }).closest("li")!
-    expect(plain(card.textContent)).toContain("R$ 89,90 por mês")
+    expect(plain(card.textContent)).toContain("R$ 89,90 por mês, por página")
     expect(within(card).getByText("Em breve")).toBeInTheDocument()
   })
 
@@ -54,7 +54,7 @@ describe("PLAN_PRICES, on the landing", () => {
     render(<LandingFaq prices={PLAN_PRICES} locale="pt-BR" />)
 
     expect(plain(screen.getByText("Quanto custa?").closest("details")?.querySelector("p")?.textContent)).toBe(
-      "O plano Beelink custa R$ 59,90 por mês. Pagando 6 meses de uma vez sai por R$ 323,40, que dá R$ 53,90 por mês; pagando o ano, R$ 574,80, que dá R$ 47,90 por mês. O plano com a Beelia ainda não está disponível e vai custar R$ 89,90 por mês.",
+      "O plano Beelink custa R$ 59,90 por mês, por página criada. Pagando 6 meses de uma vez sai por R$ 323,40, que dá R$ 53,90 por mês; pagando o ano, R$ 574,80, que dá R$ 47,90 por mês. O plano com a Beelia ainda não está disponível e vai custar R$ 89,90 por mês.",
     )
     expect(screen.getByText("Como funciona o teste de 7 dias?")).toBeInTheDocument()
   })

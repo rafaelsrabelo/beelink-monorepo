@@ -74,7 +74,7 @@ export function LandingPlanPeriods({ offers, locale, text }: LandingPlanPeriodsP
       <div className="grid">
         {offers.map((offer) => (
           <div key={offer.period} id={`${id}-${offer.period}`} className={cn("invisible col-start-1 row-start-1 flex flex-col gap-1.5", SHOWN[offer.period])}>
-            <p className="flex flex-wrap items-baseline gap-x-2">
+            <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
               <span className="text-[44px] leading-none font-extrabold tracking-[-0.03em] whitespace-nowrap">{planMoney(offer.monthlyCents, locale)}</span>{" "}
               <span className="font-semibold text-brand-text">{text.perMonth}</span>
             </p>
