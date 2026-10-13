@@ -2,6 +2,9 @@
 import AxeBuilder from "@axe-core/playwright"
 import { expect, test, type Page } from "@playwright/test"
 
+// Support
+import { standInForGoogle } from "./support/google-tag"
+
 /**
  * The landing's cookie notice (BEELINK-319), in a real browser: where it stands, what it writes and
  * for how long, and that a keyboard alone answers it.
@@ -9,7 +12,14 @@ import { expect, test, type Page } from "@playwright/test"
  * The suite's web is started with a measurement ID (`playwright.config.ts`), which is what makes the
  * landing ask at all. A landing with no ID is held by `site-consent-gate.test.tsx`: one server cannot
  * be both.
+ *
+ * Since BEELINK-320 a yes makes the page ask Google for its script. Google is stood in for in every
+ * test here, so none of them reaches it; what is asked of it, and when, is `site-analytics.spec.ts`.
  */
+
+test.beforeEach(async ({ context }) => {
+  await standInForGoogle(context)
+})
 
 const DAY = 24 * 60 * 60
 
