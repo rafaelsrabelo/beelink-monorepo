@@ -117,6 +117,10 @@ describe('CourierApplicationDto', () => {
       expect((await refusalOf(rest)).response.errorCode).toBe(errorCode);
     });
 
+    it('an empty body, with the first field\'s code', async () => {
+      expect((await refusalOf({})).response.errorCode).toBe('COURIER_NAME_INVALID');
+    });
+
     it('names the first field refused, in the order the contract lists them', async () => {
       const refusal = await refusalOf({ ...typed, vehicle: 'TRUCK', email: 'zuleica@', acceptedTerms: false });
 
