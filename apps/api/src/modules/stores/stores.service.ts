@@ -8,6 +8,7 @@ import type { StoreRow } from './store.mapper.js';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
+import { openTrial } from '../billing/subscription-trial.js';
 import { openingPageOf, refuseShopWithoutWhatsapp } from './store-opening.js';
 import { StoreGeocoder } from './store-geocoder.service.js';
 import type { StoreColorsDto } from './dto/store-fields.dto.js';
@@ -52,7 +53,7 @@ export class StoresService {
 
     try {
       /*
-        The shop and its landing page, in one transaction.
+        The shop, what it owes bee-link and its landing page, in one transaction.
 
         The page is seeded here and not on the first visit to design mode: a shop with no products
         band draws nothing at `/<slug>`, and the only report of that state read "tenho produtos
@@ -63,7 +64,7 @@ export class StoresService {
         const created = await tx.store.create({
           // The payment methods are read back rather than taken from the body: the create form
           // does not ask for them, so a new shop opens with the column's default.
-          select: { id: true, paymentMethods: true },
+          select: { id: true, paymentMethods: true, createdAt: true },
           data: {
             ownerId,
             slug: dto.slug,
@@ -93,6 +94,10 @@ export class StoresService {
             longitude: point?.longitude ?? null,
           },
         });
+
+        // Its trial, counted from the row's own instant: a page that exists always knows when its
+        // trial ends, and one whose subscription cannot be written is not created (BEELINK-219).
+        await openTrial(tx, created.id, created.createdAt);
 
         // The home, published from the start: `/<slug>` is served the moment the shop exists.
         const home = await tx.storePage.create({

@@ -87,6 +87,8 @@ interface Fakes {
   home: ReturnType<typeof vi.fn>;
   /** Its first version, which is what a visitor is served. */
   freeze: ReturnType<typeof vi.fn>;
+  /** What it owes bee-link: its subscription, opened in trial. */
+  trial: ReturnType<typeof vi.fn>;
 }
 
 /** Collaborators by hand, the way jwt-auth.guard.spec.ts builds them — no Nest testing module. */
@@ -101,6 +103,7 @@ function build(stored: StoreRow | null = row): { service: StoresService; fakes: 
     seed: vi.fn().mockResolvedValue({}),
     home: vi.fn().mockResolvedValue({ id: HOME }),
     freeze: vi.fn().mockResolvedValue({ id: 'v1', number: 1, note: null, createdAt: new Date(), author: null }),
+    trial: vi.fn().mockResolvedValue({}),
   };
 
   const prisma = {
@@ -114,6 +117,7 @@ function build(stored: StoreRow | null = row): { service: StoresService; fakes: 
     storeCategory: { findUnique: fakes.category },
     storeSection: { create: fakes.seed, findMany: vi.fn().mockResolvedValue([]) },
     storePage: { create: fakes.home },
+    storeSubscription: { create: fakes.trial },
     storePageVersion: {
       findFirst: vi.fn().mockResolvedValue(null),
       create: fakes.freeze,
@@ -257,6 +261,28 @@ describe('StoresService.create', () => {
     expect(bands[0].components.create[0].title).toBe(createDto.name);
     expect(bands.every((band) => band.pageId === HOME && band.isActive)).toBe(true);
     expect(fakes.freeze).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ pageId: HOME, number: 1 }) }));
+  });
+
+  it('opens the shop in trial, counted from the instant its row was created (BEELINK-219)', async () => {
+    const { service, fakes } = build(null);
+
+    await service.create(OWNER, createDto);
+
+    // The row was created at 09:00 in Brasília on 10/09: its last day is the 17th, closed at midnight there.
+    expect(fakes.trial).toHaveBeenCalledTimes(1);
+    expect(fakes.trial).toHaveBeenCalledWith({
+      data: { storeId: row.id, status: 'TRIALING', trialStartedAt: row.createdAt, trialEndsAt: new Date('2026-09-18T03:00:00.000Z') },
+    });
+    expect(fakes.create.mock.calls[0]?.[0].select).toMatchObject({ createdAt: true });
+  });
+
+  it('opens no shop whose trial could not be written: the failure leaves the transaction', async () => {
+    const { service, fakes } = build(null);
+    fakes.trial.mockRejectedValueOnce(new Error('the subscription was refused'));
+
+    await expect(service.create(OWNER, createDto)).rejects.toThrow('the subscription was refused');
+    expect(fakes.home).not.toHaveBeenCalled();
+    expect(fakes.freeze).not.toHaveBeenCalled();
   });
 
   it('refuses a shop with no WhatsApp, before writing anything', async () => {
