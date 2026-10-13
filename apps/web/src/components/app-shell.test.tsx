@@ -66,11 +66,12 @@ afterEach(() => {
 })
 
 describe("AppShell — the menu's live counts (BEELINK-309)", () => {
-  it("puts each area's number on its item, said in words, and leaves the others plain", async () => {
+  it("puts each area's number on its item, said in words, and leaves the others plain", { timeout: 15_000 }, async () => {
     serve({ openOrders: 3, unreadConversations: 2, unreadMessages: 5, unseenReviews: 1 })
     renderShell()
 
-    expect(await screen.findByRole("link", { name: "Pedidos, 3 em aberto" })).toHaveAttribute("href", "/admin/loja/orders")
+    // The file's first render of the whole shell, looked through by role: past the default second on CI's shared runner, which failed the web job twice on 13/10.
+    expect(await screen.findByRole("link", { name: "Pedidos, 3 em aberto" }, { timeout: 5_000 })).toHaveAttribute("href", "/admin/loja/orders")
     expect(screen.getByRole("link", { name: "Conversas, 2 conversas com mensagens não lidas" })).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Avaliações, 1 avaliação nova" })).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Produtos" })).toBeInTheDocument()
