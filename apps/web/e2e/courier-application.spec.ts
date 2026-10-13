@@ -474,7 +474,8 @@ test.describe("the courier's form, the two legal texts", () => {
     await form(page).getByRole("link", { name: "termos de uso" }).click({ modifiers: ["ControlOrMeta"] })
 
     const tab = await opened
-    await expect(tab).toHaveURL(/\/termos$/)
+    // The tab is blank until its page answers, and a page asked for the first time over a build takes its time: where it is headed is the proof.
+    await tab.waitForURL(/\/termos$/, { waitUntil: "commit", timeout: 20_000 })
     await expect(page.getByRole("dialog")).toHaveCount(0)
   })
 
