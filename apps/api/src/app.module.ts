@@ -20,6 +20,7 @@ import { FavoritesModule } from './modules/favorites/favorites.module.js';
 import { IntegrationsModule } from './modules/integrations/integrations.module.js';
 import { LeadsModule } from './modules/leads/leads.module.js';
 import { ConversationsModule } from './modules/conversations/conversations.module.js';
+import { CouriersModule } from './modules/couriers/couriers.module.js';
 import { OrdersModule } from './modules/orders/orders.module.js';
 import { PanelCountsModule } from './modules/panel-counts/panel-counts.module.js';
 import { PromotionsModule } from './modules/promotions/promotions.module.js';
@@ -35,20 +36,30 @@ import { env } from './shared/config/env.js';
 import { MailModule } from './shared/mail/mail.module.js';
 import { PrismaModule } from './shared/prisma/prisma.module.js';
 
+// Types
+import type { Options } from 'pino-http';
+
+/**
+ * What pino writes of a request: its method, address, headers and status — never its body, which is
+ * where a person's CPF, e-mail or phone travels.
+ *
+ * Named and exported for the test that reads what a route leaves in the log (BEELINK-321): it boots
+ * the application with these very options and swaps the destination alone.
+ */
+export const requestLogOptions = {
+  level: env.LOG_LEVEL,
+  // Pretty lines for a person at a terminal; JSON wherever a machine reads the logs.
+  transport:
+    env.NODE_ENV === 'development'
+      ? { target: 'pino-pretty', options: { singleLine: true } }
+      : undefined,
+  // A webhook's token is a secret of its shop as much as a session's is of its person (BEELINK-206).
+  redact: ['req.headers.authorization', 'req.headers.cookie', 'req.headers["asaas-access-token"]'],
+} satisfies Options;
+
 @Module({
   imports: [
-    LoggerModule.forRoot({
-      pinoHttp: {
-        level: env.LOG_LEVEL,
-        // Pretty lines for a person at a terminal; JSON wherever a machine reads the logs.
-        transport:
-          env.NODE_ENV === 'development'
-            ? { target: 'pino-pretty', options: { singleLine: true } }
-            : undefined,
-        // A webhook's token is a secret of its shop as much as a session's is of its person (BEELINK-206).
-        redact: ['req.headers.authorization', 'req.headers.cookie', 'req.headers["asaas-access-token"]'],
-      },
-    }),
+    LoggerModule.forRoot({ pinoHttp: requestLogOptions }),
     PrismaModule,
     MailModule,
     AuthModule,
@@ -61,6 +72,7 @@ import { PrismaModule } from './shared/prisma/prisma.module.js';
     CustomersModule,
     FavoritesModule,
     LeadsModule,
+    CouriersModule,
     OrdersModule,
     ConversationsModule,
     RealtimeModule,

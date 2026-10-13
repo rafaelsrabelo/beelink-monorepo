@@ -117,6 +117,14 @@ const envSchema = z.object({
   LEAD_RATE_LIMIT_WINDOW: z.string().default('10 minutes'),
 
   /**
+   * Per IP, on POST /courier-applications — the landing's form for who wants to deliver (BEELINK-321),
+   * the other anonymous write. The lead's numbers, for the lead's reason: a person who mistypes a CPF
+   * and tries again. It also bounds a script walking CPFs to overwrite what the list keeps of them.
+   */
+  COURIER_APPLICATION_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(5),
+  COURIER_APPLICATION_RATE_LIMIT_WINDOW: z.string().default('10 minutes'),
+
+  /**
    * Per IP, on POST /stores/:slug/funnel-events — the shop window counting a step of its funnel
    * (BEELINK-276). Generous on purpose: a mobile carrier puts many visitors behind one address, and
    * a count refused is a visit missing from a shopkeeper's numbers, not an error anyone sees. It
