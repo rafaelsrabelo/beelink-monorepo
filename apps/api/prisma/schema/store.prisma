@@ -212,6 +212,8 @@ model Store {
   asaasSettings AsaasSettings?
   /// How it gets an order to its customer (BEELINK-175); none until first saved.
   deliverySettings DeliverySettings?
+  /// What it owes bee-link (BEELINK-219); none on a store from before subscriptions existed.
+  subscription StoreSubscription?
 
   @@index([ownerId])
   @@index([categoryId])

@@ -18,10 +18,13 @@ export default defineConfig({
   // no longer mentions seeding and `migrate reset` no longer offers `--skip-seed`, the flag that
   // only made sense while it did. Observed, not inferred: a reset here left `store_categories`
   // empty, which shows up as every shop reading "Sem categoria" in the panel's select. Reset, then
-  // seed, as two commands. The script upserts on slug, so repeating it is safe.
+  // seed, as two commands. Every file it runs upserts on slug, so repeating it is safe.
+  //
+  // A script, because this command is run without a shell and so cannot chain two (BEELINK-219):
+  // prisma/seed/run.mjs lists the files.
   migrations: {
     path: 'prisma/migrations',
-    seed: 'prisma db execute --file prisma/seed/store-categories.sql',
+    seed: 'node prisma/seed/run.mjs',
   },
   // Not prisma's env(): it throws when the variable is unset, and `prisma generate` — which build,
   // type-check and test all run — needs no database. A migration fails on the empty URL instead.
