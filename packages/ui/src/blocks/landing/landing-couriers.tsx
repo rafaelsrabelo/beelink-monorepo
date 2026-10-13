@@ -38,13 +38,16 @@ const PERK_ICONS: readonly LucideIcon[] = [MapPinIcon, CheckIcon, ClockIcon, Ban
  * the couriers' app it describes is still to come. What exists is the first step: the form puts a
  * person on the list of those who asked to deliver, today in one city, which the section's own
  * words say.
+ *
+ * On a phone it runs from edge to edge, the one section of the page that does: drawn there as the
+ * card it is from `md`, its margins and its padding left the form 310px of a 390px screen.
  */
 export function LandingCouriers({ photo, form, messages = defaultMessages }: LandingCouriersProps) {
   const text = messages.landing.couriers
 
   return (
-    <section id="entregadores" className="scroll-mt-6 px-4 md:px-10">
-      <div className={cn(LANDING_FOCUS_ON_INK, "relative mx-auto flex max-w-[1360px] flex-col gap-12 overflow-hidden rounded-[32px] bg-brand-ink px-6 py-14 text-brand-on-ink md:rounded-[48px] md:px-12 xl:flex-row xl:gap-16 xl:px-[72px] xl:py-24")}>
+    <section id="entregadores" className="scroll-mt-6 md:px-10">
+      <div className={cn(LANDING_FOCUS_ON_INK, "relative mx-auto flex max-w-[1360px] flex-col gap-12 overflow-hidden bg-brand-ink px-4 py-14 text-brand-on-ink md:rounded-[48px] md:px-12 xl:flex-row xl:gap-16 xl:px-[72px] xl:py-24")}>
         {photo ? (
           // Behind the form, fading into the black where the words are: the sentences stay on black.
           // The fade is the photo's own, not the section's: its edge starts in solid black, and no seam shows where it begins.
