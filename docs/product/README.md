@@ -210,6 +210,18 @@ Every shop that sells reads, in its panel, **where its customers give up**: "Fun
 - **A day's numbers are kept for thirteen months and then deleted** — long enough to set a month beside the same month a year before. Days from before the funnel existed read as zero.
 - A site that sells nothing has no funnel.
 
+## bee-link's own site, measured
+
+bee-link measures **its own site** with Google Analytics — the landing page, and the two screens a shopkeeper signs in and signs up at — to know how many people arrive and how many create an account. The measurement is bee-link's, in its own Google Analytics account: no shop reads it, and it measures no shop.
+
+- **A visitor is asked first, on the landing page**, to accept or refuse, and the two answers weigh the same. Until a yes, nothing of Google's is loaded and nothing is sent; after a no, the same. The sign-in and the sign-up ask nothing: they go by the answer given on the landing page, and whoever reaches them without having answered is not measured.
+- **The answer is the site's, never a shop's.** A yes to bee-link is not a yes to any shop's cookie notice, and a shop's is not a yes to bee-link.
+- **After a yes, two things are told**: each of those three pages opened, and an account created — that one was, and nothing of who created it. A page is told by its address without what the address carries: only a campaign's labels (`utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, `utm_term`) stay. No name, e-mail, phone or CPF is sent. Where the visitor came from is told without its parameters, and a page of bee-link itself only as "bee-link" — never which shop, which order, or which link with a token.
+- **It is not for advertising.** Nothing is linked to an ad profile and no ad storage is asked for. That stops being true the day bee-link's Google Analytics account is linked to an advertising one — which is a decision about the privacy policy before it is one about the account.
+- **Never at a shop, in the panel, or on a page opened by a single-use link** — confirming an e-mail, setting a password. A visitor who moves from a measured page to any other is told of no further.
+- **A yes can be taken back at any time**, from the landing page's footer: bee-link stops telling Google at once and takes Google Analytics' identifiers out of the browser.
+- **A deployment measures only where it was told what to measure with.** Without that — homologation, a developer's machine — nobody is asked and nothing is loaded.
+
 ## What the product does not do
 
 - It does not receive, hold or move money: an online payment happens in the shopkeeper's own Asaas account, and what is settled with the shop is between the two of them.

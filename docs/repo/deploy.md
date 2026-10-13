@@ -77,12 +77,14 @@ bee-link has **no app** at Meta either: each shop gives its own pixel's ID (BEEL
 
 ## The landing's own measurement
 
-Beelink measures its own site with Google Analytics — the landing, and the two screens a shopkeeper signs in and signs up at — and only for a visitor who accepted the landing's cookie notice (BEELINK-319; the script itself is BEELINK-320).
+Beelink measures its own site with Google Analytics — the landing, and the two screens a shopkeeper signs in and signs up at — and only for a visitor who accepted the landing's cookie notice (the notice is BEELINK-319, the script BEELINK-320).
 
-- **`SITE_GA_MEASUREMENT_ID` is the switch**, a GA4 measurement ID (`G-…`), read at runtime by the `web` service. Set, the landing shows the notice and a "Cookies" in its footer; unset, it asks nothing, writes no cookie and measures nothing. A value that is not a GA4 ID stops the web from starting, on purpose.
-- **Production only, and only once the script is deployed.** The notice says a yes sends data to Google: with the ID set before BEELINK-320 is live it would say so while nothing is sent.
-- **The ID lives in Dokploy's Environment**, never in the repository.
+- **`SITE_GA_MEASUREMENT_ID` is the switch**, a GA4 measurement ID (`G-…`), read at runtime by the `web` service. Set, the landing shows the notice and a "Cookies" in its footer, and a visitor who accepts has Google's script loaded on those three pages; unset, it asks nothing, writes no cookie and measures nothing. A value that is not a GA4 ID stops the web from starting, on purpose.
+- **Production only, and only with BEELINK-320 deployed.** The notice says a yes sends data to Google: with the ID set on a build that has only BEELINK-319 it would say so while nothing is sent.
+- **The ID lives in Dokploy's Environment**, never in the repository. It reaches a browser only in the page of a visitor who said yes.
 - **In the GA4 property, leave Google Ads unlinked and Google signals off.** The privacy policy says the measurement is not for advertising and names two cookies, `_ga` and `_ga_<id>`; a linked Ads account writes more.
+- **In the GA4 property, switch off "Page changes based on browser history events"** (Admin → Data streams → the web stream → Enhanced measurement → Page views → Show advanced settings). The site tells each page view itself, with the address's parameters taken out. Left on, Google's library tells one of its own at every change of the address — twice the views between the three pages, and the whole address. The app shuts the library before the address changes (`src/instrumentation-client.ts`), but that was tried against a stand-in written from Google's documentation and never against Google's library: the setting is the control, the code a second one.
+- **To see it working, in production:** open the landing in a fresh window, accept the notice, and read *Reports → Realtime* in the GA4 property: a `page_view` for `/` within seconds; one more for `/signup` after "Começar agora" — one, not two; a `sign_up` after an account is created; nothing more after "Cookies" → "Recusar", and no `_ga` cookie left in the browser (DevTools → Application → Cookies). *Admin → DebugView* shows each event's parameters once the Google Analytics Debugger extension is on: a page view's `page_location` carries no parameter but `utm_*`. In DevTools' Network tab, no answer or a refusal means no request to `googletagmanager.com` or `google-analytics.com` at all. Nobody has seen an event reach a real property yet: BEELINK-320 was tried with a made-up ID and every request to Google answered by the test.
 
 ## Shop domains
 
