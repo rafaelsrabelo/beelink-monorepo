@@ -116,3 +116,40 @@ Decididas sem perguntar, e ditas ao Rafael junto com o plano:
     do próprio Next (o anunciador de rota) e o contraste do botão no meio da transição (decisão 14).
 - **Capturas** em 390, 768, 1280, 1440 e 1920px, com o formulário vazio, com erros, preenchido,
   enviado e com o CPF repetido: `.claude/worktrees/landing-aa-pr/screens-329/` (pasta ignorada pelo git).
+
+## Acréscimo — o e-mail volta ao formulário (13/10, depois do PR aberto)
+
+Com os PRs #266 e #267 abertos, o Rafael olhou o #266 e disse: "é necessário ter e-mail o entregador
+para se cadastrar: nome, e-mail, WhatsApp, tipo de transporte". O pedido de design tirava o e-mail do
+primeiro passo; a regra do produto é a dele. Perguntado sobre o CPF, que não estava na lista,
+respondeu que fica.
+
+O que mudou em relação ao que está acima:
+
+- **O formulário pede nome, CPF, e-mail, WhatsApp e veículo.** Continua sem o select de cidade, com a
+  cidade fixa no envio. O e-mail é obrigatório e validado como antes. Vale no lugar da linha 2 da
+  Definição de Pronto e da linha 4 ("nenhum e-mail").
+- **O BEELINK-328 foi cancelado e o #266 fechado sem merge.** A API fica como está no `main`: o
+  e-mail é obrigatório. Os commits dele, que esta branch carregava, foram revertidos aqui; a
+  migration que soltava o `NOT NULL` nunca foi mergeada nem publicada.
+- **A confirmação volta a dizer que o resto chega por e-mail** (vale no lugar da decisão 2 e da linha
+  8). É verdade desde o BEELINK-326: a API envia o e-mail de "cadastro recebido" a cada cadastro que
+  guarda. As perguntas frequentes voltam ao texto do `main`. Nada mais promete contato por WhatsApp.
+- **Para o próximo passo ficam só os documentos**: a frase embaixo do botão é "Os documentos ficam
+  para o próximo passo."
+- **E-mail repetido** volta a ser erro no campo do e-mail, como o WhatsApp. O CPF repetido continua
+  virando "Esse CPF já tem cadastro" no lugar do formulário.
+- **A versão legal `2026-10-15` ficou menor.** O que o formulário coleta não mudou; a política só
+  deixa de citar o nome antigo do formulário ("Comece seu cadastro") e passa a dizer que a cidade
+  não é perguntada porque hoje é sempre Fortaleza/CE.
+- **A altura cresceu com o campo:** 848px no desktop com o formulário vazio, 802px preenchido, 373px
+  com a confirmação. No celular, 1194px.
+
+O que foi visto depois da mudança: os testes de `blocks/landing` (267), os do web para a seção, o
+envio e os textos legais (136) e o navegador contra o build, `courier-application` e `site-consent`,
+48 de 48 — entre eles o corpo enviado com e-mail e cidade, o e-mail repetido recusado no campo e o
+CPF repetido no cartão.
+
+Sobre o CI do #267 antes desta mudança: o job `web` falhou no build ao baixar a fonte Figtree do
+Google no runner ("next/font/google"), com os testes verdes; o job de e2e, que builda o mesmo commit,
+passou.
