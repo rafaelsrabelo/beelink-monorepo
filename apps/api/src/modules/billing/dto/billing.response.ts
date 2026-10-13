@@ -3,8 +3,11 @@ import { ApiProperty } from '@nestjs/swagger';
 
 // Types
 import type {
+  BillingAccount,
+  BillingAccountAnswer,
   BillingCycle,
   BillingCycleMonths,
+  BillingDocumentType,
   Plan,
   PlanCatalog,
   PlanCycle,
@@ -17,7 +20,7 @@ import type {
 } from '@harness-monorepo/contracts';
 
 // App
-import { BILLING_CYCLES, CYCLE_MONTHS, SUBSCRIPTION_PAYMENT_METHODS, SUBSCRIPTION_STATUSES } from '../billing.constants.js';
+import { BILLING_CYCLES, BILLING_DOCUMENT_TYPES, CYCLE_MONTHS, SUBSCRIPTION_PAYMENT_METHODS, SUBSCRIPTION_STATUSES } from '../billing.constants.js';
 
 /** Documents the shapes for Swagger; the wire types themselves live in packages/contracts. */
 
@@ -71,4 +74,15 @@ class StoreSubscriptionResponse implements StoreSubscription {
 export class StoreSubscriptionAnswerResponse implements StoreSubscriptionAnswer {
   @ApiProperty({ description: 'Whether this deployment charges and locks. False: the panel shows nothing of a plan.' }) billingEnforced!: boolean;
   @ApiProperty({ nullable: true, type: StoreSubscriptionResponse, description: 'Null for a page from before subscriptions existed.' }) subscription!: StoreSubscriptionResponse | null;
+}
+
+export class BillingAccountResponse implements BillingAccount {
+  @ApiProperty({ example: 'Maria Souza Lima' }) name!: string;
+  @ApiProperty({ example: '***.982.247-**', description: 'Never whole: a CPF as `***.982.247-**`, a CNPJ as `**.222.333/0001-**`.' }) document!: string;
+  @ApiProperty({ enum: BILLING_DOCUMENT_TYPES }) documentType!: BillingDocumentType;
+  @ApiProperty({ description: "Whether bee-link's Asaas account holds this account as a customer, with this name and document. False after a save Asaas refused or did not answer: saving again asks again." }) customerReady!: boolean;
+}
+
+export class BillingAccountAnswerResponse implements BillingAccountAnswer {
+  @ApiProperty({ nullable: true, type: BillingAccountResponse, description: 'Null for an account that never gave its billing data.' }) account!: BillingAccountResponse | null;
 }

@@ -1,8 +1,9 @@
 // Types
-import type { BillingCycle, Plan, PlanCycle, StoreSubscription } from '@harness-monorepo/contracts';
-import type { PlanModel, StoreSubscriptionModel } from '../../generated/prisma/models.js';
+import type { BillingAccount, BillingCycle, Plan, PlanCycle, StoreSubscription } from '@harness-monorepo/contracts';
+import type { BillingAccountModel, PlanModel, StoreSubscriptionModel } from '../../generated/prisma/models.js';
 
 // App
+import { maskedDocumentOf } from '../integrations/asaas/masked-document.js';
 import { daysLeft, lastDayBefore } from './billing-dates.js';
 import { BILLING_CYCLES, CYCLE_MONTHS } from './billing.constants.js';
 import { statusAt } from './subscription-status.js';
@@ -53,5 +54,19 @@ export function toStoreSubscription(row: StoreSubscriptionRow, now: Date): Store
     invoiceUrl: row.invoiceUrl,
     // The two columns are set together, by the table's CHECK.
     card: row.cardBrand !== null && row.cardLast4 !== null ? { brand: row.cardBrand, last4: row.cardLast4 } : null,
+  };
+}
+
+/**
+ * An account's billing data as its owner reads it (BEELINK-291). The document never leaves whole: a
+ * panel left open on a shared machine shows whose it is, not what it is. One the mask does not know
+ * the shape of is answered as nothing at all.
+ */
+export function toBillingAccount(row: Pick<BillingAccountModel, 'name' | 'document' | 'asaasCustomerId' | 'asaasCustomerSyncedAt'>): BillingAccount {
+  return {
+    name: row.name,
+    document: maskedDocumentOf(row.document) ?? '',
+    documentType: row.document.length === 11 ? 'CPF' : 'CNPJ',
+    customerReady: row.asaasCustomerId !== null && row.asaasCustomerSyncedAt !== null,
   };
 }

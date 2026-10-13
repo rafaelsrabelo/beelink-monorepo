@@ -2,8 +2,12 @@
 import type { AsaasEnvironment } from '@harness-monorepo/contracts';
 
 // App
+import { ASAAS_BASE_URLS } from '../../../shared/asaas/asaas-environment.js';
 import { env } from '../../../shared/config/env.js';
 import { vaultKeyOf } from '../secret-vault.js';
+
+// The key's prefixes are kept beside the addresses, where the boot reads them too; named from here as they always were.
+export { ASAAS_KEY_PREFIXES } from '../../../shared/asaas/asaas-environment.js';
 
 /** Where this deployment's Asaas answers, how bee-link names itself there, and where a shop's events go. */
 export interface AsaasConfig {
@@ -18,17 +22,6 @@ export interface AsaasConfig {
   webhookUrl: string | null;
   vaultKey: Buffer;
 }
-
-const BASE_URLS: Record<AsaasEnvironment, string> = {
-  SANDBOX: 'https://api-sandbox.asaas.com/v3',
-  PRODUCTION: 'https://api.asaas.com/v3',
-};
-
-/** A key says which Asaas it is for in its first characters; one with neither is an older key, and Asaas itself decides. */
-export const ASAAS_KEY_PREFIXES: Record<AsaasEnvironment, string> = {
-  SANDBOX: '$aact_hmlg_',
-  PRODUCTION: '$aact_prod_',
-};
 
 /** The web's route that hands Asaas's events to the API (BEELINK-206), the same for every shop: the token says which. */
 const WEBHOOK_PATH = '/api/integrations/asaas/webhook';
@@ -51,7 +44,7 @@ export function asaasConfig(): AsaasConfig | null {
   const environment = asaasEnvironment();
   return {
     environment,
-    baseUrl: BASE_URLS[environment],
+    baseUrl: ASAAS_BASE_URLS[environment],
     userAgent: `bee-link (${env.ASAAS_CONTACT_EMAIL})`,
     contactEmail: env.ASAAS_CONTACT_EMAIL,
     webhookUrl: publicWebhookUrlOf(env.WEB_URL),

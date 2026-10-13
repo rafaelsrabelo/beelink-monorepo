@@ -136,33 +136,9 @@ export interface AsaasPixQrCode {
   expiresAt: Date | null;
 }
 
-/** Asaas answered, and said no: the key is not good, belongs to the other environment, or the request was refused. */
-export class AsaasRefused extends Error {
-  constructor(
-    readonly status: number,
-    /** Asaas's own code — `invalid_environment`, `invalid_access_token`… — or null when it sent none. */
-    readonly code: string | null,
-    readonly reason: string,
-  ) {
-    super(`Asaas refused (${status}${code ? `, ${code}` : ''}): ${reason}`);
-  }
-}
-
-/** Asaas did not answer, or answered with its own failure: nothing was decided, and trying again may work. */
-export class AsaasUnreachable extends Error {}
-
-/**
- * Asaas answered 429: the account's quota — 25,000 requests in twelve hours — or its rate is spent.
- * Nothing was decided; `retryAt` is when Asaas said to ask again (`RateLimit-Reset`), when it said.
- */
-export class AsaasThrottled extends AsaasUnreachable {
-  constructor(
-    message: string,
-    readonly retryAt: Date | null,
-  ) {
-    super(message);
-  }
-}
+// What a call ends in when Asaas gives no answer to go on. Defined beside the call itself, which
+// bee-link's own account is asked through too; named from here as they always were.
+export { AsaasOutcomeUnknown, AsaasRefused, AsaasThrottled, AsaasUnreachable } from '../../../shared/asaas/asaas-errors.js';
 
 /** Where a webhook registered at a shop's account stands there. */
 export interface AsaasWebhookStanding {
@@ -170,12 +146,6 @@ export interface AsaasWebhookStanding {
   /** Asaas stopped sending after fifteen failures in a row; what it holds waits up to fourteen days. */
   interrupted: boolean;
 }
-
-/**
- * No answer to a request that creates: Asaas may have made the charge or not. Whoever asked must not
- * ask again before looking for what the first request left.
- */
-export class AsaasOutcomeUnknown extends AsaasUnreachable {}
 
 /**
  * What bee-link asks of a shop's Asaas account, with the key the shopkeeper gave. A port: the module

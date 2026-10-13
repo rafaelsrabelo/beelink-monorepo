@@ -59,15 +59,33 @@ model Plan {
 
 /// A shopkeeper's account as bee-link charges it (BEELINK-219): one Asaas customer per account, at
 /// bee-link's own Asaas account, whatever the number of pages. Its own table and not a column of
-/// `users`, which holds the shops' customers too and knows nothing of Asaas. No row until the account
-/// is first charged.
+/// `users`, which holds the shops' customers too and knows nothing of Asaas. No row until the
+/// shopkeeper gives their billing data (BEELINK-291).
+///
+/// The row is written and committed before Asaas is asked anything, and Asaas is never asked with a
+/// lock held: `asaasCustomerClaimedUntil` is what lets one request at a time talk to Asaas about the
+/// account's customer, as `orders.paymentClaimedUntil` does about an order's charge.
 model BillingAccount {
   userId String @id @db.Uuid
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  /// Who is charged, as Asaas is told: a person's name or a company's. The e-mail is the account's
+  /// own and is not copied here; a phone and an address are not kept.
+  name     String @db.VarChar(120)
+  /// A CPF or a CNPJ with no punctuation — eleven digits, or twelve digits or capital letters and two
+  /// digits, by a CHECK. Whether its check digits hold is the API's to say. Answered masked, always.
+  document String @db.VarChar(14)
+
   /// Asaas's id of the customer, `cus_…`. Null while the row exists and the customer does not yet:
   /// the row may be written before Asaas is called.
-  asaasCustomerId String? @unique @db.VarChar(64)
+  asaasCustomerId           String?   @unique @db.VarChar(64)
+  /// When Asaas came to hold this very name and document. Null: what the row says was not told to
+  /// Asaas yet — never, or not since it last changed.
+  asaasCustomerSyncedAt     DateTime?
+  /// Until when one request holds the talk with Asaas about this customer. Null, or in the past: free.
+  /// Pushed ahead after a creation Asaas left unanswered, so nobody creates again before a customer
+  /// it did make had time to show in a search.
+  asaasCustomerClaimedUntil DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

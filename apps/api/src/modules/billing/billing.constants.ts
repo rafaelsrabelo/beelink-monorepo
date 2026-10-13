@@ -1,5 +1,5 @@
 // Types
-import type { BillingCycle, BillingCycleMonths, SubscriptionPaymentMethod, SubscriptionStatus } from '@harness-monorepo/contracts';
+import type { BillingCycle, BillingCycleMonths, BillingDocumentType, BillingErrorCode, SubscriptionPaymentMethod, SubscriptionStatus } from '@harness-monorepo/contracts';
 import type {
   BillingCycle as BillingCycleRow,
   SubscriptionPaymentMethod as SubscriptionPaymentMethodRow,
@@ -44,3 +44,30 @@ export const SUBSCRIPTION_PAYMENT_METHODS = Object.keys({
   PIX: true,
   BOLETO: true,
 } satisfies Record<SubscriptionPaymentMethod, true> satisfies Record<SubscriptionPaymentMethodRow, true>) as SubscriptionPaymentMethod[];
+
+export const BILLING_DOCUMENT_TYPES = Object.keys({ CPF: true, CNPJ: true } satisfies Record<BillingDocumentType, true>) as BillingDocumentType[];
+
+/** A name's bounds, in characters as Postgres counts them: the column's width, and no single letter. */
+export const BILLING_NAME_MIN_LENGTH = 2;
+export const BILLING_NAME_MAX_LENGTH = 120;
+
+/**
+ * How long one save holds the talk with Asaas about an account's customer (BEELINK-291): past every
+ * call it may make — the search, then a change or a creation — at the client's ten seconds each.
+ */
+export const CUSTOMER_CLAIM_MS = 60_000;
+
+/** How long nobody creates after a creation Asaas left unanswered: time for a customer it did make to show in the search. */
+export const CUSTOMER_UNKNOWN_HOLD_MS = 45_000;
+
+/**
+ * bee-link's name for an account at its own Asaas account: how its customer is found again. Prefixed,
+ * because that Asaas account may hold customers that are not bee-link's shopkeepers — another
+ * product's, or a shop's own, which are filed under their record's bare id. Lower case: Asaas's
+ * search ignores case, and the comparison made here does not.
+ */
+export const customerReferenceOf = (userId: string): string => `beelink-account-${userId.toLowerCase()}`;
+
+export function billingError(errorCode: BillingErrorCode, message: string) {
+  return { errorCode, message };
+}

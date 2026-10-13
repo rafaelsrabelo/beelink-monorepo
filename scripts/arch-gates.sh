@@ -110,6 +110,16 @@ gate "api/asaas-secret-in-asaas" \
   "['\"]ASAAS['\"]" \
   --exclude-dir=asaas --exclude='*.spec.ts'
 
+# bee-link's own Asaas key — the one a page's plan is charged with, for every shopkeeper — is read in
+# one file, which builds the client around it and hands the key to nothing else: no other file can
+# log it, answer it or pass it on, because no other file can name it. The schema that declares it is
+# the config folder's. Narrower than the shops' gate above on purpose: a file, not a folder.
+gate "api/platform-asaas-key-in-billing" \
+  "Only src/modules/billing/platform-asaas.config.ts reads env.ASAAS_PLATFORM_API_KEY, bee-link's own Asaas key; nothing else names it (apps/api/AGENTS.md rule 11, BEELINK-291)." \
+  "apps/api/src" \
+  "ASAAS_PLATFORM_API_KEY" \
+  --exclude-dir=config --exclude-dir=generated --exclude='platform-asaas.config.ts'
+
 # The same for a shop's Conversions API token (BEELINK-274), which sends events to the shop's own Meta
 # account: nothing else under integrations names the party, so nothing else can seal or open it.
 gate "api/meta-secret-in-meta-pixel" \

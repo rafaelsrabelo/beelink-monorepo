@@ -3,7 +3,7 @@ import type { PlanModel } from '../../generated/prisma/models.js';
 import type { StoreSubscriptionRow } from './billing.mapper.js';
 
 // App
-import { priceOf, toPlan, toStoreSubscription } from './billing.mapper.js';
+import { priceOf, toBillingAccount, toPlan, toStoreSubscription } from './billing.mapper.js';
 
 const beelink = {
   id: '0199a0f1-0000-7000-8000-0000000000b1',
@@ -137,5 +137,29 @@ describe('a subscription, as its page’s owner reads it', () => {
     const card = { ...trialing, status: 'ACTIVE', paymentMethod: 'CREDIT_CARD', cardBrand: 'MASTERCARD', cardLast4: '8829' } satisfies StoreSubscriptionRow;
 
     expect(toStoreSubscription(card, new Date()).card).toEqual({ brand: 'MASTERCARD', last4: '8829' });
+  });
+});
+
+describe("an account's billing data, as its owner reads it (BEELINK-291)", () => {
+  const synced = { name: 'Zuleica Tavares', document: '52998224725', asaasCustomerId: 'cus_000009458155', asaasCustomerSyncedAt: new Date('2026-10-13T18:00:00.000Z') };
+
+  it('never answers the document whole: a CPF and a CNPJ each by their own mask', () => {
+    expect(toBillingAccount(synced)).toEqual({ name: 'Zuleica Tavares', document: '***.982.247-**', documentType: 'CPF', customerReady: true });
+    expect(toBillingAccount({ ...synced, name: 'Lessari Moda LTDA', document: '11222333000181' })).toEqual({ name: 'Lessari Moda LTDA', document: '**.222.333/0001-**', documentType: 'CNPJ', customerReady: true });
+    expect(toBillingAccount({ ...synced, document: '12ABC34501DE35' })).toMatchObject({ document: '**.ABC.345/01DE-**', documentType: 'CNPJ' });
+  });
+
+  it('answers nothing at all of a document the mask does not know the shape of', () => {
+    expect(toBillingAccount({ ...synced, document: '529982247' }).document).toBe('');
+  });
+
+  it('says the customer is ready only when Asaas holds it with what the row says', () => {
+    expect(toBillingAccount({ ...synced, asaasCustomerSyncedAt: null }).customerReady).toBe(false);
+    expect(toBillingAccount({ ...synced, asaasCustomerId: null }).customerReady).toBe(false);
+    expect(toBillingAccount({ ...synced, asaasCustomerId: null, asaasCustomerSyncedAt: null }).customerReady).toBe(false);
+  });
+
+  it('answers nothing of Asaas: no id, no date, no claim', () => {
+    expect(Object.keys(toBillingAccount(synced)).sort()).toEqual(['customerReady', 'document', 'documentType', 'name']);
   });
 });

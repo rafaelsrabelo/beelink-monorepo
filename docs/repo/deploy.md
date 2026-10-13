@@ -103,7 +103,11 @@ A shop may have a domain of its own (BEELINK-281): its owner saves it (`PUT /api
 
 ## bee-link's own plans
 
-What a page pays bee-link (BEELINK-218) is charged at bee-link's own Asaas account, apart from every shop's. Nothing of it calls Asaas yet.
+What a page pays bee-link (BEELINK-218) is charged at bee-link's own Asaas account, apart from every shop's. So far the one thing asked of that account is the shopkeeper's customer record (BEELINK-291); no subscription and no charge is made yet.
+
+- **`ASAAS_PLATFORM_API_KEY` is the key of bee-link's own Asaas account**, of the same Asaas as `ASAAS_ENV`: `$aact_prod_…` in production, `$aact_hmlg_…` in the sandbox. A key of the other one **stops the boot**, with a message that names the variable and never the key. Left out, the API runs as before and the billing account's routes answer `503 BILLING_UNAVAILABLE`. It is configuration, like `JWT_SECRET`: never sealed in the database, and never logged or answered.
+- **The key begins with `$`, and Compose expands `$NAME` in the Environment it is given.** Write it between single quotes, `ASAAS_PLATFORM_API_KEY='$aact_prod_…'`, which Compose's `.env` syntax takes literally. Written bare or in double quotes, the key reads as the names of variables that do not exist: the API receives nothing of it, and Compose prints those names — the key's own body — in a warning (`The "aact_…" variable is not set`), which lands in the deploy's log. A key written that way is replaced at Asaas. Seen with Docker Compose and a made-up key, in a container: single quotes arrive whole. **Not tried on Dokploy itself.** The check is the API's own log at boot, which says either `bee-link's own Asaas account is set up (PRODUCTION)` or that no key was given — and should a deployment log ever show the key, replace it at Asaas.
+- **`ASAAS_PLATFORM_WEBHOOK_TOKEN`** is what Asaas will send back with every event of that account, 32 to 255 characters with no space. It is declared and read by nothing: the platform's webhook comes with BEELINK-221.
 
 - **`BILLING_ENFORCED` is left out until the day charging starts.** Unset or `false`, nothing is charged, nothing locks and the panel says nothing of a plan. A page's 7-day trial is counted from its creation either way, so the day it is set to `true` every page created more than seven days before reads as expired: look at those first.
 - **The plans and their prices are the seed's** — `apps/api/prisma/seed/plans.sql`, run by `migrate` on every deploy. A price or an `active` changed by hand in the database is put back by the next deploy; change the file. The landing shows its own copy of the prices (`apps/web/src/lib/plans.ts`), and the two are changed together.
@@ -121,6 +125,7 @@ A second Compose service in Dokploy, on the branch `homolog`, from the same file
 | `SMTP_URL`, `MAIL_FROM` | a mailbox or a sandbox inbox of its own, so a made-up shop never writes to a real customer under production's sender |
 | `MELHOR_ENVIO_ENV` | `sandbox`, with the **sandbox app's** id and secret and `MELHOR_ENVIO_REDIRECT_URI` on this domain. The sandbox app registers this domain's callback and webhook |
 | `ASAAS_ENV` | `sandbox` (or unset, which is the same). Shops paste `$aact_hmlg_…` keys |
+| `ASAAS_PLATFORM_API_KEY` | left out, or a **sandbox** account's key (`'$aact_hmlg_…'`, in single quotes). Production's would stop the boot here |
 | `GOOGLE_*` | left out, or a client with this domain's redirect URI registered |
 | `SITE_GA_MEASUREMENT_ID` | left out: made-up visits to a made-up site are not production's to count, and the landing then asks nothing |
 
