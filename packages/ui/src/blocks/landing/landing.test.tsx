@@ -340,6 +340,7 @@ describe("LandingFaq", () => {
       "LojistaQuanto custa?",
       "LojistaComo funciona o teste de 14 dias?",
       "LojistaO que acontece quando o teste acaba?",
+      "LojistaPosso ter mais de uma página?",
       "EntregadorQuem pode se cadastrar como entregador?",
       "EntregadorQuanto tempo leva a aprovação?",
       "EntregadorComo recebo pelos serviços?",
@@ -356,10 +357,11 @@ describe("LandingFaq", () => {
     const answerTo = (question: string) => (screen.getByText(question).closest("details")?.querySelector("p")?.textContent ?? "").replace(/\u00a0/g, " ")
 
     expect(answerTo("Quanto custa?")).toBe(
-      "O plano Beelink custa R$ 100,00 por mês. Pagando 6 meses de uma vez sai por R$ 540,00, que dá R$ 90,00 por mês; pagando o ano, R$ 960,00, que dá R$ 80,00 por mês. O plano com a Beelia ainda não está disponível e vai custar R$ 150,00 por mês.",
+      "O plano Beelink custa R$ 100,00 por mês, por página criada. Pagando 6 meses de uma vez sai por R$ 540,00, que dá R$ 90,00 por mês; pagando o ano, R$ 960,00, que dá R$ 80,00 por mês. O plano com a Beelia ainda não está disponível e vai custar R$ 150,00 por mês.",
     )
-    expect(answerTo("Como funciona o teste de 14 dias?")).toBe("Você cria a conta e usa a loja e o painel por 14 dias sem pagar nada. Não pedimos cartão no cadastro.")
-    expect(answerTo("O que acontece quando o teste acaba?")).toBe("Passados os 14 dias, a conta fica travada até você escolher um plano e pagar. Nada é cobrado sozinho.")
+    expect(answerTo("Como funciona o teste de 14 dias?")).toBe("Você cria a conta e usa a loja e o painel por 14 dias sem pagar nada. Não pedimos cartão no cadastro. Cada página que você cria tem os seus 14 dias.")
+    expect(answerTo("O que acontece quando o teste acaba?")).toBe("Passados os 14 dias, a página fica travada até você escolher um plano e pagar. Nada é cobrado sozinho.")
+    expect(answerTo("Posso ter mais de uma página?")).toBe("Pode. Cada página tem o seu próprio link, e o plano é por página criada: cada uma tem os seus 14 dias grátis e o seu plano.")
 
     const page = (container.textContent ?? "").replace(/\u00a0/g, " ")
     expect([...new Set(page.match(/R\$ ?[\d.]+,\d{2}/g))].sort()).toEqual(["R$ 100,00", "R$ 150,00", "R$ 540,00", "R$ 80,00", "R$ 90,00", "R$ 960,00"])

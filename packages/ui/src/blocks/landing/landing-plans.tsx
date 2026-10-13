@@ -96,7 +96,7 @@ export function LandingPlans({ prices, locale, signupHref, linkComponent: Link =
                 </div>
                 <p className={TEXT}>{text.withBeelia.text}</p>
               </div>
-              <p className="flex flex-wrap items-baseline gap-x-2">
+              <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
                 <span className="text-[44px] leading-none font-extrabold tracking-[-0.03em] whitespace-nowrap">{values.withBeelia}</span>{" "}
                 <span className="font-semibold text-brand-text">{text.perMonth}</span>
               </p>

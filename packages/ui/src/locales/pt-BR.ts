@@ -3010,7 +3010,7 @@ export const ptBR: UiMessages = {
       titleStrong: "seu plano",
       lead: "Comece com {days} dias grátis, sem cartão. Depois você escolhe como pagar.",
       trial: "{days} dias grátis, sem cartão",
-      perMonth: "por mês",
+      perMonth: "por mês, por página",
       includesLabel: "O que inclui",
       beelink: {
         name: "Beelink",
@@ -3042,7 +3042,7 @@ export const ptBR: UiMessages = {
         includes: ["Tudo do plano Beelink", "Avisos de pedido no WhatsApp", "Cupons no WhatsApp", "Atendimento no WhatsApp da loja"],
       },
       soon: "Em breve",
-      after: "Passados os {days} dias, a conta fica travada até você escolher um plano e pagar. Nada é cobrado sozinho.",
+      after: "Passados os {days} dias, a página fica travada até você escolher um plano e pagar. Nada é cobrado sozinho. O plano é por página criada: cada página tem os seus {days} dias grátis e o seu plano.",
     },
     couriers: {
       tag: "Para entregadores",
@@ -3111,10 +3111,11 @@ export const ptBR: UiMessages = {
         {
           question: "Quanto custa?",
           answer:
-            "O plano Beelink custa {monthly} por mês. Pagando 6 meses de uma vez sai por {semiannual}, que dá {semiannualMonthly} por mês; pagando o ano, {annual}, que dá {annualMonthly} por mês. O plano com a Beelia ainda não está disponível e vai custar {withBeelia} por mês.",
+            "O plano Beelink custa {monthly} por mês, por página criada. Pagando 6 meses de uma vez sai por {semiannual}, que dá {semiannualMonthly} por mês; pagando o ano, {annual}, que dá {annualMonthly} por mês. O plano com a Beelia ainda não está disponível e vai custar {withBeelia} por mês.",
         },
-        { question: "Como funciona o teste de {days} dias?", answer: "Você cria a conta e usa a loja e o painel por {days} dias sem pagar nada. Não pedimos cartão no cadastro." },
-        { question: "O que acontece quando o teste acaba?", answer: "Passados os {days} dias, a conta fica travada até você escolher um plano e pagar. Nada é cobrado sozinho." },
+        { question: "Como funciona o teste de {days} dias?", answer: "Você cria a conta e usa a loja e o painel por {days} dias sem pagar nada. Não pedimos cartão no cadastro. Cada página que você cria tem os seus {days} dias." },
+        { question: "O que acontece quando o teste acaba?", answer: "Passados os {days} dias, a página fica travada até você escolher um plano e pagar. Nada é cobrado sozinho." },
+        { question: "Posso ter mais de uma página?", answer: "Pode. Cada página tem o seu próprio link, e o plano é por página criada: cada uma tem os seus {days} dias grátis e o seu plano." },
       ],
       courier: [
         {

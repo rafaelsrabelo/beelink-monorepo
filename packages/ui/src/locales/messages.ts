@@ -3514,7 +3514,7 @@ export interface UiMessages {
       lead: string
       /** `{days}`. The plan's card says it, and so do the hero and the last call. */
       trial: string
-      /** After an amount that is a month's. */
+      /** After an amount that is a month's, of one page: the plan is per page created (BEELINK-327). */
       perMonth: string
       /** Heads what a plan includes. */
       includesLabel: string
