@@ -228,3 +228,142 @@ COMMIT;
 
 Não desfaz e-mail enviado. Com o código deste ticket no ar e a tabela apagada, todo cadastro novo
 responde 500: desfaça o código antes.
+
+---
+
+## Como ficou (acréscimo de 13/10/2026, depois da implementação)
+
+Nada acima foi reescrito. Esta seção diz o que foi implementado, o que foi rodado e o que cada
+coisa mostrou.
+
+### O ambiente mudou: os itens 13 e 14 da Definição de Pronto foram cumpridos de verdade
+
+Quando o plano foi escrito não havia Docker e o disco tinha 1 Gi. Na implementação havia um
+Postgres 18.6 em `localhost:5442` e um Mailpit em `localhost:1027` (SMTP) e `localhost:8027` (HTTP),
+com 4,4 Gi livres. Então:
+
+- **Item 13:** o spec e2e foi escrito **e rodado**, contra Postgres e Mailpit de verdade.
+- **Item 14:** rodaram `pnpm turbo type-check lint test --filter=api` (a suíte de unidade inteira da
+  API), `pnpm arch-gates`, `pnpm docs-gate` e a suíte e2e inteira da API. Não rodaram o `pnpm
+  ci-check` completo, nenhum build e nenhum Playwright do web.
+
+### Resposta ao risco "a migration nunca foi aplicada num banco"
+
+Foi aplicada em três bancos do Postgres 18.6, com `prisma migrate deploy`:
+
+1. **Um banco de rascunho** (`harness_landing_backfill`, criado para isto e apagado no fim),
+   migrado até `20261013010008_courier_applications` e preenchido à mão antes desta migration.
+2. **O banco da suíte e2e** (`harness_landing_test`), pelo `global-setup`.
+3. **O banco de desenvolvimento desta worktree** (`harness_landing`).
+
+**A prova da carga**, no banco de rascunho. Entraram 7 cadastros com 4 endereços distintos:
+
+| Cadastro (fim do id) | E-mail | `createdAt` |
+|---|---|---|
+| `…00a` | `repetida@exemplo.test` | 10/10 10:00 |
+| `…00b` | `repetida@exemplo.test` | 11/10 09:00 |
+| `…00c` | `repetida@exemplo.test` | 12/10 08:00 |
+| `…00d` | `sozinha@exemplo.test` | 12/10 11:00 |
+| `…00e` | `outra@exemplo.test` | 09/10 07:00 |
+| `…f02` | `empate@exemplo.test` | 12/10 12:00 |
+| `…f01` | `empate@exemplo.test` | 12/10 12:00 (o mesmo instante) |
+
+Saíram 4 e-mails devidos, um por endereço, cada um do cadastro mais antigo do endereço: `…00a`
+(repetida), `…00d` (sozinha), `…00e` (outra) e `…f01` (empate: no mesmo instante decide o id, e o
+menor é o `…f01`). Todos com `attempts = 0`, `sentAt` nulo, já vencidos para envio, e com id
+`uuidv7`.
+
+No mesmo banco:
+
+- `prisma migrate diff --from-config-datasource --to-schema prisma/schema --exit-code` respondeu
+  **"No difference detected"**: o SQL escrito à mão cria exatamente o que o schema descreve.
+- Apagar o cadastro `…00a` apagou o e-mail devido dele (`ON DELETE CASCADE`).
+- As consultas da seção "Consultas" rodaram como estão escritas: a de endereços sem e-mail devido
+  achou `…00b` e `…00c`, e a que conserta deixou um e-mail devido só para `…00b`, o mais antigo que
+  restou.
+- O roteiro de "Desfazer a migration" rodou, e depois dele a migration foi aplicada de novo sem erro.
+
+### O que foi rodado e o que mostrou
+
+- **O teste que fixava o `layout()` byte a byte** passou contra o `layout()` intocado (23 testes) e
+  passou de novo depois de a moldura virar `card` (23 testes). Foi removido antes do commit, como
+  previsto. `layout` já era exportado: nenhum `export` novo ficou para trás por causa dele.
+- **Unidade:** 123 arquivos, 1451 testes, todos passando. `tsc --noEmit` e `oxlint` sem erro.
+- **O spec e2e do cadastro** (`test/courier-applications.e2e-spec.ts`): 35 testes, rodado 4 vezes
+  seguidas, 35 de 35 em todas. Cobre: o e-mail chega ao Mailpit com o texto pedido, do remetente da
+  casa, sem link; um por cadastro e nova varredura não duplica; 409, 400, armadilha e 500 não deixam
+  e-mail devido; a resposta não espera o envio; o envio que falha fica devido e sai na varredura
+  seguinte; de dois avisos do mesmo endereço só o mais antigo sai, com duas varreduras ao mesmo
+  tempo; **a instrução de carga lida do próprio arquivo da migration** e executada no Postgres;
+  apagar o cadastro apaga o e-mail devido; a desistência na quinta tentativa registra só o id do
+  aviso; nada de pessoal no log.
+- **O spec morde.** Quatro defeitos plantados de propósito, um por vez, e desfeitos em seguida: sem
+  a conferência do mais antigo na caixa (1 teste falha), sem o `DISTINCT ON` na migration (1 falha),
+  sem o `dispatch()` no serviço (12 ou mais falham) e sem a escrita do e-mail devido (8 falham).
+- **A suíte e2e inteira da API:** 88 arquivos, 86 passaram; 1156 testes, 1150 passaram. Os 6 que
+  falharam estão em dois arquivos e vêm do `.env` desta worktree, não desta branch (ver "Achados").
+- **O processo de verdade** (`nest start` na 3201, banco `harness_landing`, Mailpit): com 47
+  cadastros inventados de 45 endereços gravados antes da migration, a carga deixou 45 e-mails
+  devidos. Com a API no ar: 0 e-mails ao subir, **20 aos 60 s, 40 aos 121 s, 45 aos 182 s**. É o
+  lote de 20 por minuto da decisão 9, medido. Pela rota, com `curl`: `204` e um e-mail em menos de
+  um segundo; o mesmo corpo de novo, `409` e nenhum e-mail; armadilha, `204` e nenhum e-mail; CPF
+  errado, `400` e nenhum e-mail. No fim, 46 avisos, todos com `sentAt` e `attempts = 1`. O log da
+  API em nível `info` não tem nome, CPF, telefone nem endereço de ninguém, e nenhum aviso ou erro.
+  Os cadastros inventados foram apagados e a caixa do Mailpit esvaziada.
+
+### Decisões tomadas na implementação (continuam a numeração)
+
+16. **O primeiro nome precisa começar por letra, e é composto antes de ser conferido** (refina a
+    decisão 12). O nome passa por `normalize('NFC')` antes do teste: um acento digitado separado da
+    letra é uma marca, e sem isso "João" vindo de alguns teclados perderia a saudação. Aceita os dois
+    apóstrofos, o do teclado e o que o celular troca sozinho (`'` e `’`). Uma primeira palavra que
+    seja só hífen ou apóstrofo não é nome: a saudação fica "Olá."
+17. **"O mais antigo do endereço" é medido pelo aviso, não pelo cadastro** (precisa a decisão 4): o
+    `createdAt` do aviso e, no empate, o id. Um aviso que já é o mais antigo continua sendo, porque
+    todo aviso novo nasce depois dele. Se a medida fosse a idade do cadastro, um aviso escrito mais
+    tarde para um cadastro mais velho passaria na conferência depois de o endereço já ter recebido.
+18. **O e-mail devido é escrito pela mesma escrita que grava o cadastro** (`notice: { create: {} }`
+    dentro do `create`), e não por uma segunda chamada na transação (implementa a decisão 7). Não
+    há como gravar um sem o outro, nem por esquecimento.
+19. **Um aviso que sumiu entre a reserva e o envio não faz nada.** Apagar o cadastro apaga o aviso;
+    a caixa não envia, não escreve e não registra.
+20. **`card` não é exportada; `note` é.** `layout()` e `note()` são as duas formas de desenhar o
+    cartão, e nada fora do arquivo precisa da moldura crua.
+21. **O nome da cidade sai de `courierCityNameOf(code)`**, em `couriers.constants.ts`, que só olha
+    chaves próprias de `COURIER_CITIES` (um código como `constructor` não vira cidade).
+22. **O spec e2e espera a caixa esvaziar depois de cada teste.** Como o cadastro pede o envio e não
+    espera, um teste que terminasse com um e-mail a caminho o deixaria cair na caixa do teste
+    seguinte. A consequência: o arquivo inteiro passa a depender do Mailpit, inclusive os testes que
+    não são sobre e-mail.
+23. **`test/support/mailpit.ts` ganhou `countMessages(to)`**, para os testes que seguram um endereço
+    a um e-mail só.
+
+### Riscos, revistos
+
+- **Quantos e-mails a carga dispara em produção continua sem resposta.** A consulta está em
+  "Consultas", e precisa ser rodada antes do merge. A mesma pergunta vale para homologação.
+- **Cadastros de teste que estiverem na lista de produção recebem o e-mail.** Endereço inventado
+  volta como recusa do provedor, é tentado 5 vezes e fica como desistência. Vale olhar a lista e
+  apagar os de teste antes do merge.
+- **Enquanto a carga escoa, quem se cadastra espera na fila.** A caixa pega os 20 mais antigos por
+  varredura, e os da carga são mais antigos que qualquer cadastro novo. Com N na carga, um cadastro
+  novo pode esperar até N/20 minutos. Cada cadastro novo dispara uma varredura a mais, o que adianta
+  a fila em 20.
+- **O provedor de verdade nunca viu este e-mail.** Tudo acima é Mailpit. Como o HTML aparece no
+  Gmail, no Outlook e no celular não foi visto, e uma recusa real de destinatário não foi exercitada.
+- **Dois processos da API na mesma caixa** não foram exercitados: o spec faz duas varreduras ao
+  mesmo tempo no mesmo processo.
+
+### Achados fora do escopo, não mexidos
+
+- **`apps/web/docs/README.md`, linha 85**, ainda diz "Nothing is e-mailed to anyone". Ficou falso
+  com este ticket. Não foi corrigido aqui porque o PR é só da API, e tocar em `apps/web` puxa os jobs
+  do web para o CI dele. É uma frase, para um PR do web.
+- **Dois specs e2e falham nesta máquina por causa do `apps/api/.env` da worktree**, e passam onde não
+  há `.env` (o CI): `custom-domain.e2e-spec.ts` (5 testes) espera `SHOP_DOMAIN_PROBE` ligado e o
+  `.env` daqui o desliga — com `SHOP_DOMAIN_PROBE=true` no shell, 14 de 14; e
+  `meta-pixel-without-vault-key.e2e-spec.ts` (1 teste) zera `INTEGRATIONS_SECRET_KEY` no processo,
+  mas `expand(config())` do `env.ts` repõe o valor do `.env` por cima de uma variável vazia (medido
+  com uma variável inventada). Esta branch não toca em `env.ts`, nesses specs nem na configuração da
+  suíte. O segundo não foi visto passar aqui.
+- **O erro do nodemailer no log** (o achado que o plano já anotava) continua como estava.
