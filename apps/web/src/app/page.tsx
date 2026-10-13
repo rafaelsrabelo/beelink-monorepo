@@ -119,7 +119,7 @@ export default async function LandingPage() {
             <LandingSteps messages={ui} />
             <LandingPlans prices={PLAN_PRICES} locale={locale} signupHref={SIGNUP} linkComponent={AppLink} messages={ui} />
             <LandingCouriers
-              photo={<BrandPhoto image={courierStreet} alt="" sizes="(min-width: 80rem) 820px, 100vw" />}
+              photo={<BrandPhoto image={courierStreet} alt="" sizes="(min-width: 80rem) min(60vw, 1180px), 100vw" />}
               form={
                 <LandingCourierFormLive
                   termsHref={LEGAL_ROUTES.terms}
