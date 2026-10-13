@@ -205,3 +205,109 @@ diz; onde não fizer, muda o código ou muda o texto dentro da mesma versão.
 - **Pôr `SITE_GA_MEASUREMENT_ID` só no ambiente de produção**, com este ticket no ar, e conferir no
   Tempo real e no DebugView (passo a passo no PR).
 - **Rever o texto da política**, que mudou numa frase.
+
+## 12/10, depois do código — o que mudou e o que foi visto
+
+O texto acima fica como foi escrito. O que segue é o que a construção e o navegador mostraram.
+
+### O que mudou no caminho
+
+- **A biblioteca só abre uma tarefa depois de a página chegar** (decisão 19, que dizia só "a chegada
+  reabre"). O navegador avisa todos os ouvintes de que o endereço mudou dentro do mesmo evento em
+  que o React desenha a página devolvida pelo "Voltar". Aberta pelo efeito da página, a biblioteca
+  de mentira ouviu o evento já aberta e enviou uma visualização dela, com o endereço inteiro, além da
+  nossa. Agora a tela agenda a abertura (`setTimeout`), e o evento termina com a trava fechada.
+- **"Voltar" e "Avançar" fecham sempre.** Quando o Next avisa uma navegação desse tipo, o endereço do
+  navegador já é o do destino: comparar caminhos ali não diz se a página foi deixada. Para o caso de
+  o destino ser a própria página (voltar de uma âncora), a tela ouve o `popstate` e reabre uma tarefa
+  depois, sem contar outra visualização.
+- **O título enviado é o que a página entrega, nunca o do documento.** Na chegada sem recarregar, o
+  documento ainda não tinha título (a visualização de `/signup` saía sem ele) e, vindo de outra
+  página, teria o título dela. `SiteMeasured` recebe `title`: o da landing e, nas duas telas, o
+  título do site.
+- **A página de onde o visitante veio, quando é do próprio site, vai só como a origem** (decisão 10
+  dizia "a origem e o caminho"). O caminho de uma página do site pode ser uma loja, um pedido ou o
+  painel.
+- **Um rótulo de campanha com `@` ou com mais de 80 caracteres não é enviado.** Um link de campanha
+  pode trazer um e-mail escrito por quem o montou.
+- **A tela pede a página de novo ao servidor depois de qualquer resposta dada nela, não só do
+  aceite**, e compara com o cookie do navegador, não com o estado da tela (decisões 15 e 16). Sem
+  isso, quem recusava, ia a outra tela e voltava pelo "Voltar" recebia a página guardada de antes
+  da resposta. Visto no navegador: depois de retirar o aceite, ir a `/signup` e voltar, o aviso não
+  reaparece e "Cookies" mostra "você recusou".
+- **Um endereço de navegação que não dá para ler conta como saída** (a trava fecha).
+- **O spec ganhou dois testes além dos planejados:** o aceite dado de novo depois de retirado (a
+  biblioteca que já está na aba volta a enviar, sem outro pedido do script) e o ID no HTML, página
+  por página e cookie por cookie.
+- **`e2e/site-consent.spec.ts` intercepta o Google em todos os testes**, com a mesma biblioteca de
+  mentira.
+
+### O que foi visto
+
+`next dev` na porta 3200, sem a API, com `SITE_GA_MEASUREMENT_ID=G-TEST000000` no `.env.local` do
+worktree (devolvido ao que era no fim). Um Chromium headless próprio, com toda requisição a um
+endereço do Google respondida pelo teste. **Nenhuma requisição saiu para o Google, e nenhum evento
+foi visto chegando a uma propriedade de verdade do GA4.** O navegador compartilhado não foi usado:
+uma navegação nele sem a interceptação seria um pedido de verdade ao Google.
+
+- **O ID no HTML** (`curl`, 11 endereços × 5 cookies): só aparece em `/`, `/login` e `/signup` com
+  `bl_site_consent=granted`. Sem cookie, com `denied`, com um `bl_consent=granted` de loja ou com
+  um valor inventado, não aparece. Em `/forgot-password`, `/verify-email`, `/reset-password`,
+  `/privacidade`, `/termos` e num endereço de loja não aparece com cookie nenhum. `/admin/…` e
+  `/dashboard` respondem 307 para `/login?voltar=…`.
+- **Sem resposta e depois de recusar** (pelo teclado: Tab, Tab, Enter), em `/`, `/login` e
+  `/signup`, com recarga: nenhuma requisição ao Google, nenhum cookie `_ga`, a trava não existe.
+- **Aceitando pelo teclado** (Tab, Tab, Tab, Enter), sem recarregar: um pedido do script
+  (`…/gtag/js?id=G-TEST000000`) e uma visualização (`en=page_view`, `tid=G-TEST000000`,
+  `dl=http://localhost:3200/`). A linha de status continua dizendo "Escolha salva: você aceitou…".
+- **Landing → `/signup` por "Começar agora"**, sem recarregar: mais uma visualização, uma só, com
+  `dl=…/signup`; o script não é pedido de novo. Depois, `/signup` → `/login`: mais uma.
+- **Conta criada** (a resposta da API foi interceptada, 201): `en=sign_up`, `dl=…/signup`. Nome,
+  e-mail e senha não aparecem em nenhuma requisição.
+- **`/login?voltar=%2Fadmin%2Floja-da-ana%2Forders%2F1042`:** `dl=…/login`, sem o parâmetro. Um link
+  de campanha com `utm_source`, `fbclid`, `utm_campaign` e `#planos`:
+  `dl=…/?utm_source=instagram&utm_campaign=lancamento`.
+- **Saindo de uma tela medida sem recarregar** (`/login` → "Esqueceu a senha?"; landing →
+  "Privacidade"): nenhuma requisição, e a trava fica fechada. "Voltar" para `/login`: uma
+  visualização, uma só. "Avançar": nada.
+- **Retirando o aceite** ("Cookies" no rodapé, Tab, Tab, Enter): `bl_site_consent=denied`, os dois
+  cookies `_ga` somem, a trava fecha. Ir a `/signup` e voltar não envia nada.
+- **Aceitando de novo:** outra visualização, com a biblioteca que já estava na aba.
+- **As outras telas com o aceite:** nenhuma requisição ao Google. O endereço de loja respondeu 500,
+  porque a API está desligada: a vitrine de verdade não foi aberta.
+- **O teste pega:** com o `onRouterTransitionStart` desligado, dois testes falham com a
+  visualização "da biblioteca" para `/signup` (em dobro) e para `/forgot-password` (uma tela que
+  não é medida). Sem a abertura adiada, o do "Voltar" falha com a visualização em dobro.
+- **Specs contra o `next dev`**, com uma configuração solta: `site-analytics.spec.ts` 10 de 10,
+  `site-consent.spec.ts` 14 de 14.
+- **Console:** sem erros nem avisos nas três telas. Os únicos erros são os do endereço de loja (500).
+- **Capturas** a 1280 e a 390 px, e a lista de requisições de cada passo, em
+  `.claude/worktrees/landing-aa-pr/screens-320/`. As telas não mudaram de desenho.
+
+### O que não foi exercitado
+
+- **A biblioteca de verdade do Google**, e portanto: se `ga-disable-<ID>` vale no instante em que ela
+  ouve a mudança de endereço (ou se ela espera antes de enviar); se o `page_location` do `config`
+  vale para os eventos que ela envia sozinha; se o `send_to` mantém um evento fora de outro ID; os
+  nomes e a duração dos cookies. A lista de requisições prova o que a página pediu e o que o nosso
+  código disse à fila.
+- `next build`, `turbo build` e as suítes e2e. O spec roda na suíte sobre o build, com a API; aqui
+  rodou contra o `next dev`, sem ela. `instrumentation-client.ts` só foi compilado pelo `next dev`.
+- **Uma vitrine de verdade e o painel**, que dependem da API. O que prende o item 8 é o teste dos
+  arquivos que montam `SiteMeasured`, e o `curl`.
+- **Sair de uma tela medida para uma loja sem recarregar** (o link "Ver uma loja de exemplo"): sem a
+  API a navegação vira uma carga de página. O mesmo caminho foi exercitado com "Esqueceu a senha?"
+  e com "Privacidade".
+- **Duas abas**, o atributo `Secure`, Safari, Firefox e um celular de verdade.
+- **Uma âncora da mesma página** (`#planos`): a trava não fecha, de propósito. Se a propriedade
+  tiver a opção do histórico ligada e a biblioteca contar a mudança de âncora, ela envia uma
+  visualização dela para a própria landing.
+- Storybook: nada mudou em `packages/ui`.
+
+### Achado fora deste ticket (BEELINK-319)
+
+Passar pelo aviso com o teclado rola a página. A 1280 × 800, cada Tab dentro do aviso desce a página
+(0 → 432 → 832 → 1232 px); a 390 × 844, 0 → 453 → 948 → 1443 px. Quem responde pelo teclado termina
+a mais de mil pixels do topo. Com o ponteiro não rola. O aviso reserva o pé do documento
+(`scroll-padding-bottom`) e os controles dele ficam dentro dessa reserva. É do bloco do AA3, em
+`packages/ui`, e não foi mexido aqui.
