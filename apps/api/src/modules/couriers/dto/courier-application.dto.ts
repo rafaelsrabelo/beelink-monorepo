@@ -74,17 +74,15 @@ export class CourierApplicationDto implements CourierApplicationPayload {
   @IsCpf(refusing('COURIER_DOCUMENT_INVALID'))
   document!: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     example: 'maria@exemplo.test',
     maxLength: COURIER_EMAIL_MAX_LENGTH,
-    description:
-      'May be left out: the application is then kept with no address, and owes no e-mail. When sent, kept trimmed and lower-cased; one that is no address — an empty text included — is refused with COURIER_EMAIL_INVALID.',
+    description: 'Kept trimmed and lower-cased. Refused with COURIER_EMAIL_INVALID.',
   })
-  @IsOptional()
   @lowerCased
   @IsEmail({}, refusing('COURIER_EMAIL_INVALID'))
   @MaxLength(COURIER_EMAIL_MAX_LENGTH, refusing('COURIER_EMAIL_INVALID'))
-  email?: string;
+  email!: string;
 
   @ApiProperty({
     example: '(85) 98888-7777',

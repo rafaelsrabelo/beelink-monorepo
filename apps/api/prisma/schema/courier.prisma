@@ -22,9 +22,8 @@ model CourierApplication {
   name     String @db.VarChar(120)
   /// The CPF as its eleven digits, which a CHECK holds it to (`courier_applications_document_check`).
   document String @unique @db.Char(11)
-  /// Trimmed and lower-cased. 254 is the address's own ceiling (RFC 5321). Null where the person
-  /// was not asked for one (BEELINK-328): the landing's first step takes a name, a CPF and a WhatsApp.
-  email    String? @db.VarChar(254)
+  /// Trimmed and lower-cased. 254 is the address's own ceiling (RFC 5321).
+  email    String @db.VarChar(254)
   /// Digits only, with the country code, the way a shop's WhatsApp is stored — `wa.me/<this>` is
   /// built from it. A CHECK holds it to digits (`courier_applications_whatsapp_check`).
   whatsapp String @db.VarChar(20)
