@@ -3550,28 +3550,53 @@ export interface UiMessages {
       perks: readonly [LandingStep, LandingStep, LandingStep, LandingStep]
       flowTitle: string
       flow: readonly [string, string, string, string]
+      /**
+       * "Comece seu cadastro" (BEELINK-322): the form that puts a person on the list of those who
+       * asked to deliver. Today for one city, which `cityHint` says. It is drawn in the browser and
+       * handed this slice alone, so every word it says is here.
+       */
       form: {
         title: string
         lead: string
         name: string
         namePlaceholder: string
+        /** The CPF. */
+        document: string
+        documentPlaceholder: string
+        email: string
+        emailPlaceholder: string
         whatsapp: string
         whatsappPlaceholder: string
         city: string
-        cityPlaceholder: string
+        /** The cities taking couriers, each by its code: the choice's options, and all of them. */
+        cities: Record<LandingCourierCityValue, string>
+        /** Under the choice: why it offers one city. */
+        cityHint: string
         vehicle: string
         vehicles: Record<LandingVehicleValue, string>
-        /** `{terms}` and `{privacy}` are the two links. */
+        /** `{terms}` and `{privacy}` are the two links. It says what the CPF, the e-mail and the WhatsApp are used for. */
         consent: string
         terms: string
         privacy: string
         submit: string
+        /** The button's own words while the form is on its way. */
+        sending: string
+        /** The button's words after a send that failed: the same form, sent again. */
+        retry: string
+        /** `{fields}`: what still keeps the button locked, each by its `missingNames`. */
+        missing: string
+        missingNames: Record<LandingCourierFieldValue, string>
+        /** Said to a screen reader at the moment nothing is missing any more. */
+        ready: string
         nameRequired: string
+        documentInvalid: string
+        emailInvalid: string
         whatsappInvalid: string
-        cityRequired: string
         consentRequired: string
-        /** Said once the form is valid: the sign-up is not open, and nothing left the browser. */
-        notOpen: string
+        /** What takes the form's place once it was taken. No e-mail is sent yet: `text` says one is to come. */
+        sent: { title: string; text: string; again: string }
+        /** The trap's label, out of sight and out of the accessibility tree: only a robot reads it. */
+        trap: string
         /**
          * The dialog the two legal texts are read in, over the form (BEELINK-322). `titles` name it
          * while the text itself is on its way; the text's own title takes over once it arrives.
@@ -4249,6 +4274,15 @@ export type LandingPlanPeriodValue = "monthly" | "semiannual" | "annual"
 
 /** How a courier delivers, as the landing's form offers it. */
 export type LandingVehicleValue = "MOTORCYCLE" | "BICYCLE" | "CAR" | "VAN"
+
+/**
+ * The cities taking couriers, by the API's own codes. Restated here, since this package declares no
+ * dependency on the contracts: it mirrors `CourierCity`, and the web holds the two to each other.
+ */
+export type LandingCourierCityValue = "FORTALEZA_CE"
+
+/** What the courier's form asks for, by the names its values travel under, in the order it asks. */
+export type LandingCourierFieldValue = "name" | "document" | "email" | "whatsapp" | "city" | "vehicle" | "acceptedTerms"
 
 /** Bee-link's two legal texts, which the courier's form opens over itself. */
 export type LandingLegalValue = "terms" | "privacy"

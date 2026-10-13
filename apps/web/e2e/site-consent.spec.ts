@@ -228,8 +228,16 @@ test.describe("the landing's cookie notice, on a phone", () => {
   test("stays out of the way of the page's own buttons: the couriers' form is sent, and the hero's link followed, with it standing", async ({ page }) => {
     await openLanding(page)
 
-    await page.getByRole("button", { name: "Continuar cadastro" }).click()
-    await expect(page.getByText("Informe o nome completo, com sobrenome.")).toBeVisible()
+    // The form's button is locked until the form is filled in (BEELINK-322), and the send is answered here: this is about the press.
+    await page.route("**/api/courier-applications", (route) => route.fulfill({ status: 204 }))
+    const form = page.getByRole("form", { name: "Comece seu cadastro" })
+    await form.getByLabel("Nome completo").fill("Zuleica Tavares")
+    await form.getByLabel("CPF").fill("52998224725")
+    await form.getByLabel("E-mail").fill("zuleica.tavares@exemplo.test")
+    await form.getByLabel("WhatsApp").fill("85987654321")
+    await form.getByRole("checkbox").check()
+    await form.getByRole("button", { name: "Enviar cadastro" }).click()
+    await expect(page.getByRole("group", { name: "Cadastro recebido." })).toBeVisible()
     await expect(notice(page)).toBeVisible()
 
     await page.getByRole("link", { name: "Começar agora" }).click()

@@ -23,7 +23,7 @@ export function maskCpf(typed: string): string {
  * also Santa Maria's area code, and a twelfth key pressed by mistake must not turn that number into
  * another. A trunk's 0 in front goes too, since no area code starts with one.
  */
-function mobileDigitsOf(typed: string): string {
+export function mobileDigitsOf(typed: string): string {
   const digits = digitsOf(typed)
   const national = /^\s*\+\s*55/.test(typed) || (digits.length === 13 && digits.startsWith("55")) ? digits.slice(2) : digits
 

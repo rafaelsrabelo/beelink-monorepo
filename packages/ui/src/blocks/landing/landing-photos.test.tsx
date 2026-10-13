@@ -3,10 +3,11 @@ import { render, screen } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
 
 // Locales
-import { en } from "@harness-monorepo/ui/locales/index"
+import { en, ptBR } from "@harness-monorepo/ui/locales/index"
 
 // Block
 import { expectNoA11yViolations } from "../../test/a11y"
+import { LandingCourierForm } from "./landing-courier-form"
 import { LandingCouriers } from "./landing-couriers"
 import { LandingPosters } from "./landing-posters"
 
@@ -33,9 +34,11 @@ describe("LandingPosters", () => {
   })
 })
 
+const form = <LandingCourierForm termsHref="/termos" privacyHref="/privacidade" text={ptBR.landing.couriers.form} onSubmit={() => {}} />
+
 describe("LandingCouriers, over a photo", () => {
   it("lays the courier under the section as a picture that says nothing to a reader", async () => {
-    const { container } = render(<LandingCouriers photo={photo("moto")} termsHref="/termos" privacyHref="/privacidade" />)
+    const { container } = render(<LandingCouriers photo={photo("moto")} form={form} />)
 
     const picture = container.querySelector("img")
     expect(picture?.closest("[aria-hidden]")).not.toBeNull()
@@ -44,7 +47,7 @@ describe("LandingCouriers, over a photo", () => {
   })
 
   it("is the black alone without one", () => {
-    const { container } = render(<LandingCouriers termsHref="/termos" privacyHref="/privacidade" />)
+    const { container } = render(<LandingCouriers form={form} />)
     expect(container.querySelector("img")).toBeNull()
   })
 })

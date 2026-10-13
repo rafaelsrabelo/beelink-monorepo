@@ -22,6 +22,9 @@ import { LandingSteps } from "./landing-steps"
 
 const hrefs = { loginHref: "#entrar", signupHref: "#criar", termsHref: "#termos", privacyHref: "#privacidade" }
 
+/** O formulário como a tela o entrega à seção: aqui, ligado a nada. Os estados dele têm histórias próprias, em "Formulário do entregador". */
+const courierForm = <LandingCourierForm termsHref={hrefs.termsHref} privacyHref={hrefs.privacyHref} text={ptBR.landing.couriers.form} onSubmit={() => {}} />
+
 /** A stand-in for the brand's photographs, which the app draws with its own optimised image. */
 function photo(seed: string, width: number, height: number, alt = "") {
   return <img src={`https://picsum.photos/seed/${seed}/${width}/${height}`} alt={alt} className="absolute inset-0 size-full object-cover" />
@@ -73,7 +76,7 @@ export const Pagina: Story = {
         <LandingIntegrations logos={integrationLogos} />
         <LandingSteps />
         <LandingPlans prices={examplePlanPrices} locale="pt-BR" signupHref={hrefs.signupHref} />
-        <LandingCouriers photo={photos.courier} termsHref={hrefs.termsHref} privacyHref={hrefs.privacyHref} />
+        <LandingCouriers photo={photos.courier} form={courierForm} />
         <LandingFaq prices={examplePlanPrices} locale="pt-BR" />
         <LandingPosters busStop={photos.busStop} wall={photos.wall} />
         <LandingCta signupHref={hrefs.signupHref} trialDays={examplePlanPrices.trialDays} />
@@ -133,12 +136,12 @@ export const Passos: Story = {
   ),
 }
 
-/** A seção preta, com o formulário sobre a foto do entregador. Ele valida e não envia nada: o cadastro ainda não está aberto. */
+/** A seção preta, com o formulário sobre a foto do entregador. Hoje o cadastro é só para Fortaleza, e a seção diz isso. */
 export const Entregadores: Story = {
   args: { children: null },
   render: () => (
     <LandingShell className="min-h-0 py-10">
-      <LandingCouriers photo={photos.courier} termsHref={hrefs.termsHref} privacyHref={hrefs.privacyHref} />
+      <LandingCouriers photo={photos.courier} form={courierForm} />
     </LandingShell>
   ),
 }
@@ -149,16 +152,6 @@ export const Posteres: Story = {
   render: () => (
     <LandingShell className="min-h-0">
       <LandingPosters busStop={photos.busStop} wall={photos.wall} />
-    </LandingShell>
-  ),
-}
-
-/** O formulário sozinho, sobre o preto da seção. */
-export const FormularioDoEntregador: Story = {
-  args: { children: null },
-  render: () => (
-    <LandingShell className="min-h-0 items-center bg-brand-ink p-10">
-      <LandingCourierForm termsHref={hrefs.termsHref} privacyHref={hrefs.privacyHref} text={ptBR.landing.couriers.form} />
     </LandingShell>
   ),
 }
