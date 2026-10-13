@@ -525,16 +525,22 @@ test.describe("the courier's form, the two legal texts", () => {
     expect(await dialog.evaluate((popup) => popup.getBoundingClientRect().bottom <= window.innerHeight)).toBe(true)
   })
 
-  test("leave a click with a modifier key to the browser: a new tab, and no dialog", async ({ page, context }) => {
+  /**
+   * What this page owes is to leave the click alone, and a tab opens only when it did. Whether that
+   * tab then gets anywhere is the browser's: CI's headless one opened it and, more than once, never
+   * finished loading it in twenty seconds. Where the link leads is its `href`.
+   */
+  test("leave a click with a modifier key to the browser: a new tab, and no dialog", async ({ page, context, baseURL }) => {
     await openLanding(page)
+    const terms = form(page).getByRole("link", { name: "termos de uso" })
+    await expect(terms).toHaveAttribute("href", "/termos")
 
     const opened = context.waitForEvent("page")
-    await form(page).getByRole("link", { name: "termos de uso" }).click({ modifiers: ["ControlOrMeta"] })
+    await terms.click({ modifiers: ["ControlOrMeta"] })
 
-    const tab = await opened
-    // The tab is blank until its page answers, and a page asked for the first time over a build takes its time: where it is headed is the proof.
-    await tab.waitForURL(/\/termos$/, { waitUntil: "commit", timeout: 20_000 })
+    await opened
     await expect(page.getByRole("dialog")).toHaveCount(0)
+    expect(page.url()).toBe(`${baseURL}/`)
   })
 
   test("are the texts the two pages show, in the version that names the courier's data", async ({ page }) => {
