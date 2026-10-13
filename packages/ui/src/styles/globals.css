@@ -433,6 +433,21 @@
   }
 }
 
+/*
+ * The landing's cookie notice stands at the foot of the screen (`landing-consent`), and while it
+ * does the document keeps that much of its foot clear: whatever Tab reaches on the page is scrolled
+ * above the notice rather than under it. The notice says how tall it is — it changes with the width
+ * and the language — and asks for the room from below, as a page asks for its anchors above.
+ *
+ * Not while the focus is inside the notice. Its own controls stand exactly in the room kept clear,
+ * so a browser took each for hidden and scrolled the page to bring it up; the notice is sticky and
+ * came along, and every Tab through it moved the page half a screen (BEELINK-319). With the focus
+ * in the notice nothing of the page can be behind it, and no room is kept.
+ */
+html:has([data-landing-notice]:not(:focus-within)) {
+  scroll-padding-bottom: var(--landing-notice-height, 0px);
+}
+
 @utility no-scrollbar {
   scrollbar-width: none;
 
