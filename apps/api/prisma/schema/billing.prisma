@@ -133,12 +133,19 @@ model StoreSubscription {
   /// The end of a free period given by a coupon, during which nothing exists at Asaas. Null with none.
   freePeriodEndsAt    DateTime?
 
-  /// Asaas's id of the subscription, `sub_…`. Null until one is made.
-  asaasSubscriptionId String?   @unique @db.VarChar(64)
+  /// Asaas's id of the subscription, `sub_…`. Null until one is made. This, the plan, the cycle, the
+  /// price, `firstDueDate` and `invoiceUrl` tell of the one subscription standing at Asaas, and are
+  /// written together once Asaas answered — never a cycle that was only asked for (BEELINK-292).
+  asaasSubscriptionId           String?   @unique @db.VarChar(64)
+  /// Until when one request holds the talk with Asaas about this page's subscription. Null, or in the
+  /// past: free. Written and committed before Asaas is asked, so no lock is held while it answers;
+  /// pushed ahead after a creation Asaas left unanswered, so nobody creates again before a
+  /// subscription it did make had time to show in a search.
+  asaasSubscriptionClaimedUntil DateTime?
   /// The due day of that subscription's first charge, a day of Brasília's calendar. Every renewal is
   /// counted from this day, never from the renewal before: a subscription begun on 31/10 renews on
   /// 30/11 and then on 31/12, and the 30 alone cannot say so.
-  firstDueDate        DateTime? @db.Date
+  firstDueDate                  DateTime? @db.Date
 
   /// Null until Asaas tells of a payment: a subscription is made with no method chosen.
   paymentMethod SubscriptionPaymentMethod?
