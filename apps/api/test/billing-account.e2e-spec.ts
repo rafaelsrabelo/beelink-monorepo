@@ -347,6 +347,18 @@ describe("who bee-link charges for an account's pages, and the shopkeeper as its
       expect(asaas.held).toHaveLength(1);
     });
 
+    /** A 403 with a page of HTML is what a provider answers a server it blocks: no word of it is about this shopkeeper's data. */
+    it('does not blame the customer for a search Asaas refused: nothing was decided, and nothing was created', async () => {
+      asaas.failing('customers', new AsaasRefused(403, null, 'no reason given'));
+
+      const response = await save(person);
+
+      expect(response.statusCode).toBe(503);
+      expect(response.json<ApiErrorBody>().errorCode).toBe('BILLING_UNREACHABLE');
+      expect(asaas.calls).toEqual(['customers']);
+      expect(await rowOf()).toMatchObject({ asaasCustomerId: null, asaasCustomerSyncedAt: null, asaasCustomerClaimedUntil: null });
+    });
+
     it('is not held back by a wait Asaas asked for on the creation: nothing was made, so there is nothing to wait for', async () => {
       asaas.failing('createCustomer', new AsaasThrottled('Asaas failed (429)', null));
 

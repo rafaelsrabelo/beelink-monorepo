@@ -106,7 +106,11 @@ export class BillingAccounts {
   /** With the talk in hand and no lock held: Asaas searched, a customer that stands there made to match and kept, and one created only when none stood. */
   private async converge(talk: Talk): Promise<BillingAccountModel> {
     const reference = customerReferenceOf(talk.userId);
-    const found = await this.asaas.customers(reference);
+    const found = await this.asaas.customers(reference).catch((error: unknown) => {
+      // A search refused says nothing of the customer — an address Asaas blocks, not a document it will not take — and decided nothing.
+      if (error instanceof AsaasRefused && error.status !== 401) throw new AsaasUnreachable(`Asaas refused the search for the customer (${error.status}${error.code ? `, ${error.code}` : ''})`);
+      throw error;
+    });
     if (found.length > 1) {
       this.logger.warn({ userId: talk.userId, customerIds: found.map((customer) => customer.id) }, "More than one customer stands under an account's reference at bee-link's own Asaas account");
     }
