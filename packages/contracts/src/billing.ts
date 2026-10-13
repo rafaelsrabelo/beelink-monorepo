@@ -112,3 +112,53 @@ export interface StoreSubscriptionAnswer {
   /** Null for a page from before subscriptions existed, which has none yet. */
   subscription: StoreSubscription | null;
 }
+
+/** Which document a billing account is charged under. */
+export type BillingDocumentType = "CPF" | "CNPJ";
+
+/**
+ * `PUT /billing/account`: who bee-link charges for an account's pages (BEELINK-291). The e-mail is the
+ * account's own and is not sent; a phone and an address are not asked.
+ */
+export interface BillingAccountPayload {
+  /** A person's name or a company's, 2 to 120 characters once trimmed. */
+  name: string;
+  /** A CPF or a CNPJ, with its punctuation or without; its check digits are verified. */
+  document: string;
+}
+
+/** An account's billing data, as its owner reads it. One per account, whatever the number of pages. */
+export interface BillingAccount {
+  name: string;
+  /** Never whole: `***.456.789-**` for a CPF, `**.345.678/0001-**` for a CNPJ. */
+  document: string;
+  documentType: BillingDocumentType;
+  /**
+   * Whether bee-link's Asaas account holds this account as a customer, with this name and document.
+   * False after a save Asaas refused or did not answer: the data was kept, and saving again tries again.
+   */
+  customerReady: boolean;
+}
+
+/** `GET /billing/account`. */
+export interface BillingAccountAnswer {
+  /** Null for an account that never gave its billing data. */
+  account: BillingAccount | null;
+}
+
+/**
+ * What the billing account's routes refuse with.
+ *
+ * - `BILLING_UNAVAILABLE` (503): this deployment has no Asaas account of bee-link's to charge at.
+ * - `BILLING_NAME_INVALID`, `BILLING_DOCUMENT_INVALID` (400): the body; nothing was kept and Asaas was not asked.
+ * - `BILLING_ACCOUNT_BUSY` (409): another save of this account is being told to Asaas; nothing was kept.
+ * - `BILLING_CUSTOMER_REFUSED` (502): Asaas refused the customer. The data was kept.
+ * - `BILLING_UNREACHABLE` (503): Asaas did not answer. The data was kept.
+ */
+export type BillingErrorCode =
+  | "BILLING_UNAVAILABLE"
+  | "BILLING_NAME_INVALID"
+  | "BILLING_DOCUMENT_INVALID"
+  | "BILLING_ACCOUNT_BUSY"
+  | "BILLING_CUSTOMER_REFUSED"
+  | "BILLING_UNREACHABLE";
