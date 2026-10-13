@@ -5,6 +5,7 @@ import { Injectable } from '@nestjs/common';
 import type { AsaasAccountApproval } from '@harness-monorepo/contracts';
 
 // App
+import { asaasCall, filled, gone, type AsaasMethod } from '../../../shared/asaas/asaas-call.js';
 import {
   ASAAS_WEBHOOK_EVENTS,
   AsaasClient,
@@ -26,33 +27,11 @@ import {
 import type { AsaasConfig } from './asaas.config.js';
 import { centsOf, reaisOf } from './asaas-money.js';
 
-const TIMEOUT_MS = 10_000;
-/** The quota's own window: no wait Asaas names is longer. */
-const THROTTLE_MAX_S = 12 * 60 * 60;
-
 const APPROVALS = ['PENDING', 'AWAITING_APPROVAL', 'APPROVED', 'REJECTED'] as const satisfies readonly AsaasAccountApproval[];
-
-const filled = (value: unknown): value is string => typeof value === 'string' && value.trim() !== '';
-
-/** Asaas's refusal as `{ errors: [{ code, description }] }`: its first error, or nothing to go on. */
-function refusalOf(answer: unknown): { code: string | null; reason: string } {
-  const errors = (answer as { errors?: unknown } | null)?.errors;
-  const first = (Array.isArray(errors) ? errors[0] : null) as { code?: unknown; description?: unknown } | null;
-  return { code: filled(first?.code) ? first.code : null, reason: filled(first?.description) ? first.description : 'no reason given' };
-}
-
-/** Why no answer came, by the failure's name and code alone: fetch's own words repeat a header it could not send — the key. */
-function failureOf(error: unknown): string {
-  if (!(error instanceof Error)) return 'unknown failure';
-  const code = (error.cause as { code?: unknown } | undefined)?.code;
-  return typeof code === 'string' ? `${error.name}, ${code}` : error.name;
-}
 
 /** Asaas's page size at its largest, and how many pages of one order's charges are read: twelve instalments a try leaves room for dozens of tries. */
 const PAGE_SIZE = 100;
 const PAGES_MAX = 5;
-
-const gone = (error: unknown) => error instanceof AsaasRefused && error.status === 404;
 
 /** A charge's `refunds`, read leniently: null, absent or anything but a list is none. */
 function refundsOf(raw: unknown): AsaasRefund[] {
@@ -96,15 +75,10 @@ function brasiliaInstantOf(value: unknown): Date | null {
   return match ? new Date(`${match[1]}T${match[2]}-03:00`) : null;
 }
 
-/** `RateLimit-Reset` is the seconds left until the limit lifts; anything else is no date to go by. */
-function retryAtOf(header: string | null): Date | null {
-  const seconds = header === null ? Number.NaN : Number(header);
-  return Number.isFinite(seconds) && seconds >= 0 ? new Date(Date.now() + Math.min(seconds, THROTTLE_MAX_S) * 1000) : null;
-}
-
 /**
  * Asaas over HTTP: `access_token` carries the shop's key, and the `User-Agent` names bee-link, which
  * Asaas requires. A 4xx is Asaas's no; a 5xx, a 429, a network failure or ten seconds of silence is not knowing.
+ * The request itself is `asaasCall` (`shared/asaas`), the one bee-link's own account is asked through too.
  */
 @Injectable()
 export class AsaasHttpClient extends AsaasClient {
@@ -271,27 +245,7 @@ export class AsaasHttpClient extends AsaasClient {
     return { payload: answer.payload, encodedImage: answer.encodedImage, expiresAt: brasiliaInstantOf(answer.expirationDate) };
   }
 
-  private async call(config: AsaasConfig, apiKey: string, method: 'GET' | 'POST' | 'PUT' | 'DELETE', path: string, body?: object): Promise<unknown> {
-    const init: RequestInit = {
-      method,
-      headers: { accept: 'application/json', 'content-type': 'application/json', 'user-agent': config.userAgent, access_token: apiKey },
-      signal: AbortSignal.timeout(TIMEOUT_MS),
-    };
-    if (body) init.body = JSON.stringify(body);
-
-    const response = await fetch(`${config.baseUrl}${path}`, init).catch((error: unknown) => {
-      throw new AsaasUnreachable(`Asaas did not answer (${failureOf(error)})`);
-    });
-
-    const answer: unknown = await response.json().catch(() => null);
-    // Too many requests decides nothing about the key either: later, the same call may pass.
-    if (response.status === 429) throw new AsaasThrottled('Asaas failed (429)', retryAtOf(response.headers.get('ratelimit-reset')));
-    if (response.status >= 500) throw new AsaasUnreachable(`Asaas failed (${response.status})`);
-    if (!response.ok) {
-      const { code, reason } = refusalOf(answer);
-      // Asaas's words, never the request's — and the key cut out should they ever echo it.
-      throw new AsaasRefused(response.status, code, apiKey ? reason.split(apiKey).join('[key]') : reason);
-    }
-    return answer;
+  private call(config: AsaasConfig, apiKey: string, method: AsaasMethod, path: string, body?: object): Promise<unknown> {
+    return asaasCall(config, apiKey, method, path, body);
   }
 }
