@@ -171,6 +171,16 @@ const envSchema = z.object({
   ASAAS_CONTACT_EMAIL: z.email().default('contato@beecoders.net'),
 
   /**
+   * Whether bee-link charges a page for its plan and locks one that does not pay (BEELINK-218). Off
+   * by default, and off is the product as it was before plans existed: nothing locks, and the panel
+   * shows no plan, no notice and no payment screen. A page's trial is counted either way, from the
+   * day it was created — so switching this on finds every page past its seven days already expired.
+   */
+  BILLING_ENFORCED: z
+    .preprocess((value) => (value === '' ? undefined : value), z.enum(['true', 'false']).default('false'))
+    .transform((value) => value === 'true'),
+
+  /**
    * Seals what a shop's third parties gave it — Melhor Envio's tokens, the Asaas key — at rest: 32
    * random bytes in base64 (`openssl rand -base64 32`). Losing it loses every connection, which then
    * has to be made again; leaking it with a database dump hands over every shop's access.

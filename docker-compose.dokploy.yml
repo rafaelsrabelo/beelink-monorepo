@@ -60,12 +60,14 @@ services:
       start_period: 30s
       retries: 12
 
-  # A throwaway container: applies the pending migrations, upserts the store categories and exits.
+  # A throwaway container: applies the pending migrations, upserts the platform's data (the store
+  # categories and the plans, `prisma/seed/`) and exits.
   # Showing as `exited` in the panel is its correct state. It stops at the `build` stage of the API
   # image, the one that still has the Prisma CLI — the runtime image does not.
   #
   # The seed runs on every deploy on purpose: it is an ON CONFLICT upsert that never deletes, and
-  # without its rows the panel's category select reads "Sem categoria" for every shop.
+  # without its rows the panel's category select reads "Sem categoria" for every shop. It is also how
+  # a plan's price changes: prisma/seed/plans.sql owns it, and overwrites one changed by hand.
   migrate:
     build:
       context: .
@@ -159,6 +161,10 @@ services:
       - ASAAS_ENV
       - ASAAS_CONTACT_EMAIL
       - INTEGRATIONS_SECRET_KEY
+
+      # bee-link's own plans (BEELINK-218). Left out, or `false`: nothing is charged and nothing locks.
+      # `true` charges each page for its plan and locks the ones past their trial that never paid.
+      - BILLING_ENFORCED
 
       # A shop's own domain (BEELINK-281): the server's public IPv4, which a domain's A record must be,
       # and whether a check also asks https://<domain>. Without the first, no domain can be saved.
