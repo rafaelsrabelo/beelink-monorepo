@@ -35,6 +35,8 @@ model User {
   legalAcceptances LegalAcceptance[]
   /// The cashback adjustments this shopkeeper made (BEELINK-238).
   cashbackAdjustments CashbackEntry[]
+  /// How bee-link charges this shopkeeper for their pages (BEELINK-219); none until first charged.
+  billingAccount BillingAccount?
 
   @@unique([storeId, email])
   // The composite above leaves bee-link's accounts unconstrained — Postgres counts every null

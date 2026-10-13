@@ -25,6 +25,7 @@ import { OrdersModule } from './modules/orders/orders.module.js';
 import { PanelCountsModule } from './modules/panel-counts/panel-counts.module.js';
 import { PromotionsModule } from './modules/promotions/promotions.module.js';
 import { CarrierTrackingModule } from './modules/carrier-tracking/carrier-tracking.module.js';
+import { BillingModule } from './modules/billing/billing.module.js';
 import { CashbackModule } from './modules/cashback/cashback.module.js';
 import { RealtimeModule } from './modules/realtime/realtime.module.js';
 import { ReportsModule } from './modules/reports/reports.module.js';
@@ -80,6 +81,7 @@ export const requestLogOptions = {
     PanelCountsModule,
     PromotionsModule,
     CashbackModule,
+    BillingModule,
     DeliveryModule,
     CarrierTrackingModule,
     PaymentEventsModule,

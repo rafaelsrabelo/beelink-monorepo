@@ -1,0 +1,139 @@
+/// How often a plan is charged (BEELINK-219). bee-link's own words: Asaas's are MONTHLY, SEMIANNUALLY
+/// and YEARLY, and whoever talks to Asaas translates.
+enum BillingCycle {
+  MONTHLY
+  SEMIANNUAL
+  ANNUAL
+}
+
+/// Where a page stands with bee-link (docs/product/README.md, "What a page costs").
+enum SubscriptionStatus {
+  /// Inside its free trial. Nothing exists at Asaas.
+  TRIALING
+  /// The trial ended and the page never paid. A TRIALING row past `trialEndsAt` already reads as this
+  /// (`subscription-status.ts`), whether or not anything wrote it.
+  TRIAL_EXPIRED
+  ACTIVE
+  PAST_DUE
+  SUSPENDED
+  CANCELED
+  /// Owes nothing, by bee-link's own choice.
+  EXEMPT
+}
+
+/// What a page's charge was paid with, as Asaas told it. Its own enum and not the shops'
+/// `PaymentMethod`, which is what a shop takes at the door: that one has cash and no boleto.
+enum SubscriptionPaymentMethod {
+  CREDIT_CARD
+  /// Asaas's invoice offers it beside the other three.
+  DEBIT_CARD
+  PIX
+  BOLETO
+}
+
+/// What bee-link sells a page (BEELINK-219). Platform data: the rows come from
+/// `prisma/seed/plans.sql`, which every deploy runs and which owns the name, the switch and the
+/// prices — a row changed by hand is put back by the next deploy. Never deleted: a plan no longer
+/// sold is switched off.
+model Plan {
+  id     String  @id @default(uuid(7)) @db.Uuid
+  /// The key the seed upserts on, and the plan's name in code: `beelink`, `beelink-beelia`.
+  slug   String  @unique @db.VarChar(40)
+  name   String  @db.VarChar(80)
+  /// Off: not listed and not sold. A page already on it keeps it.
+  active Boolean @default(false)
+
+  /// What each cycle costs, in whole cents, for the whole cycle and not a month of it — the amount
+  /// Asaas is asked to charge. Null: the plan is not sold in that cycle. Each above zero, by a CHECK.
+  monthlyPriceCents    Int
+  semiannualPriceCents Int?
+  annualPriceCents     Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subscriptions StoreSubscription[]
+
+  @@map("plans")
+}
+
+/// A shopkeeper's account as bee-link charges it (BEELINK-219): one Asaas customer per account, at
+/// bee-link's own Asaas account, whatever the number of pages. Its own table and not a column of
+/// `users`, which holds the shops' customers too and knows nothing of Asaas. No row until the account
+/// is first charged.
+model BillingAccount {
+  userId String @id @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Asaas's id of the customer, `cus_…`. Null while the row exists and the customer does not yet:
+  /// the row may be written before Asaas is called.
+  asaasCustomerId String? @unique @db.VarChar(64)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("billing_accounts")
+}
+
+/// A page's subscription (BEELINK-219): one per store, written in the transaction that creates the
+/// store and deleted with it. A store from before this table has none until it is given one.
+///
+/// It has an id of its own, apart from the store's, for whatever names it from outside this table —
+/// the reference Asaas is given, a row about one of its charges — so that none of them carries the
+/// store's id as if it were the subscription's.
+///
+/// The three `…EndsAt` are instants, and exclusive: each is the first instant that thing is over, so
+/// all three are compared the same way. Until what hour of a day something lasts is decided once, by
+/// whoever writes the column.
+model StoreSubscription {
+  id      String @id @default(uuid(7)) @db.Uuid
+  storeId String @unique @db.Uuid
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  status SubscriptionStatus @default(TRIALING)
+
+  /// When the store was created: the trial is counted from it, for every store.
+  trialStartedAt DateTime
+  /// The midnight in Brasília that closes the seventh day after the day it began (`billing-dates.ts`).
+  /// After `trialStartedAt`, by a CHECK.
+  trialEndsAt    DateTime
+
+  /// What the shopkeeper chose: null until they do, and the three together or none, by a CHECK.
+  planId     String?       @db.Uuid
+  /// Restrict: a plan a page is on is switched off, never deleted.
+  plan       Plan?         @relation(fields: [planId], references: [id], onDelete: Restrict)
+  cycle      BillingCycle?
+  /// What the cycle costs this page, as agreed when it was chosen, in whole cents. Kept here because
+  /// the plan's price follows the seed, and Asaas goes on charging what the subscription was made with.
+  priceCents Int?
+
+  /// The paid period's end. Null while nothing was paid.
+  currentPeriodEndsAt DateTime?
+  /// When the shopkeeper asked to cancel. Asaas removes its subscription at once and gives nothing
+  /// back, so the page goes on until `currentPeriodEndsAt`, which only bee-link knows.
+  cancelRequestedAt   DateTime?
+  /// The end of a free period given by a coupon, during which nothing exists at Asaas. Null with none.
+  freePeriodEndsAt    DateTime?
+
+  /// Asaas's id of the subscription, `sub_…`. Null until one is made.
+  asaasSubscriptionId String?   @unique @db.VarChar(64)
+  /// The due day of that subscription's first charge, a day of Brasília's calendar. Every renewal is
+  /// counted from this day, never from the renewal before: a subscription begun on 31/10 renews on
+  /// 30/11 and then on 31/12, and the 30 alone cannot say so.
+  firstDueDate        DateTime? @db.Date
+
+  /// Null until Asaas tells of a payment: a subscription is made with no method chosen.
+  paymentMethod SubscriptionPaymentMethod?
+  /// Asaas's hosted invoice of the charge waiting to be paid. Null with none waiting.
+  invoiceUrl    String?                    @db.VarChar(500)
+  /// All that is kept of a card, the two together or none, by a CHECK: its brand in Asaas's word and
+  /// its last four digits. No column holds a number, a holder, a validity or a token.
+  cardBrand     String?                    @db.VarChar(20)
+  cardLast4     String?                    @db.Char(4)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([planId])
+  @@map("store_subscriptions")
+}
