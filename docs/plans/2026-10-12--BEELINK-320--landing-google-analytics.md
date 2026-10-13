@@ -311,3 +311,105 @@ Passar pelo aviso com o teclado rola a página. A 1280 × 800, cada Tab dentro d
 a mais de mil pixels do topo. Com o ponteiro não rola. O aviso reserva o pé do documento
 (`scroll-padding-bottom`) e os controles dele ficam dentro dessa reserva. É do bloco do AA3, em
 `packages/ui`, e não foi mexido aqui.
+
+## 12/10, mais tarde — a base passou a ser `main`
+
+Os PRs do AA1, do AA2 e do AA3 (#252, #253 e #254) foram juntados ao `main` pelo Rafael. O PR deste
+ticket passa a ter `main` como base. A branch não foi rebaseada: ela já descende do que entrou. O que
+está escrito acima sobre "a branch do AA3 como base" vale para o momento em que foi escrito.
+
+## Conserto no aviso do BEELINK-319
+
+O achado registrado acima ("passar pelo aviso com o teclado rola a página") já está no `main`. Só não
+aparece em produção porque a variável do ID ainda não foi posta lá. Como é este ticket que põe o aviso
+de pé de verdade, o conserto entrou nesta branch, em commits próprios (`60cdde67` e `04fc0f38`).
+
+### A causa, medida
+
+O aviso reservava a própria altura no pé do documento (`scroll-padding-bottom`, escrito no `<html>`),
+para o navegador rolar o que recebe foco para cima dele. Os controles do próprio aviso ficam
+exatamente dentro dessa reserva. O navegador os tomava por escondidos e rolava a página para
+centralizar o controle no que sobrava da tela; o aviso, que é `sticky`, acompanhava, e o Tab seguinte
+repetia tudo.
+
+Três medições, num Chromium headless, a 1280 × 800 e a 390 × 844, com a página no topo e em 3000 px:
+
+- **Como estava:** o primeiro Tab rola exatamente o que centralizar o link pede (432 px a 1280 × 800,
+  453 px a 390 × 844, calculado antes e medido depois).
+- **Sem o `scroll-padding-bottom`, e mais nada mudado:** nenhuma rolagem.
+- **Com o `scroll-padding-bottom` e o aviso `fixed` no lugar de `sticky`:** nenhuma rolagem. O
+  navegador não rola a página por algo preso à tela.
+
+### O que mudou
+
+- O aviso deixa de escrever o `scroll-padding-bottom` no documento. Ele escreve a altura medida numa
+  propriedade (`--landing-notice-height`) e se marca com `data-landing-notice`.
+- Uma regra em `packages/ui/src/styles/globals.css` reserva o espaço a partir dessa altura, **menos
+  enquanto o foco está dentro do aviso**:
+  `html:has([data-landing-notice]:not(:focus-within))`. Com o foco no aviso, nada da página pode
+  estar atrás dele.
+- O desenho não mudou: o aviso continua `sticky`, primeiro no documento e último na coluna.
+
+### Decisões
+
+- **Regra de estilo, e não um ouvinte de foco em JavaScript.** O navegador recalcula o estilo antes de
+  rolar para o que recebeu foco. Já a ordem entre o evento de foco e a rolagem é de cada navegador,
+  e um ouvinte dependeria dela.
+- **Não troquei `sticky` por `fixed`**, embora `fixed` também resolva. A decisão 13 do AA3 fica: com
+  `sticky` o fim da página reserva o lugar do aviso por construção.
+- **Reabrir pelo "Cookies" não rola a página.** Antes, com a página no fim, ela descia até o novo
+  fim (a página fica mais longa com o aviso), e o rodapé continuava inteiro à vista. Isso era efeito
+  do mesmo defeito, e com a página um pouco acima do fim o salto seria maior. Agora a página fica
+  onde estava, e o aviso fica sobre as últimas linhas do rodapé até a página ser rolada ou o aviso
+  respondido, que é o que o plano do AA3 já descrevia. Se o Rafael preferir a página acompanhando o
+  fim, é uma rolagem a acrescentar de propósito, não um efeito colateral.
+- **Sem `:has()`** (navegadores de antes de 2023) a regra não vale: o espaço deixa de ser reservado,
+  e a página não pula.
+
+### Antes e depois
+
+`scrollY` a cada tecla, Tab, Tab, Tab, Shift+Tab, Shift+Tab, dentro do aviso:
+
+| Tela | Página em | Antes | Depois |
+|---|---|---|---|
+| 1280 × 800 | 0 | 432 → 832 → 1232 → 1632 → 2064 | 0 → 0 → 0 → 0 → 0 |
+| 1280 × 800 | 3000 | 3432 → 3832 → 4232 → 4632 → 5064 | 3000 em todas |
+| 390 × 844 | 0 | 453 → 948 → 1443 → 1938 → 2391 | 0 → 0 → 0 → 0 → 0 |
+| 390 × 844 | 3000 | 3453 → 3948 → 4443 → 4938 → 5391 | 3000 em todas |
+
+Reabrindo pelo "Cookies" do rodapé, com a página no fim:
+
+| Tela | Antes | Depois | Rodapé atrás do aviso, depois |
+|---|---|---|---|
+| 1280 × 800 | 8307 → 8448 | 8307 → 8307 | 142 px, até rolar |
+| 390 × 844 | 12178 → 12414 | 12178 → 12178 | 236 px, até rolar |
+
+O foco vai para o aviso nos dois casos, e os três Tabs seguintes não mexem a página.
+
+O que o AA3 garantia, medido antes e depois, com os mesmos números:
+
+- **Tab pela página inteira com o aviso de pé:** 51 paradas a 1280 × 800 e 44 a 390 × 844, nenhuma
+  atrás do aviso. Com o foco num controle da página, a reserva é de 117 px e de 213 px; com o foco
+  no aviso, zero.
+- **O aviso é o primeiro elemento da moldura** e o primeiro que o Tab alcança, continua `sticky`, e a
+  moldura tem as mesmas classes. A altura do documento é a mesma (9225 px e 13235 px).
+- **No fim da página o rodapé termina onde o aviso começa** (682,5 px e 631,1 px), sem rolagem lateral.
+  O mesmo com o aviso reaberto, depois de levar a página ao novo fim.
+
+### Testes
+
+- `apps/web/e2e/site-consent.spec.ts`: oito testes novos, quatro em cada largura (página no topo,
+  página no meio, reaberto pelo rodapé, e a reserva que some com o foco no aviso e volta com o foco
+  na página). **Os oito falham sem o conserto** (rodei antes de mexer). Os dois specs inteiros contra
+  o `next dev`: 32 de 32 (`site-consent` 22, `site-analytics` 10).
+- `packages/ui/src/blocks/landing/landing-consent.test.tsx`: o aviso escreve a altura e a marca, não
+  escreve o `scroll-padding-bottom`, e a regra do estilo solta a reserva com o foco no aviso. O jsdom
+  não rola nada: quem viu a página parada foi o navegador.
+
+### O que não foi exercitado
+
+- **Firefox e Safari.** Só há Chromium nesta máquina. A regra depende de o navegador recalcular o
+  estilo antes de rolar para o foco; conferi isso no Chromium.
+- **Um leitor de tela**, e um teclado de verdade num celular.
+- **O build de produção.** A regra passou pelo Tailwind do `next dev`; a suíte e2e roda sobre o build.
+- **Storybook.** O desenho do bloco não mudou; ele ganhou um atributo.
