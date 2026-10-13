@@ -38,7 +38,7 @@ export const LANDING_LIFT = "transition motion-safe:hover:-translate-y-1.5 hover
 
 /** The courier's form, and what takes its place once it was sent: the light card on the black section. */
 export const LANDING_COURIER_CARD =
-  "relative flex w-full flex-col gap-[18px] self-center rounded-[32px] bg-brand-ground p-6 text-brand-ink shadow-2xl shadow-brand-ink/40 sm:p-9 xl:w-[460px] xl:shrink-0"
+  "relative flex w-full flex-col gap-[18px] self-center rounded-[32px] bg-brand-ground p-6 text-brand-ink shadow-2xl shadow-brand-ink/40 sm:p-9 xl:w-[520px] xl:shrink-0"
 
 /** A field of that form: its label, its control and what is said under it, one to a line. */
 export const LANDING_FIELD = "flex flex-col gap-1.5"

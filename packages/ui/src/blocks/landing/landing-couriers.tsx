@@ -12,7 +12,7 @@ import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
-import { LANDING_FOCUS_ON_INK } from "./landing-styles"
+import { LANDING_CONTAINER, LANDING_FOCUS_ON_INK } from "./landing-styles"
 import { LandingTitle } from "./landing-title"
 
 export interface LandingCouriersProps {
@@ -38,26 +38,32 @@ const PERK_ICONS: readonly LucideIcon[] = [MapPinIcon, CheckIcon, ClockIcon, Ban
  * the couriers' app it describes is still to come. What exists is the first step: the form puts a
  * person on the list of those who asked to deliver, today in one city, which the section's own
  * words say.
+ *
+ * The black runs from one edge of the screen to the other, at every width — the one section of the
+ * page that does — and what stands on it keeps the page's column, so its words start where the
+ * header's logo does and the form ends where the header's last button does. Drawn as a card with
+ * margins of its own, it kept less width than the page around it, and the form paid for it.
  */
 export function LandingCouriers({ photo, form, messages = defaultMessages }: LandingCouriersProps) {
   const text = messages.landing.couriers
 
   return (
-    <section id="entregadores" className="scroll-mt-6 px-4 md:px-10">
-      <div className={cn(LANDING_FOCUS_ON_INK, "relative mx-auto flex max-w-[1360px] flex-col gap-12 overflow-hidden rounded-[32px] bg-brand-ink px-6 py-14 text-brand-on-ink md:rounded-[48px] md:px-12 xl:flex-row xl:gap-16 xl:px-[72px] xl:py-24")}>
-        {photo ? (
-          // Behind the form, fading into the black where the words are: the sentences stay on black.
-          // The fade is the photo's own, not the section's: its edge starts in solid black, and no seam shows where it begins.
-          <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-3/5 xl:inset-y-0 xl:right-0 xl:left-auto xl:h-full xl:w-[60%]">
-            {photo}
-            <div className="absolute inset-0 bg-linear-to-b from-brand-ink via-brand-ink/60 to-brand-ink/30 xl:bg-linear-to-r xl:from-brand-ink xl:via-brand-ink/45 xl:to-brand-ink/15" />
-          </div>
-        ) : null}
-        <svg aria-hidden="true" width="420" height="420" viewBox="0 0 420 420" fill="none" stroke="currentColor" strokeWidth="2" className="pointer-events-none absolute -top-20 -right-20 hidden text-brand-yellow opacity-60 md:block">
-          <path d="M80 0 C80 60 110 90 160 120 L420 280" />
-          <path d="M220 0 C220 40 240 60 280 85 L420 170" />
-        </svg>
+    <section id="entregadores" className={cn(LANDING_FOCUS_ON_INK, "relative scroll-mt-6 overflow-hidden bg-brand-ink text-brand-on-ink")}>
+      {photo ? (
+        // Behind the form, fading into the black where the words are: the sentences stay on black.
+        // The fade is the photo's own, not the section's: its edge starts in solid black, and no seam shows where it begins.
+        // No wider than the photo can be drawn sharp: on a very wide screen the black takes the rest.
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-3/5 xl:inset-y-0 xl:right-0 xl:left-auto xl:h-full xl:w-[60%] xl:max-w-[1180px]">
+          {photo}
+          <div className="absolute inset-0 bg-linear-to-b from-brand-ink via-brand-ink/60 to-brand-ink/30 xl:bg-linear-to-r xl:from-brand-ink xl:via-brand-ink/45 xl:to-brand-ink/15" />
+        </div>
+      ) : null}
+      <svg aria-hidden="true" width="420" height="420" viewBox="0 0 420 420" fill="none" stroke="currentColor" strokeWidth="2" className="pointer-events-none absolute -top-20 -right-20 hidden text-brand-yellow opacity-60 md:block">
+        <path d="M80 0 C80 60 110 90 160 120 L420 280" />
+        <path d="M220 0 C220 40 240 60 280 85 L420 170" />
+      </svg>
 
+      <div className={cn(LANDING_CONTAINER, "relative flex flex-col gap-12 py-14 xl:flex-row xl:gap-16 xl:py-24")}>
         <div className="relative flex flex-col gap-[26px] xl:flex-1">
           <span className="flex h-9 items-center gap-2 self-start rounded-full bg-brand-yellow px-4 text-[13px] font-extrabold tracking-[0.06em] text-brand-ink uppercase">
             <TruckIcon aria-hidden="true" className="size-4" />
