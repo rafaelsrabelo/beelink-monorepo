@@ -20,12 +20,12 @@ export function escapeHtml(value: string): string {
 }
 
 /**
- * `brand`, already escaped, heads the card: whose e-mail this is, when it is a shop's. `footer`,
- * already HTML, closes it, after the button — the fine print is read last. The colours are literals,
- * not the design system's tokens: a mail client reads no CSS variables and no stylesheet, only
- * inline styles.
+ * The card every e-mail is drawn in: `brand`, already escaped, heads it — whose e-mail this is, when
+ * it is a shop's — and `content`, already HTML, is everything under the title. The colours are
+ * literals, not the design system's tokens: a mail client reads no CSS variables and no stylesheet,
+ * only inline styles.
  */
-export function layout(title: string, body: string, actionLabel: string, actionUrl: string, brand?: string, footer?: string): string {
+function card(title: string, content: string, brand?: string): string {
   return `<!doctype html>
 <html lang="pt-BR">
   <body style="margin:0;padding:24px;background:#f4f4f5;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#18181b">
@@ -33,16 +33,30 @@ export function layout(title: string, body: string, actionLabel: string, actionU
       <tr><td>
         ${brand ? `<p style="margin:0 0 16px;font-size:14px;font-weight:700;color:#52525b">${brand}</p>` : ''}
         <h1 style="margin:0 0 16px;font-size:20px">${title}</h1>
-        ${body}
-        <p style="margin:24px 0">
-          <a href="${actionUrl}" style="display:inline-block;background:#18181b;color:#fafafa;text-decoration:none;padding:12px 20px;border-radius:8px">${actionLabel}</a>
-        </p>
-        <p style="margin:0;font-size:13px;color:#71717a">Se o botão não funcionar, copie e cole este endereço no navegador:<br />${actionUrl}</p>
-        ${footer ? `<p style="margin:16px 0 0;font-size:13px;color:#71717a">${footer}</p>` : ''}
+        ${content}
       </td></tr>
     </table>
   </body>
 </html>`;
+}
+
+/** The card with its button and the button's address under it. `footer`, already HTML, closes it: the fine print is read last. */
+export function layout(title: string, body: string, actionLabel: string, actionUrl: string, brand?: string, footer?: string): string {
+  return card(
+    title,
+    `${body}
+        <p style="margin:24px 0">
+          <a href="${actionUrl}" style="display:inline-block;background:#18181b;color:#fafafa;text-decoration:none;padding:12px 20px;border-radius:8px">${actionLabel}</a>
+        </p>
+        <p style="margin:0;font-size:13px;color:#71717a">Se o botão não funcionar, copie e cole este endereço no navegador:<br />${actionUrl}</p>
+        ${footer ? `<p style="margin:16px 0 0;font-size:13px;color:#71717a">${footer}</p>` : ''}`,
+    brand,
+  );
+}
+
+/** The card with a title and words alone, for an e-mail that leads nowhere: no button, no address. */
+export function note(title: string, body: string): string {
+  return card(title, body);
 }
 
 /**

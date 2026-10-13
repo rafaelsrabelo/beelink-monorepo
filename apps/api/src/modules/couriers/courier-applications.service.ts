@@ -4,6 +4,7 @@ import { ConflictException, Injectable, InternalServerErrorException, Logger } f
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { LEGAL_VERSION } from '../auth/auth.constants.js';
+import { CourierApplicationMailer } from './courier-application-mailer.js';
 
 // Types
 import type { CourierApplicationErrorCode } from '@harness-monorepo/contracts';
@@ -18,13 +19,17 @@ const TAKEN = [
 
 /**
  * The couriers who asked to deliver with Beelink: a list of interest, written by the landing's form
- * and read by nobody yet (BEELINK-321). It sends no e-mail.
+ * (BEELINK-321) and read by nobody but the outbox of the one e-mail each application is owed
+ * (`CourierApplicationMailer`, BEELINK-326).
  */
 @Injectable()
 export class CourierApplicationsService {
   private readonly logger = new Logger(CourierApplicationsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mailer: CourierApplicationMailer,
+  ) {}
 
   /**
    * A person's application, as the DTO left it: already normalised, already checked.
@@ -36,6 +41,10 @@ export class CourierApplicationsService {
    *
    * The version of the terms is the one in force here, and the moment is this one: neither is read
    * from the body.
+   *
+   * An application kept owes its person an e-mail (BEELINK-326), written with it or not at all. The
+   * sending is asked for once that committed and waited for by nobody: an e-mail that does not go
+   * changes no answer of this route, and its outbox tries again.
    */
   async receive(dto: CourierApplicationDto): Promise<void> {
     // The trap, sprung: a field no person sees was filled in. Answered exactly like a save, and
@@ -69,6 +78,8 @@ export class CourierApplicationsService {
             vehicle: dto.vehicle,
             termsVersion: LEGAL_VERSION,
             termsAcceptedAt: new Date(),
+            // One write: an application and the e-mail it owes exist together or not at all.
+            notice: { create: {} },
           },
           select: { id: true },
         });
@@ -85,6 +96,8 @@ export class CourierApplicationsService {
 
     // Thrown out here, past the catch that turns everything into a 500: it says which of the three, and nothing of whose.
     if (taken) throw new ConflictException({ errorCode: taken.errorCode, message: taken.message });
+
+    this.mailer.dispatch();
   }
 }
 

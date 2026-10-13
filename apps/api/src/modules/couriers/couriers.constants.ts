@@ -17,6 +17,14 @@ export const COURIER_CITIES = {
 
 export const COURIER_CITY_CODES = Object.keys(COURIER_CITIES) as CourierCity[];
 
+/**
+ * The name of a city as the table keeps it, by its code; null for a code that is not on the list.
+ * The column is text: a city closed after an application was kept leaves its code there, naming nothing.
+ */
+export function courierCityNameOf(code: string): string | null {
+  return Object.hasOwn(COURIER_CITIES, code) ? COURIER_CITIES[code as CourierCity].name : null;
+}
+
 /** The column's width, and a lead's name's: nobody's full name is turned away by it. */
 export const COURIER_NAME_MAX_LENGTH = 120;
 

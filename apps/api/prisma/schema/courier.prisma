@@ -9,7 +9,8 @@ enum CourierVehicle {
 /// A person who asked to deliver with Beelink (BEELINK-321): what the landing's form sent.
 ///
 /// A list of interest and nothing more. It has no status, because nobody works through it yet, and
-/// no link to `users`, because asking is not an account. Nothing reads it but a person with `psql`.
+/// no link to `users`, because asking is not an account. Nothing reads it but a person with `psql`
+/// and the outbox of the one e-mail an application is owed (`CourierApplicationNotice`).
 ///
 /// A person is here once (BEELINK-325): a second application with a CPF, an e-mail or a WhatsApp
 /// number already on the list is refused by the service, under a lock. Only the CPF has an index
@@ -39,5 +40,35 @@ model CourierApplication {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  /// The e-mail saying it arrived (BEELINK-326). Absent only on a row that repeats an older row's
+  /// e-mail, from before the rule: an address is told once.
+  notice CourierApplicationNotice?
+
   @@map("courier_applications")
+}
+
+/// The e-mail a person who asked to deliver is owed (BEELINK-326): the application arrived, and the
+/// way to go on with it comes later. Written by the transaction that keeps the application — and,
+/// once, by the migration, for every address that was on the list already. The outbox of that
+/// e-mail, claimed and retried as every outbox is.
+///
+/// It keeps no address and no name: both are read from the application when the e-mail goes, so
+/// there is no second copy to correct, and an application taken out takes its e-mail with it.
+/// An address is told once: of two notices whose applications share an e-mail, only the older is
+/// ever sent (`CourierApplicationMailer`).
+model CourierApplicationNotice {
+  id            String             @id @default(uuid(7)) @db.Uuid
+  applicationId String             @unique @db.Uuid
+  application   CourierApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  attempts      Int       @default(0)
+  nextAttemptAt DateTime  @default(now())
+  /// Sent, or done without sending because an older notice speaks for the address. Given up is
+  /// `attempts` at its ceiling with this still null.
+  sentAt        DateTime?
+  createdAt     DateTime  @default(now())
+
+  /// The dispatcher's reading, as on every outbox.
+  @@index([nextAttemptAt], where: raw("(\"sentAt\" IS NULL) AND (attempts < 5)"), map: "courier_application_notices_owed_idx")
+  @@map("courier_application_notices")
 }

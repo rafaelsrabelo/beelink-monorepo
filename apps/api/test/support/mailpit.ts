@@ -42,6 +42,15 @@ export async function waitForMessage(to: string, timeoutMs = 10_000, subject?: s
   throw new Error(`No e-mail reached ${to} within ${timeoutMs}ms`);
 }
 
+/** How many messages an address was sent, for a test that holds it to a number. Read once what sends them is known to be done. */
+export async function countMessages(to: string): Promise<number> {
+  const query = new URLSearchParams({ query: `to:"${to}"` });
+  const response = await fetch(`${MAILPIT_URL}/api/v1/search?${query.toString()}`);
+  const { messages } = (await response.json()) as MailpitSearch;
+
+  return messages.length;
+}
+
 /** Pulls the token out of the link the e-mail carries, the way a person clicking it would. */
 export function tokenFromLink(text: string, path: string): string {
   const match = new RegExp(`${path}\\?token=([\\w%.-]+)`).exec(text);

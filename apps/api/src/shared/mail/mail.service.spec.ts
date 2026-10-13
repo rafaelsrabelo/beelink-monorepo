@@ -51,3 +51,41 @@ describe('MailService at boot (BEELINK-168)', () => {
     expect(verify).not.toHaveBeenCalled();
   });
 });
+
+describe("MailService, a courier's application acknowledged (BEELINK-326)", () => {
+  const sendMail = vi.fn();
+  const mailFrom = env.MAIL_FROM;
+
+  beforeEach(() => {
+    sendMail.mockReset();
+    vi.mocked(createTransport).mockReturnValue({ verify: vi.fn(), sendMail } as unknown as ReturnType<typeof createTransport>);
+    env.MAIL_FROM = 'Beelink <nao-responda@beelink.test>';
+  });
+
+  afterEach(() => {
+    env.MAIL_FROM = mailFrom;
+  });
+
+  it("goes from bee-link's own sender, under no shop's name, to the address of the application", async () => {
+    sendMail.mockResolvedValue({});
+
+    await expect(new MailService().sendCourierApplicationReceived('zuleica.tavares@exemplo.test', { name: 'Zuleica Tavares', city: 'Fortaleza' })).resolves.toBe(true);
+
+    expect(sendMail).toHaveBeenCalledOnce();
+    expect(sendMail.mock.calls[0]![0]).toMatchObject({
+      from: 'Beelink <nao-responda@beelink.test>',
+      to: 'zuleica.tavares@exemplo.test',
+      subject: 'Recebemos o seu cadastro de entregador na Beelink',
+      text: expect.stringContaining('Olá, Zuleica.'),
+      html: expect.stringContaining('Olá, Zuleica.'),
+    });
+  });
+
+  it('answers that it did not go, without throwing, when the provider refuses', async () => {
+    sendMail.mockRejectedValue(new Error('connect ECONNREFUSED'));
+    const service = new MailService();
+    vi.spyOn(service['logger'], 'error').mockImplementation(() => undefined);
+
+    await expect(service.sendCourierApplicationReceived('zuleica.tavares@exemplo.test', { name: 'Zuleica Tavares', city: 'Fortaleza' })).resolves.toBe(false);
+  });
+});
