@@ -113,6 +113,27 @@ export interface StoreSubscriptionAnswer {
   subscription: StoreSubscription | null;
 }
 
+/**
+ * `PUT /stores/:slug/subscription`: the cycle the page's plan is to be paid in (BEELINK-292). The plan
+ * is the one on sale, and what it costs is the plan's own price for that cycle: neither is sent.
+ */
+export interface SubscriptionChoicePayload {
+  cycle: BillingCycle;
+}
+
+/**
+ * What that answers: the page's subscription made at bee-link's Asaas account, with no card asked,
+ * and where its first charge is paid. The same choice again answers the same invoice; another cycle,
+ * while nothing was paid, answers another. The page's `status` is not changed by choosing: it changes
+ * when the charge is paid.
+ */
+export interface SubscriptionChoice {
+  /** Asaas's own page for the charge: a card, Pix or a boleto, chosen there. Always `https`. */
+  invoiceUrl: string;
+  /** The page's subscription as it now reads: the plan, the cycle and the price chosen, and the same invoice. */
+  subscription: StoreSubscription;
+}
+
 /** Which document a billing account is charged under. */
 export type BillingDocumentType = "CPF" | "CNPJ";
 
@@ -147,13 +168,28 @@ export interface BillingAccountAnswer {
 }
 
 /**
- * What the billing account's routes refuse with.
+ * What the billing routes refuse with.
+ *
+ * The account's (`/billing/account`) and the page's choice of a cycle (`PUT /stores/:slug/subscription`):
  *
  * - `BILLING_UNAVAILABLE` (503): this deployment has no Asaas account of bee-link's to charge at.
  * - `BILLING_NAME_INVALID`, `BILLING_DOCUMENT_INVALID` (400): the body; nothing was kept and Asaas was not asked.
  * - `BILLING_ACCOUNT_BUSY` (409): another save of this account is being told to Asaas; nothing was kept.
  * - `BILLING_CUSTOMER_REFUSED` (502): Asaas refused the customer. The data was kept.
- * - `BILLING_UNREACHABLE` (503): Asaas did not answer. The data was kept.
+ * - `BILLING_UNREACHABLE` (503): Asaas did not answer. What was kept stays kept, and asking again picks it up.
+ *
+ * The page's choice of a cycle alone (BEELINK-292) — all but the last two before Asaas is asked anything:
+ *
+ * - `BILLING_CYCLE_INVALID` (400): the body names no cycle a plan is charged in.
+ * - `BILLING_NOT_ENFORCED` (409): this deployment charges nothing, so nothing is bought in it.
+ * - `BILLING_ACCOUNT_REQUIRED` (409): the account never gave who is charged; `PUT /billing/account` first.
+ * - `BILLING_SUBSCRIPTION_MISSING` (409): a page from before subscriptions existed, which has none yet.
+ * - `BILLING_PAGE_EXEMPT` (409): the page owes nothing, by bee-link's own choice.
+ * - `BILLING_PAGE_ACTIVE` (409): a period already paid for is running.
+ * - `BILLING_PLAN_UNAVAILABLE` (409): the plan is not on sale, or not in that cycle.
+ * - `BILLING_SUBSCRIPTION_BUSY` (409): another choice for this page is being told to Asaas; ask again in a moment.
+ * - `BILLING_SUBSCRIPTION_PAID` (409): Asaas says the subscription the page has was paid; nothing was made or removed.
+ * - `BILLING_SUBSCRIPTION_REFUSED` (502): Asaas refused the subscription. Nothing was made.
  */
 export type BillingErrorCode =
   | "BILLING_UNAVAILABLE"
@@ -161,4 +197,14 @@ export type BillingErrorCode =
   | "BILLING_DOCUMENT_INVALID"
   | "BILLING_ACCOUNT_BUSY"
   | "BILLING_CUSTOMER_REFUSED"
-  | "BILLING_UNREACHABLE";
+  | "BILLING_UNREACHABLE"
+  | "BILLING_CYCLE_INVALID"
+  | "BILLING_NOT_ENFORCED"
+  | "BILLING_ACCOUNT_REQUIRED"
+  | "BILLING_SUBSCRIPTION_MISSING"
+  | "BILLING_PAGE_EXEMPT"
+  | "BILLING_PAGE_ACTIVE"
+  | "BILLING_PLAN_UNAVAILABLE"
+  | "BILLING_SUBSCRIPTION_BUSY"
+  | "BILLING_SUBSCRIPTION_PAID"
+  | "BILLING_SUBSCRIPTION_REFUSED";
