@@ -30,9 +30,25 @@ describe("LegalDocument", () => {
     expect(screen.getByRole("article")).toHaveAttribute("lang", "pt-BR")
   })
 
-  it("has no accessibility violations", async () => {
-    const { container } = render(<LegalDocument content={sampleLegalDocument} />)
+  /** In a dialog the title and the day are the dialog's name and description, and are not said twice. */
+  it("leaves the title and the day to whatever holds it when headless, and sets its sections a level down", () => {
+    render(<LegalDocument content={sampleLegalDocument} headless />)
 
-    await expectNoA11yViolations(container)
+    expect(screen.queryByRole("heading", { level: 1 })).not.toBeInTheDocument()
+    expect(screen.queryByText("Vigente desde 30 de setembro de 2026")).not.toBeInTheDocument()
+    expect(screen.queryByRole("heading", { level: 2 })).not.toBeInTheDocument()
+    expect(screen.getAllByRole("heading", { level: 3 }).map((heading) => heading.textContent)).toEqual(["1. Quem cuida dos seus dados", "2. Seus direitos"])
+    expect(screen.getByText("Esta política explica quais dados o bee-link guarda, para quê e por quanto tempo.")).toBeInTheDocument()
+    expect(within(screen.getByRole("region", { name: "1. Quem cuida dos seus dados" })).getAllByRole("listitem")).toHaveLength(3)
+    expect(screen.getByRole("article")).toHaveAttribute("lang", "pt-BR")
+  })
+
+  it("has no accessibility violations, whole or headless", async () => {
+    const whole = render(<LegalDocument content={sampleLegalDocument} />)
+    await expectNoA11yViolations(whole.container)
+    whole.unmount()
+
+    const headless = render(<LegalDocument content={sampleLegalDocument} headless />)
+    await expectNoA11yViolations(headless.container)
   })
 })

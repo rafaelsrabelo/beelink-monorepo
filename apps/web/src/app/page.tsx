@@ -20,8 +20,10 @@ import { LandingSteps } from "@harness-monorepo/ui/blocks/landing/landing-steps"
 import { AppLink } from "@/components/app-link"
 import { brandFontStyle, jakarta } from "@/components/landing/brand-font"
 import { BrandPhoto } from "@/components/landing/brand-photo"
+import { courierApplicationCopyOf } from "@/components/landing/courier-application-copy"
 import { integrationMarksOf } from "@/components/landing/integration-mark"
 import { LandingConsentLive } from "@/components/landing/landing-consent-live"
+import { LandingCourierFormLive } from "@/components/landing/landing-courier-form-live"
 import { LandingConsentReopen } from "@/components/landing/landing-consent-reopen"
 import { SiteMeasured } from "@/components/site-analytics/site-measured"
 import courierStreet from "@/assets/images/courier-street.jpg"
@@ -86,6 +88,9 @@ export async function generateMetadata(): Promise<Metadata> {
  * measured (BEELINK-319) — only where a measurement ID is configured — and measures the visit of
  * one who said yes (BEELINK-320). The notice and the footer's "Cookies" are mounted either way, and
  * draw nothing where nobody is asked.
+ *
+ * The courier's form is handed to its section already wired (BEELINK-322): the section is drawn
+ * here, on the server, and the send is a function only the browser's side can hold.
  */
 export default async function LandingPage() {
   const { ui, web, locale } = await getMessages()
@@ -115,9 +120,16 @@ export default async function LandingPage() {
             <LandingPlans prices={PLAN_PRICES} locale={locale} signupHref={SIGNUP} linkComponent={AppLink} messages={ui} />
             <LandingCouriers
               photo={<BrandPhoto image={courierStreet} alt="" sizes="(min-width: 80rem) 820px, 100vw" />}
-              termsHref={LEGAL_ROUTES.terms}
-              privacyHref={LEGAL_ROUTES.privacy}
-              linkComponent={AppLink}
+              form={
+                <LandingCourierFormLive
+                  termsHref={LEGAL_ROUTES.terms}
+                  privacyHref={LEGAL_ROUTES.privacy}
+                  text={ui.landing.couriers.form}
+                  copy={courierApplicationCopyOf(web)}
+                  dialogClassName={jakarta.variable}
+                  dialogStyle={brandFontStyle}
+                />
+              }
               messages={ui}
             />
             <LandingFaq prices={PLAN_PRICES} locale={locale} messages={ui} />

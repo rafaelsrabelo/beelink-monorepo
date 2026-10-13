@@ -4,10 +4,12 @@ import type { SiteConsentChoice } from "./site-consent-cookie"
 
 /**
  * What Beelink's own site tells of a visit (BEELINK-320), in the words Google Analytics reads them
- * by — the one place they are spelled. A page opened and an account created, and no more: that is
- * what the privacy policy says is sent, so a third event is a new version of that text.
+ * by — the one place they are spelled. A page opened, an account created and a courier's application
+ * sent (BEELINK-322), and no more: that is what the privacy policy says is sent, so another event is
+ * a new version of that text. None carries a parameter of its own: that it happened, and on which
+ * page, is all that is told.
  */
-export type SiteEvent = { name: "page_view" } | { name: "sign_up" }
+export type SiteEvent = { name: "page_view" } | { name: "sign_up" } | { name: "generate_lead" }
 
 /** How a screen says something happened. It knows nothing of who is told, or whether anyone is. */
 export type SiteTrack = (event: SiteEvent) => void

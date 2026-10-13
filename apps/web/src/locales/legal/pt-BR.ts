@@ -16,15 +16,16 @@ export interface LegalTexts {
  * keeps or shares is a new version of these texts, with a new `version`.
  */
 export const legalTexts = {
-  version: "2026-10-12",
+  version: "2026-10-13",
   terms: {
     lang: "pt-BR",
     title: "Termos de uso",
-    effective: "Vigente desde 12 de outubro de 2026",
+    effective: "Vigente desde 13 de outubro de 2026",
     intro: [
       "Estes Termos de uso são as regras para usar o bee-link. Eles explicam o que a plataforma faz, o que ela não faz e o que se espera de cada pessoa que a usa.",
       "Eles valem para dois públicos: o lojista, que cria uma conta no painel para publicar a sua loja, e o cliente, que cria uma conta numa loja para comprar dela. Quando uma regra vale só para um dos dois, o texto diz.",
       "Você aceita estes Termos quando cria a sua conta, pelo formulário de cadastro ou pelo botão \"Continuar com Google\", e também quando define uma senha pelo link enviado por e-mail. Nesses mesmos momentos, você declara ter lido a Política de privacidade, que explica como o bee-link trata dados pessoais.",
+      "Quem envia o cadastro de entregador, na página inicial do bee-link, também aceita estes Termos e declara ter lido a Política de privacidade ao enviá-lo. Esse cadastro é uma lista de interesse: ele não cria uma conta, e as regras da atividade de entrega ainda não fazem parte destes Termos.",
     ],
     sections: [
       {
@@ -325,7 +326,7 @@ export const legalTexts = {
           },
           {
             kind: "paragraph",
-            text: "Quando você aceita estes Termos, o bee-link registra a versão aceita, a data e o momento em que o aceite foi dado: no cadastro, no \"Continuar com Google\" ou ao definir a senha. [PREENCHER: como as contas existentes serão avisadas de uma versão nova e como vão aceitá-la].",
+            text: "Quando você aceita estes Termos, o bee-link registra a versão aceita, a data e o momento em que o aceite foi dado: no cadastro, no \"Continuar com Google\", ao definir a senha ou ao enviar o cadastro de entregador. [PREENCHER: como as contas existentes serão avisadas de uma versão nova e como vão aceitá-la].",
           },
         ],
       },
@@ -360,10 +361,10 @@ export const legalTexts = {
   privacy: {
     lang: "pt-BR",
     title: "Política de privacidade",
-    effective: "Vigente desde 12 de outubro de 2026",
+    effective: "Vigente desde 13 de outubro de 2026",
     intro: [
       "Esta Política de privacidade explica quais dados pessoais o bee-link trata, para quê, com quem os compartilha, por quanto tempo os guarda e como você exerce os seus direitos, conforme a Lei Geral de Proteção de Dados (Lei nº 13.709/2018, a LGPD).",
-      "Ela vale para os lojistas, para os clientes das lojas e para quem visita o site do bee-link ou uma loja sem criar conta. Ao criar uma conta, ou ao definir uma senha pelo link enviado por e-mail, você declara que leu esta Política.",
+      "Ela vale para os lojistas, para os clientes das lojas, para quem se candidata a fazer entregas e para quem visita o site do bee-link ou uma loja sem criar conta. Ao criar uma conta, ou ao definir uma senha pelo link enviado por e-mail, ou ao enviar o cadastro de entregador, você declara que leu esta Política.",
     ],
     sections: [
       {
@@ -386,6 +387,7 @@ export const legalTexts = {
             kind: "list",
             items: [
               "Dados do lojista: o bee-link é o controlador dos dados da conta do lojista e das lojas que ele cria.",
+              "Dados de quem se candidata a fazer entregas: o bee-link é o controlador.",
               "Dados dos clientes de uma loja: a loja é a controladora, e o bee-link é o operador, que trata esses dados em nome dela para prestar o serviço. A conta de cliente pertence à loja em que foi criada.",
               "Dados de quem usa o formulário de contato ou o \"Avise-me\" de uma loja: a loja é a controladora, e o bee-link é o operador.",
               "Dados que o bee-link trata para fins próprios, como o registro do aceite dos Termos de uso, a segurança da plataforma, os registros técnicos de acesso e a medição das visitas ao seu próprio site: o bee-link é o controlador, seja de quem for o dado.",
@@ -466,6 +468,44 @@ export const legalTexts = {
         ],
       },
       {
+        heading: "Dados de quem se candidata a entregar",
+        blocks: [
+          {
+            kind: "paragraph",
+            text: "Na página inicial do bee-link, o formulário \"Comece seu cadastro\" recebe o cadastro de quem quer fazer entregas. Hoje ele só aceita a cidade de Fortaleza/CE. Quando você o envia, o bee-link guarda:",
+          },
+          {
+            kind: "list",
+            items: [
+              "nome completo, CPF, e-mail e número de WhatsApp;",
+              "a cidade em que você quer entregar e como você entrega: moto, bicicleta, carro ou utilitário;",
+              "a versão dos Termos de uso e desta Política que você aceitou ao enviar, com a data e a hora do aceite;",
+              "a data e a hora em que o cadastro foi enviado pela primeira vez e em que foi alterado pela última vez.",
+            ],
+          },
+          {
+            kind: "paragraph",
+            text: "Esses dados formam uma lista de interesse. O bee-link os usa para saber quem quer entregar e em qual cidade, e para falar com você, pelo e-mail ou pelo WhatsApp informados, sobre a conclusão do cadastro. O CPF identifica o cadastro: existe um só por CPF.",
+          },
+          {
+            kind: "paragraph",
+            text: "Se o formulário for enviado de novo com o mesmo CPF, os dados novos substituem os anteriores, e o aceite registrado passa a ser o do novo envio. A resposta do site é a mesma nos dois casos, e não diz se o CPF já estava na lista.",
+          },
+          {
+            kind: "paragraph",
+            text: "Enviar o formulário não cria uma conta no bee-link, e nenhuma loja vê esses dados.",
+          },
+          {
+            kind: "paragraph",
+            text: "O que você digita no formulário não é enviado ao Google. Se você aceitou o aviso de cookies da página inicial, o Google Analytics é avisado apenas de que um cadastro foi enviado, sem nenhum dos dados acima, como explica a seção \"Google Analytics no site do bee-link\".",
+          },
+          {
+            kind: "paragraph",
+            text: "Esses dados ficam guardados até você pedir a exclusão: o bee-link não os apaga automaticamente depois de um prazo. Para pedir a exclusão, ou para consultar ou corrigir o seu cadastro, fale com o bee-link pelo canal indicado na seção \"Contato e encarregado\", informando o CPF do cadastro.",
+          },
+        ],
+      },
+      {
         heading: "Dados técnicos",
         blocks: [
           {
@@ -490,6 +530,7 @@ export const legalTexts = {
             kind: "list",
             items: [
               "Execução de contrato: criar e manter contas, confirmar o e-mail, redefinir a senha, publicar a loja e localizá-la no mapa, preencher endereços pelo CEP, registrar pedidos e conversas, enviar os e-mails de andamento dos pedidos, registrar o aceite dos Termos de uso e atender o que você pede pelo formulário de contato ou pelo \"Avise-me\".",
+              "Procedimentos preliminares a um contrato, a pedido de quem se candidata: guardar o cadastro de quem quer fazer entregas pelo bee-link e falar com a pessoa para concluí-lo.",
               "Cumprimento de obrigação legal: guardar registros de acesso e atender ordens de autoridades, quando a lei exigir.",
               "Legítimo interesse: proteger as contas e a plataforma, prevenir fraudes e abusos, limitar tentativas repetidas e investigar erros, sempre dentro do que se espera de um serviço como este.",
               "Consentimento: enviar ofertas e novidades de uma loja por e-mail, só a quem aceitou; numa loja que conectou um Pixel da Meta, enviar à Meta os dados da sua navegação naquela loja e a compra que você fizer ali, pelo seu navegador ou pelo servidor do bee-link, só depois que você aceita no aviso de cookies; e, no site do bee-link, medir as visitas com o Google Analytics, que recebe os dados da sua navegação ali, só depois que você aceita no aviso de cookies da página inicial. Você pode retirar o consentimento quando quiser: o das ofertas, em \"Avisos por e-mail\", na sua conta na loja; o do pixel, no link \"Cookies\", no rodapé da loja; o da medição, no link \"Cookies\", no rodapé da página inicial do bee-link.",
@@ -497,7 +538,7 @@ export const legalTexts = {
           },
           {
             kind: "paragraph",
-            text: "Para os dados dos clientes, a loja, como controladora, responde pelas bases legais dos usos que fizer deles. O bee-link não usa dados pessoais para publicidade própria: o Google Analytics do site dele serve para contar as visitas e as contas criadas, e não para anúncios. A loja que conecta um Pixel da Meta usa os dados da navegação e das compras de quem aceitou para medir e direcionar os anúncios dela, e responde por esse uso.",
+            text: "Para os dados dos clientes, a loja, como controladora, responde pelas bases legais dos usos que fizer deles. O bee-link não usa dados pessoais para publicidade própria: o Google Analytics do site dele serve para contar as visitas, as contas criadas e os cadastros de entregador enviados, e não para anúncios. A loja que conecta um Pixel da Meta usa os dados da navegação e das compras de quem aceitou para medir e direcionar os anúncios dela, e responde por esse uso.",
           },
         ],
       },
@@ -597,7 +638,7 @@ export const legalTexts = {
         blocks: [
           {
             kind: "paragraph",
-            text: "O bee-link mede as visitas ao seu próprio site com o Google Analytics, uma ferramenta do Google. Aqui quem decide medir é o próprio bee-link, e não uma loja. A medição serve para o bee-link saber quantas pessoas chegam à página inicial e quantas criam uma conta, e não para anúncios.",
+            text: "O bee-link mede as visitas ao seu próprio site com o Google Analytics, uma ferramenta do Google. Aqui quem decide medir é o próprio bee-link, e não uma loja. A medição serve para o bee-link saber quantas pessoas chegam à página inicial, quantas criam uma conta e quantas enviam o cadastro de entregador, e não para anúncios.",
           },
           {
             kind: "paragraph",
@@ -611,7 +652,7 @@ export const legalTexts = {
           {
             kind: "list",
             items: [
-              "a sua navegação nessas telas: as páginas abertas, de onde você veio e o que você faz nelas, como criar uma conta;",
+              "a sua navegação nessas telas: as páginas abertas, de onde você veio e o que você faz nelas, como criar uma conta ou enviar o cadastro de entregador; do cadastro, o Google é avisado só de que ele foi enviado, sem nada do que você digitou;",
               "os dados técnicos que toda conexão leva, como o endereço IP e a identificação do navegador;",
               "os identificadores que o Google Analytics guarda em cookies no seu navegador, descritos na seção \"Cookies\".",
             ],
@@ -694,6 +735,10 @@ export const legalTexts = {
           },
           {
             kind: "paragraph",
+            text: "O cadastro de quem se candidata a entregar não está ligado a uma conta: ele fica guardado até a pessoa pedir a exclusão.",
+          },
+          {
+            kind: "paragraph",
             text: "Os registros técnicos do servidor são guardados por [PREENCHER: prazo de guarda dos logs; o art. 15 do Marco Civil da Internet pede 6 meses para os registros de acesso a aplicações, e hoje o servidor descarta os logs por volume, sem prazo fixo].",
           },
           {
@@ -766,6 +811,7 @@ export const legalTexts = {
             items: [
               "Se você é cliente de uma loja, faça o pedido à loja, que é a controladora dos seus dados. O bee-link, como operador, apoia a loja e leva a ela o pedido que receber sobre esses dados.",
               "Se você é lojista, faça o pedido ao bee-link, pelo canal indicado na seção de contato.",
+              "Se você enviou o cadastro de entregador, faça o pedido ao bee-link, pelo canal indicado na seção de contato, informando o CPF do cadastro.",
               "Para os dados que o bee-link trata para fins próprios, como os registros técnicos e o aceite dos Termos de uso, qualquer pessoa pode falar direto com o bee-link.",
             ],
           },
@@ -775,7 +821,7 @@ export const legalTexts = {
           },
           {
             kind: "paragraph",
-            text: "Hoje, a exclusão de uma conta ou de uma loja é pedida pelo canal indicado na seção de contato. Para proteger você, o bee-link pode pedir que confirme a sua identidade antes de atender, e responde nos prazos da LGPD.",
+            text: "Hoje, a exclusão de uma conta, de uma loja ou de um cadastro de entregador é pedida pelo canal indicado na seção de contato. Para proteger você, o bee-link pode pedir que confirme a sua identidade antes de atender, e responde nos prazos da LGPD.",
           },
         ],
       },

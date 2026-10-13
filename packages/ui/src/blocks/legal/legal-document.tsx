@@ -1,3 +1,6 @@
+// UI
+import { cn } from "@harness-monorepo/ui/lib/utils"
+
 /** A paragraph, or a list whose items read as one enumeration. */
 export type LegalBlock = { kind: "paragraph"; text: string } | { kind: "list"; items: readonly string[] }
 
@@ -25,16 +28,27 @@ export interface LegalDocumentContent {
 
 export interface LegalDocumentProps {
   content: LegalDocumentContent
+  /**
+   * Drawn inside something that already says the title and the day — a dialog, which is named and
+   * described by them. The text then starts at its introduction, and each section sits one level
+   * down, under the dialog's own heading. The words are the same either way.
+   */
+  headless?: boolean
+  className?: string
 }
 
 /** Bee-link's terms of use or privacy policy, numbered by section, readable at any width. */
-export function LegalDocument({ content }: LegalDocumentProps) {
+export function LegalDocument({ content, headless = false, className }: LegalDocumentProps) {
+  const SectionHeading = headless ? "h3" : "h2"
+
   return (
-    <article lang={content.lang} className="mx-auto flex w-full max-w-3xl flex-col gap-8 text-foreground">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">{content.title}</h1>
-        <p className="text-sm text-muted-foreground">{content.effective}</p>
-      </header>
+    <article lang={content.lang} className={cn("mx-auto flex w-full max-w-3xl flex-col gap-8 text-foreground", className)}>
+      {headless ? null : (
+        <header className="flex flex-col gap-2">
+          <h1 className="text-3xl font-bold tracking-tight">{content.title}</h1>
+          <p className="text-sm text-muted-foreground">{content.effective}</p>
+        </header>
+      )}
 
       {content.intro.length ? (
         <div className="flex flex-col gap-3">
@@ -48,9 +62,9 @@ export function LegalDocument({ content }: LegalDocumentProps) {
 
       {content.sections.map((section, index) => (
         <section key={section.heading} aria-labelledby={`legal-section-${index + 1}`} className="flex flex-col gap-3">
-          <h2 id={`legal-section-${index + 1}`} className="text-xl font-semibold">
+          <SectionHeading id={`legal-section-${index + 1}`} className="text-xl font-semibold">
             {index + 1}. {section.heading}
-          </h2>
+          </SectionHeading>
           {section.blocks.map((block, position) =>
             block.kind === "paragraph" ? (
               <p key={position} className="leading-relaxed">

@@ -10,6 +10,7 @@ import type {
   OrderRefundErrorCode,
   PromotionErrorCode,
   ConversationErrorCode,
+  CourierApplicationErrorCode,
   StoreErrorCode,
   PageErrorCode,
 } from "@harness-monorepo/contracts"
@@ -57,6 +58,13 @@ export type WebErrorCode =
   | "CUSTOMER_PASSWORD_INVALID"
   // The shopper said no on Google's page: Google sends back `error`, not a code.
   | "GOOGLE_CANCELLED"
+  /**
+   * The landing's courier form met the API's limit (BEELINK-322). Its own sentence, and not
+   * `RATE_LIMITED`'s: that one says to wait a minute, and this route's window is ten.
+   */
+  | "COURIER_APPLICATION_LIMITED"
+  /** The courier's form did not get through — the network, a 5xx, a code nobody knows — and nothing of it was lost. */
+  | "COURIER_APPLICATION_FAILED"
 
 /**
  * What the screens say, on top of what the blocks already carry. `errors` turns an API `errorCode`
@@ -279,6 +287,7 @@ export interface WebMessages {
     | "REFUND_REFUSED_UNSAID"
     | PromotionErrorCode
     | ConversationErrorCode
+    | CourierApplicationErrorCode
     | HttpFallbackErrorCode
     | WebErrorCode
     | PanelPageErrorCode

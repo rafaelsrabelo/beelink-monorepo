@@ -46,6 +46,9 @@ export default defineConfig({
         // A journey signs up and signs in several times over. The limit meant for real people has
         // its own e2e test, in apps/api.
         AUTH_RATE_LIMIT_MAX: "1000",
+        // The courier's form is sent for real by several tests from one address (BEELINK-322); the
+        // limit of five in ten minutes has its own e2e test, in apps/api.
+        COURIER_APPLICATION_RATE_LIMIT_MAX: "1000",
       },
     },
     {

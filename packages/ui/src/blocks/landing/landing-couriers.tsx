@@ -12,8 +12,6 @@ import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
-import type { LinkComponent } from "../auth/auth-link"
-import { LandingCourierForm } from "./landing-courier-form"
 import { LANDING_FOCUS_ON_INK } from "./landing-styles"
 import { LandingTitle } from "./landing-title"
 
@@ -23,9 +21,12 @@ export interface LandingCouriersProps {
    * hands its own optimised image in. Without one the section is black alone.
    */
   photo?: ReactNode
-  termsHref: string
-  privacyHref: string
-  linkComponent?: LinkComponent
+  /**
+   * The form that starts the sign-up, `landing-courier-form`, already wired by whoever sends it. A
+   * slot and not a child drawn here: the form takes the send as a function, and this section is
+   * drawn on the server, which cannot hand one to the browser.
+   */
+  form: ReactNode
   messages?: UiMessages
 }
 
@@ -33,10 +34,12 @@ const PERK_ICONS: readonly LucideIcon[] = [MapPinIcon, CheckIcon, ClockIcon, Ban
 
 /**
  * "Para entregadores": the black section — what delivering with Beelink would be, the four steps of
- * the sign-up, and the form that starts it, over a courier on the road. The section is the design's; the couriers' app it
- * describes is still to come, which the form says for itself once filled in.
+ * the sign-up, and the form that starts it, over a courier on the road. The section is the design's;
+ * the couriers' app it describes is still to come. What exists is the first step: the form puts a
+ * person on the list of those who asked to deliver, today in one city, which the section's own
+ * words say.
  */
-export function LandingCouriers({ photo, termsHref, privacyHref, linkComponent, messages = defaultMessages }: LandingCouriersProps) {
+export function LandingCouriers({ photo, form, messages = defaultMessages }: LandingCouriersProps) {
   const text = messages.landing.couriers
 
   return (
@@ -97,7 +100,7 @@ export function LandingCouriers({ photo, termsHref, privacyHref, linkComponent, 
           </div>
         </div>
 
-        <LandingCourierForm termsHref={termsHref} privacyHref={privacyHref} linkComponent={linkComponent} text={text.form} />
+        {form}
       </div>
     </section>
   )

@@ -13,6 +13,7 @@ import { en, ptBR } from "@harness-monorepo/ui/locales/index"
 import { expectNoA11yViolations } from "../../test/a11y"
 import { LandingBanners } from "./landing-banners"
 import { LandingConsent } from "./landing-consent"
+import { LandingCourierForm } from "./landing-courier-form"
 import { LandingCouriers } from "./landing-couriers"
 import { LandingCta } from "./landing-cta"
 import { LandingEcosystem } from "./landing-ecosystem"
@@ -41,6 +42,9 @@ const logos = {
   meta: <img src="/meta.svg" alt="Logo da Meta" />,
 }
 
+/** The courier's form as the page hands it to its section: wired to nothing here. */
+const courierForm = (messages = ptBR) => <LandingCourierForm termsHref={hrefs.termsHref} privacyHref={hrefs.privacyHref} text={messages.landing.couriers.form} onSubmit={() => {}} />
+
 // jsdom has no ResizeObserver, and the banners' row watches its own size.
 beforeEach(() => {
   vi.stubGlobal(
@@ -67,7 +71,7 @@ function Page({ notice, cookies }: { notice?: ReactNode; cookies?: ReactNode }) 
         <LandingIntegrations logos={logos} />
         <LandingSteps />
         <LandingPlans prices={examplePlanPrices} locale="pt-BR" signupHref={hrefs.signupHref} />
-        <LandingCouriers termsHref={hrefs.termsHref} privacyHref={hrefs.privacyHref} />
+        <LandingCouriers form={courierForm()} />
         <LandingFaq prices={examplePlanPrices} locale="pt-BR" />
         <LandingCta signupHref={hrefs.signupHref} trialDays={examplePlanPrices.trialDays} />
       </main>
@@ -273,14 +277,37 @@ describe("LandingSteps", () => {
 })
 
 describe("LandingCouriers", () => {
-  it("says what delivering would be, the sign-up's four steps, and holds the form", () => {
-    render(<LandingCouriers termsHref="/termos" privacyHref="/privacidade" />)
+  it("says what delivering would be, the sign-up's four steps, and holds the form it is handed", () => {
+    render(<LandingCouriers form={courierForm()} />)
 
     expect(screen.getByRole("heading", { level: 2, name: "Entregue com a Beelink" })).toBeInTheDocument()
     expect(screen.getByText("Ganhos à vista")).toBeInTheDocument()
     const flow = screen.getByRole("heading", { level: 3, name: "Como funciona o cadastro" }).nextElementSibling!
     expect(within(flow as HTMLElement).getAllByRole("listitem").map((step) => step.textContent)).toEqual(["1Cadastro", "2Documentos", "3Aprovação", "4Primeiras entregas"])
     expect(screen.getByRole("form", { name: "Comece seu cadastro" })).toBeInTheDocument()
+  })
+
+  /** BEELINK-322: the sign-up is open, and for one city. The section and its form both say so, in both languages. */
+  it.each([
+    ["pt-BR", ptBR, /Por enquanto, o cadastro é só para Fortaleza/, "Hoje, só para quem entrega em Fortaleza. As informações para concluir chegam por e-mail."],
+    ["en", en, /For now the sign-up is for Fortaleza only/, "Today, only for those who deliver in Fortaleza. What it takes to finish arrives by e-mail."],
+  ] as const)("says the sign-up is for Fortaleza only today, in %s", (_, messages, lead, formLead) => {
+    const { container } = render(<LandingCouriers form={courierForm(messages)} messages={messages} />)
+
+    expect(container.querySelector("section > div > div > p")).toHaveTextContent(lead)
+    expect(screen.getByText(formLead)).toBeInTheDocument()
+    expect(screen.getByText(messages.landing.couriers.form.cityHint)).toBeInTheDocument()
+  })
+
+  /** What the form said while it sent nothing, and the two minutes and the documents it promised. */
+  it.each([
+    ["pt-BR", ptBR],
+    ["en", en],
+  ] as const)("no longer says nothing was sent, that it takes two minutes, or that the documents come next, in %s", (_, messages) => {
+    const said = JSON.stringify([messages.landing.couriers, messages.landing.faq.courier])
+
+    expect(said).not.toMatch(/Nada foi enviado|não saíram deste aparelho|Leva 2 minutos|próximo passo|ainda não está aberto|abre em breve/)
+    expect(said).not.toMatch(/Nothing was sent|did not leave this device|takes 2 minutes|next step|is not open yet|opens soon/)
   })
 
   /** A public page shows no "[confirmar]": what the design left open is left out. */
@@ -291,7 +318,7 @@ describe("LandingCouriers", () => {
     const { container } = render(
       <>
         <LandingBanners signupHref="/signup" photos={photos} messages={messages} />
-        <LandingCouriers termsHref="/termos" privacyHref="/privacidade" messages={messages} />
+        <LandingCouriers form={courierForm(messages ?? ptBR)} messages={messages} />
         <LandingFaq prices={examplePlanPrices} locale="pt-BR" messages={messages} />
         <LandingFooter termsHref="/termos" privacyHref="/privacidade" year={2026} messages={messages} />
       </>,
