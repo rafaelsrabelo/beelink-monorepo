@@ -175,9 +175,10 @@ describe("bee-link's legal texts (BEELINK-171)", () => {
 
     it("says who measures and what for, and that it is not for ads", () => {
       expect(analytics).toMatch(/quem decide medir é o próprio bee-link, e não uma loja/)
-      expect(analytics).toMatch(/quantas pessoas chegam à página inicial e quantas criam uma conta, e não para anúncios/)
+      // BEELINK-322: a courier's application sent is counted too.
+      expect(analytics).toMatch(/quantas pessoas chegam à página inicial, quantas criam uma conta e quantas enviam o cadastro de entregador, e não para anúncios/)
       expect(textOf("Controlador e operador")).toMatch(/a medição das visitas ao seu próprio site: o bee-link é o controlador/)
-      expect(textOf("Para que os dados são usados")).toMatch(/O bee-link não usa dados pessoais para publicidade própria: o Google Analytics do site dele serve para contar as visitas e as contas criadas/)
+      expect(textOf("Para que os dados são usados")).toMatch(/O bee-link não usa dados pessoais para publicidade própria: o Google Analytics do site dele serve para contar as visitas, as contas criadas e os cadastros de entregador enviados, e não para anúncios/)
     })
 
     it("says it is loaded on three screens, never at a shop, and only after a yes", () => {
@@ -247,6 +248,87 @@ describe("bee-link's legal texts (BEELINK-171)", () => {
 
     it("is for whoever visits bee-link's own site too", () => {
       expect(legalTexts.privacy.intro.join(" ")).toMatch(/para quem visita o site do bee-link ou uma loja sem criar conta/)
+    })
+  })
+
+  /**
+   * BEELINK-322: the landing's courier form sends, and what it sends is kept. Every sentence here is
+   * something the code does — the table's columns, the upsert by CPF, the event with nothing in it —
+   * and none promises a deletion nothing performs.
+   */
+  describe("the policy, on who asked to deliver", () => {
+    const textOf = (heading: string) => {
+      const section = legalTexts.privacy.sections.find((entry) => entry.heading === heading)
+      return section?.blocks.map((block) => (block.kind === "paragraph" ? block.text : block.items.join(" "))).join(" ") ?? ""
+    }
+    const couriers = textOf("Dados de quem se candidata a entregar")
+
+    it("is the version of the day the form began to send", () => {
+      expect(legalTexts.version).toBe("2026-10-13")
+      expect(legalTexts.privacy.effective).toBe("Vigente desde 13 de outubro de 2026")
+      expect(legalTexts.terms.effective).toBe("Vigente desde 13 de outubro de 2026")
+    })
+
+    it("has a section of its own, between the visitor's and the technical data", () => {
+      const headings = legalTexts.privacy.sections.map((section) => section.heading)
+
+      expect(headings.slice(headings.indexOf("Dados de quem visita uma loja sem conta"), headings.indexOf("Dados técnicos") + 1)).toEqual(["Dados de quem visita uma loja sem conta", "Dados de quem se candidata a entregar", "Dados técnicos"])
+    })
+
+    it("names every thing the table keeps: the six fields, the acceptance and the two dates", () => {
+      expect(couriers).toMatch(/nome completo, CPF, e-mail e número de WhatsApp/)
+      expect(couriers).toMatch(/a cidade em que você quer entregar e como você entrega: moto, bicicleta, carro ou utilitário/)
+      expect(couriers).toMatch(/a versão dos Termos de uso e desta Política que você aceitou ao enviar, com a data e a hora do aceite/)
+      expect(couriers).toMatch(/enviado pela primeira vez e em que foi alterado pela última vez/)
+    })
+
+    it("says where the form is and that today it takes one city", () => {
+      expect(couriers).toMatch(/Na página inicial do bee-link, o formulário "Comece seu cadastro"/)
+      expect(couriers).toMatch(/Hoje ele só aceita a cidade de Fortaleza\/CE/)
+    })
+
+    it("says what the data is for, and that the CPF is what makes a sign-up one", () => {
+      expect(couriers).toMatch(/formam uma lista de interesse/)
+      expect(couriers).toMatch(/para falar com você, pelo e-mail ou pelo WhatsApp informados, sobre a conclusão do cadastro/)
+      expect(couriers).toMatch(/O CPF identifica o cadastro: existe um só por CPF/)
+    })
+
+    it("says a second send with the same CPF replaces the first, and that the site never says the CPF was there", () => {
+      expect(couriers).toMatch(/enviado de novo com o mesmo CPF, os dados novos substituem os anteriores, e o aceite registrado passa a ser o do novo envio/)
+      expect(couriers).toMatch(/não diz se o CPF já estava na lista/)
+    })
+
+    it("says no account is made of it and no shop sees it", () => {
+      expect(couriers).toMatch(/não cria uma conta no bee-link, e nenhuma loja vê esses dados/)
+    })
+
+    it("says nothing typed goes to Google: with a yes, only that a sign-up was sent", () => {
+      expect(couriers).toMatch(/O que você digita no formulário não é enviado ao Google/)
+      expect(couriers).toMatch(/o Google Analytics é avisado apenas de que um cadastro foi enviado, sem nenhum dos dados acima/)
+      expect(textOf("Google Analytics no site do bee-link")).toMatch(/como criar uma conta ou enviar o cadastro de entregador; do cadastro, o Google é avisado só de que ele foi enviado, sem nada do que você digitou/)
+    })
+
+    // Nothing deletes a row by itself, so no period is promised: the text says so, and how to ask.
+    it("says the data stays until its deletion is asked for, and promises no period", () => {
+      expect(couriers).toMatch(/ficam guardados até você pedir a exclusão: o bee-link não os apaga automaticamente depois de um prazo/)
+      expect(couriers).toMatch(/fale com o bee-link pelo canal indicado na seção "Contato e encarregado", informando o CPF do cadastro/)
+      expect(couriers).not.toMatch(/\d+ (dias|meses|anos)/)
+      expect(textOf("Por quanto tempo os dados são guardados")).toMatch(/O cadastro de quem se candidata a entregar não está ligado a uma conta: ele fica guardado até a pessoa pedir a exclusão/)
+    })
+
+    it("names bee-link as the controller, the legal basis, and the way to ask, each where the policy lists them", () => {
+      expect(textOf("Controlador e operador")).toMatch(/Dados de quem se candidata a fazer entregas: o bee-link é o controlador/)
+      expect(textOf("Para que os dados são usados")).toMatch(/Procedimentos preliminares a um contrato, a pedido de quem se candidata: guardar o cadastro de quem quer fazer entregas pelo bee-link/)
+      expect(textOf("Como exercer os seus direitos")).toMatch(/Se você enviou o cadastro de entregador, faça o pedido ao bee-link, pelo canal indicado na seção de contato, informando o CPF do cadastro/)
+      expect(textOf("Como exercer os seus direitos")).toMatch(/a exclusão de uma conta, de uma loja ou de um cadastro de entregador é pedida pelo canal indicado/)
+    })
+
+    it("is for who asks to deliver too, and says the form is a moment the texts are taken", () => {
+      expect(legalTexts.privacy.intro.join(" ")).toMatch(/para quem se candidata a fazer entregas/)
+      expect(legalTexts.privacy.intro.join(" ")).toMatch(/ou ao enviar o cadastro de entregador, você declara que leu esta Política/)
+      expect(legalTexts.terms.intro.join(" ")).toMatch(/Quem envia o cadastro de entregador, na página inicial do bee-link, também aceita estes Termos e declara ter lido a Política de privacidade ao enviá-lo/)
+      expect(legalTexts.terms.intro.join(" ")).toMatch(/não cria uma conta, e as regras da atividade de entrega ainda não fazem parte destes Termos/)
+      expect(JSON.stringify(legalTexts.terms)).toMatch(/ao definir a senha ou ao enviar o cadastro de entregador/)
     })
   })
 
