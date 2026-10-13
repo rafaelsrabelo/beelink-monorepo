@@ -11,8 +11,9 @@ enum CourierVehicle {
 /// A list of interest and nothing more. It has no status, because nobody works through it yet, and
 /// no link to `users`, because asking is not an account. Nothing reads it but a person with `psql`.
 ///
-/// One row a CPF: asking again replaces what was kept and when the terms were taken, and `createdAt`
-/// stays the first time.
+/// A person is here once (BEELINK-325): a second application with a CPF, an e-mail or a WhatsApp
+/// number already on the list is refused by the service, under a lock. Only the CPF has an index
+/// of its own — rows from before the rule may repeat an e-mail or a number.
 model CourierApplication {
   id String @id @default(uuid(7)) @db.Uuid
 

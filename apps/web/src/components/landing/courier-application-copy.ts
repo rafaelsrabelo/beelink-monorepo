@@ -26,11 +26,14 @@ const FIELD_OF = {
   COURIER_CITY_NOT_OPEN: "city",
   COURIER_VEHICLE_INVALID: "vehicle",
   COURIER_TERMS_REQUIRED: "acceptedTerms",
+  COURIER_DOCUMENT_TAKEN: "document",
+  COURIER_EMAIL_TAKEN: "email",
+  COURIER_WHATSAPP_TAKEN: "whatsapp",
 } as const satisfies Record<CourierApplicationErrorCode, LandingCourierFieldValue>
 
 /**
  * Picked on the server, where the dictionary is, and handed to the client form as plain strings —
- * the whole dictionary would ride to every visitor of the landing for nine sentences.
+ * the whole dictionary would ride to every visitor of the landing for twelve sentences.
  */
 export function courierApplicationCopyOf(web: WebMessages): CourierApplicationCopy {
   return {
@@ -42,6 +45,9 @@ export function courierApplicationCopyOf(web: WebMessages): CourierApplicationCo
       COURIER_CITY_NOT_OPEN: web.errors.COURIER_CITY_NOT_OPEN,
       COURIER_VEHICLE_INVALID: web.errors.COURIER_VEHICLE_INVALID,
       COURIER_TERMS_REQUIRED: web.errors.COURIER_TERMS_REQUIRED,
+      COURIER_DOCUMENT_TAKEN: web.errors.COURIER_DOCUMENT_TAKEN,
+      COURIER_EMAIL_TAKEN: web.errors.COURIER_EMAIL_TAKEN,
+      COURIER_WHATSAPP_TAKEN: web.errors.COURIER_WHATSAPP_TAKEN,
     },
     limited: web.errors.COURIER_APPLICATION_LIMITED,
     failed: web.errors.COURIER_APPLICATION_FAILED,

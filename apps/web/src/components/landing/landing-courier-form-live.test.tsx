@@ -189,6 +189,25 @@ describe("LandingCourierFormLive (BEELINK-322)", () => {
       expect(screen.getByRole("checkbox", { name: /Li e aceito/ })).toBeChecked()
     }
 
+    // BEELINK-325: a 409, since nothing is wrong with what was typed — it is on the list already.
+    it.each([
+      ["COURIER_DOCUMENT_TAKEN", "CPF", "Este CPF já está cadastrado."],
+      ["COURIER_EMAIL_TAKEN", "E-mail", "Este e-mail já está cadastrado."],
+      ["COURIER_WHATSAPP_TAKEN", "WhatsApp", "Este WhatsApp já está cadastrado."],
+    ])("says %s on its own field, takes the person there, keeps the form and offers no send again", async (code, label, sentence) => {
+      answers(refusal(409, code))
+      const { user } = open()
+      await fill(user)
+
+      await user.click(send())
+
+      await waitFor(() => expect(field(label)).toHaveAccessibleDescription(expect.stringContaining(sentence)))
+      expect(field(label)).toHaveAttribute("aria-invalid", "true")
+      expect(field(label)).toHaveFocus()
+      expect(screen.queryByRole("button", { name: "Tentar de novo" })).not.toBeInTheDocument()
+      expect(screen.queryByText("Cadastro recebido.")).not.toBeInTheDocument()
+    })
+
     it.each([
       ["COURIER_NAME_INVALID", "Nome completo", "Informe o nome completo, com sobrenome."],
       ["COURIER_DOCUMENT_INVALID", "CPF", "Esse CPF não confere. Confira os números."],

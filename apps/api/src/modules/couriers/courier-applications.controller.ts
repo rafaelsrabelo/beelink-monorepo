@@ -3,6 +3,7 @@ import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { RouteConfig } from '@nestjs/platform-fastify';
 import {
   ApiBadRequestResponse,
+  ApiConflictResponse,
   ApiNoContentResponse,
   ApiOperation,
   ApiTags,
@@ -41,15 +42,18 @@ export class CourierApplicationsController {
   @HttpCode(204)
   @RouteConfig({ rateLimit: applicationRateLimit })
   @ApiOperation({
-    summary: 'A person asks to deliver with Beelink. Answered 204 whether new, already on the list or trapped',
+    summary: 'A person asks to deliver with Beelink. Answered 204 when kept, or trapped',
     description:
-      'Keeps one row a CPF. A CPF already on the list has what was kept of it replaced and the terms taken again; the answer is the same 204, so it never says whether a CPF was there. ' +
+      'A person is on the list once. A CPF, an e-mail or a WhatsApp number already there is a 409 that names which, and the row it belongs to is left as it was. ' +
       'The version of the terms recorded is the one in force on the server. Nothing is e-mailed and nothing is read back.',
   })
   @ApiNoContentResponse()
   @ApiBadRequestResponse({
     description:
       'COURIER_NAME_INVALID · COURIER_DOCUMENT_INVALID · COURIER_EMAIL_INVALID · COURIER_WHATSAPP_INVALID · COURIER_CITY_NOT_OPEN · COURIER_VEHICLE_INVALID · COURIER_TERMS_REQUIRED — the first field refused, in that order. BAD_REQUEST for a field the route does not know',
+  })
+  @ApiConflictResponse({
+    description: 'COURIER_DOCUMENT_TAKEN · COURIER_EMAIL_TAKEN · COURIER_WHATSAPP_TAKEN — the first of the three already on the list, in that order',
   })
   @ApiTooManyRequestsResponse({ description: 'RATE_LIMITED' })
   receive(@Body() dto: CourierApplicationDto): Promise<void> {

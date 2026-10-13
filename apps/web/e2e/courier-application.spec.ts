@@ -22,6 +22,29 @@ const ROUTE = "**/api/courier-applications"
 const ZULEICA = { name: "Zuleica Tavares", document: "52998224725", email: "zuleica.tavares@exemplo.test", whatsapp: "85987654321" }
 const EVERYTHING = "Para enviar, falta: nome completo, CPF, e-mail, WhatsApp, aceite dos termos."
 
+/** A CPF that checks out, from its first nine digits. */
+function cpfOf(nine: string): string {
+  const digit = (digits: string) => String(((([...digits].reduce((total, each, at) => total + Number(each) * (digits.length + 1 - at), 0) * 10) % 11) % 10))
+  const first = digit(nine)
+
+  return nine + first + digit(nine + first)
+}
+
+/**
+ * A person nobody sent before, for a send that reaches the API (BEELINK-325): the list takes a CPF,
+ * an e-mail and a WhatsApp once, and the suite's database outlives a test — and, on a desk, a run.
+ * Digits alone, as a person types them.
+ */
+function someone(name = "Zuleica Tavares") {
+  const nine = String(100_000_000 + Math.floor(Math.random() * 900_000_000))
+
+  return { name, document: cpfOf(nine), email: `pessoa.${nine}@exemplo.test`, whatsapp: `859${String(Math.floor(Math.random() * 100_000_000)).padStart(8, "0")}` }
+}
+
+/** The two as the masks dress them, which is how they are sent. */
+const dressedCpf = (digits: string) => digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")
+const dressedMobile = (digits: string) => digits.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3")
+
 /** Sentences of the two texts with no accent in them: a bundler may write an accent as an escape, and these are found either way. */
 const A_SENTENCE_OF_THE_TERMS = "O bee-link pode mudar estes Termos"
 const A_SENTENCE_OF_THE_POLICY = "Encarregado pelo tratamento de dados pessoais"
@@ -214,8 +237,9 @@ test.describe("the courier's form, its masks", () => {
 
 test.describe("the courier's form, sent", () => {
   test("reaches the API, which takes the application, and gives its place to a confirmation that takes the focus", async ({ page, baseURL }) => {
+    const who = someone()
     await openLanding(page)
-    await fill(page)
+    await fill(page, who)
     await vehicle(page, "Bicicleta").click()
     await expect(form(page).getByRole("radio", { name: "Bicicleta" })).toBeChecked()
 
@@ -226,9 +250,9 @@ test.describe("the courier's form, sent", () => {
     expect(response.status()).toBe(204)
     expect(response.request().postDataJSON()).toEqual({
       name: "Zuleica Tavares",
-      document: "529.982.247-25",
-      email: "zuleica.tavares@exemplo.test",
-      whatsapp: "(85) 98765-4321",
+      document: dressedCpf(who.document),
+      email: who.email,
+      whatsapp: dressedMobile(who.whatsapp),
       city: "FORTALEZA_CE",
       vehicle: "BICYCLE",
       acceptedTerms: true,
@@ -243,10 +267,29 @@ test.describe("the courier's form, sent", () => {
     expect(page.url()).toBe(`${baseURL}/`)
   })
 
-  /** The API answers a CPF already on the list like a new one: the form says the same, and says nothing about the CPF. */
-  test("is taken again with the same CPF, with the same confirmation, and offers another application on an empty form", async ({ page }) => {
+  /** A person is on the list once (BEELINK-325): the API says which of the three was there, and the form says it on that field. */
+  test("is refused for a CPF, an e-mail or a WhatsApp already on the list, each on its own field with the form kept, and taken once none of the three is", async ({ page }) => {
+    const first = someone()
+    const second = someone("Raimundo Nonato")
+    /** Types over what the field holds. */
+    const retype = async (label: string, typed: string) => {
+      await field(page, label).fill("")
+      await field(page, label).pressSequentially(typed)
+    }
+    const refused = async (label: string, sentence: string) => {
+      const answer = sentTo(page)
+      await send(page).click()
+
+      expect((await answer).status()).toBe(409)
+      await expect(field(page, label)).toHaveAccessibleDescription(sentence)
+      await expect(field(page, label)).toBeFocused()
+      await expect(confirmation(page)).toHaveCount(0)
+      await expect(field(page, "Nome completo")).toHaveValue("Raimundo Nonato")
+      await expect(accept(page)).toBeChecked()
+    }
+
     await openLanding(page)
-    await fill(page)
+    await fill(page, first)
     await send(page).click()
     await expect(confirmation(page)).toBeVisible()
 
@@ -255,7 +298,21 @@ test.describe("the courier's form, sent", () => {
     await expect(field(page, "CPF")).toHaveValue("")
     await expect(send(page)).toBeDisabled()
 
-    await fill(page, { ...ZULEICA, name: "Zuleica Tavares Lima", email: "zuleica.lima@exemplo.test" })
+    // Another person, with the first one's CPF.
+    await fill(page, { ...second, document: first.document })
+    await refused("CPF", "Este CPF já está cadastrado.")
+
+    // Their own CPF now, and the first one's e-mail.
+    await retype("CPF", second.document)
+    await retype("E-mail", first.email)
+    await refused("E-mail", "Este e-mail já está cadastrado.")
+
+    await retype("E-mail", second.email)
+    await retype("WhatsApp", first.whatsapp)
+    await refused("WhatsApp", "Este WhatsApp já está cadastrado.")
+
+    // Nothing of the first one's left: taken.
+    await retype("WhatsApp", second.whatsapp)
     const answer = sentTo(page)
     await send(page).click()
 
@@ -264,16 +321,17 @@ test.describe("the courier's form, sent", () => {
   })
 
   test("is filled in and sent with the keyboard alone", async ({ page }) => {
+    const who = someone("Raimundo Nonato")
     await openLanding(page)
 
     await field(page, "Nome completo").focus()
-    await page.keyboard.type("Raimundo Nonato")
+    await page.keyboard.type(who.name)
     await page.keyboard.press("Tab")
-    await page.keyboard.type("11144477735")
+    await page.keyboard.type(who.document)
     await page.keyboard.press("Tab")
-    await page.keyboard.type("raimundo.nonato@exemplo.test")
+    await page.keyboard.type(who.email)
     await page.keyboard.press("Tab")
-    await page.keyboard.type("85912345678")
+    await page.keyboard.type(who.whatsapp)
     await page.keyboard.press("Tab")
     await expect(field(page, "Cidade onde quer entregar")).toBeFocused()
     await page.keyboard.press("Tab")
@@ -294,7 +352,7 @@ test.describe("the courier's form, sent", () => {
 
     const response = await answer
     expect(response.status()).toBe(204)
-    expect(response.request().postDataJSON()).toMatchObject({ name: "Raimundo Nonato", document: "111.444.777-35", whatsapp: "(85) 91234-5678", vehicle: "CAR" })
+    expect(response.request().postDataJSON()).toMatchObject({ name: "Raimundo Nonato", document: dressedCpf(who.document), whatsapp: dressedMobile(who.whatsapp), vehicle: "CAR" })
     await expect(confirmation(page)).toBeFocused()
   })
 
@@ -423,7 +481,7 @@ test.describe("the courier's form, the two legal texts", () => {
     await terms.click()
     const termsDialog = page.getByRole("dialog", { name: "Termos de uso" })
     await expect(termsDialog).toBeVisible()
-    await expect(termsDialog).toHaveAccessibleDescription("Vigente desde 13 de outubro de 2026")
+    await expect(termsDialog).toHaveAccessibleDescription("Vigente desde 14 de outubro de 2026")
     await expect(termsDialog.getByRole("heading", { level: 3, name: "1. Quem somos" })).toBeVisible()
     await expect(termsDialog.getByRole("button", { name: "Fechar" })).toBeFocused()
     await page.keyboard.press("Escape")
@@ -482,9 +540,9 @@ test.describe("the courier's form, the two legal texts", () => {
   test("are the texts the two pages show, in the version that names the courier's data", async ({ page }) => {
     await page.goto("/privacidade")
 
-    await expect(page.getByText("Vigente desde 13 de outubro de 2026")).toBeVisible()
+    await expect(page.getByText("Vigente desde 14 de outubro de 2026")).toBeVisible()
     await expect(page.getByRole("heading", { level: 2, name: /Dados de quem se candidata a entregar/ })).toBeVisible()
-    await expect(page.getByText("Se o formulário for enviado de novo com o mesmo CPF, os dados novos substituem os anteriores", { exact: false })).toBeVisible()
+    await expect(page.getByText("Se o formulário for enviado com um CPF, um e-mail ou um número de WhatsApp que já está na lista, o cadastro não é aceito", { exact: false })).toBeVisible()
   })
 })
 
@@ -495,14 +553,17 @@ test.describe("the courier's form, measured", () => {
     await saidYes(context, baseURL)
     await openLanding(page)
     await expect.poll(told).toEqual([`page_view @ ${baseURL}/`])
-    await fill(page)
+    const who = someone()
+    await fill(page, who)
 
     await send(page).click()
 
     await expect(confirmation(page)).toBeVisible()
     await expect.poll(told).toEqual([`page_view @ ${baseURL}/`, `generate_lead @ ${baseURL}/`])
-    const everything = decodeURIComponent(google.requests.join("\n"))
-    expect(everything).not.toMatch(/Zuleica|Tavares|52998224725|529\.982|exemplo\.test|85987654321|98765|FORTALEZA|MOTORCYCLE/i)
+    const everything = decodeURIComponent(google.requests.join("\n")).toLowerCase()
+    for (const typed of ["Zuleica", "Tavares", who.document, dressedCpf(who.document), who.email, "exemplo.test", who.whatsapp, dressedMobile(who.whatsapp), "FORTALEZA", "MOTORCYCLE"]) {
+      expect(everything).not.toContain(typed.toLowerCase())
+    }
   })
 
   test("tells nothing of an application the API did not take", async ({ page, context, baseURL }) => {
@@ -519,7 +580,7 @@ test.describe("the courier's form, measured", () => {
 
   test("asks Google for nothing when the visitor gave no yes, sent or not", async ({ page }) => {
     await openLanding(page)
-    await fill(page)
+    await fill(page, someone())
 
     await send(page).click()
 

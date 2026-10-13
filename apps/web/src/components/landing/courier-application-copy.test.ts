@@ -24,6 +24,10 @@ describe("courierProblemOf (BEELINK-322)", () => {
     ["COURIER_CITY_NOT_OPEN", "city", "O cadastro ainda não está aberto para essa cidade."],
     ["COURIER_VEHICLE_INVALID", "vehicle", "Escolha como você entrega."],
     ["COURIER_TERMS_REQUIRED", "acceptedTerms", "Marque o aceite para enviar."],
+    // BEELINK-325: a person is on the list once, and each of the three that say who they are has its own sentence.
+    ["COURIER_DOCUMENT_TAKEN", "document", "Este CPF já está cadastrado."],
+    ["COURIER_EMAIL_TAKEN", "email", "Este e-mail já está cadastrado."],
+    ["COURIER_WHATSAPP_TAKEN", "whatsapp", "Este WhatsApp já está cadastrado."],
   ])("puts %s on the %s, in that field's sentence, with nothing to send again at once", (code, field, message) => {
     expect(refused(code)).toEqual({ field, message })
   })
@@ -52,10 +56,11 @@ describe("courierProblemOf (BEELINK-322)", () => {
 })
 
 describe("courierApplicationCopyOf", () => {
-  it("picks the nine sentences, and only them, in the language it is handed", () => {
+  it("picks the twelve sentences, and only them, in the language it is handed", () => {
     const english = courierApplicationCopyOf(en)
 
-    expect(Object.keys(english.refusals)).toHaveLength(7)
+    expect(Object.keys(english.refusals)).toHaveLength(10)
+    expect(english.refusals.COURIER_EMAIL_TAKEN).toBe("This e-mail is already registered.")
     expect(english.refusals.COURIER_DOCUMENT_INVALID).toBe("This CPF does not check out. Check the numbers.")
     expect(english.limited).toBe("Too many sends in a short time. Wait a few minutes and try again.")
     expect(english.failed).toBe("The sign-up could not be sent right now. What you filled in is still here: try again.")

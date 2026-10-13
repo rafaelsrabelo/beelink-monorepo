@@ -1,16 +1,24 @@
 // Nest
-import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import { ConflictException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { LEGAL_VERSION } from '../auth/auth.constants.js';
 
 // Types
+import type { CourierApplicationErrorCode } from '@harness-monorepo/contracts';
 import type { CourierApplicationDto } from './dto/courier-application.dto.js';
+
+/** What says who a person is, in the order it is looked for, and what each answers when it is on the list already. */
+const TAKEN = [
+  { field: 'document', errorCode: 'COURIER_DOCUMENT_TAKEN', message: 'That CPF is already on the list' },
+  { field: 'email', errorCode: 'COURIER_EMAIL_TAKEN', message: 'That e-mail is already on the list' },
+  { field: 'whatsapp', errorCode: 'COURIER_WHATSAPP_TAKEN', message: 'That WhatsApp number is already on the list' },
+] as const satisfies readonly { field: keyof CourierApplicationDto; errorCode: CourierApplicationErrorCode; message: string }[];
 
 /**
  * The couriers who asked to deliver with Beelink: a list of interest, written by the landing's form
- * and read by nobody yet (BEELINK-321). It sends no e-mail and answers nothing.
+ * and read by nobody yet (BEELINK-321). It sends no e-mail.
  */
 @Injectable()
 export class CourierApplicationsService {
@@ -21,9 +29,10 @@ export class CourierApplicationsService {
   /**
    * A person's application, as the DTO left it: already normalised, already checked.
    *
-   * One row a CPF, written in one statement. A CPF already on the list has what was kept of it
-   * replaced, and the terms taken again now; `createdAt` stays the first time. The caller is told
-   * nothing either way — an answer that differed would say whose CPFs are on the list.
+   * A person is on the list once (BEELINK-325): a CPF, an e-mail or a WhatsApp number already there
+   * is refused, by name, and the row it belongs to is left as it was — nobody who knows a CPF can
+   * write over the person it is. The price is said in the product's own docs: the answer tells
+   * whether one of the three is on the list.
    *
    * The version of the terms is the one in force here, and the moment is this one: neither is read
    * from the body.
@@ -33,22 +42,38 @@ export class CourierApplicationsService {
     // nothing is written — a robot shown success does not come back with a variation.
     if (dto.website) return;
 
-    const kept = {
-      name: dto.name,
-      email: dto.email,
-      whatsapp: dto.whatsapp,
-      city: dto.city,
-      vehicle: dto.vehicle,
-      termsVersion: LEGAL_VERSION,
-      termsAcceptedAt: new Date(),
-    };
+    let taken: (typeof TAKEN)[number] | undefined;
 
     try {
-      await this.prisma.courierApplication.upsert({
-        where: { document: dto.document },
-        create: { document: dto.document, ...kept },
-        update: kept,
-        select: { id: true },
+      taken = await this.prisma.$transaction(async (tx) => {
+        // One application at a time, so looking and writing are one step: two sends of one e-mail
+        // arriving together would each find the list without it. A lock and not two more unique
+        // indexes — the list took repeated e-mails and numbers before this rule, an index cannot
+        // be built over them, and a migration that fails stops the API from starting.
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended('courier_applications', 0))`;
+
+        const listed = await tx.courierApplication.findMany({
+          where: { OR: TAKEN.map(({ field }) => ({ [field]: dto[field] })) },
+          select: { document: true, email: true, whatsapp: true },
+        });
+        const already = TAKEN.find(({ field }) => listed.some((row) => row[field] === dto[field]));
+        if (already) return already;
+
+        await tx.courierApplication.create({
+          data: {
+            document: dto.document,
+            name: dto.name,
+            email: dto.email,
+            whatsapp: dto.whatsapp,
+            city: dto.city,
+            vehicle: dto.vehicle,
+            termsVersion: LEGAL_VERSION,
+            termsAcceptedAt: new Date(),
+          },
+          select: { id: true },
+        });
+
+        return undefined;
       });
     } catch (error) {
       // Not rethrown, and its message never logged: Postgres writes the row it refused into an
@@ -57,6 +82,9 @@ export class CourierApplicationsService {
       this.logger.error({ reason: codeOf(error) }, 'A courier application could not be kept');
       throw new InternalServerErrorException({ errorCode: 'INTERNAL_ERROR', message: 'Internal server error' });
     }
+
+    // Thrown out here, past the catch that turns everything into a 500: it says which of the three, and nothing of whose.
+    if (taken) throw new ConflictException({ errorCode: taken.errorCode, message: taken.message });
   }
 }
 

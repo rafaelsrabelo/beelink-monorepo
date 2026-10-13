@@ -19,8 +19,8 @@ function errorCodeOf(payload: unknown): string {
 
 /**
  * A person asks to deliver with Beelink (BEELINK-322). The path is this app's own route handler —
- * the API's address is server-only — and the answer is a 204 with nothing in it, whether the CPF was
- * new or already on the list.
+ * the API's address is server-only — and the answer is a 204 with nothing in it. A CPF, an e-mail or
+ * a WhatsApp already on the list is a refusal like a wrong field's, with a code of its own.
  *
  * A send that never reached the server throws the same error as one it refused: the screen has one
  * thing to read, a code.

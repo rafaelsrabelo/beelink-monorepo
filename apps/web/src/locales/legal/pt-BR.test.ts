@@ -253,7 +253,7 @@ describe("bee-link's legal texts (BEELINK-171)", () => {
 
   /**
    * BEELINK-322: the landing's courier form sends, and what it sends is kept. Every sentence here is
-   * something the code does — the table's columns, the upsert by CPF, the event with nothing in it —
+   * something the code does — the table's columns, a person on the list once, the event with nothing in it —
    * and none promises a deletion nothing performs.
    */
   describe("the policy, on who asked to deliver", () => {
@@ -263,10 +263,11 @@ describe("bee-link's legal texts (BEELINK-171)", () => {
     }
     const couriers = textOf("Dados de quem se candidata a entregar")
 
-    it("is the version of the day the form began to send", () => {
-      expect(legalTexts.version).toBe("2026-10-13")
-      expect(legalTexts.privacy.effective).toBe("Vigente desde 13 de outubro de 2026")
-      expect(legalTexts.terms.effective).toBe("Vigente desde 13 de outubro de 2026")
+    // BEELINK-325: the form began to send under 2026-10-13, which said a second send replaced the first.
+    it("is the version that says a person is on the list once", () => {
+      expect(legalTexts.version).toBe("2026-10-14")
+      expect(legalTexts.privacy.effective).toBe("Vigente desde 14 de outubro de 2026")
+      expect(legalTexts.terms.effective).toBe("Vigente desde 14 de outubro de 2026")
     })
 
     it("has a section of its own, between the visitor's and the technical data", () => {
@@ -287,15 +288,18 @@ describe("bee-link's legal texts (BEELINK-171)", () => {
       expect(couriers).toMatch(/Hoje ele só aceita a cidade de Fortaleza\/CE/)
     })
 
-    it("says what the data is for, and that the CPF is what makes a sign-up one", () => {
+    it("says what the data is for, and that a person is on the list once: by CPF, by e-mail and by WhatsApp", () => {
       expect(couriers).toMatch(/formam uma lista de interesse/)
       expect(couriers).toMatch(/para falar com você, pelo e-mail ou pelo WhatsApp informados, sobre a conclusão do cadastro/)
-      expect(couriers).toMatch(/O CPF identifica o cadastro: existe um só por CPF/)
+      expect(couriers).toMatch(/existe um só cadastro por CPF, por e-mail e por número de WhatsApp/)
     })
 
-    it("says a second send with the same CPF replaces the first, and that the site never says the CPF was there", () => {
-      expect(couriers).toMatch(/enviado de novo com o mesmo CPF, os dados novos substituem os anteriores, e o aceite registrado passa a ser o do novo envio/)
-      expect(couriers).toMatch(/não diz se o CPF já estava na lista/)
+    // What the code does since BEELINK-325, and its price said in as many words: the answer tells who is on the list.
+    it("says a send with one of the three already on the list is refused, which of them is said, and what was kept stays", () => {
+      expect(couriers).toMatch(/com um CPF, um e-mail ou um número de WhatsApp que já está na lista, o cadastro não é aceito, e o site diz qual dos três já estava cadastrado/)
+      expect(couriers).toMatch(/O cadastro que já existia não é alterado/)
+      expect(couriers).toMatch(/quem digita um desses dados no formulário fica sabendo se ele já está na lista/)
+      expect(couriers).not.toMatch(/substituem os anteriores|não diz se o CPF/)
     })
 
     it("says no account is made of it and no shop sees it", () => {
