@@ -260,3 +260,94 @@ test.describe("the landing's cookie notice, on a phone", () => {
     expect(hidden).toEqual([])
   })
 })
+
+/**
+ * A keyboard inside the notice, and what the page does meanwhile: nothing. The document keeps the
+ * notice's height clear at its foot for whatever Tab reaches on the page — and the notice's own
+ * controls stand exactly there. Taken for hidden, each one had the page scrolled to bring it up, and
+ * the notice, which follows the screen, came along: a visitor who answered by keyboard ended a
+ * thousand pixels down the page.
+ */
+const pageTop = (page: Page) => page.evaluate(() => new Promise<number>((resolve) => requestAnimationFrame(() => resolve(Math.round(window.scrollY)))))
+
+for (const [screen, viewport] of [
+  ["a wide screen", { width: 1280, height: 800 }],
+  ["a phone", { width: 390, height: 844 }],
+] as const) {
+  test.describe(`the landing's cookie notice under a keyboard, on ${screen}`, () => {
+    test.use({ viewport })
+
+    for (const [where, top] of [
+      ["at its top", 0],
+      ["scrolled to its middle", 3000],
+    ] as const) {
+      test(`leaves the page ${where} where it is while Tab and Shift+Tab walk through it`, async ({ page }) => {
+        await openLanding(page)
+        await page.evaluate((to) => window.scrollTo({ top: to, behavior: "instant" }), top)
+        expect(await pageTop(page)).toBe(top)
+
+        const walked: [string, number][] = []
+        for (const [key, stop] of [
+          ["Tab", "política de privacidade"],
+          ["Tab", "Recusar"],
+          ["Tab", "Aceitar"],
+          ["Shift+Tab", "Recusar"],
+          ["Shift+Tab", "política de privacidade"],
+        ] as const) {
+          await page.keyboard.press(key)
+          await expect(notice(page).getByText(stop, { exact: true })).toBeFocused()
+          walked.push([stop, await pageTop(page)])
+        }
+
+        expect(walked).toEqual([
+          ["política de privacidade", top],
+          ["Recusar", top],
+          ["Aceitar", top],
+          ["Recusar", top],
+          ["política de privacidade", top],
+        ])
+      })
+    }
+
+    test("opened again from the footer, takes the focus and leaves the page where it was", async ({ page, context, baseURL }) => {
+      await context.addCookies([{ name: "bl_site_consent", value: "denied", url: baseURL! }])
+      await openLanding(page)
+      await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" }))
+      await reopen(page).focus()
+      const top = await pageTop(page)
+
+      await page.keyboard.press("Enter")
+      await expect(notice(page)).toBeFocused()
+      expect(await pageTop(page)).toBe(top)
+
+      for (const stop of ["política de privacidade", "Recusar", "Aceitar"]) {
+        await page.keyboard.press("Tab")
+        await expect(notice(page).getByText(stop, { exact: true })).toBeFocused()
+        expect(await pageTop(page), `with the focus on "${stop}"`).toBe(top)
+      }
+
+      // The page is longer by the notice now: it stands over the footer's last lines until the page is taken to its new end.
+      await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" }))
+      await expect.poll(async () => (await boxesOf(page)).footerBottom - (await boxesOf(page)).noticeTop).toBeLessThanOrEqual(0.5)
+    })
+
+    // The room kept clear is for the page's controls, and is still kept once the focus is back among them.
+    test("still keeps the page's own controls clear of it once the keyboard walks on", async ({ page }) => {
+      await openLanding(page)
+      const room = () => page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).scrollPaddingBottom) || 0)
+      const height = Math.round((await notice(page).boundingBox())!.height)
+
+      expect(Math.round(await room())).toBe(height)
+      await page.keyboard.press("Tab")
+      await expect(notice(page).getByRole("link", { name: "política de privacidade" })).toBeFocused()
+      expect(await room()).toBe(0)
+
+      await page.keyboard.press("Tab")
+      await page.keyboard.press("Tab")
+      await page.keyboard.press("Tab")
+      await expect(page.getByRole("link", { name: "Beelink, início" })).toBeFocused()
+      expect(Math.round(await room())).toBe(height)
+    })
+  })
+}
+
