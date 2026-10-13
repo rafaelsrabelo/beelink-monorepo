@@ -7,6 +7,7 @@ import { CourierApplicationsService } from './courier-applications.service.js';
 
 // Types
 import type { PrismaService } from '../../shared/prisma/prisma.service.js';
+import type { CourierApplicationMailer } from './courier-application-mailer.js';
 import type { CourierApplicationDto } from './dto/courier-application.dto.js';
 
 /** An application as the DTO hands it over: normalised and checked. Every value is made up. */
@@ -24,15 +25,25 @@ const NOW = new Date('2026-10-12T15:00:00.000Z');
 
 type Listed = { document: string; email: string; whatsapp: string };
 
-/** The service over a list that holds `listed`, with the transaction's own client stood in for. */
+/**
+ * The service over a list that holds `listed`, with the transaction's own client stood in for.
+ * `committed` is called when the transaction's work is over, and `dispatch` is the outbox being asked.
+ */
 function build({ listed = [] as Listed[], create = vi.fn().mockResolvedValue({ id: '0199e000-0000-7000-8000-000000000001' }) } = {}) {
   const lock = vi.fn().mockResolvedValue(1);
   const findMany = vi.fn().mockResolvedValue(listed);
   const tx = { $executeRaw: lock, courierApplication: { findMany, create } };
-  const transaction = vi.fn((work: (client: typeof tx) => Promise<unknown>) => work(tx));
+  const committed = vi.fn();
+  const transaction = vi.fn(async (work: (client: typeof tx) => Promise<unknown>) => {
+    const result = await work(tx);
+    committed();
+    return result;
+  });
   const prisma = { $transaction: transaction } as unknown as PrismaService;
+  const dispatch = vi.fn();
+  const mailer = { dispatch } as unknown as CourierApplicationMailer;
 
-  return { service: new CourierApplicationsService(prisma), transaction, lock, findMany, create };
+  return { service: new CourierApplicationsService(prisma, mailer), transaction, committed, lock, findMany, create, dispatch };
 }
 
 /** What a refusal answers, as the exception filter reads it. */
@@ -105,6 +116,27 @@ describe('CourierApplicationsService', () => {
     expect(written).not.toHaveProperty('createdAt');
   });
 
+  describe('the e-mail an application is owed (BEELINK-326)', () => {
+    // One write, inside the transaction: the two exist together or not at all.
+    it('is written with the application, by the write that keeps it', async () => {
+      const { service, create } = build();
+
+      await service.receive(application);
+
+      expect(create).toHaveBeenCalledTimes(1);
+      expect((create.mock.calls[0]![0] as { data: object }).data).toMatchObject({ notice: { create: {} } });
+    });
+
+    it('is asked to be sent once, after the transaction is over', async () => {
+      const { service, committed, dispatch } = build();
+
+      await service.receive(application);
+
+      expect(dispatch).toHaveBeenCalledTimes(1);
+      expect(committed.mock.invocationCallOrder[0]).toBeLessThan(dispatch.mock.invocationCallOrder[0]!);
+    });
+  });
+
   describe('a person already on the list (BEELINK-325)', () => {
     const someoneElse = { document: '11144477735', email: 'raimundo@exemplo.test', whatsapp: '5585912345678' };
 
@@ -112,8 +144,8 @@ describe('CourierApplicationsService', () => {
       ['the CPF', { document: application.document }, 'COURIER_DOCUMENT_TAKEN'],
       ['the e-mail', { email: application.email }, 'COURIER_EMAIL_TAKEN'],
       ['the WhatsApp', { whatsapp: application.whatsapp }, 'COURIER_WHATSAPP_TAKEN'],
-    ])('is refused by %s alone, with its own code, and nothing is written', async (_what, shared, errorCode) => {
-      const { service, create } = build({ listed: [{ ...someoneElse, ...shared }] });
+    ])('is refused by %s alone, with its own code, and nothing is written or sent', async (_what, shared, errorCode) => {
+      const { service, create, dispatch } = build({ listed: [{ ...someoneElse, ...shared }] });
       const logged = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
 
       const { status, body } = await refusalOf(service.receive(application));
@@ -121,6 +153,7 @@ describe('CourierApplicationsService', () => {
       expect(status).toBe(409);
       expect(body).toMatchObject({ errorCode });
       expect(create).not.toHaveBeenCalled();
+      expect(dispatch).not.toHaveBeenCalled();
       // A refusal is no failure: nothing is logged as one.
       expect(logged).not.toHaveBeenCalled();
     });
@@ -147,12 +180,13 @@ describe('CourierApplicationsService', () => {
   });
 
   /** The trap: a field no person sees was filled in. Success is answered; nothing happens. */
-  it('answers a body that fell into the trap as if saved, and neither looks nor saves', async () => {
-    const { service, transaction } = build();
+  it('answers a body that fell into the trap as if saved, and neither looks nor saves nor sends', async () => {
+    const { service, transaction, dispatch } = build();
 
     await expect(service.receive({ ...application, website: 'http://spam.test' })).resolves.toBeUndefined();
 
     expect(transaction).not.toHaveBeenCalled();
+    expect(dispatch).not.toHaveBeenCalled();
   });
 
   // An untouched hidden input travels as an empty string: that is a person, not a robot.
@@ -178,6 +212,16 @@ describe('CourierApplicationsService', () => {
         },
       },
     );
+
+    // The application and its e-mail are one write: what the database refused left neither, and nothing to send.
+    it('asks for no e-mail', async () => {
+      const { service, dispatch } = build({ create: vi.fn().mockRejectedValue(refusal) });
+      vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+
+      await service.receive(application).catch(() => undefined);
+
+      expect(dispatch).not.toHaveBeenCalled();
+    });
 
     it('answers a 500 that carries nothing of the row', async () => {
       const { service } = build({ create: vi.fn().mockRejectedValue(refusal) });
