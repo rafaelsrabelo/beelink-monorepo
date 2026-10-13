@@ -35,7 +35,7 @@ describe("the start of a navigation", () => {
     startGoogleAnalytics(ID, HOME)
     expect(window[LOCK]).toBe(false)
 
-    onRouterTransitionStart(url)
+    onRouterTransitionStart(url, "push")
 
     expect(window[LOCK]).toBe(true)
     expect(sendToGoogleAnalytics(ID, { name: "page_view", params: HOME })).toBe(false)
@@ -49,13 +49,24 @@ describe("the start of a navigation", () => {
   ])("leaves it open for %s: nothing was left", (_name, url) => {
     startGoogleAnalytics(ID, HOME)
 
-    onRouterTransitionStart(url)
+    onRouterTransitionStart(url, "push")
+    onRouterTransitionStart(url, "replace")
 
     expect(window[LOCK]).toBe(false)
   })
 
+  // The browser has changed the address by the time Back or Forward is heard of: the page left is not the one in the bar.
+  it("shuts it at Back and Forward wherever they lead, since the address has changed already", () => {
+    startGoogleAnalytics(ID, HOME)
+
+    onRouterTransitionStart("http://localhost:3000/", "traverse")
+
+    expect(window[LOCK]).toBe(true)
+  })
+
   it("does nothing in a tab that never loaded the library: no queue, no lock", () => {
-    onRouterTransitionStart("/loja-de-exemplo")
+    onRouterTransitionStart("/loja-de-exemplo", "push")
+    onRouterTransitionStart("http://localhost:3000/loja-de-exemplo", "traverse")
 
     expect(window.dataLayer).toBeUndefined()
     expect(Object.keys(window).filter((key) => key.startsWith("ga-disable-"))).toEqual([])

@@ -2,7 +2,7 @@
 import type { ReactElement } from "react"
 
 // Libs
-import { render, screen } from "@testing-library/react"
+import { act, render, screen } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 // App
@@ -40,6 +40,8 @@ async function handedOver(): Promise<{ measurementId: string | null; drawnFor: S
 }
 
 const library = () => screen.queryByTestId("google-library")
+/** The library opens one task after the page is there. */
+const settled = () => act(() => new Promise<void>((resolve) => setTimeout(resolve, 0)))
 
 beforeEach(() => {
   mocks.env.SITE_GA_MEASUREMENT_ID = ID
@@ -61,8 +63,10 @@ describe("SiteMeasured", () => {
     expect(await handedOver()).toEqual({ measurementId: ID, drawnFor: "granted" })
 
     render(await SiteMeasured({ children: <p>a página</p> }))
+    await settled()
     expect(screen.getByText("a página")).toBeInTheDocument()
     expect(library()).toHaveAttribute("data-src", `https://www.googletagmanager.com/gtag/js?id=${ID}`)
+    expect(window[`ga-disable-${ID}`]).toBe(false)
   })
 
   it.each([
@@ -74,6 +78,7 @@ describe("SiteMeasured", () => {
     expect(await handedOver()).toEqual({ measurementId: null, drawnFor: answer })
 
     const { container } = render(await SiteMeasured({ children: <p>a página</p> }))
+    await settled()
     expect(screen.getByText("a página")).toBeInTheDocument()
     expect(library()).toBeNull()
     expect(container.innerHTML).not.toContain(ID)
@@ -95,6 +100,7 @@ describe("SiteMeasured", () => {
     expect(await handedOver()).toEqual({ measurementId: null, drawnFor: "granted" })
 
     const { container } = render(await SiteMeasured({ children: <p>a página</p> }))
+    await settled()
     expect(container.innerHTML).toBe("<p>a página</p>")
     expect(window.dataLayer).toBeUndefined()
   })

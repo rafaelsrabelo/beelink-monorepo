@@ -40,7 +40,9 @@ const pageNow = () => sitePageOf(window.location.href, document.referrer, docume
  *
  * The visitor who says yes on this very page has no ID yet: the server kept it, and is asked for the
  * page again. A yes taken back shuts the library at once and takes its cookies out; the library
- * itself stays in the tab until the next load, shut. Leaving the page shuts it too.
+ * itself stays in the tab until the next load, shut. Leaving the page shuts it too, and so does the
+ * start of any navigation away (`instrumentation-client.ts`): it is open only while the visitor
+ * stands on a measured page.
  */
 export function SiteAnalytics({ measurementId, drawnFor, children }: SiteAnalyticsProps) {
   const asks = useSiteAsks()
@@ -65,12 +67,27 @@ export function SiteAnalytics({ measurementId, drawnFor, children }: SiteAnalyti
   useEffect(() => {
     if (!id) return
 
-    startGoogleAnalytics(id, pageNow())
-    if (viewed.current !== pathname) {
+    const arrive = () => {
+      startGoogleAnalytics(id, pageNow())
+      if (viewed.current === pathname) return
       viewed.current = pathname
       sendToGoogleAnalytics(id, { name: "page_view", params: pageNow() })
     }
-    return () => shutGoogleAnalytics(id)
+    // One task later, and never inside the event that brought the page: Back and Forward tell every
+    // listener that the address changed, the library's among them, and it must still be shut then.
+    let opening = window.setTimeout(arrive)
+    // Back or Forward within this very page shuts the library like any other; it opens again once the event is over.
+    const stay = () => {
+      window.clearTimeout(opening)
+      opening = window.setTimeout(arrive)
+    }
+    window.addEventListener("popstate", stay)
+
+    return () => {
+      window.clearTimeout(opening)
+      window.removeEventListener("popstate", stay)
+      shutGoogleAnalytics(id)
+    }
   }, [id, pathname])
 
   useEffect(() => {
@@ -93,7 +110,7 @@ export function SiteAnalytics({ measurementId, drawnFor, children }: SiteAnalyti
   return (
     <SiteTrackContext value={track}>
       {children}
-      {/* Fetched by an effect, after the one above created the queue: the library finds its calls waiting. */}
+      {/* Whichever comes first, the library or the queue the effect above creates: it reads what waits, and every call after. */}
       {id ? <Script id="site-analytics" src={googleAnalyticsSrc(id)} strategy="afterInteractive" /> : null}
     </SiteTrackContext>
   )

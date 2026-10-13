@@ -3,7 +3,7 @@ import { readdirSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 
 // Libs
-import { render, screen } from "@testing-library/react"
+import { act, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -16,6 +16,7 @@ import { LandingConsentReopen } from "../landing/landing-consent-reopen"
 import { SiteConsentGate } from "../landing/site-consent-gate"
 import { SiteAnalytics } from "./site-analytics"
 import { useSiteTrack } from "./use-site-track"
+import { onRouterTransitionStart } from "@/instrumentation-client"
 import { siteAnalyticsIdFor } from "@/lib/site-analytics"
 import { SITE_CONSENT_COOKIE, type SiteConsentChoice } from "@/lib/site-consent-cookie"
 
@@ -57,10 +58,20 @@ function page(input: Visit) {
   )
 }
 
+/** The library opens one task after the page is there, never inside the event that brought it. */
+const settled = () => act(() => new Promise<void>((resolve) => setTimeout(resolve, 0)))
+
 /** A visit as a browser makes it: the cookie it holds is the one the server read. */
-function visit(input: Visit) {
+async function visit(input: Visit) {
   if (input.answer) document.cookie = `${SITE_CONSENT_COOKIE}=${input.answer}; Path=/`
-  return render(page(input))
+  const drawn = render(page(input))
+  await settled()
+  return drawn
+}
+
+async function click(name: string) {
+  await userEvent.click(screen.getByRole("button", { name }))
+  await settled()
 }
 
 /** Everything the library was told, in order: with none loaded, every call waits in its queue. */
@@ -93,8 +104,8 @@ describe("SiteAnalytics, before a yes", () => {
     ["a visitor who refused", { answer: "denied" }],
     ["a deployment with no measurement ID, whatever an old cookie says", { configured: undefined, answer: "granted" }],
   ] as const)("loads nothing of Google's, creates no queue and sends nothing, for %s", async (_name, input) => {
-    visit(input)
-    await userEvent.click(screen.getByRole("button", { name: "Criar conta" }))
+    await visit(input)
+    await click("Criar conta")
 
     expect(library()).toBeNull()
     expect(window.dataLayer).toBeUndefined()
@@ -103,9 +114,9 @@ describe("SiteAnalytics, before a yes", () => {
   })
 
   // On the platform's host a shop's answer may sit beside the site's; it is an answer to another question.
-  it("is not started by a shop's yes", () => {
+  it("is not started by a shop's yes", async () => {
     document.cookie = "bl_consent=granted; Path=/"
-    visit({ answer: null })
+    await visit({ answer: null })
 
     expect(library()).toBeNull()
     expect(window.dataLayer).toBeUndefined()
@@ -113,8 +124,8 @@ describe("SiteAnalytics, before a yes", () => {
 })
 
 describe("SiteAnalytics, with a yes", () => {
-  it("loads the library with the configured ID and tells the page, once, to that ID", () => {
-    visit({ answer: "granted" })
+  it("loads the library with the configured ID and tells the page, once, to that ID", async () => {
+    await visit({ answer: "granted" })
 
     expect(library()).toHaveAttribute("data-src", "https://www.googletagmanager.com/gtag/js?id=G-TEST000000")
     expect(calls().map(([command, second]) => (command === "js" ? "js" : `${command} ${second}`))).toEqual(["consent default", "js", "consent update", `config ${ID}`, "event page_view"])
@@ -123,26 +134,56 @@ describe("SiteAnalytics, with a yes", () => {
     expect(mocks.refresh).not.toHaveBeenCalled()
   })
 
-  it("tells a page once, however often it is drawn again", () => {
-    const { rerender } = visit({ answer: "granted" })
+  it("tells a page once, however often it is drawn again", async () => {
+    const { rerender } = await visit({ answer: "granted" })
     rerender(page({ answer: "granted" }))
     rerender(page({ answer: "granted" }))
+    await settled()
 
     expect(sent()).toHaveLength(1)
   })
 
-  it("tells the page without the parameters its address brought, but for a campaign's labels", () => {
+  // Back and Forward tell every listener the address changed — the library's among them — in the very event that draws the page.
+  it("is still shut while the event that brought the page is being heard, and opens once it is over", async () => {
+    document.cookie = `${SITE_CONSENT_COOKIE}=granted; Path=/`
+    render(page({ answer: "granted" }))
+
+    expect(window.dataLayer).toBeUndefined()
+    expect(window[LOCK]).toBeUndefined()
+
+    await settled()
+
+    expect(window[LOCK]).toBe(false)
+    expect(sent()).toHaveLength(1)
+  })
+
+  it("opens again after Back or Forward within the page itself, without telling the page twice", async () => {
+    await visit({ answer: "granted" })
+
+    // What the hook does when the router says a navigation began, and then the browser's own event.
+    onRouterTransitionStart("http://localhost:3000/", "traverse")
+    expect(window[LOCK]).toBe(true)
+    window.dispatchEvent(new PopStateEvent("popstate"))
+    expect(window[LOCK]).toBe(true)
+
+    await settled()
+
+    expect(window[LOCK]).toBe(false)
+    expect(sent()).toHaveLength(1)
+  })
+
+  it("tells the page without the parameters its address brought, but for a campaign's labels", async () => {
     at("/login?voltar=%2Fadmin%2Floja-da-ana%2Forders%2F1042&utm_source=instagram&email=ana%40exemplo.com#form")
-    visit({ answer: "granted" })
+    await visit({ answer: "granted" })
 
     expect(sent()).toEqual([`page_view → ${ID} @ http://localhost:3000/login?utm_source=instagram`])
     expect(JSON.stringify(calls())).not.toMatch(/voltar|loja-da-ana|exemplo\.com|%40/)
   })
 
   it("at a yes given on the page, asks the server for the page again and loads nothing until the ID arrives", async () => {
-    const { rerender } = visit({ answer: null })
+    const { rerender } = await visit({ answer: null })
 
-    await userEvent.click(screen.getByRole("button", { name: "Aceitar" }))
+    await click("Aceitar")
 
     // The server kept the ID from a visitor who had not said yes: there is nothing to load with, yet.
     expect(mocks.refresh).toHaveBeenCalledTimes(1)
@@ -150,6 +191,7 @@ describe("SiteAnalytics, with a yes", () => {
     expect(window.dataLayer).toBeUndefined()
 
     rerender(page({ answer: "granted" }))
+    await settled()
 
     expect(library()).toHaveAttribute("data-src", "https://www.googletagmanager.com/gtag/js?id=G-TEST000000")
     expect(sent()).toEqual([`page_view → ${ID} @ http://localhost:3000/`])
@@ -160,28 +202,38 @@ describe("SiteAnalytics, with a yes", () => {
 
   it("tells an account created as that alone: the event's name, the page, and the ID it goes to", async () => {
     at("/signup")
-    visit({ answer: "granted" })
+    await visit({ answer: "granted" })
 
-    await userEvent.click(screen.getByRole("button", { name: "Criar conta" }))
+    await click("Criar conta")
 
     expect(sent()).toEqual([`page_view → ${ID} @ http://localhost:3000/signup`, `sign_up → ${ID} @ http://localhost:3000/signup`])
     expect(calls().at(-1)).toEqual(["event", "sign_up", { page_location: "http://localhost:3000/signup", send_to: ID }])
   })
 
-  it("shuts the library when the page is left", () => {
-    const { unmount } = visit({ answer: "granted" })
+  it("shuts the library when the page is left", async () => {
+    const { unmount } = await visit({ answer: "granted" })
 
     unmount()
 
     expect(window[LOCK]).toBe(true)
   })
 
-  it("counts another view at the next measured page, and opens the library there again", () => {
-    const first = visit({ answer: "granted" })
+  it("never opens for a page left before it was told", async () => {
+    document.cookie = `${SITE_CONSENT_COOKIE}=granted; Path=/`
+    const { unmount } = render(page({ answer: "granted" }))
+
+    unmount()
+    await settled()
+
+    expect(window.dataLayer).toBeUndefined()
+  })
+
+  it("counts another view at the next measured page, and opens the library there again", async () => {
+    const first = await visit({ answer: "granted" })
     first.unmount()
 
     at("/signup")
-    render(page({ answer: "granted" }))
+    await visit({ answer: "granted" })
 
     expect(sent()).toEqual([`page_view → ${ID} @ http://localhost:3000/`, `page_view → ${ID} @ http://localhost:3000/signup`])
     expect(window[LOCK]).toBe(false)
@@ -190,13 +242,13 @@ describe("SiteAnalytics, with a yes", () => {
 
 describe("SiteAnalytics, at a yes taken back", () => {
   it("stops sending at once, tells the library measurement is refused, and takes Google's cookies out", async () => {
-    visit({ answer: "granted" })
+    await visit({ answer: "granted" })
     document.cookie = "_ga=GA1.1.1.2; Path=/"
     document.cookie = "_ga_TEST000000=GS1.1.3.4; Path=/"
 
-    await userEvent.click(screen.getByRole("button", { name: "Cookies" }))
-    await userEvent.click(screen.getByRole("button", { name: "Recusar" }))
-    await userEvent.click(screen.getByRole("button", { name: "Criar conta" }))
+    await click("Cookies")
+    await click("Recusar")
+    await click("Criar conta")
 
     expect(window[LOCK]).toBe(true)
     expect(calls().at(-1)).toEqual(["consent", "update", { analytics_storage: "denied" }])
@@ -208,12 +260,12 @@ describe("SiteAnalytics, at a yes taken back", () => {
   })
 
   it("tells the page again at a yes given again", async () => {
-    visit({ answer: "granted" })
+    await visit({ answer: "granted" })
 
-    await userEvent.click(screen.getByRole("button", { name: "Cookies" }))
-    await userEvent.click(screen.getByRole("button", { name: "Recusar" }))
-    await userEvent.click(screen.getByRole("button", { name: "Cookies" }))
-    await userEvent.click(screen.getByRole("button", { name: "Aceitar" }))
+    await click("Cookies")
+    await click("Recusar")
+    await click("Cookies")
+    await click("Aceitar")
 
     expect(window[LOCK]).toBe(false)
     expect(sent()).toEqual([`page_view → ${ID} @ http://localhost:3000/`, `page_view → ${ID} @ http://localhost:3000/`])
@@ -222,12 +274,12 @@ describe("SiteAnalytics, at a yes taken back", () => {
 
   it("takes Google's cookies out for a visitor who refuses, having said yes long ago", async () => {
     document.cookie = "_ga=GA1.1.1.2; Path=/"
-    visit({ answer: null })
+    await visit({ answer: null })
 
     // Not asked again yet: nothing is touched until they answer.
     expect(cookieNames()).toEqual(["_ga"])
 
-    await userEvent.click(screen.getByRole("button", { name: "Recusar" }))
+    await click("Recusar")
 
     expect(cookieNames()).toEqual([SITE_CONSENT_COOKIE])
     expect(window.dataLayer).toBeUndefined()
@@ -236,10 +288,11 @@ describe("SiteAnalytics, at a yes taken back", () => {
 
 /** A page the router kept — the one Back returns to — is drawn for the answer of when it was kept. */
 describe("SiteAnalytics, on a page drawn for an answer since changed", () => {
-  it("loads nothing for a yes the browser no longer holds, and asks the server for the page again", () => {
+  it("loads nothing for a yes the browser no longer holds, and asks the server for the page again", async () => {
     document.cookie = `${SITE_CONSENT_COOKIE}=denied; Path=/`
     document.cookie = "_ga=GA1.1.1.2; Path=/"
     render(page({ answer: "granted" }))
+    await settled()
 
     expect(library()).toBeNull()
     expect(window.dataLayer).toBeUndefined()
@@ -247,18 +300,19 @@ describe("SiteAnalytics, on a page drawn for an answer since changed", () => {
     expect(mocks.refresh).toHaveBeenCalledTimes(1)
   })
 
-  it("loads nothing where the browser holds no answer at all — cookies cleared, or refused by the browser", () => {
+  it("loads nothing where the browser holds no answer at all — cookies cleared, or refused by the browser", async () => {
     render(page({ answer: "granted" }))
+    await settled()
 
     expect(library()).toBeNull()
     expect(window.dataLayer).toBeUndefined()
   })
 
   it("stops telling once another tab took the yes back, before this page is drawn again", async () => {
-    visit({ answer: "granted" })
+    await visit({ answer: "granted" })
     document.cookie = `${SITE_CONSENT_COOKIE}=denied; Path=/`
 
-    await userEvent.click(screen.getByRole("button", { name: "Criar conta" }))
+    await click("Criar conta")
 
     expect(sent()).toEqual([`page_view → ${ID} @ http://localhost:3000/`])
   })
