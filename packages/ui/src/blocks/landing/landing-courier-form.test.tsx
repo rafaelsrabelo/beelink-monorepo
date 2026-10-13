@@ -187,6 +187,18 @@ describe("LandingCourierForm, while it is filled in", () => {
     expect(send()).toBeDisabled()
   })
 
+  /** That the press which leaves the field then lands on what is below takes a layout: it is proved in a browser, in the web's e2e. */
+  it("writes a typed field's refusal on a line that stood under the field from the start, so none is added", async () => {
+    const { user } = renderForm()
+    const line = document.getElementById(`${field("WhatsApp").id}-refusal`)
+
+    expect(line).toBeEmptyDOMElement()
+    await user.type(field("WhatsApp"), "8532221111")
+    await user.tab()
+
+    expect(await screen.findByText("Informe um celular com DDD.")).toBe(line)
+  })
+
   it("says the acceptance is missing on the checkbox, once it was left unticked", async () => {
     const { user } = renderForm()
 

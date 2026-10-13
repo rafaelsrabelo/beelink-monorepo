@@ -45,3 +45,14 @@ export const LANDING_FIELD = "flex flex-col gap-1.5"
 export const LANDING_FIELD_LABEL = "text-sm font-bold"
 export const LANDING_INPUT = "h-[52px] rounded-[14px] border-[1.5px] border-brand-line-strong bg-brand-surface px-4 text-base font-normal aria-invalid:border-brand-danger"
 export const LANDING_REFUSAL = "text-[13px] font-semibold text-brand-danger"
+
+/**
+ * The line a typed field's refusal is written on, kept while there is nothing to write. A refusal
+ * arrives as the person leaves the field, and that is often a press on what stands below it: a line
+ * that appeared then moved the checkbox and the legal links from under the pointer before the press
+ * ended, and the click was lost.
+ */
+export const LANDING_REFUSAL_LINE = `min-h-4 leading-4 ${LANDING_REFUSAL}`
+
+/** The typed fields, one under the other: the line each keeps is most of the room between them. */
+export const LANDING_FIELDS = "flex flex-col gap-2.5"

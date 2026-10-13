@@ -22,7 +22,7 @@ import { maskCpf, maskMobile } from "./landing-courier-masks"
 import { createCourierSchema, missingCourierFields, type LandingCourierValues } from "./landing-courier-schema"
 import { LandingCourierSent } from "./landing-courier-sent"
 import { LandingCourierVehicles } from "./landing-courier-vehicles"
-import { LANDING_COURIER_CARD, LANDING_CTA, LANDING_FIELD, LANDING_FIELD_LABEL, LANDING_FOCUS_ON_GROUND, LANDING_INPUT, LANDING_REFUSAL } from "./landing-styles"
+import { LANDING_COURIER_CARD, LANDING_CTA, LANDING_FIELD, LANDING_FIELD_LABEL, LANDING_FIELDS, LANDING_FOCUS_ON_GROUND, LANDING_INPUT, LANDING_REFUSAL } from "./landing-styles"
 
 /** What the last send met, in a sentence the screen made: this block never sees an `errorCode`. */
 export interface LandingCourierProblem {
@@ -117,33 +117,35 @@ export function LandingCourierForm({ termsHref, privacyHref, text, status = "idl
             <p className="text-[15px] text-brand-muted">{text.lead}</p>
           </div>
 
-          <LandingCourierField id={`${id}-name`} label={text.name} refusal={refusalOf("name")} autoComplete="name" placeholder={text.namePlaceholder} {...form.register("name")} />
-          <LandingCourierField id={`${id}-document`} label={text.document} refusal={refusalOf("document")} mask={maskCpf} inputMode="numeric" autoComplete="off" placeholder={text.documentPlaceholder} {...form.register("document")} />
-          <LandingCourierField id={`${id}-email`} label={text.email} refusal={refusalOf("email")} type="email" inputMode="email" autoComplete="email" placeholder={text.emailPlaceholder} {...form.register("email")} />
-          <LandingCourierField id={`${id}-whatsapp`} label={text.whatsapp} refusal={refusalOf("whatsapp")} mask={maskMobile} inputMode="numeric" autoComplete="tel-national" placeholder={text.whatsappPlaceholder} {...form.register("whatsapp")} />
+          <div className={LANDING_FIELDS}>
+            <LandingCourierField id={`${id}-name`} label={text.name} refusal={refusalOf("name")} autoComplete="name" placeholder={text.namePlaceholder} {...form.register("name")} />
+            <LandingCourierField id={`${id}-document`} label={text.document} refusal={refusalOf("document")} mask={maskCpf} inputMode="numeric" autoComplete="off" placeholder={text.documentPlaceholder} {...form.register("document")} />
+            <LandingCourierField id={`${id}-email`} label={text.email} refusal={refusalOf("email")} type="email" inputMode="email" autoComplete="email" placeholder={text.emailPlaceholder} {...form.register("email")} />
+            <LandingCourierField id={`${id}-whatsapp`} label={text.whatsapp} refusal={refusalOf("whatsapp")} mask={maskMobile} inputMode="numeric" autoComplete="tel-national" placeholder={text.whatsappPlaceholder} {...form.register("whatsapp")} />
 
-          <div className={LANDING_FIELD}>
-            <label htmlFor={`${id}-city`} className={LANDING_FIELD_LABEL}>
-              {text.city}
-            </label>
-            <div className="relative flex flex-col">
-              <select id={`${id}-city`} {...form.register("city")} aria-invalid={refusalOf("city") ? true : undefined} aria-describedby={`${id}-city-hint${refusalOf("city") ? ` ${id}-city-refusal` : ""}`} className={cn(LANDING_INPUT, "cursor-pointer appearance-none pr-11")}>
-                {cities.map((city) => (
-                  <option key={city} value={city}>
-                    {text.cities[city]}
-                  </option>
-                ))}
-              </select>
-              <ChevronDownIcon aria-hidden="true" className="pointer-events-none absolute top-1/2 right-4 size-5 -translate-y-1/2" />
-            </div>
-            <span id={`${id}-city-hint`} className="text-[13px] text-brand-muted">
-              {text.cityHint}
-            </span>
-            {refusalOf("city") ? (
-              <span id={`${id}-city-refusal`} className={LANDING_REFUSAL}>
-                {refusalOf("city")}
+            <div className={LANDING_FIELD}>
+              <label htmlFor={`${id}-city`} className={LANDING_FIELD_LABEL}>
+                {text.city}
+              </label>
+              <div className="relative flex flex-col">
+                <select id={`${id}-city`} {...form.register("city")} aria-invalid={refusalOf("city") ? true : undefined} aria-describedby={`${id}-city-hint${refusalOf("city") ? ` ${id}-city-refusal` : ""}`} className={cn(LANDING_INPUT, "cursor-pointer appearance-none pr-11")}>
+                  {cities.map((city) => (
+                    <option key={city} value={city}>
+                      {text.cities[city]}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDownIcon aria-hidden="true" className="pointer-events-none absolute top-1/2 right-4 size-5 -translate-y-1/2" />
+              </div>
+              <span id={`${id}-city-hint`} className="text-[13px] text-brand-muted">
+                {text.cityHint}
               </span>
-            ) : null}
+              {refusalOf("city") ? (
+                <span id={`${id}-city-refusal`} className={LANDING_REFUSAL}>
+                  {refusalOf("city")}
+                </span>
+              ) : null}
+            </div>
           </div>
 
           <LandingCourierVehicles id={`${id}-vehicle`} legend={text.vehicle} labels={text.vehicles} initial={initial?.vehicle ?? empty.vehicle} radio={form.register("vehicle")} refusal={refusalOf("vehicle")} />

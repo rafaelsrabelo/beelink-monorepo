@@ -5,7 +5,7 @@ import type { ComponentProps } from "react"
 
 // Block
 import { maskField } from "./landing-courier-masks"
-import { LANDING_FIELD, LANDING_FIELD_LABEL, LANDING_INPUT, LANDING_REFUSAL } from "./landing-styles"
+import { LANDING_FIELD, LANDING_FIELD_LABEL, LANDING_INPUT, LANDING_REFUSAL_LINE } from "./landing-styles"
 
 export interface LandingCourierFieldProps extends ComponentProps<"input"> {
   id: string
@@ -17,9 +17,9 @@ export interface LandingCourierFieldProps extends ComponentProps<"input"> {
 }
 
 /**
- * One typed field of the courier's form: its label, the field and, once there is one, its refusal.
- * The refusal sits beside the label and not in it — inside, it would be read as part of the field's
- * name and again as its description.
+ * One typed field of the courier's form: its label, the field and the line its refusal is written
+ * on, which is there from the start (`LANDING_REFUSAL_LINE`). The refusal sits beside the label and
+ * not in it — inside, it would be read as part of the field's name and again as its description.
  *
  * A mask is written into the field itself and the change is passed on after: whoever listens — the
  * form library — reads what the person sees.
@@ -41,11 +41,9 @@ export function LandingCourierField({ id, label, refusal, mask, onChange, ...fie
         aria-describedby={refusal ? `${id}-refusal` : undefined}
         className={LANDING_INPUT}
       />
-      {refusal ? (
-        <span id={`${id}-refusal`} className={LANDING_REFUSAL}>
-          {refusal}
-        </span>
-      ) : null}
+      <span id={`${id}-refusal`} className={LANDING_REFUSAL_LINE}>
+        {refusal}
+      </span>
     </div>
   )
 }
