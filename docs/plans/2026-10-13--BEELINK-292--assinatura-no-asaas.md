@@ -242,3 +242,229 @@ DELETE FROM "_prisma_migrations" WHERE "migration_name" = '20261013230000_store_
 ```
 
 Não apaga nada do que foi contratado. As assinaturas criadas no Asaas continuam lá.
+
+---
+
+## Como ficou (acréscimo de 13/10/2026, depois do código)
+
+### O que mudou em relação ao plano acima
+
+1. **A decisão 19 foi vista funcionando no sandbox** (item 6 de "No sandbox, de verdade"), e ganhou uma
+   linha de aviso no log quando o cliente é trocado: `Asaas no longer held an account's customer:
+   another was made, and the page's subscription asked for again`, com o id da página e o da conta,
+   sem nada de quem ela é. É o único sinal de que alguém removeu um cliente no painel do Asaas, e
+   importa porque **o Asaas remove junto todas as assinaturas daquele cliente** (visto): as outras
+   páginas da mesma conta ficam com uma linha que nomeia uma assinatura que não existe mais.
+2. **A fatura de uma assinatura removida não pode ser paga** (visto, abrindo o endereço sem pagar): a
+   página do Asaas responde `200` com "Fatura cancelada" e "Esta fatura foi removida pelo seu
+   fornecedor. Não é possivel realizar o pagamento." Isso encolhe o risco da decisão 21 a quem já
+   estava com o formulário do cartão carregado no instante da troca; esse caso continua não visto.
+3. **`BillingAccounts.save` foi partido em dois** para o método novo não copiar nada: `matched` é a
+   conversa (pegar a marca, convergir, soltar ou segurar), e `save` e `customerOf` são as duas
+   entradas. `claim` passou a aceitar "sem corpo" (os dados são os da linha) e "id recusado". Os 34
+   testes do S9 sobre essa conversa passam sem uma linha alterada.
+4. **`unavailable()` saiu de `billing-accounts.service.ts` para `billing-refusals.ts`**, junto com a
+   recusa nova `accountRequired()`: as duas são respondidas pelos dois serviços.
+5. **A remoção que o Asaas não confirma não ganhou código próprio.** Silêncio, 5xx ou recusa no
+   `DELETE` respondem `503 BILLING_UNREACHABLE`, nada é criado, a linha continua nomeando a
+   assinatura antiga, e a chamada seguinte termina a troca.
+6. **O cliente HTTP só toma por "removida" a resposta que diz `deleted: true`** (ou um `404`). Um
+   `200` sem isso é `AsaasUnreachable`: uma segunda assinatura nasceria ao lado de uma que continua
+   de pé.
+7. **O Asaas de mentira dos testes (`test/support/fake-platform-asaas.ts`) passou a ter assinaturas e
+   cobranças**, com o comportamento visto no sandbox: aceita duas sob a mesma referência, cria a
+   cobrança do dia junto, responde um `nextDueDate` que já é o seguinte, remove as cobranças
+   pendentes e guarda as pagas, recusa criar para cliente removido com `invalid_object`, e remover um
+   cliente remove as assinaturas dele. `pay(id, status)` é o lojista pagando na fatura: o S3 vai
+   precisar dele.
+8. **Dois testes nasceram dos erros plantados** (abaixo): o da linha que deixa de nomear a assinatura
+   removida quando a nova não pôde ser criada, e o da troca de ciclo entre dois ciclos de mesmo
+   preço.
+
+### O que foi rodado
+
+Postgres 18.6 (`beelink-domain-db`, porta 5442) e Mailpit (1027/8027). **Em qual commit cada coisa
+rodou está dito em cada item**, porque o disco caiu a 1,1 Gi no fim e o orquestrador mandou parar os
+comandos pesados antes de eu repetir tudo no último commit.
+
+1. **A migration, do zero**, num banco de rascunho (`harness_landing_s10_proof`, criado e apagado):
+   `prisma migrate deploy` aplicou as 113 ("All migrations have been successfully applied.");
+   `prisma migrate diff --exit-code` respondeu "No difference detected." e saiu com 0 nos dois
+   sentidos. **O roteiro de desfazer** rodou como está escrito; depois dele o `migrate diff` saiu com
+   2 pedindo a coluna, e a migration aplicou de novo. A migration não mudou desde `66553757`.
+2. **Unidade:** `pnpm --filter api test`, 133 arquivos e 1682 testes, todos passando (eram 131 e
+   1616 no S9). Rodado em `02bec393`.
+3. **Tipos e lint:** `tsc --noEmit` na API e em `packages/contracts`, saída 0; `oxlint` na API, sem
+   erro (os mesmos dois avisos de antes, em `test/catalog.e2e-spec.ts` e `page-rows.ts`, que este
+   ticket não toca). Rodados em `02bec393`.
+4. **e2e, um arquivo por vez:**
+   - no conteúdo do último commit de código (`472a01eb`): `store-subscription` (79) e
+     `store-subscription-key` (9), todos passando;
+   - antes da última mudança (a linha de log do item 1 acima): `store-subscription-not-enforced`
+     (5), `store-subscription-without-key` (6), `billing-account` (34), `billing-account-key` (9),
+     `billing-account-without-key` (6), `billing` (18), `billing-enforced` (2) e `stores` (19),
+     todos passando.
+5. **`pnpm arch-gates` e `pnpm docs-gate`** verdes em todos os commits, o último inclusive (rodam no
+   `pre-commit`). A regra nova ficou vermelha quando pus `storeSubscription.updateMany(` num arquivo
+   de `modules/stores/`.
+6. **Os testes postos à prova com 41 erros de propósito**, um por vez, cada um desfeito em seguida
+   (`git status` vazio conferido entre um e outro). **39 fizeram algum teste falhar de primeira; 2
+   não fizeram**, e para cada um escrevi o teste que faltava, que depois falhou com o erro plantado:
+   "a linha não é avisada de que a assinatura dela foi removida" e "uma assinatura de pé serve
+   qualquer que seja o ciclo" (os três preços são diferentes, e a conferência do valor escondia a do
+   ciclo). Entre os 41: **chamar o Asaas dentro da transação, com a trava segurada**; criar sem
+   procurar antes; não recusar a segunda chamada com conversa em curso; não renovar a marca antes de
+   criar; escrever na linha sem conferir a marca; soltar a marca depois de uma criação sem resposta;
+   remover uma assinatura paga; deixar a antiga de pé na troca de ciclo; um preço escrito no código;
+   comprar com a cobrança desligada; tentar sem chave; marcar a página como `ACTIVE`; não reler as
+   cobranças depois de remover; deixar passar a página isenta, a ativa e a conta sem dados; não
+   tentar de novo quando o cliente foi removido, e tentar de novo quando não foi; confiar na busca
+   sem ler a assinatura que a linha nomeia; tomar por nossa uma assinatura de outra referência; logar
+   as palavras do Asaas como vieram; ler o primeiro dia do lugar errado; vender um plano desligado;
+   tomar `OVERDUE` por paga e `REFUNDED` por pendente; a busca sem a referência exata; listar uma
+   removida; tomar qualquer `200` por remoção; não distinguir a criação sem resposta; escolher um
+   `billingType`; mandar centavos onde o Asaas lê reais; ler "sem lista" como "nenhuma".
+
+### No sandbox, de verdade
+
+A API de pé (`nest start`, porta 3201, banco `harness_landing`, `BILLING_ENFORCED=true`), com a chave
+de sandbox só no ambiente do comando. Código de `0eac3edb` (antes da linha de log do item 1). Uma
+conta inventada, "Teste S10 Lojista A", com CPF inventado e válido, duas páginas, e uma segunda conta
+só para ser a estranha. **Nada foi pago.** Tudo abaixo foi visto.
+
+1. **A linha da subida:** `bee-link's own Asaas account is set up (SANDBOX)`, e as duas rotas
+   mapeadas (`GET` e `PUT /api/stores/:storeSlug/subscription`). O Swagger montou com a rota nova.
+2. **Antes dos dados de cobrança:** `409 BILLING_ACCOUNT_REQUIRED`; nada no Asaas sob a referência
+   da página.
+3. **Um ciclo de cada vez, cada um chamado duas vezes** (o valor, o ciclo, o `billingType`, a
+   referência, a cobrança e a fatura lidos direto no Asaas depois de cada chamada):
+
+   | Chamada | Resposta | No Asaas, de pé sob a referência da página |
+   |---|---|---|
+   | `MONTHLY` | `200`, `TRIALING`, 5990 | uma: `ACTIVE`, `59.9`, `MONTHLY`, `UNDEFINED`, descrição `Plano Beelink mensal — página "Teste S10 Página A"`; uma cobrança `PENDING`, `59.9`, vencimento 2026-10-13, com a fatura que a API respondeu |
+   | `MONTHLY` de novo | `200`, a mesma fatura | a mesma; nenhuma outra, nem removida (1 ao todo) |
+   | `SEMIANNUAL` | `200`, 32340, outra fatura | uma: `323.4`, `SEMIANNUALLY`, `UNDEFINED`; a mensal removida (2 ao todo) |
+   | `SEMIANNUAL` de novo | `200`, a mesma fatura | a mesma (2 ao todo) |
+   | `ANNUAL` | `200`, 57480, outra fatura | uma: `574.8`, `YEARLY`, `UNDEFINED`; a semestral removida (3 ao todo) |
+   | `ANNUAL` de novo | `200`, a mesma fatura | a mesma (3 ao todo) |
+
+   A linha da página, lida no banco depois da última: `TRIALING`, o id da assinatura anual, plano
+   `beelink`, `ANNUAL`, 57480, `firstDueDate` 2026-10-13, a fatura, e nulas a marca, o fim do
+   período, a forma de pagamento, a bandeira e os 4 dígitos.
+4. **Ao mesmo tempo:** três `ANNUAL` juntas: uma `200` e duas `409 BILLING_SUBSCRIPTION_BUSY`, a
+   mesma assinatura de pé. Quatro de ciclos diferentes juntas: uma `200` (`MONTHLY`) e três `409`;
+   uma de pé (a mensal), 4 ao todo.
+5. **Como uma chamada que morreu depois de o Asaas criar:** apaguei à mão o que a linha dizia do
+   Asaas. A mesma escolha achou a assinatura pela referência e ficou com ela (continuaram 4 ao todo);
+   a linha voltou a ter id, ciclo, preço, primeiro dia e fatura. Repetido com outro ciclo: a antiga
+   foi removida e uma nova nasceu (uma de pé).
+6. **O cliente removido no Asaas à mão:** as assinaturas dele sumiram junto. A escolha seguinte
+   respondeu `200`; no Asaas, um cliente novo sob a referência da conta e uma assinatura de pé, dele.
+7. **A segunda página da mesma conta:** assinatura própria (`SEMIANNUALLY`, `323.4`), referência
+   própria, o mesmo cliente, descrição com o nome dela. A outra página não foi tocada.
+8. **A estranha:** `403 STORE_FORBIDDEN`.
+9. **A fatura, aberta sem pagar:** `200`, "Aguardando Pagamento", R$ 323,40, a descrição, e as quatro
+   formas (boleto, Pix, crédito, débito). A de uma assinatura removida: item 2 de "O que mudou".
+10. **O log da API**, lido no fim (349 linhas): a chave aparece 0 vezes, inteira ou em parte; nenhum
+    nome, documento ou e-mail das contas de teste; nada de cartão; nenhuma linha de aviso ou de erro.
+11. **Limpeza:** as 10 assinaturas que criei (3 no reconhecimento, 7 pela API) estão `deleted: true`
+    e `INACTIVE`; os 3 clientes ("Teste S10 Reconhecimento" e os dois "Teste S10 Lojista A") estão
+    `deleted: true`. A busca por "Teste S10" no nome responde 0. **A conta inteira tem uma assinatura
+    viva: `teste-s8-sub-amanha-ok`** (`sub_0idkyaerpc1r1tmt`, `ACTIVE`), que só foi lida. As duas
+    contas e as duas páginas de teste foram apagadas do banco; a API foi encerrada e
+    `pgrep -fl "worktrees/landing"` responde vazio.
+
+### O que não foi rodado
+
+- **No último commit de código (`472a01eb`), por causa da parada do disco:** `tsc --noEmit`, `oxlint`
+  e a suíte de unidade (rodaram em `02bec393`; desde então o código de `src/` ganhou uma chamada a
+  `logger.warn` e os testes ganharam três casos), e os oito specs e2e do segundo grupo do item 4. Os
+  dois specs que exercitam a linha nova rodaram nela e passaram, mas o Vitest não confere tipos.
+- **A API de pé com a linha de log nova**: o sandbox foi exercitado um commit antes.
+- `pnpm ci-check`, `turbo` em todos os workspaces, `next build`, a suíte e2e inteira e o Playwright:
+  o briefing proíbe nesta máquina. Fica para o push.
+- **Nenhum pagamento.** Tudo o que depende de uma cobrança paga (`BILLING_SUBSCRIPTION_PAID`, a
+  decisão 21) só foi exercitado contra o Asaas de mentira.
+- **Um 429, um 5xx e um tempo esgotado de verdade** do Asaas: só simulados. O mesmo para a criação
+  sem resposta e para a cobrança que ainda não existe (decisão 23).
+- **Duas instâncias da API ao mesmo tempo.** A marca foi testada com chamadas simultâneas num
+  processo só, no teste e no sandbox.
+- Nada em homologação nem em produção, e nada com uma chave de produção.
+
+### O que o S3 precisa saber
+
+- **O que a linha tem depois deste ticket:** `asaasSubscriptionId`, `planId`, `cycle`, `priceCents`,
+  `firstDueDate` e `invoiceUrl`. **`status`, `currentPeriodEndsAt`, `paymentMethod`, `cardBrand` e
+  `cardLast4` não são tocados aqui**: são do S3. O `invoiceUrl` fica na linha depois de pago até o
+  S3 limpá-lo (ou trocá-lo pelo da cobrança seguinte, para quem paga com Pix ou boleto).
+- **`firstDueDate` é o `dueDate` da cobrança mais antiga**, não o dia do pagamento. O `nextDueDate`
+  da assinatura já é o da cobrança seguinte desde a criação (visto). Quem paga dias depois tem o
+  primeiro período mais curto se o período seguir o Asaas: é decisão do S3.
+- **"Paga", para este ticket, é qualquer cobrança que não esteja `PENDING` nem `OVERDUE`.** É de
+  propósito mais largo do que o S3 vai querer (`REFUNDED`, contestação e análise de risco também
+  param a conversa). O que cada uma significa para a página é do S3.
+- **`409 BILLING_SUBSCRIPTION_PAID` é o lugar onde este ticket viu um pagamento e não fez nada.** É
+  um bom "motivo para ir olhar": o S3 pode chamar a leitura dele ali antes de responder.
+- **Escreva na linha sob a trava dela e conferindo o id.** A troca de ciclo pode estar em curso
+  enquanto o S3 lê as cobranças. `StoreSubscriptions` trava a linha (`FOR UPDATE`) só na transação
+  curta que pega a marca; o S3 deve marcar a página paga numa transação que trave a mesma linha e
+  confira que `asaasSubscriptionId` ainda é a assinatura cujas cobranças ele leu. Não precisa da
+  marca para ler; **não deve criar nem remover nada no Asaas sem ela**.
+- **Nada fora de `modules/billing` escreve em `store_subscriptions`** (regra
+  `api/page-subscription-in-billing`).
+- **Cada troca de ciclo remove uma cobrança pendente.** O webhook vai trazer eventos de cobrança
+  removida de assinaturas que a linha já não nomeia: são para ignorar. Toda cobrança traz o
+  `externalReference` da assinatura (`beelink-subscription-<id da linha>`, visto) e o id dela.
+- **Uma linha pode nomear uma assinatura removida** em dois casos: o pagamento que entrou durante a
+  remoção (decisão 21, com erro no log), e o cliente removido no Asaas à mão (item 1 de "O que
+  mudou"), que leva junto as assinaturas de **todas** as páginas da conta, inclusive de uma página
+  `ACTIVE`, que deixa de renovar sem aviso. `subscription(id)` responde `deleted: true` nos dois.
+- **Página `PAST_DUE`, `SUSPENDED` ou `CANCELED` pode chamar a rota.** Com uma assinatura paga de pé
+  recebe `BILLING_SUBSCRIPTION_PAID`; sem nada de pé, nasce uma assinatura nova sob a mesma
+  referência. "Pagar a renovação vencida" não é este ticket.
+- **`PlatformAsaas` ganhou `subscriptions(referência)`**, que acha uma assinatura que a linha não
+  nomeia. O 429 continua lembrado no processo.
+
+### O que o S11 precisa saber
+
+- **A rota:** `PUT /api/stores/:slug/subscription` com `{ cycle }` (`MONTHLY`, `SEMIANNUAL`,
+  `ANNUAL`) responde `200` com `SubscriptionChoice`: `invoiceUrl` e `subscription`. Tipos em
+  `packages/contracts` (`SubscriptionChoicePayload`, `SubscriptionChoice`, `BillingErrorCode`).
+- **Não há volta automática.** Sem `callback`, o lojista fica na página do Asaas depois de pagar.
+  Abra a fatura em outra aba e consulte o `GET` do mesmo endereço até a situação mudar (isso só
+  acontece com o S3).
+- **`409 BILLING_ACCOUNT_REQUIRED`** é o sinal para pedir nome e CPF/CNPJ (`PUT /billing/account`) e
+  chamar de novo.
+- **Os outros códigos, para a tela mapear:** `BILLING_SUBSCRIPTION_BUSY` e `BILLING_ACCOUNT_BUSY`
+  (tente de novo em instantes; depois de uma criação sem resposta são até 45 s);
+  `BILLING_UNREACHABLE` (o Asaas não respondeu; a mesma escolha de novo continua de onde parou);
+  `BILLING_SUBSCRIPTION_PAID` (o pagamento chegou e ainda não foi aplicado: é "aguardando
+  confirmação", não um erro do lojista); `BILLING_PAGE_ACTIVE`, `BILLING_PAGE_EXEMPT`,
+  `BILLING_SUBSCRIPTION_MISSING`, `BILLING_PLAN_UNAVAILABLE`, `BILLING_NOT_ENFORCED` (a tela não
+  deveria oferecer a compra nesses casos); `BILLING_SUBSCRIPTION_REFUSED` e
+  `BILLING_CUSTOMER_REFUSED` (502); `BILLING_UNAVAILABLE` (503); `RATE_LIMITED` (429, o limite das
+  escritas de loja).
+- **O `GET` já traz `invoiceUrl`, plano, ciclo e preço** de uma tentativa em aberto: dá para mostrar
+  "continuar o pagamento" sem chamar o `PUT`. No clique, prefira o `PUT` do mesmo ciclo, que confere
+  no Asaas e devolve a mesma fatura.
+- **Trocar de ciclo mata a fatura anterior.** Quem ficou com ela aberta lê "Esta fatura foi removida
+  pelo seu fornecedor" (visto). Depois de abrir um boleto, é melhor não oferecer a troca logo em
+  seguida (risco 2).
+- **O valor cobrado é o do plano no instante do clique.** Se o preço mudou entre a tela carregar e o
+  clique, o que vale é `subscription.priceCents` da resposta: mostre esse antes de mandar o lojista
+  para a fatura.
+- **A primeira cobrança é do dia**, mesmo com dias de teste sobrando (risco 4). A tela deveria dizer.
+- **A descrição na fatura leva o nome que a loja tinha na hora da escolha.**
+- **A política de privacidade** segue sem citar o CPF/CNPJ guardado para cobrança (pendência que o S9
+  deixou para a tela).
+
+### Riscos, além dos de cima
+
+8. **Um `503` e um `502` são escritos no log como erro pelo filtro de exceções**, como todo 5xx da
+   casa. Com o Asaas fora do ar e uma tela chamando a rota, é uma linha de erro por chamada.
+9. **A chave inventada dos specs** (`store-subscription-key.e2e-spec.ts`, a mesma do spec do S9)
+   começa com os mesmos caracteres de qualquer chave de sandbox do Asaas, porque esse começo é fixo.
+   Conferi sem imprimir: nenhum trecho do resto da chave de verdade está no diff, no repositório ou
+   nos arquivos de rascunho.
+10. **A checagem de tipos, o lint e a suíte de unidade não rodaram no último commit** (ver "O que não
+    foi rodado"). O orquestrador roda os três, e o `ci-check`, quando o disco tiver espaço.
