@@ -238,6 +238,8 @@ export class StoreSubscriptions {
       const standing = await this.accounts.customerOf(talk.userId, customerId);
       if (standing === customerId) throw new CreationRefused(refusal);
 
+      // Said, since nothing else tells it: whatever Asaas held for the customer that was removed went with it.
+      this.logger.warn({ storeId: talk.storeId, userId: talk.userId }, "Asaas no longer held an account's customer: another was made, and the page's subscription asked for again");
       return await ask(standing).catch((again: unknown) => {
         const refused = refusalOf(again);
         throw refused ? new CreationRefused(refused) : again;

@@ -259,6 +259,30 @@ describe("a page's subscription asked of Asaas with the real client, and a log t
       expect(logged.join('')).not.toMatch(PERSONAL);
     });
 
+    it("when the account's customer was removed at Asaas: said with the account's id, and with nothing of who it is", async () => {
+      answering = [
+        list(),
+        // As the sandbox refused it on 13/10/2026: by its catch-all code, the reason only in the words.
+        json(400, { errors: [{ code: 'invalid_object', description: 'Não é possível criar uma cobrança para um cliente removido.' }] }),
+        list(),
+        json(200, { object: 'customer', id: 'cus_000009459592', deleted: false }),
+        json(200, subscriptionBody({ customer: 'cus_000009459592' })),
+        list(chargeBody({ customer: 'cus_000009459592' })),
+      ];
+
+      const response = await choose('MONTHLY');
+      const account = await prisma.billingAccount.findUniqueOrThrow({ where: { userId: owner.user.id } });
+      await prisma.billingAccount.update({ where: { userId: owner.user.id }, data: { asaasCustomerId: CUSTOMER } });
+
+      expect(response.statusCode).toBe(200);
+      expect(account.asaasCustomerId).toBe('cus_000009459592');
+      expect(sent.map(({ method, url }) => [method, url.replace(SANDBOX, '').split('?')[0]])).toEqual([['GET', '/subscriptions'], ['POST', '/subscriptions'], ['GET', '/customers'], ['POST', '/customers'], ['POST', '/subscriptions'], ['GET', '/subscriptions/sub_cwtxq513jlpjfid1/payments']]);
+      expect(sent[4]!.body).toMatchObject({ customer: 'cus_000009459592', value: 59.9 });
+      expect(lines().find((line) => line.msg === "Asaas no longer held an account's customer: another was made, and the page's subscription asked for again")).toMatchObject({ level: 40, userId: owner.user.id });
+      expectNoKeyIn(response.payload);
+      expect(logged.join('')).not.toMatch(PERSONAL);
+    });
+
     it('when the choice is refused before Asaas is asked', async () => {
       const invalid = await app.inject({ method: 'PUT', url: PATH, headers: { authorization: `Bearer ${owner.accessToken}` }, payload: { cycle: 'WEEKLY' } });
       await prisma.storeSubscription.updateMany({ data: { status: 'EXEMPT' } });
