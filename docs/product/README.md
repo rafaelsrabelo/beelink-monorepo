@@ -50,6 +50,7 @@ bee-link is paid for **by the page**. A page is a store, and the plan, the trial
 - **A renewal falls on the first charge's day of the month**, and on the month's last day where the month lacks it: a subscription first charged on the 31st of October renews on the 30th of November, and then on the 31st of December.
 - **A page stands in one of seven ways**: *in trial*; *trial expired* — the trial ended and the page never paid; *active* — a paid period is running; *past due* — the period's charge was not paid by its due day; *suspended* — stopped for want of payment, having paid before; *cancelled* — its shopkeeper cancelled, and the period paid for is over; *exempt* — it owes nothing, by bee-link's own choice.
 - **It is bee-link charging the shopkeeper, apart from the shop's sales.** A customer's payment goes to the shop's own Asaas account and never meets what the page pays bee-link.
+- **Who is charged is the account, once for all its pages.** To be charged, a shopkeeper gives a name — their own or a company's — and a CPF or a CNPJ; the e-mail is the account's own, and neither a phone nor an address is asked. Each page still has its own subscription.
 - **Of a card, bee-link keeps its brand and its last four digits**, and nothing else.
 - **None of it is charged yet.** Until bee-link switches charging on, nothing is charged, no page is locked, and the panel shows no plan, no notice and no payment screen; a page's trial is counted all the same. A page that existed before subscriptions did has none until it is given one.
 
