@@ -196,3 +196,67 @@ O que o Rafael pediu em 12/10, e que manda aqui:
   à parte em qualquer empacotador, mas ninguém mediu o build.
 - **A máscara foi conferida no Chromium.** Teclados de celular que compõem o texto (IME) e o
   preenchimento automático do navegador não foram exercitados.
+
+## 13/10, depois do código — o que o navegador mostrou
+
+O spec `apps/web/e2e/courier-application.spec.ts` foi escrito em 12/10 e só rodou em 13/10, contra o
+`next dev` (3200) com a API de pé (3201) e o banco `harness_landing`. Na primeira passada, 19 de 24
+testes passaram. Das cinco falhas, quatro eram do spec e uma era do formulário.
+
+### O defeito: o clique feito a partir de um campo errado se perdia
+
+A recusa de um campo é escrita quando a pessoa sai dele, e quem sai de um campo muitas vezes sai
+apertando o que está abaixo. A linha da recusa não existia antes: ao aparecer, empurrava o aceite e
+os dois links dos textos legais 26 px para baixo com o botão do mouse ainda apertado. O aperto
+terminava em cima do formulário, e o clique não acontecia: a caixa não marcava e o modal não abria.
+Medido a 1280 e a 390 px, com um aperto de 90 ms.
+
+**Conserto:** os quatro campos digitados guardam a linha da recusa desde o início
+(`LANDING_REFUSAL_LINE`) e ficam numa coluna própria (`LANDING_FIELDS`), cujo espaço entre campos é
+o que a linha deixa. Custo, a 1280 px: o formulário vazio cresce cerca de 60 px (de 993, pela conta,
+para 1052 medidos); com as quatro recusas na tela ele fica 45 px menor (de 1097 para 1052). A altura
+deixou de mudar quando uma recusa aparece.
+
+**O que sobra:** abaixo de 640 px, duas das quatro frases ("Informe o nome completo, com sobrenome."
+e "Esse CPF não confere. Confira os números.") ocupam duas linhas, e a segunda ainda empurra o que
+está abaixo. Com toque isso não perde o clique (um toque é mirado uma vez só; conferido no Chromium
+emulando toque), mas com mouse numa janela estreita pode perder. Encurtar as duas frases resolveria;
+ficou de fora por ser troca de texto.
+
+### O que era do spec
+
+- **Apagar um dígito do CPF.** Uma tecla enviada pelo localizador do campo começa no primeiro
+  caractere, onde não há o que apagar. O teste agora põe o cursor no fim.
+- **O rádio do veículo** fica fora da vista e o cartão é o que a pessoa aperta. O teste aperta o
+  cartão.
+- **O Tab dentro do modal.** Depois da última parada, o diálogo devolve o foco no quadro seguinte:
+  antes da próxima tecla de uma pessoa, depois da de um script. O teste espera o foco voltar. No
+  ritmo de uma pessoa (200 ms entre teclas) o foco nunca saiu do modal, para a frente e para trás.
+- **A aba nova** do clique com Ctrl/⌘ está em branco antes de chegar a `/termos`. O teste espera o
+  endereço.
+
+### Depois dos consertos
+
+25 testes (o da pressão a partir de um campo errado é novo), rodados duas vezes: 50 de 50. No banco,
+depois de dezenas de envios com dois CPFs inventados:
+
+```
+      name       |  document   |            email             |   whatsapp    |     city     |  vehicle   | termsVersion
+ Zuleica Tavares | 52998224725 | zuleica.tavares@exemplo.test | 5585987654321 | FORTALEZA_CE | MOTORCYCLE | 2026-10-13
+ Raimundo Nonato | 11144477735 | raimundo.nonato@exemplo.test | 5585912345678 | FORTALEZA_CE | CAR        | 2026-10-13
+(2 rows)
+```
+
+Uma linha por CPF, com a cidade `FORTALEZA_CE` e a versão `2026-10-13`. As duas linhas foram
+apagadas no fim.
+
+O texto legal fora do JavaScript inicial: no `next dev` a landing pede um arquivo com o nome do
+texto (`…locales_legal_pt-BR_ts…js`), de 575 bytes, que é só o endereço do pedaço; a frase procurada
+não está em nenhum dos 24 scripts pedidos antes de o modal abrir, a 1280 e a 390 px.
+
+### O que não foi feito
+
+- A suíte e2e sobre o build e o `next build`: o disco tinha 3 GB.
+- Firefox, Safari e um celular de verdade: tudo acima é Chromium.
+- O aviso de cookies do BEELINK-319 ocupa 213 px do pé da tela a 390 px e cobre parte do formulário
+  até a pessoa responder. Não é deste ticket.
