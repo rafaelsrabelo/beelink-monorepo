@@ -217,3 +217,81 @@ DELETE FROM "_prisma_migrations" WHERE "migration_name" = '20261013162400_billin
 ```
 
 Apaga os planos e a situação de toda página. Só faz sentido antes de o S9 escrever alguma coisa.
+
+---
+
+## Como ficou (acréscimo de 13/10/2026, depois do código)
+
+### O que mudou em relação ao plano acima
+
+1. **O seed só escreve a linha que ele realmente mudaria.** O `ON CONFLICT … DO UPDATE` de
+   `plans.sql` ganhou um `WHERE … IS DISTINCT FROM …`. Sem ele, cada deploy empurrava o `updatedAt`
+   dos dois planos, e a coluna passava a dizer "quando foi o último deploy". Com ele, rodar o seed de
+   novo não toca em nada (conferido pelo `updatedAt` e por um resumo das linhas, antes e depois), e
+   `updatedAt` diz quando o plano mudou de verdade. O item 1 da Definição de Pronto ("não duplica nem
+   muda nada") vale ao pé da letra.
+2. **O teste começa no `createdAt` da própria linha da página**, lido no `select` do `create`, e não
+   num `new Date()` do servidor. "7 dias a partir da criação da página" fica exato, e a coluna
+   `trialStartedAt` é igual a `stores.createdAt` (conferido no banco).
+3. **O precedente da tabela pequena já existia:** `asaas_customers` (BEELINK-204) guarda, numa tabela
+   à parte, o id que o cliente de uma loja tem no Asaas **da loja**, com o CPF pelo qual foi achado.
+   `billing_accounts` é o mesmo desenho para o lojista no Asaas **da plataforma**. As duas não se
+   misturam: uma é da conta de cada loja, a outra é da conta da Beelink.
+4. **A conta de dias de Brasília ganhou uma quarta cópia.** `payments/payment-terms.ts`,
+   `reports/report-period.ts` e `orders/business-days.ts` já têm cada um o seu "−03:00".
+   `billing-dates.ts` não importa de nenhum deles de propósito (a cobrança da plataforma não depende
+   do módulo de pagamentos das lojas), mas juntar as quatro num lugar só é uma limpeza que vale um
+   ticket próprio.
+5. **Os conjuntos fechados são presos aos dois lados** em `billing.constants.ts`: cada objeto
+   `satisfies` o tipo do fio e o enum do banco ao mesmo tempo. Uma palavra a mais num dos dois, sozinha,
+   não compila (conferi os três sentidos num arquivo à parte, com o `tsc` do repositório).
+6. **O texto do seed não promete preço antigo a quem já paga.** A primeira versão do comentário dizia
+   que quem paga "mantém o que combinou". Isso é uma regra de produto que ninguém decidiu. O que o
+   arquivo diz agora é o fato: mudar o preço ali não alcança a assinatura que já existe no Asaas, e
+   aumentar o que uma página paga é uma decisão à parte.
+
+### O que foi rodado
+
+Postgres 18.6 (`beelink-domain-db`, porta 5442) e Mailpit (1027/8027).
+
+1. **A migration, do zero**, num banco de rascunho (`harness_landing_s1_proof`, criado e apagado):
+   `prisma migrate deploy` aplicou as 111 migrations ("All migrations have been successfully
+   applied."); `prisma migrate diff --from-config-datasource --to-schema prisma/schema --exit-code`
+   respondeu "No difference detected." e saiu com 0. No sentido inverso (`--from-schema …
+   --to-config-datasource`), o mesmo.
+2. **O seed, duas vezes**, pelo comando que o container roda (`pnpm exec prisma db seed`, na pasta
+   `apps/api`): 2 planos e 14 categorias depois da primeira; os mesmos 2 planos, com os mesmos ids e o
+   mesmo `updatedAt`, depois da segunda. Um preço e um `active` mudados à mão voltaram ao que o
+   arquivo diz na rodada seguinte.
+3. **As `CHECK` e as chaves**, com `INSERT` à mão no banco de rascunho: preço zero, teste que acaba
+   antes de começar, ciclo sem plano, bandeira sem dígitos, letras no lugar dos dígitos, segunda
+   assinatura da mesma página e apagar um plano em uso foram recusados; um número de cartão inteiro
+   não cabe na coluna (`value too long for type character(4)`); apagar a página apagou a assinatura, e
+   apagar a conta apagou a conta de cobrança.
+4. **O roteiro de desfazer** deste plano rodou como está escrito; depois dele o `migrate diff` voltou
+   a pedir a migration inteira, e ela aplicou de novo.
+5. **Unidade:** `pnpm --filter api test`, 126 arquivos e 1534 testes, todos passando. Os de data
+   (63) foram postos à prova com quatro versões erradas de propósito (teste de 168 horas exatas,
+   renovação encadeada, dias contados em UTC, Brasília lida como UTC): todas fizeram testes falhar. Os
+   mesmos testes passam com `TZ=Asia/Tokyo`.
+6. **e2e, um arquivo por vez:** `billing.e2e-spec.ts` (18), `billing-enforced.e2e-spec.ts` (2) e
+   `stores.e2e-spec.ts` (19, o que cobre a criação da página), todos passando. O teste "não cria
+   página sem assinatura" falhou, como devia, quando a escrita do teste foi posta depois do commit da
+   página.
+7. **Tipos e lint:** `tsc --noEmit` na API e em `packages/contracts`, sem erro; `oxlint` na API, sem
+   erro (dois avisos, em arquivos que este ticket não toca); `eslint` no único arquivo do web
+   alterado. `pnpm arch-gates` e `pnpm docs-gate` verdes.
+8. **A API de pé** (`nest start`, porta 3201, banco `harness_landing` com a migration e o seed): o
+   documento do Swagger montou com as duas rotas; `GET /api/billing/plans` sem sessão respondeu os
+   três preços; duas contas inventadas criaram duas páginas, e a leitura respondeu `TRIALING`,
+   `trialEndsAt` em `2026-10-21T03:00:00.000Z`, `trialLastDay` `2026-10-20` e 7 dias; a estranha
+   recebeu `403 STORE_FORBIDDEN`, um slug que não existe `404`, e sem sessão `401`; com a linha da
+   assinatura apagada à mão, `200` e `subscription: null`. O log não teve nenhuma linha de erro ou
+   aviso. As contas foram apagadas e o processo encerrado.
+
+### O que não foi rodado
+
+- `pnpm ci-check`, `turbo` em todos os workspaces, `next build`, a suíte e2e inteira e o Playwright:
+  o disco não deixava. O `ci-check` fica para o push.
+- A imagem Docker e o container `migrate`: o `run.mjs` só rodou nesta máquina.
+- Nada em homologação nem em produção.
