@@ -3,6 +3,9 @@ import { config } from 'dotenv';
 import { expand } from 'dotenv-expand';
 import { z } from 'zod';
 
+// App
+import { ASAAS_KEY_PREFIXES, asaasEnvironmentOf, keyOfOtherEnvironment } from '../asaas/asaas-environment.js';
+
 expand(config({ quiet: true }));
 
 const LOG_LEVELS = ['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'] as const;
@@ -171,6 +174,30 @@ const envSchema = z.object({
   ASAAS_CONTACT_EMAIL: z.email().default('contato@beecoders.net'),
 
   /**
+   * bee-link's own Asaas account (BEELINK-291), where a page's plan is charged — never a shop's, whose
+   * key its owner pastes in the panel and bee-link seals. Optional: without the key, charging is
+   * unavailable (`BILLING_UNAVAILABLE`) and nothing else changes. A key of the other Asaas —
+   * `$aact_prod_…` with `ASAAS_ENV=sandbox`, or the reverse — stops the boot, as a shop's is refused
+   * when pasted. Read in one file, `modules/billing/platform-asaas.config.ts` (gate
+   * `api/platform-asaas-key-in-billing`): it is never sealed, logged or answered.
+   *
+   * The key begins with `$`. In a `.env` file it is written `\$aact_…`: dotenv-expand reads a bare
+   * `$aact_…` as a variable, quoted or not, and hands over nothing.
+   */
+  ASAAS_PLATFORM_API_KEY: z.preprocess(
+    // Spaces around it would make an invalid header of it; nothing but spaces is absent.
+    (value) => (typeof value === 'string' ? value.trim() || undefined : value),
+    z.string().optional(),
+  ),
+
+  /**
+   * What Asaas sends back in `asaas-access-token` with every event of bee-link's own account: 32 to
+   * 255 characters with no space, by Asaas's rule. Declared here and read by nothing yet — the
+   * platform's webhook is BEELINK-221.
+   */
+  ASAAS_PLATFORM_WEBHOOK_TOKEN: blankAsAbsent(z.string().regex(/^\S{32,255}$/, 'ASAAS_PLATFORM_WEBHOOK_TOKEN must be 32 to 255 characters with no space')),
+
+  /**
    * Whether bee-link charges a page for its plan and locks one that does not pay (BEELINK-218). Off
    * by default, and off is the product as it was before plans existed: nothing locks, and the panel
    * shows no plan, no notice and no payment screen. A page's trial is counted either way, from the
@@ -232,6 +259,14 @@ const envSchema = z.object({
     return parts.every((part) => part === undefined) || (parts.every((part) => part !== undefined) && value.INTEGRATIONS_SECRET_KEY !== undefined);
   },
   { message: 'MELHOR_ENVIO_CLIENT_ID, MELHOR_ENVIO_CLIENT_SECRET and MELHOR_ENVIO_REDIRECT_URI go together, with INTEGRATIONS_SECRET_KEY: set all four or none of the three', path: ['MELHOR_ENVIO_CLIENT_ID'] },
+).refine(
+  // A sandbox key in production would charge nobody; a production key in a test would charge real money.
+  (value) => value.ASAAS_PLATFORM_API_KEY === undefined || !keyOfOtherEnvironment(asaasEnvironmentOf(value.ASAAS_ENV), value.ASAAS_PLATFORM_API_KEY),
+  {
+    // The prefixes and never the key: this message is printed by a boot that failed.
+    message: `ASAAS_PLATFORM_API_KEY is a key of the other Asaas: ASAAS_ENV=sandbox takes ${ASAAS_KEY_PREFIXES.SANDBOX}… and ASAAS_ENV=production takes ${ASAAS_KEY_PREFIXES.PRODUCTION}…`,
+    path: ['ASAAS_PLATFORM_API_KEY'],
+  },
 );
 
 /**
