@@ -269,7 +269,7 @@ describe("what a page owes bee-link: the plans, and each page's subscription (BE
     it('reads the plan, the cycle, the period and what is kept of a card — and never an id of Asaas’s', async () => {
       await seedPlans();
       const plan = await prisma.plan.findUniqueOrThrow({ where: { slug: 'beelink' } });
-      await prisma.billingAccount.create({ data: { userId: owner.user.id, asaasCustomerId: 'cus_e2e000000000001' } });
+      await prisma.billingAccount.create({ data: { userId: owner.user.id, name: 'Dona Teste', document: '52998224725', asaasCustomerId: 'cus_e2e000000000001' } });
       await prisma.storeSubscription.updateMany({
         data: {
           status: 'ACTIVE',
