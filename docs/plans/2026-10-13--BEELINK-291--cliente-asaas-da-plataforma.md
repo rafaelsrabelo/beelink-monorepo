@@ -267,3 +267,187 @@ DELETE FROM "_prisma_migrations" WHERE "migration_name" = '20261013210000_billin
 ```
 
 Apaga o nome e o documento de quem já gravou. Os clientes criados no Asaas continuam lá.
+
+---
+
+## Como ficou (acréscimo de 13/10/2026, depois do código)
+
+### O que mudou em relação ao plano acima
+
+1. **A migration ganhou uma segunda `CHECK`**, `billing_accounts_name_check`: o nome é guardado sem
+   espaço nas pontas e com pelo menos 2 caracteres. O roteiro de desfazer acima está incompleto por
+   isso; o certo é:
+
+   ```sql
+   ALTER TABLE "billing_accounts"
+     DROP CONSTRAINT "billing_accounts_name_check",
+     DROP CONSTRAINT "billing_accounts_document_check",
+     DROP COLUMN "asaasCustomerClaimedUntil",
+     DROP COLUMN "asaasCustomerSyncedAt",
+     DROP COLUMN "document",
+     DROP COLUMN "name";
+   DELETE FROM "_prisma_migrations" WHERE "migration_name" = '20261013210000_billing_account_data';
+   ```
+
+   Rodei este, como está escrito (ver "O que foi rodado", item 2).
+2. **A decisão 13 foi desfeita.** O cliente da plataforma importa `centsOf` de
+   `integrations/asaas/asaas-money.ts` em vez de reescrever a conta: o comentário daquele arquivo diz
+   que ele é o único lugar onde reais viram centavos, e eu já importo de lá `maskedDocumentOf`. São
+   as duas únicas coisas que a cobrança da plataforma importa da pasta das lojas, as duas funções
+   puras, sem chave e sem estado.
+3. **`filled` e `gone` também foram para `shared/asaas/asaas-call.ts`**, porque a parte comum os usa.
+   O cliente das lojas passou a importá-los em vez de defini-los.
+4. **O nome tem um validador só** (`IsBillingName`, no DTO), e não três em fila. Com três, um nome
+   ausente saía com a mesma frase repetida três vezes na resposta. A contagem é em caracteres como o
+   Postgres conta (um emoji é um, não dois), que é o que a coluna e a `CHECK` medem.
+5. **Uma busca recusada pelo Asaas não é culpa do cliente.** Um 4xx que não é 401 na busca (o caso
+   real é um 403 de quem bloqueia o endereço do servidor, como o Melhor Envio já fez com este)
+   responde `503 BILLING_UNREACHABLE`, e não `502 BILLING_CUSTOMER_REFUSED`. Só a recusa de uma
+   criação ou de uma alteração diz "o Asaas recusou o cliente".
+6. **A decisão 33 virou código:** `asaas-reason.ts` tira o documento (com ou sem pontuação), o e-mail
+   e o nome das palavras do Asaas antes de elas irem para o log. No sandbox o Asaas não repetiu
+   nenhum dos três, mas nada garante que nunca repita.
+7. **A regra de arquitetura libera um arquivo e nenhum spec.** Por isso `platform-asaas.config.ts`
+   não tem teste de unidade (um teste teria que escrever o nome da variável): quem prova que a chave
+   do ambiente chega ao cliente, com o endereço do sandbox e o `User-Agent`, é
+   `test/billing-account-key.e2e-spec.ts`.
+8. **Uma linha de um spec do S1 mudou:** `test/billing.e2e-spec.ts` grava uma conta de cobrança à
+   mão, e as duas colunas novas são obrigatórias. O spec foi rodado depois.
+9. **A API diz na subida se achou a chave**, sem a chave: `bee-link's own Asaas account is set up
+   (SANDBOX)` ou `… has no key here: billing is unavailable`. É a conferência de um deploy.
+10. **Sem a chave, um corpo inválido ainda responde `400`**: a validação roda antes do serviço. Um
+    corpo válido responde `503 BILLING_UNAVAILABLE`, sem escrever nada.
+
+### O que foi rodado
+
+Postgres 18.6 (`beelink-domain-db`, porta 5442) e Mailpit (1027/8027).
+
+1. **A migration, do zero**, num banco de rascunho (`harness_landing_s9_proof`, criado e apagado):
+   `prisma migrate deploy` aplicou as 112 ("All migrations have been successfully applied.");
+   `prisma migrate diff --exit-code` respondeu "No difference detected." e saiu com 0 nos dois
+   sentidos (banco → schema e schema → banco).
+2. **As restrições, com `INSERT` à mão** nesse banco: aceitos um CPF de 11 dígitos, um CNPJ de 14, um
+   CNPJ com letras e um nome de 120 caracteres; recusados o documento com pontuação, o de 12
+   dígitos, o de letras minúsculas, a linha sem documento, a sem nome, o nome de uma letra, o nome
+   com espaço na frente, o de 121 caracteres e uma segunda conta com o cliente Asaas da primeira.
+   Apagar a conta apagou a conta de cobrança. **O roteiro de desfazer** (o do item 1 acima) rodou;
+   depois dele o `migrate diff` voltou a pedir a migration. **Sobre uma tabela com uma linha, a
+   migration falha** (`P3018`, "column "document" of relation "billing_accounts" contains null
+   values"), como o plano previa; sobre a tabela vazia, aplicou de novo.
+3. **Unidade:** `pnpm --filter api test`, 131 arquivos e 1616 testes, todos passando (eram 126 e
+   1534 no S1). Os 9 arquivos de `integrations/asaas/` (81 testes) passam sem uma linha alterada:
+   `git diff e9abfb8d...HEAD -- apps/api/src/modules/integrations apps/api/src/modules/payments` só
+   mostra `asaas-http.client.ts`, `asaas.client.ts` e `asaas.config.ts`.
+4. **e2e, um arquivo por vez:** `billing-account` (34), `billing-account-without-key` (6),
+   `billing-account-key` (9), `billing` (18), `billing-enforced` (2), `stores` (19),
+   `asaas-connection` (7), `asaas-settings` (16), `asaas-approval` (11), `asaas-webhook` (24),
+   `order-payments` (42), `order-refunds` (24), `payment-approved` (9) e `payment-reconciliation`
+   (20). Todos passando. Os oito últimos não foram tocados; rodei porque usam as classes de erro que
+   mudaram de arquivo.
+5. **Os testes postos à prova com 28 erros de propósito**, um por vez, cada um desfeito em seguida.
+   Todos fizeram algum teste falhar. Entre eles: não cortar a chave das palavras do Asaas; guardar a
+   mensagem do `fetch`; carregar a falha como `cause`; não distinguir a criação sem resposta; tomar
+   um 429 por resultado desconhecido; ler "sem lista" como "nenhum cliente"; não comparar a
+   referência exatamente; ler o token do cartão; deixar subir com a chave do outro ambiente; não
+   recusar a segunda gravação com conversa em curso; não renovar a marca antes de criar; gravar o
+   cliente sem conferir a marca; soltar a marca depois de uma criação sem resposta; criar sem
+   procurar; **chamar o Asaas dentro da transação, com a trava segurada**; logar as palavras do
+   Asaas como vieram; responder sem a chave como se tivesse; tirar o limite da escrita.
+6. **Tipos e lint:** `tsc --noEmit` na API e em `packages/contracts`, sem erro; `oxlint` na API, sem
+   erro (os mesmos dois avisos de antes, em arquivos que este ticket não toca). `pnpm arch-gates` e
+   `pnpm docs-gate` verdes. A regra nova ficou vermelha quando pus o nome da variável num segundo
+   arquivo, e também quando o pus num spec ao lado do cliente.
+7. **O `.env` e o `$`:** com uma chave inventada, `dotenv-expand` entregou vazio para
+   `NOME=$aact_…`, `NOME='$aact_…'` e `NOME="$aact_…"`, e a chave inteira para `NOME=\$aact_…`. Um
+   valor vindo do shell não é tocado.
+
+### No sandbox, de verdade
+
+A API de pé (`nest start`, porta 3201, banco `harness_landing`), com a chave de sandbox passada só no
+shell do comando. Duas contas inventadas, criadas pela rota de cadastro e apagadas no fim.
+
+1. **A linha da subida:** `bee-link's own Asaas account is set up (SANDBOX)`.
+2. **Documento com dígito errado:** `400 BILLING_DOCUMENT_INVALID`, "CPF ou CNPJ inválido: confira os
+   números digitados."; nada no Asaas sob a referência da conta.
+3. **A primeira gravação** ("Teste S9 Lojista A", um CPF inventado e válido): `200`,
+   `customerReady: true`. No Asaas, um cliente (`cus_000009458756`) com o nome, o CPF, o e-mail da
+   conta, `externalReference` `beelink-account-<id da conta>` e `notificationDisabled: true`.
+4. **A mesma gravação de novo:** `200`, o mesmo cliente, `totalCount: 1` no Asaas, e o `updatedAt`
+   da linha igual ao de antes (nada foi escrito).
+5. **Dados alterados** (uma razão social e um CNPJ): `200`; no Asaas o mesmo id, agora `JURIDICA`,
+   com o nome e o CNPJ novos.
+6. **Como uma requisição que morreu depois de o Asaas criar:** apaguei o id e a data da linha à mão.
+   A leitura respondeu `customerReady: false`; a gravação repetida achou o cliente pela referência e
+   ficou com o mesmo id. `totalCount: 1`.
+7. **Duas gravações de uma conta nova no mesmo instante:** uma `200`, outra
+   `409 BILLING_ACCOUNT_BUSY`; um cliente no Asaas.
+8. **O cliente removido no Asaas à mão, e depois uma gravação que muda o nome:** um cliente novo, e
+   só ele, sob a referência.
+9. **A assinatura de teste do S8** (`teste-s8-sub-amanha-ok`, `sub_0idkyaerpc1r1tmt`), lida pelo
+   cliente de verdade: `ACTIVE`, 5990 centavos, `MONTHLY`, `CREDIT_CARD`, próxima cobrança em
+   2026-11-14, cartão com bandeira e 4 dígitos. Uma cobrança: `PENDING`, vencimento 2026-10-14,
+   fatura em `https`. Nada parecido com um token no que foi lido. Uma assinatura que não existe:
+   `null`; as cobranças dela: lista vazia.
+10. **O log da API**, lido no fim: a chave aparece 0 vezes, inteira ou em parte; nenhum nome,
+    documento ou e-mail das contas de teste; nenhuma linha de aviso ou de erro.
+11. **Limpeza:** os quatro clientes que criei (`cus_000009458155`, `…8756`, `…8771`, `…8772`) estão
+    com `deleted: true`; a busca por "Teste S9" no nome e pelas referências usadas responde vazio. A
+    assinatura do S8 só foi lida. Nenhuma assinatura e nenhuma cobrança foi criada. O processo da
+    API foi encerrado.
+
+### O que não foi rodado
+
+- `pnpm ci-check`, `turbo` em todos os workspaces, `next build`, a suíte e2e inteira e o Playwright:
+  o disco não deixava (3,6 Gi livres). O `ci-check` fica para o push.
+- **O Docker Compose com a chave entre aspas simples** (risco 1): o briefing proíbe `docker compose`
+  aqui. A forma de escrever a chave no Dokploy está na documentação como não testada.
+- **Um 429 de verdade, um 5xx de verdade e um tempo esgotado de verdade** do Asaas: só simulados.
+- **Duas instâncias da API ao mesmo tempo.** A marca na linha é o que as coordena, e ela foi testada
+  com requisições simultâneas num processo só.
+- Nada em homologação nem em produção, e nada com uma chave de produção.
+
+### O que o S10 e o S3 precisam saber
+
+- **Para ter o cliente antes de criar a assinatura (S10):** a linha de `billing_accounts` com
+  `asaasCustomerId` **e** `asaasCustomerSyncedAt` preenchidos é o que diz "o Asaas tem este cliente
+  com estes dados" (`customerReady` no fio). Se `asaasCustomerSyncedAt` é nula, os dados mudaram e
+  não chegaram lá: o S10 precisa de um "garanta agora" antes de criar a assinatura. Ele ainda não
+  existe como método público; o caminho é o de `BillingAccounts.save` sem corpo novo (`claim` com os
+  dados da linha, depois `converge`).
+- **Um cliente removido no Asaas não é percebido por uma linha em dia** (decisão 25). Se a criação da
+  assinatura for recusada por causa do cliente, o S10 deve zerar `asaasCustomerId` e
+  `asaasCustomerSyncedAt` e garantir de novo: a busca não devolve removidos e um cliente novo nasce.
+  **Se o id do cliente mudar, as assinaturas do antigo já não existem no Asaas**, e nada aqui avisa
+  as linhas de `store_subscriptions`.
+- **`PUT` num cliente removido responde `400 invalid_object`, não `404`** (visto).
+- **`subscriptionCharges` de uma assinatura que não existe responde lista vazia** (visto). Quem diz
+  se a assinatura existe é `subscription(id)`, que devolve `null` no 404. O S3 lê as duas.
+- **A referência do Asaas não diferencia maiúsculas** na busca (visto). O cliente compara exatamente
+  depois. A referência que o S10 escolher para a assinatura deve ser minúscula e ter prefixo próprio
+  (a do cliente é `beelink-account-<id>`).
+- **O cliente não tem busca de assinatura pela referência.** O S10 vai precisar dela para
+  "reaproveitar a tentativa em aberto"; `GET /subscriptions?externalReference=…` funciona (usei à
+  mão para achar a do S8).
+- **O 429 é lembrado no processo.** Uma rotina do S3 que varre assinaturas recebe `AsaasThrottled` na
+  hora, sem chamar o Asaas, até o horário que ele disse.
+- **Do cartão só saem `brand` e `last4`**, na assinatura e em cada cobrança. O token que o Asaas
+  manda junto não é lido.
+- **`paymentDate` e `confirmedDate` de uma cobrança paga não foram vistos**: a única cobrança lida
+  estava `PENDING`, com as duas nulas. O formato com hora (`2026-10-14 10:20:30`) é tratado no
+  teste de unidade, por precaução.
+- **`ASAAS_PLATFORM_WEBHOOK_TOKEN` já é validado na subida** (32 a 255 caracteres, sem espaço) e não
+  é lido por nada. A regra de arquitetura nova cerca só a chave; o token é do S3.
+- **O limite de escrita da rota** é o das lojas (`STORE_WRITE_RATE_LIMIT_*`).
+
+### Riscos, além dos de cima
+
+6. **Quem puser a chave no `apps/api/.env` vê `billing-account-without-key.e2e-spec.ts` falhar**:
+   uma variável vazia no ambiente do teste perde para o valor do `.env` (é o mesmo motivo de
+   `meta-pixel-without-vault-key` falhar nesta worktree). O spec troca o `fetch` por um que recusa
+   qualquer endereço do Asaas, então mesmo assim nada sai da máquina. O `.env.example` deixa a
+   variável comentada e diz isso.
+7. **O Compose pode escrever o nome da "variável que falta" na saída do deploy**, e esse nome seria a
+   chave sem o `$`. Não vi isso acontecer; é o que ele faz com variáveis não definidas no arquivo do
+   Compose. A documentação de deploy manda trocar a chave se ela aparecer num log.
+8. **A política de privacidade não cita o CPF/CNPJ do lojista guardado para cobrança.** Não mexi nos
+   textos legais: não há tela ainda. Fica para o S11 ou para quem decidir o texto.
