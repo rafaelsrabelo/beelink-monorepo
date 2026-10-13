@@ -1,3 +1,7 @@
+// Node
+import { readFileSync } from "node:fs"
+import { resolve } from "node:path"
+
 // Libs
 import { fireEvent, render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
@@ -136,17 +140,36 @@ describe("LandingConsent", () => {
 
   /**
    * The notice stands over the foot of the screen, so a control a keyboard reaches there would be
-   * behind it. The document is told how much room to keep, and to stop keeping it.
+   * behind it. The document is told how tall the notice is, and to forget it.
    */
-  it("keeps the document's foot clear by its own height while it stands, and gives it back when it leaves", () => {
+  it("tells the document its own height while it stands, and takes it back when it leaves", () => {
     const height = vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(118)
     const { unmount } = renderNotice()
 
-    expect(document.documentElement.style.scrollPaddingBottom).toBe("118px")
+    expect(notice()).toHaveAttribute("data-landing-notice")
+    expect(document.documentElement.style.getPropertyValue("--landing-notice-height")).toBe("118px")
 
     unmount()
-    expect(document.documentElement.style.scrollPaddingBottom).toBe("")
+    expect(document.documentElement.style.getPropertyValue("--landing-notice-height")).toBe("")
     height.mockRestore()
+  })
+
+  /**
+   * Its own controls stand in the very room the document keeps clear. With that room kept while
+   * the focus was on one of them, a browser scrolled the page to bring it up, at every Tab. jsdom
+   * scrolls nothing, so what is held is the rule: the room is the stylesheet's to keep, by the two
+   * names the notice writes, and never while the focus is inside the notice. A browser is what saw
+   * the page stay still (`apps/web/e2e/site-consent.spec.ts`).
+   */
+  it("leaves the room at the document's foot to a rule that lets go of it while the focus is inside the notice", () => {
+    const css = readFileSync(resolve(process.cwd(), "src/styles/globals.css"), "utf8")
+    renderNotice()
+
+    // Written on the document from here, the room would be kept whatever holds the focus.
+    expect(document.documentElement.style.scrollPaddingBottom).toBe("")
+    expect(css).toContain("html:has([data-landing-notice]:not(:focus-within)) {\n  scroll-padding-bottom: var(--landing-notice-height, 0px);\n}")
+    expect(css.match(/\[data-landing-notice\]/g)).toHaveLength(1)
+    expect(css.match(/--landing-notice-height/g)).toHaveLength(1)
   })
 
   it("speaks the language it is handed", () => {

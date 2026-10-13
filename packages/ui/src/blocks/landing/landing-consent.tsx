@@ -32,6 +32,12 @@ export interface LandingConsentProps {
 }
 
 /**
+ * What the notice tells the document: how tall it stands. `globals.css` reads it, under this name,
+ * to keep that much of the page's foot clear — and reads `data-landing-notice` to know when.
+ */
+const NOTICE_HEIGHT = "--landing-notice-height"
+
+/**
  * One drawing for both answers. Refusing must cost what accepting costs — the same size, the same
  * weight, the same row — so neither is the button a hurried thumb finds first.
  */
@@ -56,7 +62,13 @@ const CHOICE =
  * While it stands, the document keeps its height clear at the foot (`scroll-padding-bottom`), so
  * whatever Tab reaches is scrolled above the notice rather than under it — the product page's buy
  * bar does the same with a height it knows; this one's changes with the width and the language, so
- * it is measured.
+ * it is measured, and handed to the stylesheet as a property of the document.
+ *
+ * The room is kept by a rule in `globals.css`, not written on the document from here, because it
+ * must not be kept while the focus is inside the notice. The notice's own controls stand exactly in
+ * that room: a browser took each one for hidden and scrolled the page to bring it up — and a sticky
+ * notice follows the screen, so every Tab moved the page half a screen. A fixed one would not have
+ * been scrolled for; this one is sticky so the page ends under it.
  *
  * No close button: closing without answering would be a third answer nobody could name.
  *
@@ -72,21 +84,22 @@ export function LandingConsent({ privacyHref, current = null, onAccept, onRefuse
     const element = region.current
     if (!element) return
     const root = document.documentElement
-    const keepRoom = () => {
-      root.style.scrollPaddingBottom = `${element.offsetHeight}px`
+    const sayHeight = () => {
+      root.style.setProperty(NOTICE_HEIGHT, `${element.offsetHeight}px`)
     }
-    keepRoom()
-    const observer = new ResizeObserver(keepRoom)
+    sayHeight()
+    const observer = new ResizeObserver(sayHeight)
     observer.observe(element)
     return () => {
       observer.disconnect()
-      root.style.scrollPaddingBottom = ""
+      root.style.removeProperty(NOTICE_HEIGHT)
     }
   }, [])
 
   return (
     <section
       ref={region}
+      data-landing-notice=""
       tabIndex={-1}
       aria-labelledby={headingId}
       className="sticky bottom-0 z-15 order-last border-t-[1.5px] border-brand-ink bg-brand-surface text-brand-ink focus-visible:-outline-offset-4"

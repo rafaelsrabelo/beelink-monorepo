@@ -107,9 +107,10 @@ describe("SiteConsentGate", () => {
   })
 
   /**
-   * The sign-in and the sign-up use the answer and never ask (AA4 mounts the gate there, without the
-   * notice). What keeps that true is where the notice is mounted, so that is what is pinned: the
-   * landing's page and nowhere else.
+   * The sign-in and the sign-up use the answer and never ask: `SiteMeasured` mounts the gate there,
+   * without the notice (BEELINK-320). What keeps that true is where the notice is mounted, so that
+   * is what is pinned: the landing's page and nowhere else. The answer itself has one more reader,
+   * the component that measures.
    */
   it("has its notice and its footer button mounted by the landing's page alone", () => {
     const src = join(process.cwd(), "src")
@@ -120,16 +121,23 @@ describe("SiteConsentGate", () => {
 
     expect(importersOf("landing-consent-live")).toEqual(["app/page.tsx"])
     expect(importersOf("landing-consent-reopen")).toEqual(["app/page.tsx"])
-    expect(importersOf("site-consent-provider").sort()).toEqual(["components/landing/landing-consent-live.tsx", "components/landing/landing-consent-reopen.tsx", "components/landing/site-consent-gate.tsx"])
+    expect(importersOf("site-consent-provider").sort()).toEqual([
+      "components/landing/landing-consent-live.tsx",
+      "components/landing/landing-consent-reopen.tsx",
+      "components/landing/site-consent-gate.tsx",
+      "components/site-analytics/site-analytics.tsx",
+    ])
+    expect(importersOf("site-consent-gate")).toEqual(["components/site-analytics/site-measured.tsx"])
   })
 
-  // Not a word of Google's is on the page until AA4 (BEELINK-320) loads it behind a yes.
-  it("loads nothing of Google's: no source of this app names its tag", () => {
+  // BEELINK-320 loads it behind a yes, through one module: no screen, no page and no other file names Google's tag or its addresses.
+  it("names Google's tag in one file alone, the module every call to it goes through", () => {
     const src = join(process.cwd(), "src")
     const naming = (readdirSync(src, { recursive: true }) as string[])
       .filter((file) => /\.tsx?$/.test(file) && !/\.test\.tsx?$/.test(file))
-      .filter((file) => /googletagmanager|google-analytics\.com|gtag\(/.test(readFileSync(join(src, file), "utf8")))
+      .filter((file) => /googletagmanager|google-analytics\.com|gtag\(|dataLayer|ga-disable/.test(readFileSync(join(src, file), "utf8")))
+      .map((file) => file.replaceAll("\\", "/"))
 
-    expect(naming).toEqual([])
+    expect(naming).toEqual(["lib/google-analytics.ts"])
   })
 })

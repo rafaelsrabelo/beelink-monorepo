@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest"
 
 // App
 import { CONSENT_COOKIE } from "./consent-cookie"
-import { decodeSiteConsent, SITE_CONSENT_COOKIE, SITE_CONSENT_MAX_AGE_SECONDS, siteConsentCookieOf } from "./site-consent-cookie"
+import { decodeSiteConsent, SITE_CONSENT_COOKIE, SITE_CONSENT_MAX_AGE_SECONDS, siteConsentCookieOf, siteConsentIn } from "./site-consent-cookie"
 
 /** BEELINK-319: the answer is the site's, kept under a name of its own, and nothing but a yes is a yes. */
 describe("the site's consent cookie", () => {
@@ -40,5 +40,24 @@ describe("the site's consent cookie", () => {
     expect(SITE_CONSENT_COOKIE).toBe("bl_site_consent")
     expect(SITE_CONSENT_COOKIE).not.toBe(CONSENT_COOKIE)
     expect(siteConsentCookieOf("granted", false).startsWith(`${CONSENT_COOKIE}=`)).toBe(false)
+  })
+})
+
+/** BEELINK-320: what is loaded follows the cookie the browser holds, not the page it was handed. */
+describe("the site's answer, as the browser holds it", () => {
+  it("reads the answer from among the browser's cookies, wherever it stands", () => {
+    expect(siteConsentIn("bl_site_consent=granted")).toBe("granted")
+    expect(siteConsentIn("bl_locale=pt-BR; bl_site_consent=denied; _ga=GA1.1.1.2")).toBe("denied")
+    expect(siteConsentIn("bl_locale=pt-BR;bl_site_consent=granted")).toBe("granted")
+  })
+
+  it("reads no cookie, or an edited one, as no answer", () => {
+    for (const cookies of ["", "bl_locale=pt-BR", "bl_site_consent=", "bl_site_consent=yes", "bl_site_consent=granted=1"]) expect(siteConsentIn(cookies)).toBeNull()
+  })
+
+  it("is not answered by a shop's cookie, nor by one whose name only ends like its own", () => {
+    expect(siteConsentIn("bl_consent=granted")).toBeNull()
+    expect(siteConsentIn("x_bl_site_consent=granted")).toBeNull()
+    expect(siteConsentIn("bl_consent=granted; bl_site_consent=denied")).toBe("denied")
   })
 })

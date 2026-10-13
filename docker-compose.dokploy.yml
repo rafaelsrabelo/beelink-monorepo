@@ -238,7 +238,8 @@ services:
       # request by it never asks the table of shop hosts whose host it is.
       - WEB_DOMAIN=${WEB_DOMAIN}
       # Beelink's own GA4 measurement ID, for the landing's visits (BEELINK-319). Unset, it arrives
-      # blank and the landing asks its visitor nothing; set, it shows the cookie notice.
+      # blank and the landing asks its visitor nothing; set, it shows the cookie notice and measures
+      # whoever accepts it (BEELINK-320).
       - SITE_GA_MEASUREMENT_ID=${SITE_GA_MEASUREMENT_ID:-}
     # `service_started`, not `service_healthy`: Docker never restarts an unhealthy container, so an
     # API that is down would hold the web back forever, and a visitor would get nothing instead of

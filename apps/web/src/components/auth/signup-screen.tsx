@@ -10,6 +10,7 @@ import type { WebMessages } from "@/locales"
 
 // App
 import { AppLink } from "@/components/app-link"
+import { useSiteTrack } from "@/components/site-analytics/use-site-track"
 import { LEGAL_ROUTES } from "@/lib/legal-routes"
 import { useResendVerification, useSignUp } from "@/services/auth/auth-hooks"
 import { errorCopy } from "./auth-error-copy"
@@ -17,6 +18,7 @@ import { errorCopy } from "./auth-error-copy"
 export function SignupScreen({ ui, web }: { ui: UiMessages; web: WebMessages }) {
   const signUp = useSignUp()
   const resend = useResendVerification()
+  const track = useSiteTrack()
 
   // Signing up ends on the same screen the spent-link case ends on: "check your e-mail", with a
   // way to ask again. One block, two entrances.
@@ -50,7 +52,8 @@ export function SignupScreen({ ui, web }: { ui: UiMessages; web: WebMessages }) 
       privacyHref={LEGAL_ROUTES.privacy}
       pending={signUp.isPending}
       error={errorCopy(signUp.error, web)}
-      onSubmit={(values) => signUp.mutate(values)}
+      // An account created is told as that and nothing more: nothing the form holds goes with it.
+      onSubmit={(values) => signUp.mutate(values, { onSuccess: () => track({ name: "sign_up" }) })}
     />
   )
 }

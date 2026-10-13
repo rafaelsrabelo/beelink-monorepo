@@ -23,7 +23,7 @@ import { BrandPhoto } from "@/components/landing/brand-photo"
 import { integrationMarksOf } from "@/components/landing/integration-mark"
 import { LandingConsentLive } from "@/components/landing/landing-consent-live"
 import { LandingConsentReopen } from "@/components/landing/landing-consent-reopen"
-import { SiteConsentGate } from "@/components/landing/site-consent-gate"
+import { SiteMeasured } from "@/components/site-analytics/site-measured"
 import courierStreet from "@/assets/images/courier-street.jpg"
 import courierSunny from "@/assets/images/courier-sunny.jpg"
 import panelLaptop from "@/assets/images/panel-laptop.jpg"
@@ -34,7 +34,6 @@ import { LEGAL_ROUTES } from "@/lib/legal-routes"
 import { getMessages } from "@/lib/locale"
 import { PLAN_PRICES } from "@/lib/plans"
 import { serverEnv } from "@/lib/server-env"
-import { siteConsentAt } from "@/lib/site-consent"
 import { siteOrigin } from "@/lib/site-origin"
 
 /** The panel's own doors. A signed-in shopkeeper who follows either is sent on to the panel by the proxy. */
@@ -83,17 +82,18 @@ export async function generateMetadata(): Promise<Metadata> {
  * the two ways in. "/" is outside the proxy matcher — bee-link serves a public site — so anyone
  * reaches it, signed in or not; it used to send everyone to the panel, and so to the sign-in.
  *
- * `SiteConsentGate` decides whether the visitor is asked about being measured (BEELINK-319): only
- * where a measurement ID is configured. The notice and the footer's "Cookies" are mounted either
- * way, and draw nothing outside it. Nothing of Google's is loaded here.
+ * `SiteMeasured` is around the whole page: it decides whether the visitor is asked about being
+ * measured (BEELINK-319) — only where a measurement ID is configured — and measures the visit of
+ * one who said yes (BEELINK-320). The notice and the footer's "Cookies" are mounted either way, and
+ * draw nothing where nobody is asked.
  */
 export default async function LandingPage() {
-  const [{ ui, locale }, consent] = await Promise.all([getMessages(), siteConsentAt()])
+  const { ui, web, locale } = await getMessages()
   const exampleHref = serverEnv.EXAMPLE_STORE_SLUG ? `/${serverEnv.EXAMPLE_STORE_SLUG}` : null
 
   return (
     <div className={jakarta.variable} style={brandFontStyle}>
-      <SiteConsentGate measurementId={serverEnv.SITE_GA_MEASUREMENT_ID} choice={consent}>
+      <SiteMeasured title={web.landing.title}>
         <LandingShell notice={<LandingConsentLive privacyHref={LEGAL_ROUTES.privacy} text={ui.landing.consent} />}>
           <LandingHeader loginHref={LOGIN} signupHref={SIGNUP} termsHref={LEGAL_ROUTES.terms} privacyHref={LEGAL_ROUTES.privacy} linkComponent={AppLink} messages={ui} />
           <main>
@@ -137,7 +137,7 @@ export default async function LandingPage() {
             messages={ui}
           />
         </LandingShell>
-      </SiteConsentGate>
+      </SiteMeasured>
     </div>
   )
 }
