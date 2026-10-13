@@ -492,7 +492,8 @@ describe("the landing page, whole", () => {
     expect(page).not.toMatch(/[{}]/)
   })
 
-  it("has no accessibility violations", async () => {
+  // The whole page under axe: half a second on a desk, and past the default five on CI's shared runner (5.2s once), where every workspace is tested at the same time.
+  it("has no accessibility violations", { timeout: 20_000 }, async () => {
     const { container } = render(<Page />)
 
     await expectNoA11yViolations(container)
