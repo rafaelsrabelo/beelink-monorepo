@@ -28,6 +28,16 @@ export const CYCLE_MONTHS = {
 
 export const BILLING_CYCLES = Object.keys(CYCLE_MONTHS) as BillingCycle[];
 
+/** Each cycle in Asaas's own word (BEELINK-292): translated here and nowhere else, on the way out and to tell one of its subscriptions by. */
+export const ASAAS_CYCLES = {
+  MONTHLY: 'MONTHLY',
+  SEMIANNUAL: 'SEMIANNUALLY',
+  ANNUAL: 'YEARLY',
+} as const satisfies Record<BillingCycle, string>;
+
+/** The plan a page is sold, by its slug. Its row, its switch and what each cycle costs are the seed's: no price is written in code. */
+export const PLAN_ON_SALE = 'beelink';
+
 export const SUBSCRIPTION_STATUSES = Object.keys({
   TRIALING: true,
   TRIAL_EXPIRED: true,
@@ -67,6 +77,23 @@ export const CUSTOMER_UNKNOWN_HOLD_MS = 45_000;
  * search ignores case, and the comparison made here does not.
  */
 export const customerReferenceOf = (userId: string): string => `beelink-account-${userId.toLowerCase()}`;
+
+/**
+ * How long one choice of a cycle holds the talk with Asaas about a page's subscription (BEELINK-292).
+ * Pushed ahead again before each call that changes something there, so it need only outlast the reads
+ * between two of them, at the client's ten seconds each.
+ */
+export const SUBSCRIPTION_CLAIM_MS = 90_000;
+
+/** How long nobody creates after a creation Asaas left unanswered: time for a subscription it did make to show in the search. */
+export const SUBSCRIPTION_UNKNOWN_HOLD_MS = 45_000;
+
+/**
+ * bee-link's name for a page's subscription at its own Asaas account: how what was made there is found
+ * again, and told from whatever else the account holds. Of the row's own id and not the store's.
+ * Prefixed and lower case, for the reasons the customer's reference is.
+ */
+export const subscriptionReferenceOf = (subscriptionId: string): string => `beelink-subscription-${subscriptionId.toLowerCase()}`;
 
 export function billingError(errorCode: BillingErrorCode, message: string) {
   return { errorCode, message };

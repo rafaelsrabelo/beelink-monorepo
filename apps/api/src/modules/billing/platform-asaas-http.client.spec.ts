@@ -64,6 +64,12 @@ const cardBody = { creditCardNumber: '8829', creditCardBrand: 'MASTERCARD', cred
 const subscriptionBody = { object: 'subscription', id: 'sub_0idkyaerpc1r1tmt', dateCreated: '2026-10-13', customer: 'cus_000009458155', paymentLink: null, value: 59.9, nextDueDate: '2026-11-14', cycle: 'MONTHLY', description: 'Beelink', billingType: 'CREDIT_CARD', deleted: false, status: 'ACTIVE', externalReference: 'a-subscription', checkoutSession: null, creditCard: cardBody, fine: { value: 0, type: 'FIXED' }, split: null };
 const chargeBody = { object: 'payment', id: 'pay_bnngnr5rfx14wgvj', customer: 'cus_000009458155', subscription: 'sub_0idkyaerpc1r1tmt', value: 59.9, netValue: 57.62, billingType: 'CREDIT_CARD', confirmedDate: null, creditCard: cardBody, status: 'PENDING', dueDate: '2026-10-14', originalDueDate: '2026-10-14', paymentDate: null, clientPaymentDate: null, invoiceUrl: 'https://sandbox.asaas.com/i/bnngnr5rfx14wgvj', externalReference: 'a-subscription', deleted: false, refunds: null };
 
+/** What a page's monthly choice asks of Asaas (BEELINK-292), and what the sandbox answered to it on 13/10/2026. */
+const PAGE_REFERENCE = 'beelink-subscription-0199a0f1-0000-7000-8000-0000000000c1';
+const wanted = { customerId: 'cus_000009459220', valueCents: 5990, cycle: 'MONTHLY', firstDueDay: '2026-10-13', description: 'Plano Beelink mensal — página "Padaria da Lia"', externalReference: PAGE_REFERENCE };
+const madeBody = { object: 'subscription', id: 'sub_cwtxq513jlpjfid1', dateCreated: '2026-10-13', customer: 'cus_000009459220', paymentLink: null, value: 59.9, nextDueDate: '2026-11-13', cycle: 'MONTHLY', description: wanted.description, billingType: 'UNDEFINED', deleted: false, status: 'ACTIVE', externalReference: PAGE_REFERENCE, checkoutSession: null, sendPaymentByPostalService: false, fine: { value: 0, type: 'FIXED' }, interest: { value: 0, type: 'PERCENTAGE' }, split: null };
+const made = { id: 'sub_cwtxq513jlpjfid1', status: 'ACTIVE', deleted: false, customerId: 'cus_000009459220', valueCents: 5990, cycle: 'MONTHLY', billingType: 'UNDEFINED', nextDueDate: '2026-11-13', externalReference: PAGE_REFERENCE, card: null };
+
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.useRealTimers();
@@ -360,6 +366,152 @@ describe("PlatformAsaasHttpClient — bee-link's own Asaas account (BEELINK-291)
     });
   });
 
+  describe("a page's subscription made, found again and removed (BEELINK-292)", () => {
+    it('is made with no way of paying chosen, the amount in reais, the due day and the reference — and read back as Asaas made it', async () => {
+      const fetched = answer(200, madeBody);
+
+      expect(await clientOf().createSubscription(wanted)).toEqual(made);
+      expect([sent(fetched).url, sent(fetched).method]).toEqual([`${BASE}/subscriptions`, 'POST']);
+      expect(sent(fetched).body).toEqual({
+        customer: 'cus_000009459220',
+        billingType: 'UNDEFINED',
+        value: 59.9,
+        nextDueDate: '2026-10-13',
+        cycle: 'MONTHLY',
+        description: 'Plano Beelink mensal — página "Padaria da Lia"',
+        externalReference: PAGE_REFERENCE,
+      });
+    });
+
+    it.each([
+      [32340, 323.4, 'SEMIANNUALLY'],
+      [57480, 574.8, 'YEARLY'],
+      [5990, 59.9, 'MONTHLY'],
+    ])('sends %i cents as %d reais, with the cycle as it was handed', async (valueCents, value, cycle) => {
+      const fetched = answer(200, { ...madeBody, value, cycle });
+
+      expect(await clientOf().createSubscription({ ...wanted, valueCents, cycle })).toMatchObject({ valueCents, cycle });
+      expect(sent(fetched).body).toMatchObject({ value, cycle, billingType: 'UNDEFINED' });
+    });
+
+    it('never sends a card, a callback, or a way of paying of its own choosing', async () => {
+      const fetched = answer(200, madeBody);
+
+      await clientOf().createSubscription(wanted);
+      expect(Object.keys(sent(fetched).body as object).sort()).toEqual(['billingType', 'customer', 'cycle', 'description', 'externalReference', 'nextDueDate', 'value']);
+    });
+
+    /** The one call that cannot be asked again blindly: Asaas takes two subscriptions under one reference. */
+    it('does not know what came of a creation that Asaas failed, never answered, timed out on, or answered without an id', async () => {
+      const create = () => clientOf().createSubscription(wanted);
+
+      answer(502, { message: 'down' });
+      expect(await thrownBy(create())).toBeInstanceOf(AsaasOutcomeUnknown);
+
+      silence();
+      expect(await thrownBy(create())).toBeInstanceOf(AsaasOutcomeUnknown);
+
+      silence(new DOMException('The operation was aborted due to timeout', 'TimeoutError'));
+      const timedOut = await thrownBy(create());
+      expect(timedOut).toBeInstanceOf(AsaasOutcomeUnknown);
+      expect(String(timedOut)).toContain('TimeoutError');
+
+      for (const body of [{}, { id: '' }, { id: 42 }, null]) {
+        answer(200, body);
+        expect(await thrownBy(create())).toBeInstanceOf(AsaasOutcomeUnknown);
+      }
+    });
+
+    /** As the sandbox refused them on 13/10/2026: a removed customer by the catch-all code, an unknown one by its own. */
+    it('keeps a refused creation as a refusal, and a 429 as a wait — neither is a creation that may have happened', async () => {
+      answer(400, { errors: [{ code: 'invalid_object', description: 'Não é possível criar uma cobrança para um cliente removido.' }] });
+      const removed = await thrownBy(clientOf().createSubscription(wanted));
+      expect(removed).toBeInstanceOf(AsaasRefused);
+      expect(removed).toMatchObject({ status: 400, code: 'invalid_object', reason: 'Não é possível criar uma cobrança para um cliente removido.' });
+
+      answer(400, { errors: [{ code: 'invalid_customer', description: 'Cliente inválido ou não informado.' }] });
+      await expect(clientOf().createSubscription(wanted)).rejects.toMatchObject({ status: 400, code: 'invalid_customer' });
+
+      answer(429, {}, { 'RateLimit-Reset': '60' });
+      const throttled = await thrownBy(clientOf().createSubscription(wanted));
+      expect(throttled).toBeInstanceOf(AsaasThrottled);
+      expect(throttled).not.toBeInstanceOf(AsaasOutcomeUnknown);
+    });
+
+    it('is looked for by the reference, and found as Asaas holds it', async () => {
+      const fetched = answer(200, { object: 'list', hasMore: false, totalCount: 1, data: [madeBody] });
+
+      expect(await clientOf().subscriptions(PAGE_REFERENCE)).toEqual([made]);
+      expect([sent(fetched).url, sent(fetched).method]).toEqual([`${BASE}/subscriptions?externalReference=${PAGE_REFERENCE}&limit=100`, 'GET']);
+
+      const odd = answer(200, { object: 'list', hasMore: false, data: [] });
+      await clientOf().subscriptions('a b&limit=1#x');
+      expect(sent(odd).url).toBe(`${BASE}/subscriptions?externalReference=a%20b%26limit%3D1%23x&limit=100`);
+    });
+
+    /** Seen at the sandbox: the search ignores case, takes duplicates, and a removed subscription still answers by its id. */
+    it('brings every one standing under exactly that reference — two when Asaas holds two — and passes over one removed, one with no id, and one whose reference differs in its case', async () => {
+      answer(200, {
+        object: 'list',
+        hasMore: false,
+        data: [
+          { ...madeBody, id: 'sub_removed', deleted: true, status: 'INACTIVE' },
+          { ...madeBody, id: 'sub_other_case', externalReference: PAGE_REFERENCE.toUpperCase() },
+          { ...madeBody, id: 'sub_no_reference', externalReference: null },
+          { ...madeBody, id: '' },
+          null,
+          madeBody,
+          { ...madeBody, id: 'sub_e15hg6szj2n473tp', value: 574.8, cycle: 'YEARLY', nextDueDate: '2027-10-13' },
+        ],
+      });
+
+      expect((await clientOf().subscriptions(PAGE_REFERENCE)).map((subscription) => [subscription.id, subscription.cycle, subscription.valueCents])).toEqual([
+        ['sub_cwtxq513jlpjfid1', 'MONTHLY', 5990],
+        ['sub_e15hg6szj2n473tp', 'YEARLY', 57480],
+      ]);
+    });
+
+    it('does not take an answer with no list, a failure or a refusal for "none stands": another would be made', async () => {
+      answer(200, { object: 'list' });
+      await expect(clientOf().subscriptions(PAGE_REFERENCE)).rejects.toBeInstanceOf(AsaasUnreachable);
+      answer(200, null);
+      await expect(clientOf().subscriptions(PAGE_REFERENCE)).rejects.toBeInstanceOf(AsaasUnreachable);
+      answer(503, {});
+      await expect(clientOf().subscriptions(PAGE_REFERENCE)).rejects.toBeInstanceOf(AsaasUnreachable);
+      answer(403, undefined);
+      await expect(clientOf().subscriptions(PAGE_REFERENCE)).rejects.toMatchObject({ status: 403 });
+    });
+
+    /** Seen at the sandbox: `200 { deleted: true, id }`, the same on a second removal, and a bare 404 for an id never held. */
+    it('is removed by its id — and removed already when Asaas never held it, or removed it before', async () => {
+      const fetched = answer(200, { deleted: true, id: 'sub_cwtxq513jlpjfid1' });
+
+      await expect(clientOf().removeSubscription('sub_cwtxq513jlpjfid1')).resolves.toBeUndefined();
+      expect([sent(fetched).url, sent(fetched).method, sent(fetched).body]).toEqual([`${BASE}/subscriptions/sub_cwtxq513jlpjfid1`, 'DELETE', null]);
+
+      answer(404, undefined);
+      await expect(clientOf().removeSubscription('sub_neverexisted000')).resolves.toBeUndefined();
+    });
+
+    it('is not taken for removed on any other answer: a failure, a silence, a refusal, or a 200 that does not say so', async () => {
+      answer(500, {});
+      const failed = await thrownBy(clientOf().removeSubscription('sub_1'));
+      expect(failed).toBeInstanceOf(AsaasUnreachable);
+      expect(failed).not.toBeInstanceOf(AsaasOutcomeUnknown);
+
+      silence();
+      expect(await thrownBy(clientOf().removeSubscription('sub_1'))).toBeInstanceOf(AsaasUnreachable);
+
+      answer(400, { errors: [{ code: 'invalid_action', description: 'Não é possível remover esta assinatura.' }] });
+      await expect(clientOf().removeSubscription('sub_1')).rejects.toMatchObject({ status: 400, code: 'invalid_action' });
+
+      for (const body of [{ deleted: false, id: 'sub_1' }, { id: 'sub_1' }, {}, null]) {
+        answer(200, body);
+        expect(await thrownBy(clientOf().removeSubscription('sub_1'))).toBeInstanceOf(AsaasUnreachable);
+      }
+    });
+  });
+
   describe("bee-link's key", () => {
     const calls = (client: PlatformAsaasHttpClient): [string, () => Promise<unknown>][] => [
       ['customers', () => client.customers(REFERENCE)],
@@ -367,6 +519,9 @@ describe("PlatformAsaasHttpClient — bee-link's own Asaas account (BEELINK-291)
       ['updateCustomer', () => client.updateCustomer('cus_1', customer)],
       ['subscription', () => client.subscription('sub_1')],
       ['subscriptionCharges', () => client.subscriptionCharges('sub_1')],
+      ['subscriptions', () => client.subscriptions(PAGE_REFERENCE)],
+      ['createSubscription', () => client.createSubscription(wanted)],
+      ['removeSubscription', () => client.removeSubscription('sub_1')],
     ];
 
     /** Everything an error can be printed as: its text, its fields, and what a logger would walk through. */
@@ -430,6 +585,9 @@ describe("PlatformAsaasHttpClient — bee-link's own Asaas account (BEELINK-291)
         () => client.updateCustomer('cus_1', customer),
         () => client.subscription('sub_1'),
         () => client.subscriptionCharges('sub_1'),
+        () => client.subscriptions(PAGE_REFERENCE),
+        () => client.createSubscription(wanted),
+        () => client.removeSubscription('sub_1'),
       ]) {
         const failed = await thrownBy(call());
         expect(failed).toBeInstanceOf(PlatformAsaasUnconfigured);
