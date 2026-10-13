@@ -52,8 +52,8 @@ export interface CourierApplicationPayload {
  * than one field refused, the answer names the first in the order they are listed here. The apps own
  * the sentences.
  *
- * A body missing a field altogether, or carrying one the route does not know, is `BAD_REQUEST`; too
- * many from one address is `RATE_LIMITED` (429).
+ * A field left out is refused like a wrong one, with its own code. A body carrying a field the route
+ * does not know is `BAD_REQUEST`, and too many from one address is `RATE_LIMITED` (429).
  */
 export type CourierApplicationErrorCode =
   /** Not a first name and a surname, or longer than 120 characters. */
