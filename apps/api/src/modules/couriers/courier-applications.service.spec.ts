@@ -123,7 +123,11 @@ describe('CourierApplicationsService', () => {
       {
         name: 'PrismaClientKnownRequestError',
         code: 'P2039',
-        meta: { driverAdapterError: { cause: { detail: 'Failing row contains (Zuleica Tavares, 52998224725).' } } },
+        meta: {
+          driverAdapterError: {
+            cause: { originalCode: '23514', detail: 'Failing row contains (Zuleica Tavares, 52998224725).' },
+          },
+        },
       },
     );
 
@@ -153,9 +157,33 @@ describe('CourierApplicationsService', () => {
 
       expect(logged).toHaveBeenCalledTimes(1);
       expect(logged.mock.calls[0]).toEqual([
-        { reason: 'PrismaClientKnownRequestError P2039' },
+        { reason: 'PrismaClientKnownRequestError P2039 23514' },
         'A courier application could not be kept',
       ]);
+    });
+
+    // A code is a word. Whatever else sits where a code is expected may be the row, and is left out.
+    it('takes nothing for a code that is not shaped like one', async () => {
+      const odd = Object.assign(new Error('refused'), {
+        name: 'Zuleica Tavares 52998224725',
+        code: 'zuleica.tavares@exemplo.test',
+        meta: { driverAdapterError: { cause: { originalCode: 'Failing row contains (52998224725)' } } },
+      });
+      const { service } = build(vi.fn().mockRejectedValue(odd));
+      const logged = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+
+      await service.receive(application).catch(() => undefined);
+
+      expect(logged.mock.calls[0]![0]).toEqual({ reason: 'UNKNOWN' });
+    });
+
+    it('names what was thrown and is no error as unknown', async () => {
+      const { service } = build(vi.fn().mockRejectedValue('52998224725'));
+      const logged = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+
+      await service.receive(application).catch(() => undefined);
+
+      expect(logged.mock.calls[0]![0]).toEqual({ reason: 'UNKNOWN' });
     });
 
     it('names a failure that is no Prisma error by its class alone', async () => {

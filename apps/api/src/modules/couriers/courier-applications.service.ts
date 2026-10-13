@@ -60,8 +60,23 @@ export class CourierApplicationsService {
   }
 }
 
-/** What kind of failure it was, and nothing of what it was about: Prisma's code, else the error's class. */
+/** A class's name, Prisma's `P2039`, Node's `ECONNREFUSED`, Postgres's `23514`: a word with no room for a row in it. */
+const CODE = /^\w{1,60}$/;
+
+type DatabaseRefusal = Error & { code?: unknown; meta?: { driverAdapterError?: { cause?: { originalCode?: unknown } } } };
+
+/**
+ * What kind of failure it was, and nothing of what it was about: the error's class, its code, and
+ * Postgres's own five characters where Prisma passed them on (23514 is a CHECK). Each is taken only
+ * if it is shaped like a code — anything else an error carries may be the row.
+ */
 function codeOf(error: unknown): string {
   if (!(error instanceof Error)) return 'UNKNOWN';
-  return 'code' in error && typeof error.code === 'string' ? `${error.name} ${error.code}` : error.name;
+
+  const { name, code, meta }: DatabaseRefusal = error;
+  const codes = [name, code, meta?.driverAdapterError?.cause?.originalCode].filter(
+    (part): part is string => typeof part === 'string' && CODE.test(part),
+  );
+
+  return codes.join(' ') || 'UNKNOWN';
 }

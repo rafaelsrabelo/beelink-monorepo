@@ -275,7 +275,7 @@ describe('courier applications', () => {
       }
 
       const refusal = lines().find((line) => line.msg === 'A courier application could not be kept');
-      expect(refusal).toMatchObject({ level: 50, reason: expect.stringMatching(/^PrismaClientKnownRequestError P\d{4}$/) });
+      expect(refusal).toMatchObject({ level: 50, reason: expect.stringMatching(/^PrismaClientKnownRequestError P\d{4} 23514$/) });
       expect(requestLine(500)).toBeDefined();
       expect(logged.join('')).not.toMatch(PERSONAL);
       expect(await rows()).toHaveLength(0);
