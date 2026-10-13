@@ -3545,36 +3545,34 @@ export interface UiMessages {
     couriers: {
       tag: string
       titleLight: string
+      /** Carries its own full stop: the heading's drawn one is yellow, and so is the section's ground. */
       titleStrong: string
+      /** `{city}` is `city`, in bold. */
       lead: string
-      perks: readonly [LandingStep, LandingStep, LandingStep, LandingStep]
+      /** The one city taking couriers, as the section's sentence names it. */
+      city: string
+      perks: readonly [string, string, string, string]
+      /** Above the four steps of the sign-up, which a phone alone shows. */
       flowTitle: string
       flow: readonly [string, string, string, string]
       /**
-       * "Comece seu cadastro" (BEELINK-322): the form that puts a person on the list of those who
-       * asked to deliver. Today for one city, which `cityHint` says. It is drawn in the browser and
-       * handed this slice alone, so every word it says is here.
+       * The first step of the sign-up (BEELINK-329): a name, a CPF, a WhatsApp and how the person
+       * delivers. It puts them on the list of those who asked to deliver; the e-mail and the
+       * documents are a step still to come, which `next` says. It is drawn in the browser and handed
+       * this slice alone, so every word it says is here.
        */
       form: {
         title: string
-        lead: string
         name: string
         namePlaceholder: string
         /** The CPF. */
         document: string
         documentPlaceholder: string
-        email: string
-        emailPlaceholder: string
         whatsapp: string
         whatsappPlaceholder: string
-        city: string
-        /** The cities taking couriers, each by its code: the choice's options, and all of them. */
-        cities: Record<LandingCourierCityValue, string>
-        /** Under the choice: why it offers one city. */
-        cityHint: string
         vehicle: string
         vehicles: Record<LandingVehicleValue, string>
-        /** `{terms}` and `{privacy}` are the two links. It says what the CPF, the e-mail and the WhatsApp are used for. */
+        /** `{terms}` and `{privacy}` are the two links. It says what the name, the CPF and the WhatsApp are used for. */
         consent: string
         terms: string
         privacy: string
@@ -3583,6 +3581,8 @@ export interface UiMessages {
         sending: string
         /** The button's words after a send that failed: the same form, sent again. */
         retry: string
+        /** Under the button, always: what this step leaves for the next. */
+        next: string
         /** `{fields}`: what still keeps the button locked, each by its `missingNames`. */
         missing: string
         missingNames: Record<LandingCourierFieldValue, string>
@@ -3590,11 +3590,12 @@ export interface UiMessages {
         ready: string
         nameRequired: string
         documentInvalid: string
-        emailInvalid: string
         whatsappInvalid: string
         consentRequired: string
-        /** What takes the form's place once it was taken. No e-mail is sent yet: `text` says one is to come. */
+        /** What takes the form's place once it was taken. The next step is not built: `text` says who speaks next, and how. */
         sent: { title: string; text: string; again: string }
+        /** What takes the form's place when the CPF is on the list already: nothing was kept, and nothing needs sending. */
+        already: { title: string; text: string; again: string }
         /** The trap's label, out of sight and out of the accessibility tree: only a robot reads it. */
         trap: string
         /**
@@ -4275,14 +4276,8 @@ export type LandingPlanPeriodValue = "monthly" | "semiannual" | "annual"
 /** How a courier delivers, as the landing's form offers it. */
 export type LandingVehicleValue = "MOTORCYCLE" | "BICYCLE" | "CAR" | "VAN"
 
-/**
- * The cities taking couriers, by the API's own codes. Restated here, since this package declares no
- * dependency on the contracts: it mirrors `CourierCity`, and the web holds the two to each other.
- */
-export type LandingCourierCityValue = "FORTALEZA_CE"
-
 /** What the courier's form asks for, by the names its values travel under, in the order it asks. */
-export type LandingCourierFieldValue = "name" | "document" | "email" | "whatsapp" | "city" | "vehicle" | "acceptedTerms"
+export type LandingCourierFieldValue = "name" | "document" | "whatsapp" | "vehicle" | "acceptedTerms"
 
 /** Bee-link's two legal texts, which the courier's form opens over itself. */
 export type LandingLegalValue = "terms" | "privacy"

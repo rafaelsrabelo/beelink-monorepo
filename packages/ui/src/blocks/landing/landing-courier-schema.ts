@@ -2,7 +2,7 @@
 import { z } from "zod"
 
 // Locales
-import type { LandingCourierCityValue, LandingCourierFieldValue, LandingVehicleValue, UiMessages } from "@harness-monorepo/ui/locales/messages"
+import type { LandingCourierFieldValue, LandingVehicleValue, UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import { mobileDigitsOf } from "./landing-courier-masks"
@@ -13,24 +13,25 @@ type CourierFormText = UiMessages["landing"]["couriers"]["form"]
 export const LANDING_VEHICLES = ["MOTORCYCLE", "BICYCLE", "CAR", "VAN"] as const satisfies readonly LandingVehicleValue[]
 
 /** What the form asks for, in the order it asks: the order the missing ones are said in. */
-export const LANDING_COURIER_FIELDS = ["name", "document", "email", "whatsapp", "city", "vehicle", "acceptedTerms"] as const satisfies readonly LandingCourierFieldValue[]
+export const LANDING_COURIER_FIELDS = ["name", "document", "whatsapp", "vehicle", "acceptedTerms"] as const satisfies readonly LandingCourierFieldValue[]
 
-/** What the form holds: each field as the person left it, and the trap no person fills in. */
+/**
+ * What the form holds: each field as the person left it, and the trap no person fills in. Neither an
+ * e-mail nor a city (BEELINK-329): the first is a later step's, and the second is the one city open,
+ * which whoever sends the form adds.
+ */
 export interface LandingCourierValues {
   name: string
   /** The CPF, as the mask writes it. */
   document: string
-  email: string
   /** A mobile with its area code, as the mask writes it. */
   whatsapp: string
-  city: LandingCourierCityValue
   vehicle: LandingVehicleValue
   acceptedTerms: boolean
   website: string
 }
 
 const NAME_MAX_LENGTH = 120
-const EMAIL_MAX_LENGTH = 254
 
 /**
  * A first name and a surname at least, 120 characters at most, once the spaces around it are gone
@@ -75,15 +76,10 @@ export function isMobile(typed: string): boolean {
  * the API takes; where the two disagree the API's answer is shown on the field.
  */
 export function createCourierSchema(text: CourierFormText) {
-  // The dictionary names every city by its code: its keys are the list, and all of it.
-  const cities = Object.keys(text.cities) as [LandingCourierCityValue, ...LandingCourierCityValue[]]
-
   return z.object({
     name: z.string().refine(isFullName, text.nameRequired),
     document: z.string().refine(isCpf, text.documentInvalid),
-    email: z.string().trim().pipe(z.email(text.emailInvalid).max(EMAIL_MAX_LENGTH, text.emailInvalid)),
     whatsapp: z.string().refine(isMobile, text.whatsappInvalid),
-    city: z.enum(cities),
     vehicle: z.enum(LANDING_VEHICLES),
     acceptedTerms: z.boolean().refine((accepted) => accepted, text.consentRequired),
     website: z.string(),

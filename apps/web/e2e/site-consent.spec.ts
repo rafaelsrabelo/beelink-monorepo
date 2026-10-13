@@ -230,15 +230,14 @@ test.describe("the landing's cookie notice, on a phone", () => {
 
     // The form's button is locked until the form is filled in (BEELINK-322), and the send is answered here: this is about the press.
     await page.route("**/api/courier-applications", (route) => route.fulfill({ status: 204 }))
-    const form = page.getByRole("form", { name: "Comece seu cadastro" })
-    // By its whole label: the acceptance's own sentence names the CPF, the e-mail and the WhatsApp too.
+    const form = page.getByRole("form", { name: "Dê o primeiro passo para entregar com a Beelink" })
+    // By its whole label: the acceptance's own sentence names the CPF and the WhatsApp too.
     const field = (label: string) => form.getByLabel(label, { exact: true })
     await field("Nome completo").fill("Zuleica Tavares")
     await field("CPF").fill("52998224725")
-    await field("E-mail").fill("zuleica.tavares@exemplo.test")
     await field("WhatsApp").fill("85987654321")
     await form.getByRole("checkbox").check()
-    await form.getByRole("button", { name: "Enviar cadastro" }).click()
+    await form.getByRole("button", { name: "Continuar" }).click()
     await expect(page.getByRole("group", { name: "Cadastro recebido." })).toBeVisible()
     await expect(notice(page)).toBeVisible()
 

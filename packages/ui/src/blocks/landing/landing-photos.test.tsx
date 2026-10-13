@@ -3,12 +3,10 @@ import { render, screen } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
 
 // Locales
-import { en, ptBR } from "@harness-monorepo/ui/locales/index"
+import { en } from "@harness-monorepo/ui/locales/index"
 
 // Block
 import { expectNoA11yViolations } from "../../test/a11y"
-import { LandingCourierForm } from "./landing-courier-form"
-import { LandingCouriers } from "./landing-couriers"
 import { LandingPosters } from "./landing-posters"
 
 const photo = (name: string, alt = "") => <img src={`/${name}.jpg`} alt={alt} />
@@ -31,23 +29,5 @@ describe("LandingPosters", () => {
     expect(screen.getByRole("heading", { level: 2, name: "Your shop goes further" })).toBeInTheDocument()
     expect(en.landing.posters.busStopAlt).toMatch(/connected to go further/)
     expect(en.landing.posters.wallAlt).toMatch(/with those who understand it/)
-  })
-})
-
-const form = <LandingCourierForm termsHref="/termos" privacyHref="/privacidade" text={ptBR.landing.couriers.form} onSubmit={() => {}} />
-
-describe("LandingCouriers, over a photo", () => {
-  it("lays the courier under the section as a picture that says nothing to a reader", async () => {
-    const { container } = render(<LandingCouriers photo={photo("moto")} form={form} />)
-
-    const picture = container.querySelector("img")
-    expect(picture?.closest("[aria-hidden]")).not.toBeNull()
-    expect(screen.getByRole("form", { name: "Comece seu cadastro" })).toBeInTheDocument()
-    await expectNoA11yViolations(container)
-  })
-
-  it("is the black alone without one", () => {
-    const { container } = render(<LandingCouriers form={form} />)
-    expect(container.querySelector("img")).toBeNull()
   })
 })

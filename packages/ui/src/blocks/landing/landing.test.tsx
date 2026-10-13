@@ -277,37 +277,76 @@ describe("LandingSteps", () => {
 })
 
 describe("LandingCouriers", () => {
-  it("says what delivering would be, the sign-up's four steps, and holds the form it is handed", () => {
+  const FORM = "Dê o primeiro passo para entregar com a Beelink"
+
+  it("says what delivering would be in one heading and four advantages, and holds the form it is handed", () => {
+    const { container } = render(<LandingCouriers form={courierForm()} />)
+
+    // The stop is the sentence's own here: the heading's drawn one is yellow, and so is the ground.
+    expect(screen.getByRole("heading", { level: 2, name: "Entregue com a Beelink." })).toBeInTheDocument()
+    expect(screen.getByText("Para entregadores")).toBeInTheDocument()
+    expect([...container.querySelectorAll("section ul > li")].map((perk) => perk.textContent)).toEqual(["Entregas na sua região", "Você aceita ou recusa", "Faça seu horário", "Ganhos à vista no app"])
+    expect(screen.getByRole("form", { name: FORM })).toBeInTheDocument()
+  })
+
+  /** BEELINK-329: a yellow band, where a black section stood over a photograph. */
+  it("is yellow from edge to edge — the section's own from lg, the words' alone on a phone — with no photograph", () => {
+    const { container } = render(<LandingCouriers form={courierForm()} />)
+    const section = container.querySelector("#entregadores")!
+
+    expect(section).toHaveClass("lg:bg-brand-yellow")
+    expect(section).not.toHaveClass("bg-brand-ink")
+    expect(screen.getByText("Para entregadores").parentElement).toHaveClass("bg-brand-yellow", "lg:bg-transparent")
+    expect(container.querySelector("img")).toBeNull()
+  })
+
+  it("draws the bag with the logo's own artwork, beside the heading or between the words and the card, and tells a reader of neither", () => {
+    const { container } = render(<LandingCouriers form={courierForm()} />)
+    // The logo's bag alone: its own box, which the name lies outside of.
+    const bags = [...container.querySelectorAll("section svg")].filter((drawing) => drawing.getAttribute("viewBox") === "0 0 566 542")
+
+    expect(bags).toHaveLength(2)
+    for (const bag of bags) expect(bag).toHaveAttribute("aria-hidden", "true")
+    // One of the two at any width: the small one leaves where the big one arrives.
+    expect(bags.map((bag) => bag.getAttribute("class"))).toEqual([expect.stringContaining("xl:hidden"), expect.stringMatching(/(^| )hidden .*xl:block/)])
+  })
+
+  it("keeps the sign-up's four steps for a phone alone, as an ordered list under the card", () => {
     render(<LandingCouriers form={courierForm()} />)
+    const flow = screen.getByRole("heading", { level: 3, name: "Como funciona" }).nextElementSibling as HTMLElement
 
-    expect(screen.getByRole("heading", { level: 2, name: "Entregue com a Beelink" })).toBeInTheDocument()
-    expect(screen.getByText("Ganhos à vista")).toBeInTheDocument()
-    const flow = screen.getByRole("heading", { level: 3, name: "Como funciona o cadastro" }).nextElementSibling!
-    expect(within(flow as HTMLElement).getAllByRole("listitem").map((step) => step.textContent)).toEqual(["1Cadastro", "2Documentos", "3Aprovação", "4Primeiras entregas"])
-    expect(screen.getByRole("form", { name: "Comece seu cadastro" })).toBeInTheDocument()
+    expect(flow.tagName).toBe("OL")
+    expect(within(flow).getAllByRole("listitem").map((step) => step.textContent)).toEqual(["1Cadastro", "2Documentos", "3Aprovação", "4Entregas"])
+    expect(flow.parentElement).toHaveClass("lg:hidden")
+    expect(screen.getByRole("form", { name: FORM }).compareDocumentPosition(flow) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
-  /** BEELINK-322: the sign-up is open, and for one city. The section and its form both say so, in both languages. */
+  /** The sign-up is open, and for one city: the section's one line says so, in both languages, the city in bold. */
   it.each([
-    ["pt-BR", ptBR, /Por enquanto, o cadastro é só para Fortaleza/, "Hoje, só para quem entrega em Fortaleza. As informações para concluir chegam por e-mail."],
-    ["en", en, /For now the sign-up is for Fortaleza only/, "Today, only for those who deliver in Fortaleza. What it takes to finish arrives by e-mail."],
-  ] as const)("says the sign-up is for Fortaleza only today, in %s", (_, messages, lead, formLead) => {
+    ["pt-BR", ptBR, "Pedidos de lojas perto de você, no seu horário. Por enquanto, só em Fortaleza/CE."],
+    ["en", en, "Orders from shops near you, on your own hours. For now, only in Fortaleza/CE."],
+  ] as const)("says the sign-up is for Fortaleza only today, in %s", (_, messages, lead) => {
     const { container } = render(<LandingCouriers form={courierForm(messages)} messages={messages} />)
+    const line = container.querySelector("section p")!
 
-    expect(container.querySelector("section > div > div > p")).toHaveTextContent(lead)
-    expect(screen.getByText(formLead)).toBeInTheDocument()
-    expect(screen.getByText(messages.landing.couriers.form.cityHint)).toBeInTheDocument()
+    expect(line).toHaveTextContent(lead)
+    expect(line.querySelector("b")).toHaveTextContent("Fortaleza/CE")
   })
 
-  /** What the form said while it sent nothing, and the two minutes and the documents it promised. */
+  /**
+   * What the form said while it sent nothing, and the two minutes it promised. And no e-mail is
+   * promised any more (BEELINK-329): the first step asks for none, so nothing can arrive at one.
+   */
   it.each([
     ["pt-BR", ptBR],
     ["en", en],
-  ] as const)("no longer says nothing was sent, that it takes two minutes, or that the documents come next, in %s", (_, messages) => {
+  ] as const)("no longer says nothing was sent or that it takes two minutes, and promises no e-mail, in %s", (_, messages) => {
     const said = JSON.stringify([messages.landing.couriers, messages.landing.faq.courier])
 
-    expect(said).not.toMatch(/Nada foi enviado|não saíram deste aparelho|Leva 2 minutos|próximo passo|ainda não está aberto|abre em breve/)
-    expect(said).not.toMatch(/Nothing was sent|did not leave this device|takes 2 minutes|next step|is not open yet|opens soon/)
+    expect(said).not.toMatch(/Nada foi enviado|não saíram deste aparelho|Leva 2 minutos|ainda não está aberto|abre em breve/)
+    expect(said).not.toMatch(/Nothing was sent|did not leave this device|takes 2 minutes|is not open yet|opens soon/)
+    expect(said).not.toMatch(/por e-mail|no seu e-mail|by e-mail/i)
+    expect(said).toMatch(/WhatsApp/)
   })
 
   /** A public page shows no "[confirmar]": what the design left open is left out. */

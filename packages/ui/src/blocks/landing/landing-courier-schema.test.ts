@@ -10,13 +10,11 @@ import { createCourierSchema, isCpf, isFullName, isMobile, LANDING_COURIER_FIELD
 const text = ptBR.landing.couriers.form
 const schema = createCourierSchema(text)
 
-/** Made up: a CPF whose check digits are right and an address nobody owns. */
+/** Made up: a CPF whose check digits are right and a number nobody owns. */
 const valid = {
   name: "Zuleica Tavares",
   document: "529.982.247-25",
-  email: "zuleica.tavares@exemplo.test",
-  whatsapp: "(85) 98765-4321",
-  city: "FORTALEZA_CE",
+  whatsapp: "(85) 9 8765-4321",
   vehicle: "MOTORCYCLE",
   acceptedTerms: true,
   website: "",
@@ -79,23 +77,25 @@ describe("isFullName", () => {
 })
 
 describe("the courier's schema", () => {
-  it("takes a full name, a CPF, an e-mail, a mobile, the open city, a vehicle and the acceptance", () => {
+  it("takes a full name, a CPF, a mobile, a vehicle and the acceptance", () => {
     expect(schema.safeParse(valid).success).toBe(true)
   })
 
-  it("hands the e-mail over without the spaces around it", () => {
-    const parsed = schema.parse({ ...valid, email: "  zuleica.tavares@exemplo.test " })
+  // The first step asks for neither (BEELINK-329): the e-mail is a later step's, the city whoever sends adds.
+  it("asks for no e-mail and no city, and hands neither over", () => {
+    expect(LANDING_COURIER_FIELDS).toEqual(["name", "document", "whatsapp", "vehicle", "acceptedTerms"])
+    expect(schema.parse({ ...valid, email: "zuleica.tavares@exemplo.test", city: "FORTALEZA_CE" })).toEqual(valid)
+  })
 
-    expect(parsed.email).toBe("zuleica.tavares@exemplo.test")
+  it.each(["(85) 9 8765-4321", "(85) 98765-4321", "85987654321"])("takes the mobile written as %j", (whatsapp) => {
+    expect(schema.safeParse({ ...valid, whatsapp }).success).toBe(true)
   })
 
   it.each([
     ["a first name alone", { name: "Zuleica" }, "Informe o nome completo, com sobrenome."],
     ["a CPF with a wrong check digit", { document: "529.982.247-26" }, "Esse CPF não confere. Confira os números."],
-    ["an e-mail with no domain", { email: "zuleica@" }, "Informe um e-mail válido."],
-    ["an e-mail longer than an address may be", { email: `${"a".repeat(250)}@exemplo.test` }, "Informe um e-mail válido."],
     ["a landline", { whatsapp: "(85) 3222-1111" }, "Informe um celular com DDD."],
-    ["no acceptance", { acceptedTerms: false }, "Marque o aceite para enviar."],
+    ["no acceptance", { acceptedTerms: false }, "Marque o aceite para continuar."],
   ])("refuses %s with the field's own sentence", (_, change, sentence) => {
     const result = schema.safeParse({ ...valid, ...change })
 
@@ -103,17 +103,8 @@ describe("the courier's schema", () => {
     expect(result.error?.issues.map((issue) => issue.message)).toEqual([sentence])
   })
 
-  it.each([
-    ["a city that is not open", { city: "SAO_PAULO_SP" }],
-    ["a vehicle the form does not offer", { vehicle: "SKATE" }],
-  ])("refuses %s", (_, change) => {
-    expect(schema.safeParse({ ...valid, ...change }).success).toBe(false)
-  })
-
-  /** The dictionary's cities are the list: a language that named another would offer it, so both name the same ones. */
-  it("offers the cities the dictionary names, the same in every language", () => {
-    expect(Object.keys(text.cities)).toEqual(["FORTALEZA_CE"])
-    expect(Object.keys(en.landing.couriers.form.cities)).toEqual(Object.keys(text.cities))
+  it("refuses a vehicle the form does not offer", () => {
+    expect(schema.safeParse({ ...valid, vehicle: "SKATE" }).success).toBe(false)
   })
 })
 
@@ -122,12 +113,12 @@ describe("missingCourierFields", () => {
     expect(missingCourierFields(schema, valid)).toEqual([])
   })
 
-  it("names what an untouched form lacks, in the order the form asks: the city and the vehicle are already chosen", () => {
-    expect(missingCourierFields(schema, { name: "", document: "", email: "", whatsapp: "", city: "FORTALEZA_CE", vehicle: "MOTORCYCLE", acceptedTerms: false, website: "" })).toEqual(["name", "document", "email", "whatsapp", "acceptedTerms"])
+  it("names what an untouched form lacks, in the order the form asks: the vehicle is already chosen", () => {
+    expect(missingCourierFields(schema, { name: "", document: "", whatsapp: "", vehicle: "MOTORCYCLE", acceptedTerms: false, website: "" })).toEqual(["name", "document", "whatsapp", "acceptedTerms"])
   })
 
   it("names a field filled in wrongly like one left empty, once each", () => {
-    expect(missingCourierFields(schema, { ...valid, document: "111.111.111-11", email: "zuleica" })).toEqual(["document", "email"])
+    expect(missingCourierFields(schema, { ...valid, document: "111.111.111-11", whatsapp: "(85) 3222-1111" })).toEqual(["document", "whatsapp"])
   })
 
   it("names every field a form with nothing in it lacks", () => {

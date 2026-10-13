@@ -25,8 +25,8 @@ export interface LandingCourierConsentProps {
 }
 
 /**
- * The acceptance: one checkbox, and the sentence that says what is accepted and what the CPF, the
- * e-mail and the WhatsApp are used for, with the two texts linked from inside it.
+ * The acceptance: one checkbox, and the sentence that says what is accepted and what the name, the
+ * CPF and the WhatsApp are used for, with the two texts linked from inside it.
  *
  * The two are plain anchors to the texts' own pages, and stay so: before the script arrives they
  * lead there, and a click with a modifier key or another button is the browser's — a new tab, a new
@@ -42,8 +42,9 @@ export function LandingCourierConsent({ id, termsHref, privacyHref, text, checkb
   }
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <label className="flex items-start gap-2.5 text-[13px] leading-[1.45] text-brand-text">
+    <div className="flex flex-col gap-1">
+      {/* The label is the checkbox's target, and on a phone its padding makes it a thumb's: the box alone is 18px. */}
+      <label className="flex items-start gap-2 py-1.5 text-xs leading-[1.45] text-brand-text lg:py-0">
         <input type="checkbox" {...checkbox} aria-invalid={refusal ? true : undefined} aria-describedby={refusal ? `${id}-refusal` : undefined} className="mt-px size-[18px] shrink-0 accent-brand-ink" />
         <span>
           {withParts(text.consent, {
