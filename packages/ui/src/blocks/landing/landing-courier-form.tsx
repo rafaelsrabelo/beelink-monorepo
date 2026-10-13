@@ -60,10 +60,10 @@ export interface LandingCourierFormProps {
 }
 
 /**
- * The first step of a courier's sign-up (BEELINK-329): a name, a CPF, a WhatsApp and how the person
- * delivers, which puts them on the list of those who asked to deliver with Beelink. It asks for no
- * e-mail and no city: the e-mail and the documents are a step still to come, which the line under
- * the button says, and the one city open is the section's to name and the sender's to add.
+ * The first step of a courier's sign-up (BEELINK-329): a name, a CPF, an e-mail, a WhatsApp and how
+ * the person delivers, which puts them on the list of those who asked to deliver with Beelink. It
+ * asks for no city — the one open is the section's to name and the sender's to add — and the
+ * documents are a step still to come, which the line under the button says.
  *
  * **The button is locked until nothing is missing**, by the same check that writes the sentence
  * under it — the two cannot disagree — and that sentence is the button's description. A field shows
@@ -79,7 +79,7 @@ export interface LandingCourierFormProps {
 export function LandingCourierForm({ termsHref, privacyHref, text, status = "idle", problem = null, onSubmit, onEdit, onAgain, onRead, initial }: LandingCourierFormProps) {
   const id = useId()
   const schema = useMemo(() => createCourierSchema(text), [text])
-  const empty = { name: "", document: "", whatsapp: "", vehicle: "MOTORCYCLE", acceptedTerms: false, website: "" } satisfies LandingCourierValues
+  const empty = { name: "", document: "", email: "", whatsapp: "", vehicle: "MOTORCYCLE", acceptedTerms: false, website: "" } satisfies LandingCourierValues
   const form = useForm<LandingCourierValues>({ resolver: zodResolver(schema), mode: "onTouched", defaultValues: { ...empty, ...initial } })
   const missing = missingCourierFields(schema, useWatch({ control: form.control }))
   const locked = missing.length > 0
@@ -124,6 +124,7 @@ export function LandingCourierForm({ termsHref, privacyHref, text, status = "idl
           <div className={LANDING_FIELDS}>
             <LandingCourierField id={`${id}-name`} label={text.name} refusal={refusalOf("name")} autoComplete="name" placeholder={text.namePlaceholder} {...form.register("name")} />
             <LandingCourierField id={`${id}-document`} label={text.document} refusal={refusalOf("document")} mask={maskCpf} inputMode="numeric" autoComplete="off" placeholder={text.documentPlaceholder} {...form.register("document")} />
+            <LandingCourierField id={`${id}-email`} label={text.email} refusal={refusalOf("email")} type="email" inputMode="email" autoComplete="email" placeholder={text.emailPlaceholder} {...form.register("email")} />
             <LandingCourierField id={`${id}-whatsapp`} label={text.whatsapp} refusal={refusalOf("whatsapp")} mask={maskMobile} inputMode="numeric" autoComplete="tel-national" placeholder={text.whatsappPlaceholder} {...form.register("whatsapp")} />
           </div>
 

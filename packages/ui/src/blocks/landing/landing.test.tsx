@@ -333,20 +333,17 @@ describe("LandingCouriers", () => {
     expect(line.querySelector("b")).toHaveTextContent("Fortaleza/CE")
   })
 
-  /**
-   * What the form said while it sent nothing, and the two minutes it promised. And no e-mail is
-   * promised any more (BEELINK-329): the first step asks for none, so nothing can arrive at one.
-   */
+  /** What the form said while it sent nothing, and the two minutes it promised. */
   it.each([
     ["pt-BR", ptBR],
     ["en", en],
-  ] as const)("no longer says nothing was sent or that it takes two minutes, and promises no e-mail, in %s", (_, messages) => {
+  ] as const)("no longer says nothing was sent or that it takes two minutes, and says the rest arrives by e-mail, in %s", (_, messages) => {
     const said = JSON.stringify([messages.landing.couriers, messages.landing.faq.courier])
 
     expect(said).not.toMatch(/Nada foi enviado|não saíram deste aparelho|Leva 2 minutos|ainda não está aberto|abre em breve/)
     expect(said).not.toMatch(/Nothing was sent|did not leave this device|takes 2 minutes|is not open yet|opens soon/)
-    expect(said).not.toMatch(/por e-mail|no seu e-mail|by e-mail/i)
-    expect(said).toMatch(/WhatsApp/)
+    // The e-mail is asked for, and the API writes to it once the application is kept (BEELINK-326).
+    expect(said).toMatch(/no seu e-mail|by e-mail/)
   })
 
   /** A public page shows no "[confirmar]": what the design left open is left out. */

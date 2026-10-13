@@ -14,10 +14,11 @@ import { LandingShell } from "./landing-shell"
 
 const text = ptBR.landing.couriers.form
 
-/** Dados inventados: um CPF de teste, com os dígitos verificadores certos, e um número que não é de ninguém. */
+/** Dados inventados: um CPF de teste, com os dígitos verificadores certos, e um e-mail que não é de ninguém. */
 const filled = {
   name: "Zuleica Tavares",
   document: "529.982.247-25",
+  email: "zuleica.tavares@exemplo.test",
   whatsapp: "(85) 9 8765-4321",
   vehicle: "MOTORCYCLE",
   acceptedTerms: true,
@@ -25,7 +26,7 @@ const filled = {
 } satisfies LandingCourierValues
 
 /**
- * O primeiro passo do cadastro de entregador (BEELINK-329) — nome, CPF, WhatsApp e veículo —, sozinho
+ * O primeiro passo do cadastro de entregador (BEELINK-329) — nome, CPF, e-mail, WhatsApp e veículo —, sozinho
  * sobre o amarelo da faixa. O bloco não conhece a rede: quem envia é a tela, que lhe diz onde o envio
  * está (`status`) e o que ele encontrou (`problem`). Aqui cada estado é uma história.
  */
@@ -44,7 +45,7 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** Como a página chega: o botão travado, e a frase embaixo dele dizendo o que falta. Não há campo de e-mail nem de cidade. */
+/** Como a página chega: o botão travado, e a frase embaixo dele dizendo o que falta. Não há campo de cidade. */
 export const Vazio: Story = {}
 
 /** Tudo certo e o aceite marcado: o botão libera e a frase some. Apague um dígito do CPF para vê-lo travar de novo. */
@@ -65,7 +66,7 @@ export const LimiteAtingido: Story = { args: { initial: filled, problem: { field
 /** Falha de rede ou do servidor: a frase, e o botão vira "Tentar de novo". O formulário não é apagado. */
 export const Falha: Story = { args: { initial: filled, problem: { field: null, message: "Não foi possível enviar o cadastro agora. Seus dados continuam aqui.", retry: true } } }
 
-/** O cadastro foi recebido: a confirmação toma o lugar do formulário e recebe o foco. Ela fala do WhatsApp informado, não de e-mail. */
+/** O cadastro foi recebido: a confirmação toma o lugar do formulário e recebe o foco. Ela diz que o resto chega por e-mail. */
 export const Enviado: Story = { args: { initial: filled, status: "sent" } }
 
 /** O CPF já estava na lista: nada foi gravado, e o mesmo cartão diz "Esse CPF já tem cadastro", sem erro em campo nenhum. */

@@ -472,13 +472,12 @@ export const legalTexts = {
         blocks: [
           {
             kind: "paragraph",
-            text: "Na página inicial do bee-link, o formulário de entregador recebe o primeiro passo do cadastro de quem quer fazer entregas. Hoje o cadastro é só para a cidade de Fortaleza/CE, e por isso o formulário não pergunta a cidade. Quando você o envia, o bee-link guarda:",
+            text: "Na página inicial do bee-link, o formulário de entregador recebe o cadastro de quem quer fazer entregas. Hoje o cadastro é só para a cidade de Fortaleza/CE, e por isso o formulário não pergunta a cidade. Quando você o envia, o bee-link guarda:",
           },
           {
             kind: "list",
             items: [
-              "nome completo, CPF e número de WhatsApp;",
-              "o e-mail, só de quem enviou o cadastro quando o formulário ainda o pedia: hoje ele não pede;",
+              "nome completo, CPF, e-mail e número de WhatsApp;",
               "a cidade do cadastro, que hoje é sempre Fortaleza/CE, e como você entrega: moto, bicicleta, carro ou utilitário;",
               "a versão dos Termos de uso e desta Política que você aceitou ao enviar, com a data e a hora do aceite;",
               "a data e a hora em que o cadastro foi enviado pela primeira vez e em que foi alterado pela última vez.",
@@ -486,11 +485,11 @@ export const legalTexts = {
           },
           {
             kind: "paragraph",
-            text: "Esses dados formam uma lista de interesse. O bee-link os usa para saber quem quer entregar e em qual cidade, e para falar com você sobre a conclusão do cadastro, pelo WhatsApp informado e, se o seu cadastro tem um, pelo e-mail. Cada pessoa entra na lista uma vez: existe um só cadastro por CPF e por número de WhatsApp, e por e-mail quando o cadastro tem um.",
+            text: "Esses dados formam uma lista de interesse. O bee-link os usa para saber quem quer entregar e em qual cidade, e para falar com você, pelo e-mail ou pelo WhatsApp informados, sobre a conclusão do cadastro. Cada pessoa entra na lista uma vez: existe um só cadastro por CPF, por e-mail e por número de WhatsApp.",
           },
           {
             kind: "paragraph",
-            text: "Se o formulário for enviado com um CPF ou um número de WhatsApp que já está na lista, o cadastro não é aceito, e o site diz qual dos dois já estava cadastrado: do CPF, que ele já tem cadastro; do WhatsApp, que o número já está cadastrado. O cadastro que já existia não é alterado. Por isso, quem digita um desses dados no formulário fica sabendo se ele já está na lista.",
+            text: "Se o formulário for enviado com um CPF, um e-mail ou um número de WhatsApp que já está na lista, o cadastro não é aceito, e o site diz qual dos três já estava cadastrado. O cadastro que já existia não é alterado. Por isso, quem digita um desses dados no formulário fica sabendo se ele já está na lista.",
           },
           {
             kind: "paragraph",

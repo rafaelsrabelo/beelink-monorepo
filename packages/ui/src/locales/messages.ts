@@ -3556,10 +3556,10 @@ export interface UiMessages {
       flowTitle: string
       flow: readonly [string, string, string, string]
       /**
-       * The first step of the sign-up (BEELINK-329): a name, a CPF, a WhatsApp and how the person
-       * delivers. It puts them on the list of those who asked to deliver; the e-mail and the
-       * documents are a step still to come, which `next` says. It is drawn in the browser and handed
-       * this slice alone, so every word it says is here.
+       * The first step of the sign-up (BEELINK-329): a name, a CPF, an e-mail, a WhatsApp and how
+       * the person delivers. It puts them on the list of those who asked to deliver; the documents
+       * are a step still to come, which `next` says. It is drawn in the browser and handed this
+       * slice alone, so every word it says is here.
        */
       form: {
         title: string
@@ -3568,11 +3568,13 @@ export interface UiMessages {
         /** The CPF. */
         document: string
         documentPlaceholder: string
+        email: string
+        emailPlaceholder: string
         whatsapp: string
         whatsappPlaceholder: string
         vehicle: string
         vehicles: Record<LandingVehicleValue, string>
-        /** `{terms}` and `{privacy}` are the two links. It says what the name, the CPF and the WhatsApp are used for. */
+        /** `{terms}` and `{privacy}` are the two links. It says what the CPF, the e-mail and the WhatsApp are used for. */
         consent: string
         terms: string
         privacy: string
@@ -3590,9 +3592,10 @@ export interface UiMessages {
         ready: string
         nameRequired: string
         documentInvalid: string
+        emailInvalid: string
         whatsappInvalid: string
         consentRequired: string
-        /** What takes the form's place once it was taken. The next step is not built: `text` says who speaks next, and how. */
+        /** What takes the form's place once it was taken: `text` says the way to go on arrives by e-mail, which the API sends (BEELINK-326). */
         sent: { title: string; text: string; again: string }
         /** What takes the form's place when the CPF is on the list already: nothing was kept, and nothing needs sending. */
         already: { title: string; text: string; again: string }
@@ -4277,7 +4280,7 @@ export type LandingPlanPeriodValue = "monthly" | "semiannual" | "annual"
 export type LandingVehicleValue = "MOTORCYCLE" | "BICYCLE" | "CAR" | "VAN"
 
 /** What the courier's form asks for, by the names its values travel under, in the order it asks. */
-export type LandingCourierFieldValue = "name" | "document" | "whatsapp" | "vehicle" | "acceptedTerms"
+export type LandingCourierFieldValue = "name" | "document" | "email" | "whatsapp" | "vehicle" | "acceptedTerms"
 
 /** Bee-link's two legal texts, which the courier's form opens over itself. */
 export type LandingLegalValue = "terms" | "privacy"

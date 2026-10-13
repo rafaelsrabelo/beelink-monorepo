@@ -19,22 +19,20 @@ describe("courierProblemOf (BEELINK-322)", () => {
   it.each([
     ["COURIER_NAME_INVALID", "name", "Informe o nome completo, com sobrenome."],
     ["COURIER_DOCUMENT_INVALID", "document", "Esse CPF não confere. Confira os números."],
+    ["COURIER_EMAIL_INVALID", "email", "Informe um e-mail válido."],
     ["COURIER_WHATSAPP_INVALID", "whatsapp", "Informe um celular com DDD."],
     ["COURIER_VEHICLE_INVALID", "vehicle", "Escolha como vai fazer suas entregas."],
     ["COURIER_TERMS_REQUIRED", "acceptedTerms", "Marque o aceite para continuar."],
-    // BEELINK-325: a number already on the list, under another CPF, is the form's to fix.
+    // BEELINK-325: an e-mail or a number already on the list, under another CPF, is the form's to fix.
+    ["COURIER_EMAIL_TAKEN", "email", "Este e-mail já está cadastrado."],
     ["COURIER_WHATSAPP_TAKEN", "whatsapp", "Este WhatsApp já está cadastrado."],
   ])("puts %s on the %s, in that field's sentence, with nothing to send again at once", (code, field, message) => {
     expect(refused(code)).toEqual({ field, message })
   })
 
-  // BEELINK-329: the first step asks for no e-mail and no city, so a refusal of either has no field to stand on.
-  it.each([
-    ["COURIER_EMAIL_INVALID", "Informe um e-mail válido."],
-    ["COURIER_EMAIL_TAKEN", "Este e-mail já está cadastrado."],
-    ["COURIER_CITY_NOT_OPEN", "O cadastro ainda não está aberto para essa cidade."],
-  ])("says %s on no field, in its own sentence, with nothing to send again at once", (code, message) => {
-    expect(refused(code)).toEqual({ field: null, message })
+  // BEELINK-329: the form asks for no city, so a refusal of it has no field to stand on.
+  it("says COURIER_CITY_NOT_OPEN on no field, in its own sentence, with nothing to send again at once", () => {
+    expect(refused("COURIER_CITY_NOT_OPEN")).toEqual({ field: null, message: "O cadastro ainda não está aberto para essa cidade." })
   })
 
   // BEELINK-329: a CPF on the list already is said where the confirmation stands, and is no problem of the form's.

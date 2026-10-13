@@ -48,7 +48,7 @@ const OPEN_CITY: CourierCity = "FORTALEZA_CE"
  * nothing was taken.
  *
  * TODO(BEELINK-329): an application taken, or found on the list, should lead to the sign-up's second
- * step — the e-mail and the documents — once that step exists. Until then the confirmation stands.
+ * step — the documents — once that step exists. Until then the confirmation stands.
  *
  * A legal text is asked for when its link is pressed and not before, and is read over the form:
  * nothing navigates, so nothing typed is lost. The link that opened the dialog is kept, and gets the

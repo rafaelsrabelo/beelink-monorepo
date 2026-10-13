@@ -8,21 +8,21 @@ import { standInForGoogle, type GoogleTraffic } from "./support/google-tag"
 /**
  * The landing's courier form (BEELINK-322), in a real browser: what locks its button and what
  * unlocks it, the masks, the legal texts read over it, and a send that reaches the API. Since
- * BEELINK-329 it is the sign-up's short first step — a name, a CPF, a WhatsApp and a vehicle, with no
- * e-mail and no city — on a yellow band.
+ * BEELINK-329 it is the sign-up's first step — a name, a CPF, an e-mail, a WhatsApp and a vehicle,
+ * with no city — on a yellow band.
  *
  * The suite's API takes far more applications from one address than a person sends
  * (`playwright.config.ts`): several tests here send for real. The answers a test cannot ask the API
  * for on demand — a refusal the browser's own check would have caught, the limit, a failure — are
  * stood in for at this app's own route.
  *
- * Everyone here is made up: CPFs whose check digits are right and that are nobody's, and numbers
- * drawn at random. Google is stood in for in every test, so none reaches it.
+ * Everyone here is made up: CPFs whose check digits are right and that are nobody's, and addresses
+ * at `exemplo.test`. Google is stood in for in every test, so none reaches it.
  */
 
 const ROUTE = "**/api/courier-applications"
-const ZULEICA = { name: "Zuleica Tavares", document: "52998224725", whatsapp: "85987654321" }
-const EVERYTHING = "Para continuar, falta: nome completo, CPF, WhatsApp, aceite dos termos."
+const ZULEICA = { name: "Zuleica Tavares", document: "52998224725", email: "zuleica.tavares@exemplo.test", whatsapp: "85987654321" }
+const EVERYTHING = "Para continuar, falta: nome completo, CPF, e-mail, WhatsApp, aceite dos termos."
 
 /** A CPF that checks out, from its first nine digits. */
 function cpfOf(nine: string): string {
@@ -33,14 +33,14 @@ function cpfOf(nine: string): string {
 }
 
 /**
- * A person nobody sent before, for a send that reaches the API (BEELINK-325): the list takes a CPF
- * and a WhatsApp once, and the suite's database outlives a test — and, on a desk, a run.
+ * A person nobody sent before, for a send that reaches the API (BEELINK-325): the list takes a CPF,
+ * an e-mail and a WhatsApp once, and the suite's database outlives a test — and, on a desk, a run.
  * Digits alone, as a person types them.
  */
 function someone(name = "Zuleica Tavares") {
   const nine = String(100_000_000 + Math.floor(Math.random() * 900_000_000))
 
-  return { name, document: cpfOf(nine), whatsapp: `859${String(Math.floor(Math.random() * 100_000_000)).padStart(8, "0")}` }
+  return { name, document: cpfOf(nine), email: `pessoa.${nine}@exemplo.test`, whatsapp: `859${String(Math.floor(Math.random() * 100_000_000)).padStart(8, "0")}` }
 }
 
 /** The two as the masks dress them, which is how they are sent. */
@@ -77,6 +77,7 @@ async function openLanding(page: Page) {
 async function fill(page: Page, who = ZULEICA) {
   await field(page, "Nome completo").pressSequentially(who.name)
   await field(page, "CPF").pressSequentially(who.document)
+  await field(page, "E-mail").pressSequentially(who.email)
   await field(page, "WhatsApp").pressSequentially(who.whatsapp)
   await accept(page).check()
 }
@@ -94,15 +95,16 @@ test.describe("the courier's form, its button", () => {
     await expect(send(page)).toBeDisabled()
     await expect(send(page)).toHaveAccessibleDescription(EVERYTHING)
     await expect(form(page).getByText(EVERYTHING)).toBeVisible()
-    await expect(form(page).getByText("E-mail e documentos ficam para o próximo passo.")).toBeVisible()
+    await expect(form(page).getByText("Os documentos ficam para o próximo passo.")).toBeVisible()
   })
 
-  /** BEELINK-329: the first step is short. The e-mail is a later step's, and the one city open is the section's to name. */
-  test("asks for a name, a CPF, a WhatsApp and a vehicle — no e-mail and no city — in a section that names Fortaleza", async ({ page }) => {
+  /** BEELINK-329: the one city open is the section's to name, and the form does not ask for it. */
+  test("asks for a name, a CPF, an e-mail, a WhatsApp and a vehicle — and no city — in a section that names Fortaleza", async ({ page }) => {
     await openLanding(page)
 
-    await expect(form(page).getByRole("textbox")).toHaveCount(3)
-    await expect(form(page).locator('input[type="email"], select')).toHaveCount(0)
+    await expect(form(page).getByRole("textbox")).toHaveCount(4)
+    await expect(field(page, "E-mail")).toHaveAttribute("type", "email")
+    await expect(form(page).locator("select")).toHaveCount(0)
     await expect(form(page).getByRole("radio")).toHaveCount(4)
     await expect(page.locator("#entregadores").getByText("Por enquanto, só em Fortaleza/CE.", { exact: false })).toBeVisible()
   })
@@ -111,9 +113,10 @@ test.describe("the courier's form, its button", () => {
     await openLanding(page)
 
     await field(page, "Nome completo").pressSequentially(ZULEICA.name)
-    await expect(send(page)).toHaveAccessibleDescription("Para continuar, falta: CPF, WhatsApp, aceite dos termos.")
+    await expect(send(page)).toHaveAccessibleDescription("Para continuar, falta: CPF, e-mail, WhatsApp, aceite dos termos.")
     await field(page, "CPF").pressSequentially(ZULEICA.document)
-    await expect(send(page)).toHaveAccessibleDescription("Para continuar, falta: WhatsApp, aceite dos termos.")
+    await expect(send(page)).toHaveAccessibleDescription("Para continuar, falta: e-mail, WhatsApp, aceite dos termos.")
+    await field(page, "E-mail").pressSequentially(ZULEICA.email)
     await field(page, "WhatsApp").pressSequentially(ZULEICA.whatsapp)
     await expect(send(page)).toHaveAccessibleDescription("Para continuar, falta: aceite dos termos.")
     await expect(send(page)).toBeDisabled()
@@ -261,6 +264,7 @@ test.describe("the courier's form, sent", () => {
     expect(response.request().postDataJSON()).toEqual({
       name: "Zuleica Tavares",
       document: dressedCpf(who.document),
+      email: who.email,
       whatsapp: dressedMobile(who.whatsapp),
       city: "FORTALEZA_CE",
       vehicle: "BICYCLE",
@@ -269,9 +273,8 @@ test.describe("the courier's form, sent", () => {
     })
     await expect(confirmation(page)).toBeVisible()
     await expect(confirmation(page)).toBeFocused()
-    // No e-mail was asked for: the confirmation names the WhatsApp, and promises none.
-    await expect(confirmation(page).getByText("O próximo passo é o seu e-mail e os seus documentos. A Beelink fala com você pelo WhatsApp informado quando ele abrir.")).toBeVisible()
-    await expect(page.getByRole("status").filter({ hasText: "Cadastro recebido. O próximo passo é o seu e-mail e os seus documentos." })).toHaveCount(1)
+    await expect(confirmation(page).getByText("Em breve você recebe no seu e-mail as informações para concluir o cadastro.")).toBeVisible()
+    await expect(page.getByRole("status").filter({ hasText: "Cadastro recebido. Em breve você recebe no seu e-mail" })).toHaveCount(1)
     await expect(form(page)).toHaveCount(0)
     // Nothing typed went to the address.
     expect(page.url()).toBe(`${baseURL}/`)
@@ -279,16 +282,28 @@ test.describe("the courier's form, sent", () => {
 
   /**
    * A person is on the list once (BEELINK-325). A CPF already there is said where the confirmation
-   * stands — "Esse CPF já tem cadastro", nothing kept and nothing to fix (BEELINK-329) — and a
-   * WhatsApp there under another CPF on its own field, with the form kept.
+   * stands — "Esse CPF já tem cadastro", nothing kept and nothing to fix (BEELINK-329) — and an e-mail
+   * or a WhatsApp there under another CPF on its own field, with the form kept.
    */
-  test("says a CPF already on the list where the confirmation stands, a WhatsApp on its own field with the form kept, and takes one that is neither", async ({ page }) => {
+  test("says a CPF already on the list where the confirmation stands, an e-mail or a WhatsApp on its own field with the form kept, and takes one that is none of the three", async ({ page }) => {
     const first = someone()
     const second = someone("Raimundo Nonato")
     /** Types over what the field holds. */
     const retype = async (label: string, typed: string) => {
       await field(page, label).fill("")
       await field(page, label).pressSequentially(typed)
+    }
+    const refused = async (label: string, sentence: string) => {
+      const answer = sentTo(page)
+      await send(page).click()
+
+      expect((await answer).status()).toBe(409)
+      await expect(field(page, label)).toHaveAccessibleDescription(sentence)
+      await expect(field(page, label)).toBeFocused()
+      await expect(confirmation(page)).toHaveCount(0)
+      await expect(alreadyThere(page)).toHaveCount(0)
+      await expect(field(page, "Nome completo")).toHaveValue("Raimundo Nonato")
+      await expect(accept(page)).toBeChecked()
     }
 
     await openLanding(page)
@@ -303,10 +318,10 @@ test.describe("the courier's form, sent", () => {
 
     // Another person, with the first one's CPF.
     await fill(page, { ...second, document: first.document })
-    let answer = sentTo(page)
+    const taken = sentTo(page)
     await send(page).click()
 
-    expect((await answer).status()).toBe(409)
+    expect((await taken).status()).toBe(409)
     await expect(alreadyThere(page)).toBeVisible()
     await expect(alreadyThere(page)).toBeFocused()
     await expect(alreadyThere(page).getByText("Não precisa enviar de novo.", { exact: false })).toBeVisible()
@@ -316,23 +331,19 @@ test.describe("the courier's form, sent", () => {
     // In the section: the page has an alert of the framework's own, which announces a route.
     await expect(page.locator("#entregadores").getByRole("alert")).toHaveCount(0)
 
-    // Their own CPF now, and the first one's WhatsApp: the form's to fix.
+    // Their own CPF now, and the first one's e-mail: the form's to fix.
     await alreadyThere(page).getByRole("button", { name: "Cadastrar outro CPF" }).click()
     await expect(field(page, "Nome completo")).toBeFocused()
-    await fill(page, { ...second, whatsapp: first.whatsapp })
-    answer = sentTo(page)
-    await send(page).click()
+    await fill(page, { ...second, email: first.email })
+    await refused("E-mail", "Este e-mail já está cadastrado.")
 
-    expect((await answer).status()).toBe(409)
-    await expect(field(page, "WhatsApp")).toHaveAccessibleDescription("Este WhatsApp já está cadastrado.")
-    await expect(field(page, "WhatsApp")).toBeFocused()
-    await expect(alreadyThere(page)).toHaveCount(0)
-    await expect(field(page, "Nome completo")).toHaveValue("Raimundo Nonato")
-    await expect(accept(page)).toBeChecked()
+    await retype("E-mail", second.email)
+    await retype("WhatsApp", first.whatsapp)
+    await refused("WhatsApp", "Este WhatsApp já está cadastrado.")
 
     // Nothing of the first one's left: taken.
     await retype("WhatsApp", second.whatsapp)
-    answer = sentTo(page)
+    const answer = sentTo(page)
     await send(page).click()
 
     expect((await answer).status()).toBe(204)
@@ -347,6 +358,8 @@ test.describe("the courier's form, sent", () => {
     await page.keyboard.type(who.name)
     await page.keyboard.press("Tab")
     await page.keyboard.type(who.document)
+    await page.keyboard.press("Tab")
+    await page.keyboard.type(who.email)
     await page.keyboard.press("Tab")
     await page.keyboard.type(who.whatsapp)
     await page.keyboard.press("Tab")
@@ -394,6 +407,7 @@ test.describe("the courier's form, when the send meets a problem", () => {
   const kept = async (page: Page) => {
     await expect(field(page, "Nome completo")).toHaveValue("Zuleica Tavares")
     await expect(field(page, "CPF")).toHaveValue("529.982.247-25")
+    await expect(field(page, "E-mail")).toHaveValue("zuleica.tavares@exemplo.test")
     await expect(field(page, "WhatsApp")).toHaveValue("(85) 9 8765-4321")
     await expect(accept(page)).toBeChecked()
   }
@@ -562,7 +576,7 @@ test.describe("the courier's form, the two legal texts", () => {
 
     await expect(page.getByText("Vigente desde 15 de outubro de 2026")).toBeVisible()
     await expect(page.getByRole("heading", { level: 2, name: /Dados de quem se candidata a entregar/ })).toBeVisible()
-    await expect(page.getByText("Se o formulário for enviado com um CPF ou um número de WhatsApp que já está na lista, o cadastro não é aceito", { exact: false })).toBeVisible()
+    await expect(page.getByText("Se o formulário for enviado com um CPF, um e-mail ou um número de WhatsApp que já está na lista, o cadastro não é aceito", { exact: false })).toBeVisible()
   })
 })
 
@@ -581,7 +595,7 @@ test.describe("the courier's form, measured", () => {
     await expect(confirmation(page)).toBeVisible()
     await expect.poll(told).toEqual([`page_view @ ${baseURL}/`, `generate_lead @ ${baseURL}/`])
     const everything = decodeURIComponent(google.requests.join("\n")).toLowerCase()
-    for (const typed of ["Zuleica", "Tavares", who.document, dressedCpf(who.document), who.whatsapp, dressedMobile(who.whatsapp), "FORTALEZA", "MOTORCYCLE"]) {
+    for (const typed of ["Zuleica", "Tavares", who.document, dressedCpf(who.document), who.email, "exemplo.test", who.whatsapp, dressedMobile(who.whatsapp), "FORTALEZA", "MOTORCYCLE"]) {
       expect(everything).not.toContain(typed.toLowerCase())
     }
   })

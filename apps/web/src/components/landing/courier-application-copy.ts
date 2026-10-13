@@ -19,19 +19,20 @@ export interface CourierApplicationCopy {
 
 /**
  * Which field each of the API's refusals is about: where its sentence is shown, and where the person
- * is taken. The first step asks for no e-mail and no city (BEELINK-329), so a refusal of either has
- * no field to stand on: it is said over the button, like any trouble that is no field's.
+ * is taken. The form asks for no city (BEELINK-329) — the one open is added at the send — so a
+ * refusal of it has no field to stand on: it is said over the button, like any trouble that is no
+ * field's.
  */
 const FIELD_OF = {
   COURIER_NAME_INVALID: "name",
   COURIER_DOCUMENT_INVALID: "document",
-  COURIER_EMAIL_INVALID: null,
+  COURIER_EMAIL_INVALID: "email",
   COURIER_WHATSAPP_INVALID: "whatsapp",
   COURIER_CITY_NOT_OPEN: null,
   COURIER_VEHICLE_INVALID: "vehicle",
   COURIER_TERMS_REQUIRED: "acceptedTerms",
   COURIER_DOCUMENT_TAKEN: "document",
-  COURIER_EMAIL_TAKEN: null,
+  COURIER_EMAIL_TAKEN: "email",
   COURIER_WHATSAPP_TAKEN: "whatsapp",
 } as const satisfies Record<CourierApplicationErrorCode, LandingCourierFieldValue | null>
 

@@ -24,8 +24,8 @@ export interface LandingCourierSentProps {
 
 /**
  * What stands where the courier's form stood once there is nothing left to send: the application was
- * taken, or its CPF is on the list already (BEELINK-329). Either way it says who speaks next, and
- * where — the WhatsApp the person gave, since this step asks for no e-mail.
+ * taken, or its CPF is on the list already (BEELINK-329). Either way it says where the way to go
+ * on arrives: the e-mail of the application.
  *
  * It takes the focus as it arrives. The button the person pressed is gone with the form, and a focus
  * left on nothing starts the keyboard at the top of the page again; here it also reads the heading

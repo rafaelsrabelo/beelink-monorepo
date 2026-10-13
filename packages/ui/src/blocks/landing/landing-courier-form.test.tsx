@@ -17,17 +17,18 @@ import type { LandingCourierValues } from "./landing-courier-schema"
 
 const text = ptBR.landing.couriers.form
 
-/** Made up: a CPF whose check digits are right and a number nobody owns. */
+/** Made up: a CPF whose check digits are right and an address nobody owns. */
 const ZULEICA = {
   name: "Zuleica Tavares",
   document: "529.982.247-25",
+  email: "zuleica.tavares@exemplo.test",
   whatsapp: "(85) 9 8765-4321",
   vehicle: "MOTORCYCLE",
   acceptedTerms: true,
   website: "",
 } satisfies LandingCourierValues
 
-const EVERYTHING = "Para continuar, falta: nome completo, CPF, WhatsApp, aceite dos termos."
+const EVERYTHING = "Para continuar, falta: nome completo, CPF, e-mail, WhatsApp, aceite dos termos."
 const TITLE = "Dê o primeiro passo para entregar com a Beelink"
 
 type User = ReturnType<typeof userEvent.setup>
@@ -45,9 +46,10 @@ const accept = () => screen.getByRole("checkbox", { name: /Li e aceito/ })
 
 /** Types what a person types: digits alone in the CPF and the WhatsApp, which the masks dress. */
 async function fill(user: User, values: Partial<typeof ZULEICA> = {}) {
-  const { name, acceptedTerms } = { ...ZULEICA, ...values }
+  const { name, email, acceptedTerms } = { ...ZULEICA, ...values }
   await user.type(field("Nome completo"), name)
   await user.type(field("CPF"), (values.document ?? ZULEICA.document).replace(/\D/g, ""))
+  await user.type(field("E-mail"), email)
   await user.type(field("WhatsApp"), (values.whatsapp ?? ZULEICA.whatsapp).replace(/\D/g, ""))
   if (acceptedTerms) await user.click(accept())
 }
@@ -63,30 +65,31 @@ describe("LandingCourierForm, before anything is typed", () => {
     expect(screen.getByRole("status")).toBeEmptyDOMElement()
   })
 
-  it("asks for the name, the CPF and the WhatsApp, one to a line, each with its example", () => {
+  it("asks for the name, the CPF, the e-mail and the WhatsApp, one to a line, each with its example", () => {
     renderForm()
 
     expect(field("Nome completo")).toHaveAttribute("placeholder", "Como está no documento")
     expect(field("CPF")).toHaveAttribute("placeholder", "000.000.000-00")
+    expect(field("E-mail")).toHaveAttribute("placeholder", "nome@exemplo.com")
     expect(field("WhatsApp")).toHaveAttribute("placeholder", "(00) 0 0000-0000")
-    expect(within(screen.getByRole("form", { name: TITLE })).getAllByRole("textbox").map((input) => input.getAttribute("name"))).toEqual(["name", "document", "whatsapp"])
+    expect(within(screen.getByRole("form", { name: TITLE })).getAllByRole("textbox").map((input) => input.getAttribute("name"))).toEqual(["name", "document", "email", "whatsapp"])
   })
 
-  // The first step is short (BEELINK-329): the e-mail is a later step's, and the one city open is added by whoever sends.
-  it("asks for no e-mail and no city, and says under its button what is left for the next step", () => {
+  // BEELINK-329: the one city open is added by whoever sends, and the documents are a later step's.
+  it("asks for no city, and says under its button what is left for the next step", () => {
     renderForm()
 
-    expect(screen.queryByLabelText(/e-mail/i)).not.toBeInTheDocument()
     expect(screen.queryByRole("combobox")).not.toBeInTheDocument()
-    expect(document.querySelector('input[type="email"], select')).toBeNull()
-    expect(screen.getByText("E-mail e documentos ficam para o próximo passo.")).toBeVisible()
+    expect(document.querySelector("select")).toBeNull()
+    expect(screen.getByText("Os documentos ficam para o próximo passo.")).toBeVisible()
   })
 
-  it("gives the CPF and the WhatsApp a numeric keyboard", () => {
+  it("gives the CPF and the WhatsApp a numeric keyboard, and the e-mail its own", () => {
     renderForm()
 
     expect(field("CPF")).toHaveAttribute("inputmode", "numeric")
     expect(field("WhatsApp")).toHaveAttribute("inputmode", "numeric")
+    expect(field("E-mail")).toHaveAttribute("type", "email")
     // The browser offers no CPF of its own, and a remembered one would be somebody else's.
     expect(field("CPF")).toHaveAttribute("autocomplete", "off")
   })
@@ -101,11 +104,11 @@ describe("LandingCourierForm, before anything is typed", () => {
     expect(screen.queryByRole("alert")).not.toBeInTheDocument()
   })
 
-  it("says what the name, the CPF and the WhatsApp are used for, in the sentence that is accepted", () => {
+  it("says what the CPF, the e-mail and the WhatsApp are used for, in the sentence that is accepted", () => {
     renderForm()
 
     expect(accept()).not.toBeChecked()
-    expect(accept()).toHaveAccessibleName("Li e aceito os termos de uso e a política de privacidade. A Beelink usa meu nome, meu CPF e meu WhatsApp para o cadastro.")
+    expect(accept()).toHaveAccessibleName("Li e aceito os termos de uso e a política de privacidade. A Beelink usa meu CPF para identificar o cadastro, e meu e-mail e meu WhatsApp para falar comigo sobre ele.")
   })
 
   /** Before the script arrives the browser submits by itself, and a default GET would put the name, the CPF and the phone in the address. */
@@ -165,6 +168,7 @@ describe("LandingCourierForm, while it is filled in", () => {
   it.each([
     ["Nome completo", "Zuleica", "Informe o nome completo, com sobrenome."],
     ["CPF", "52998224726", "Esse CPF não confere. Confira os números."],
+    ["E-mail", "zuleica@", "Informe um e-mail válido."],
     ["WhatsApp", "8532221111", "Informe um celular com DDD."],
   ])("says what is wrong with %s on the field itself, once the person leaves it and not before", async (label, typed, refusal) => {
     const { user } = renderForm()
@@ -219,8 +223,10 @@ describe("LandingCourierForm, while it is filled in", () => {
     const { user } = renderForm()
 
     await user.type(field("Nome completo"), ZULEICA.name)
-    expect(send()).toHaveAccessibleDescription("Para continuar, falta: CPF, WhatsApp, aceite dos termos.")
+    expect(send()).toHaveAccessibleDescription("Para continuar, falta: CPF, e-mail, WhatsApp, aceite dos termos.")
     await user.type(field("CPF"), "52998224725")
+    expect(send()).toHaveAccessibleDescription("Para continuar, falta: e-mail, WhatsApp, aceite dos termos.")
+    await user.type(field("E-mail"), ZULEICA.email)
     expect(send()).toHaveAccessibleDescription("Para continuar, falta: WhatsApp, aceite dos termos.")
     await user.type(field("WhatsApp"), "85987654321")
     expect(send()).toHaveAccessibleDescription("Para continuar, falta: aceite dos termos.")
@@ -239,7 +245,7 @@ describe("LandingCourierForm, while it is filled in", () => {
     ["the acceptance is taken back", async (user: User) => user.click(accept()), "Para continuar, falta: aceite dos termos."],
     ["a digit of the CPF is erased", async (user: User) => user.type(field("CPF"), "{Backspace}"), "Para continuar, falta: CPF."],
     ["the surname is erased", async (user: User) => user.type(field("Nome completo"), "{Backspace>8/}"), "Para continuar, falta: nome completo."],
-    ["the WhatsApp is emptied", async (user: User) => user.clear(field("WhatsApp")), "Para continuar, falta: WhatsApp."],
+    ["the e-mail is emptied", async (user: User) => user.clear(field("E-mail")), "Para continuar, falta: e-mail."],
   ])("locks again when %s", async (_, undo, missing) => {
     const { user } = renderForm({ initial: ZULEICA })
     expect(send()).toBeEnabled()
@@ -262,7 +268,7 @@ describe("LandingCourierForm, while it is filled in", () => {
 })
 
 describe("LandingCourierForm, sent", () => {
-  it("hands over what was typed as the masks wrote it, the vehicle, the acceptance and the empty trap — and neither an e-mail nor a city", async () => {
+  it("hands over what was typed as the masks wrote it, the vehicle, the acceptance and the empty trap — and no city", async () => {
     const { user, onSubmit } = renderForm()
     await fill(user)
     await user.click(screen.getByRole("radio", { name: "Bike" }))
@@ -282,6 +288,9 @@ describe("LandingCourierForm, sent", () => {
     await user.tab()
     expect(field("CPF")).toHaveFocus()
     await user.keyboard("52998224725")
+    await user.tab()
+    expect(field("E-mail")).toHaveFocus()
+    await user.keyboard(ZULEICA.email)
     await user.tab()
     expect(field("WhatsApp")).toHaveFocus()
     await user.keyboard("85987654321")
@@ -349,6 +358,7 @@ describe("LandingCourierForm, when the send met a problem", () => {
   const untouched = () => {
     expect(field("Nome completo")).toHaveValue(ZULEICA.name)
     expect(field("CPF")).toHaveValue(ZULEICA.document)
+    expect(field("E-mail")).toHaveValue(ZULEICA.email)
     expect(field("WhatsApp")).toHaveValue(ZULEICA.whatsapp)
     expect(accept()).toBeChecked()
   }
@@ -426,11 +436,10 @@ describe("LandingCourierForm, once the application was taken", () => {
     )
   }
 
-  const NEXT = "O próximo passo é o seu e-mail e os seus documentos. A Beelink fala com você pelo WhatsApp informado quando ele abrir."
-  const ALREADY = "Não precisa enviar de novo. A Beelink fala com você pelo WhatsApp informado nesse cadastro quando o próximo passo abrir."
+  const NEXT = "Em breve você recebe no seu e-mail as informações para concluir o cadastro."
+  const ALREADY = "Não precisa enviar de novo. As informações para concluir chegam no e-mail informado nesse cadastro."
 
-  // No e-mail was asked for (BEELINK-329): the confirmation names the WhatsApp the person gave, and promises no e-mail.
-  it("gives its place to the confirmation, which says who speaks next and where, takes the focus and is said aloud", async () => {
+  it("gives its place to the confirmation, which says the rest arrives by e-mail, takes the focus and is said aloud", async () => {
     const user = userEvent.setup()
     render(<Taken />)
 
@@ -438,7 +447,6 @@ describe("LandingCourierForm, once the application was taken", () => {
 
     const confirmation = await screen.findByRole("group", { name: "Cadastro recebido." })
     expect(within(confirmation).getByText(NEXT)).toBeVisible()
-    expect(confirmation).not.toHaveTextContent(/chega.* por e-mail|no seu e-mail/i)
     await waitFor(() => expect(confirmation).toHaveFocus())
     expect(screen.getByRole("status")).toHaveTextContent(`Cadastro recebido. ${NEXT}`)
     expect(screen.queryByRole("form")).not.toBeInTheDocument()
@@ -488,6 +496,7 @@ describe("LandingCourierForm, once the application was taken", () => {
     expect(await screen.findByRole("form", { name: TITLE })).toBeInTheDocument()
     expect(field("Nome completo")).toHaveValue("")
     expect(field("CPF")).toHaveValue("")
+    expect(field("E-mail")).toHaveValue("")
     expect(field("WhatsApp")).toHaveValue("")
     expect(accept()).not.toBeChecked()
     expect(send()).toBeDisabled()
@@ -580,6 +589,7 @@ describe("LandingCourierForm, to a reader", () => {
 
     await user.type(field("Nome completo"), "Zuleica")
     await user.type(field("CPF"), "111")
+    await user.type(field("E-mail"), "zuleica@")
     await user.type(field("WhatsApp"), "85")
     accept().focus()
     await user.tab()

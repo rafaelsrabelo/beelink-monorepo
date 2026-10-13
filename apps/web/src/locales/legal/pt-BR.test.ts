@@ -263,9 +263,9 @@ describe("bee-link's legal texts (BEELINK-171)", () => {
     }
     const couriers = textOf("Dados de quem se candidata a entregar")
 
-    // BEELINK-325 said a person is on the list once, under 2026-10-14. BEELINK-329 changed what the
-    // form asks for — no e-mail, no city — and what is collected changing is a version of its own.
-    it("is the version that says the form asks for no e-mail and no city", () => {
+    // BEELINK-325 said a person is on the list once, under 2026-10-14. BEELINK-329 changed the form:
+    // it has another name on the page and no longer asks for the city, which the text had described.
+    it("is the version that says the form no longer asks for the city", () => {
       expect(legalTexts.version).toBe("2026-10-15")
       expect(legalTexts.privacy.effective).toBe("Vigente desde 15 de outubro de 2026")
       expect(legalTexts.terms.effective).toBe("Vigente desde 15 de outubro de 2026")
@@ -277,30 +277,29 @@ describe("bee-link's legal texts (BEELINK-171)", () => {
       expect(headings.slice(headings.indexOf("Dados de quem visita uma loja sem conta"), headings.indexOf("Dados técnicos") + 1)).toEqual(["Dados de quem visita uma loja sem conta", "Dados de quem se candidata a entregar", "Dados técnicos"])
     })
 
-    it("names every thing the table keeps: what the form asks for, the e-mail of who was asked for one, the city, the vehicle, the acceptance and the two dates", () => {
-      expect(couriers).toMatch(/nome completo, CPF e número de WhatsApp;/)
-      expect(couriers).not.toMatch(/nome completo, CPF, e-mail/)
-      expect(couriers).toMatch(/o e-mail, só de quem enviou o cadastro quando o formulário ainda o pedia: hoje ele não pede/)
+    it("names every thing the table keeps: the four fields typed, the city, the vehicle, the acceptance and the two dates", () => {
+      expect(couriers).toMatch(/nome completo, CPF, e-mail e número de WhatsApp;/)
       expect(couriers).toMatch(/a cidade do cadastro, que hoje é sempre Fortaleza\/CE, e como você entrega: moto, bicicleta, carro ou utilitário/)
       expect(couriers).toMatch(/a versão dos Termos de uso e desta Política que você aceitou ao enviar, com a data e a hora do aceite/)
       expect(couriers).toMatch(/enviado pela primeira vez e em que foi alterado pela última vez/)
     })
 
-    it("says where the form is, that it is the sign-up's first step, and that today it is for one city it does not ask for", () => {
-      expect(couriers).toMatch(/Na página inicial do bee-link, o formulário de entregador recebe o primeiro passo do cadastro/)
+    it("says where the form is, and that today it is for one city it does not ask for", () => {
+      expect(couriers).toMatch(/Na página inicial do bee-link, o formulário de entregador recebe o cadastro de quem quer fazer entregas/)
+      // The page no longer shows the name the text used to quote.
+      expect(couriers).not.toMatch(/Comece seu cadastro/)
       expect(couriers).toMatch(/Hoje o cadastro é só para a cidade de Fortaleza\/CE, e por isso o formulário não pergunta a cidade/)
     })
 
-    it("says what the data is for, and that a person is on the list once: by CPF and by WhatsApp, and by e-mail where there is one", () => {
+    it("says what the data is for, and that a person is on the list once: by CPF, by e-mail and by WhatsApp", () => {
       expect(couriers).toMatch(/formam uma lista de interesse/)
-      expect(couriers).toMatch(/para falar com você sobre a conclusão do cadastro, pelo WhatsApp informado e, se o seu cadastro tem um, pelo e-mail/)
-      expect(couriers).toMatch(/existe um só cadastro por CPF e por número de WhatsApp, e por e-mail quando o cadastro tem um/)
+      expect(couriers).toMatch(/para falar com você, pelo e-mail ou pelo WhatsApp informados, sobre a conclusão do cadastro/)
+      expect(couriers).toMatch(/existe um só cadastro por CPF, por e-mail e por número de WhatsApp/)
     })
 
     // What the code does since BEELINK-325, and its price said in as many words: the answer tells who is on the list.
-    it("says a send with a CPF or a WhatsApp already on the list is refused, which of the two is said, and what was kept stays", () => {
-      expect(couriers).toMatch(/com um CPF ou um número de WhatsApp que já está na lista, o cadastro não é aceito, e o site diz qual dos dois já estava cadastrado/)
-      expect(couriers).toMatch(/do CPF, que ele já tem cadastro; do WhatsApp, que o número já está cadastrado/)
+    it("says a send with one of the three already on the list is refused, which of them is said, and what was kept stays", () => {
+      expect(couriers).toMatch(/com um CPF, um e-mail ou um número de WhatsApp que já está na lista, o cadastro não é aceito, e o site diz qual dos três já estava cadastrado/)
       expect(couriers).toMatch(/O cadastro que já existia não é alterado/)
       expect(couriers).toMatch(/quem digita um desses dados no formulário fica sabendo se ele já está na lista/)
       expect(couriers).not.toMatch(/substituem os anteriores|não diz se o CPF/)
