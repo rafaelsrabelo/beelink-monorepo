@@ -27,12 +27,15 @@ type User = ReturnType<typeof userEvent.setup>
 /** Made up: a CPF whose check digits are right and an address nobody owns. */
 const ZULEICA = { name: "Zuleica Tavares", document: "52998224725", email: "zuleica.tavares@exemplo.test", whatsapp: "85987654321" }
 
-/** What the API is sent for her: exactly the wire's fields, the masks' punctuation still on. */
+/**
+ * What the API is sent for her: exactly the wire's fields, the masks' punctuation still on, and the
+ * one city open, which nobody typed (BEELINK-329).
+ */
 const SENT = {
   name: "Zuleica Tavares",
   document: "529.982.247-25",
   email: "zuleica.tavares@exemplo.test",
-  whatsapp: "(85) 98765-4321",
+  whatsapp: "(85) 9 8765-4321",
   city: "FORTALEZA_CE",
   vehicle: "MOTORCYCLE",
   acceptedTerms: true,
@@ -61,7 +64,8 @@ function open(told?: (event: SiteEvent) => void) {
 }
 
 const field = (label: string) => screen.getByLabelText(label)
-const send = () => screen.getByRole("button", { name: /Enviar cadastro|Enviando|Tentar de novo/ })
+const send = () => screen.getByRole("button", { name: /Continuar|Enviando|Tentar de novo/ })
+const FORM = "Dê o primeiro passo para entregar com a Beelink"
 
 async function fill(user: User) {
   await user.type(field("Nome completo"), ZULEICA.name)
@@ -85,7 +89,7 @@ describe("LandingCourierFormLive (BEELINK-322)", () => {
     expect(fetched).not.toHaveBeenCalled()
   })
 
-  it("posts the application to this app's own route with the wire's fields and no other, and gives its place to the confirmation", async () => {
+  it("posts the application to this app's own route with the wire's fields and no other — the open city added — and gives its place to the confirmation", async () => {
     const fetched = answers(taken)
     const { user } = open()
     await fill(user)
@@ -185,13 +189,13 @@ describe("LandingCourierFormLive (BEELINK-322)", () => {
       expect(field("Nome completo")).toHaveValue("Zuleica Tavares")
       expect(field("CPF")).toHaveValue("529.982.247-25")
       expect(field("E-mail")).toHaveValue("zuleica.tavares@exemplo.test")
-      expect(field("WhatsApp")).toHaveValue("(85) 98765-4321")
+      expect(field("WhatsApp")).toHaveValue("(85) 9 8765-4321")
       expect(screen.getByRole("checkbox", { name: /Li e aceito/ })).toBeChecked()
     }
 
     // BEELINK-325: a 409, since nothing is wrong with what was typed — it is on the list already.
+    // An e-mail or a WhatsApp there under another CPF is still the form's to fix: it may have been mistyped.
     it.each([
-      ["COURIER_DOCUMENT_TAKEN", "CPF", "Este CPF já está cadastrado."],
       ["COURIER_EMAIL_TAKEN", "E-mail", "Este e-mail já está cadastrado."],
       ["COURIER_WHATSAPP_TAKEN", "WhatsApp", "Este WhatsApp já está cadastrado."],
     ])("says %s on its own field, takes the person there, keeps the form and offers no send again", async (code, label, sentence) => {
@@ -206,6 +210,21 @@ describe("LandingCourierFormLive (BEELINK-322)", () => {
       expect(field(label)).toHaveFocus()
       expect(screen.queryByRole("button", { name: "Tentar de novo" })).not.toBeInTheDocument()
       expect(screen.queryByText("Cadastro recebido.")).not.toBeInTheDocument()
+      kept()
+    })
+
+    // The form has no field for the city (BEELINK-329): the sentence is said over the button, and nothing is offered again at once.
+    it("says a COURIER_CITY_NOT_OPEN, which no field of the form is about, in an alert of its own, and keeps the form", async () => {
+      answers(refusal(400, "COURIER_CITY_NOT_OPEN"))
+      const { user } = open()
+      await fill(user)
+
+      await user.click(send())
+
+      expect(await screen.findByRole("alert")).toHaveTextContent("O cadastro ainda não está aberto para essa cidade.")
+      expect(document.querySelector("[aria-invalid]")).toBeNull()
+      expect(screen.queryByRole("button", { name: "Tentar de novo" })).not.toBeInTheDocument()
+      kept()
     })
 
     it.each([
@@ -213,7 +232,6 @@ describe("LandingCourierFormLive (BEELINK-322)", () => {
       ["COURIER_DOCUMENT_INVALID", "CPF", "Esse CPF não confere. Confira os números."],
       ["COURIER_EMAIL_INVALID", "E-mail", "Informe um e-mail válido."],
       ["COURIER_WHATSAPP_INVALID", "WhatsApp", "Informe um celular com DDD."],
-      ["COURIER_CITY_NOT_OPEN", "Cidade onde quer entregar", "O cadastro ainda não está aberto para essa cidade."],
     ])("says the API's %s on its own field, takes the person there and keeps the form", async (code, label, sentence) => {
       answers(refusal(400, code))
       const { user } = open()
@@ -237,7 +255,7 @@ describe("LandingCourierFormLive (BEELINK-322)", () => {
       await user.click(send())
 
       expect(await screen.findByRole("alert")).toHaveTextContent("Muitos envios em pouco tempo. Espere alguns minutos e tente de novo.")
-      expect(send()).toHaveAccessibleName("Enviar cadastro")
+      expect(send()).toHaveAccessibleName("Continuar")
       kept()
     })
 
@@ -281,7 +299,7 @@ describe("LandingCourierFormLive (BEELINK-322)", () => {
 
     await user.click(await screen.findByRole("button", { name: "Enviar outro cadastro" }))
 
-    expect(await screen.findByRole("form", { name: "Comece seu cadastro" })).toBeInTheDocument()
+    expect(await screen.findByRole("form", { name: FORM })).toBeInTheDocument()
     expect(field("CPF")).toHaveValue("")
     expect(send()).toBeDisabled()
 
@@ -294,7 +312,62 @@ describe("LandingCourierFormLive (BEELINK-322)", () => {
 
     await screen.findByRole("group", { name: "Cadastro recebido." })
     expect(fetched).toHaveBeenCalledTimes(2)
-    expect(bodyOf(fetched, 1)).toMatchObject({ name: "Raimundo Nonato", document: "111.444.777-35", whatsapp: "(85) 91234-5678" })
+    expect(bodyOf(fetched, 1)).toMatchObject({ name: "Raimundo Nonato", document: "111.444.777-35", whatsapp: "(85) 9 1234-5678", city: "FORTALEZA_CE" })
+  })
+
+  describe("when the CPF is on the list already (BEELINK-329)", () => {
+    const ALREADY = "Não precisa enviar de novo. As informações para concluir chegam no e-mail informado nesse cadastro."
+
+    it("puts \"Esse CPF já tem cadastro\" where the confirmation stands, with no field refused and nothing to try again", async () => {
+      const fetched = answers(refusal(409, "COURIER_DOCUMENT_TAKEN"))
+      const { user } = open()
+      await fill(user)
+
+      await user.click(send())
+
+      const card = await screen.findByRole("group", { name: "Esse CPF já tem cadastro." })
+      expect(card).toHaveTextContent(ALREADY)
+      await waitFor(() => expect(card).toHaveFocus())
+      expect(screen.queryByRole("form")).not.toBeInTheDocument()
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument()
+      expect(screen.queryByText("Cadastro recebido.")).not.toBeInTheDocument()
+      expect(screen.queryByRole("button", { name: "Tentar de novo" })).not.toBeInTheDocument()
+      // Sent once: the answer is final, and nothing sends it again behind the person's back.
+      expect(fetched).toHaveBeenCalledTimes(1)
+    })
+
+    it("is no lead: nothing was taken, and nobody is told one was", async () => {
+      answers(refusal(409, "COURIER_DOCUMENT_TAKEN"))
+      const told = vi.fn()
+      const { user } = open(told)
+      await fill(user)
+
+      await user.click(send())
+
+      await screen.findByRole("group", { name: "Esse CPF já tem cadastro." })
+      expect(told).not.toHaveBeenCalled()
+    })
+
+    it("takes another CPF after it: the form comes back empty, and the next send is its own", async () => {
+      const fetched = answers(refusal(409, "COURIER_DOCUMENT_TAKEN"), taken)
+      const { user } = open()
+      await fill(user)
+      await user.click(send())
+
+      await user.click(await screen.findByRole("button", { name: "Cadastrar outro CPF" }))
+
+      expect(await screen.findByRole("form", { name: FORM })).toBeInTheDocument()
+      expect(field("CPF")).toHaveValue("")
+      await user.type(field("Nome completo"), "Raimundo Nonato")
+      await user.type(field("CPF"), "11144477735")
+      await user.type(field("E-mail"), "raimundo.nonato@exemplo.test")
+      await user.type(field("WhatsApp"), "85912345678")
+      await user.click(screen.getByRole("checkbox", { name: /Li e aceito/ }))
+      await user.click(send())
+
+      expect(await screen.findByRole("group", { name: "Cadastro recebido." })).toBeInTheDocument()
+      expect(fetched).toHaveBeenCalledTimes(2)
+    })
   })
 
   describe("the two legal texts", () => {

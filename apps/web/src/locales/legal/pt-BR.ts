@@ -16,11 +16,11 @@ export interface LegalTexts {
  * keeps or shares is a new version of these texts, with a new `version`.
  */
 export const legalTexts = {
-  version: "2026-10-14",
+  version: "2026-10-15",
   terms: {
     lang: "pt-BR",
     title: "Termos de uso",
-    effective: "Vigente desde 14 de outubro de 2026",
+    effective: "Vigente desde 15 de outubro de 2026",
     intro: [
       "Estes Termos de uso são as regras para usar o bee-link. Eles explicam o que a plataforma faz, o que ela não faz e o que se espera de cada pessoa que a usa.",
       "Eles valem para dois públicos: o lojista, que cria uma conta no painel para publicar a sua loja, e o cliente, que cria uma conta numa loja para comprar dela. Quando uma regra vale só para um dos dois, o texto diz.",
@@ -361,7 +361,7 @@ export const legalTexts = {
   privacy: {
     lang: "pt-BR",
     title: "Política de privacidade",
-    effective: "Vigente desde 14 de outubro de 2026",
+    effective: "Vigente desde 15 de outubro de 2026",
     intro: [
       "Esta Política de privacidade explica quais dados pessoais o bee-link trata, para quê, com quem os compartilha, por quanto tempo os guarda e como você exerce os seus direitos, conforme a Lei Geral de Proteção de Dados (Lei nº 13.709/2018, a LGPD).",
       "Ela vale para os lojistas, para os clientes das lojas, para quem se candidata a fazer entregas e para quem visita o site do bee-link ou uma loja sem criar conta. Ao criar uma conta, ou ao definir uma senha pelo link enviado por e-mail, ou ao enviar o cadastro de entregador, você declara que leu esta Política.",
@@ -472,13 +472,13 @@ export const legalTexts = {
         blocks: [
           {
             kind: "paragraph",
-            text: "Na página inicial do bee-link, o formulário \"Comece seu cadastro\" recebe o cadastro de quem quer fazer entregas. Hoje ele só aceita a cidade de Fortaleza/CE. Quando você o envia, o bee-link guarda:",
+            text: "Na página inicial do bee-link, o formulário de entregador recebe o cadastro de quem quer fazer entregas. Hoje o cadastro é só para a cidade de Fortaleza/CE, e por isso o formulário não pergunta a cidade. Quando você o envia, o bee-link guarda:",
           },
           {
             kind: "list",
             items: [
               "nome completo, CPF, e-mail e número de WhatsApp;",
-              "a cidade em que você quer entregar e como você entrega: moto, bicicleta, carro ou utilitário;",
+              "a cidade do cadastro, que hoje é sempre Fortaleza/CE, e como você entrega: moto, bicicleta, carro ou utilitário;",
               "a versão dos Termos de uso e desta Política que você aceitou ao enviar, com a data e a hora do aceite;",
               "a data e a hora em que o cadastro foi enviado pela primeira vez e em que foi alterado pela última vez.",
             ],

@@ -263,11 +263,12 @@ describe("bee-link's legal texts (BEELINK-171)", () => {
     }
     const couriers = textOf("Dados de quem se candidata a entregar")
 
-    // BEELINK-325: the form began to send under 2026-10-13, which said a second send replaced the first.
-    it("is the version that says a person is on the list once", () => {
-      expect(legalTexts.version).toBe("2026-10-14")
-      expect(legalTexts.privacy.effective).toBe("Vigente desde 14 de outubro de 2026")
-      expect(legalTexts.terms.effective).toBe("Vigente desde 14 de outubro de 2026")
+    // BEELINK-325 said a person is on the list once, under 2026-10-14. BEELINK-329 changed the form:
+    // it has another name on the page and no longer asks for the city, which the text had described.
+    it("is the version that says the form no longer asks for the city", () => {
+      expect(legalTexts.version).toBe("2026-10-15")
+      expect(legalTexts.privacy.effective).toBe("Vigente desde 15 de outubro de 2026")
+      expect(legalTexts.terms.effective).toBe("Vigente desde 15 de outubro de 2026")
     })
 
     it("has a section of its own, between the visitor's and the technical data", () => {
@@ -276,16 +277,18 @@ describe("bee-link's legal texts (BEELINK-171)", () => {
       expect(headings.slice(headings.indexOf("Dados de quem visita uma loja sem conta"), headings.indexOf("Dados técnicos") + 1)).toEqual(["Dados de quem visita uma loja sem conta", "Dados de quem se candidata a entregar", "Dados técnicos"])
     })
 
-    it("names every thing the table keeps: the six fields, the acceptance and the two dates", () => {
-      expect(couriers).toMatch(/nome completo, CPF, e-mail e número de WhatsApp/)
-      expect(couriers).toMatch(/a cidade em que você quer entregar e como você entrega: moto, bicicleta, carro ou utilitário/)
+    it("names every thing the table keeps: the four fields typed, the city, the vehicle, the acceptance and the two dates", () => {
+      expect(couriers).toMatch(/nome completo, CPF, e-mail e número de WhatsApp;/)
+      expect(couriers).toMatch(/a cidade do cadastro, que hoje é sempre Fortaleza\/CE, e como você entrega: moto, bicicleta, carro ou utilitário/)
       expect(couriers).toMatch(/a versão dos Termos de uso e desta Política que você aceitou ao enviar, com a data e a hora do aceite/)
       expect(couriers).toMatch(/enviado pela primeira vez e em que foi alterado pela última vez/)
     })
 
-    it("says where the form is and that today it takes one city", () => {
-      expect(couriers).toMatch(/Na página inicial do bee-link, o formulário "Comece seu cadastro"/)
-      expect(couriers).toMatch(/Hoje ele só aceita a cidade de Fortaleza\/CE/)
+    it("says where the form is, and that today it is for one city it does not ask for", () => {
+      expect(couriers).toMatch(/Na página inicial do bee-link, o formulário de entregador recebe o cadastro de quem quer fazer entregas/)
+      // The page no longer shows the name the text used to quote.
+      expect(couriers).not.toMatch(/Comece seu cadastro/)
+      expect(couriers).toMatch(/Hoje o cadastro é só para a cidade de Fortaleza\/CE, e por isso o formulário não pergunta a cidade/)
     })
 
     it("says what the data is for, and that a person is on the list once: by CPF, by e-mail and by WhatsApp", () => {

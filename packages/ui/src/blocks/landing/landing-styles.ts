@@ -36,15 +36,21 @@ export const LANDING_CTA =
 /** A card that rises under the pointer. */
 export const LANDING_LIFT = "transition motion-safe:hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-brand-ink/10"
 
-/** The courier's form, and what takes its place once it was sent: the light card on the black section. */
+/**
+ * The courier's form, and what takes its place once it was sent: the white card on the yellow band
+ * (BEELINK-329). Beside the section's words it is the design's 400px; under them, on a phone, it
+ * takes the screen's width, and no more than a card reads well at on a tablet.
+ */
 export const LANDING_COURIER_CARD =
-  "relative flex w-full flex-col gap-[18px] self-center rounded-[32px] bg-brand-ground p-6 text-brand-ink shadow-2xl shadow-brand-ink/40 sm:p-9 xl:w-[520px] xl:shrink-0"
+  "relative mx-auto flex w-full max-w-[520px] flex-col gap-3 rounded-[20px] bg-brand-surface p-5 text-brand-ink shadow-xl shadow-brand-ink/15 lg:mx-0 lg:w-[400px] lg:max-w-none lg:shrink-0 lg:rounded-[22px] lg:p-[26px]"
 
 /** A field of that form: its label, its control and what is said under it, one to a line. */
-export const LANDING_FIELD = "flex flex-col gap-1.5"
-export const LANDING_FIELD_LABEL = "text-sm font-bold"
-export const LANDING_INPUT = "h-[52px] rounded-[14px] border-[1.5px] border-brand-line-strong bg-brand-surface px-4 text-base font-normal aria-invalid:border-brand-danger"
-export const LANDING_REFUSAL = "text-[13px] font-semibold text-brand-danger"
+export const LANDING_FIELD = "flex flex-col gap-1"
+export const LANDING_FIELD_LABEL = "text-[13px] font-bold"
+/** 16px on a phone, whatever the design's size: under it, iOS zooms into a field as it takes the focus. */
+export const LANDING_INPUT =
+  "h-12 rounded-xl border-[1.5px] border-brand-line-strong bg-brand-surface px-3.5 text-base font-normal aria-invalid:border-brand-danger lg:h-[46px] lg:text-[15px]"
+export const LANDING_REFUSAL = "text-xs font-semibold text-brand-danger"
 
 /**
  * The line a typed field's refusal is written on, kept while there is nothing to write. A refusal
@@ -55,4 +61,4 @@ export const LANDING_REFUSAL = "text-[13px] font-semibold text-brand-danger"
 export const LANDING_REFUSAL_LINE = `min-h-4 leading-4 ${LANDING_REFUSAL}`
 
 /** The typed fields, one under the other: the line each keeps is most of the room between them. */
-export const LANDING_FIELDS = "flex flex-col gap-2.5"
+export const LANDING_FIELDS = "flex flex-col gap-1"

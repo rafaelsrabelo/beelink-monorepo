@@ -19,17 +19,16 @@ const filled = {
   name: "Zuleica Tavares",
   document: "529.982.247-25",
   email: "zuleica.tavares@exemplo.test",
-  whatsapp: "(85) 98765-4321",
-  city: "FORTALEZA_CE",
+  whatsapp: "(85) 9 8765-4321",
   vehicle: "MOTORCYCLE",
   acceptedTerms: true,
   website: "",
 } satisfies LandingCourierValues
 
 /**
- * "Comece seu cadastro" (BEELINK-322), sozinho sobre o preto da seção. O bloco não conhece a rede:
- * quem envia é a tela, que lhe diz onde o envio está (`status`) e o que ele encontrou (`problem`).
- * Aqui cada estado é uma história.
+ * O primeiro passo do cadastro de entregador (BEELINK-329) — nome, CPF, e-mail, WhatsApp e veículo —, sozinho
+ * sobre o amarelo da faixa. O bloco não conhece a rede: quem envia é a tela, que lhe diz onde o envio
+ * está (`status`) e o que ele encontrou (`problem`). Aqui cada estado é uma história.
  */
 const meta = {
   title: "Blocos/Landing/Formulário do entregador",
@@ -37,7 +36,7 @@ const meta = {
   parameters: { layout: "fullscreen" },
   args: { termsHref: "#termos", privacyHref: "#privacidade", text, onSubmit: () => {} },
   render: (args) => (
-    <LandingShell className="min-h-0 items-center bg-brand-ink p-4 sm:p-10">
+    <LandingShell className="min-h-0 items-center bg-brand-yellow p-4 sm:p-10">
       <LandingCourierForm {...args} />
     </LandingShell>
   ),
@@ -46,7 +45,7 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** Como a página chega: o botão travado, e a frase embaixo dele dizendo o que falta. A cidade tem uma opção só, já escolhida. */
+/** Como a página chega: o botão travado, e a frase embaixo dele dizendo o que falta. Não há campo de cidade. */
 export const Vazio: Story = {}
 
 /** Tudo certo e o aceite marcado: o botão libera e a frase some. Apague um dígito do CPF para vê-lo travar de novo. */
@@ -67,8 +66,11 @@ export const LimiteAtingido: Story = { args: { initial: filled, problem: { field
 /** Falha de rede ou do servidor: a frase, e o botão vira "Tentar de novo". O formulário não é apagado. */
 export const Falha: Story = { args: { initial: filled, problem: { field: null, message: "Não foi possível enviar o cadastro agora. Seus dados continuam aqui.", retry: true } } }
 
-/** O cadastro foi recebido: a confirmação toma o lugar do formulário e recebe o foco. Nenhum e-mail é enviado ainda. */
+/** O cadastro foi recebido: a confirmação toma o lugar do formulário e recebe o foco. Ela diz que o resto chega por e-mail. */
 export const Enviado: Story = { args: { initial: filled, status: "sent" } }
+
+/** O CPF já estava na lista: nada foi gravado, e o mesmo cartão diz "Esse CPF já tem cadastro", sem erro em campo nenhum. */
+export const CpfJaCadastrado: Story = { args: { initial: filled, status: "already" } }
 
 /** O caminho inteiro: enviar leva ao "enviando", depois à confirmação; "Enviar outro cadastro" devolve o formulário vazio. Os links dos termos e da política abrem o diálogo por cima, sem apagar o que foi digitado. */
 export const Fluxo: Story = {
@@ -77,7 +79,7 @@ export const Fluxo: Story = {
     const [reading, setReading] = useState<{ document: "terms" | "privacy"; open: boolean; link: HTMLElement | null }>({ document: "terms", open: false, link: null })
 
     return (
-      <LandingShell className="min-h-0 items-center bg-brand-ink p-4 sm:p-10">
+      <LandingShell className="min-h-0 items-center bg-brand-yellow p-4 sm:p-10">
         <LandingCourierForm
           {...args}
           status={status}
@@ -102,5 +104,5 @@ export const Fluxo: Story = {
   },
 }
 
-/** No celular: os quatro veículos em duas linhas, e nada estoura a largura. */
+/** No celular: os quatro veículos numa linha, com 44px de altura, e nada estoura a largura. */
 export const NoCelular: Story = { globals: { viewport: { value: "mobile1", isRotated: false } } }

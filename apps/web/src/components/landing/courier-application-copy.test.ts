@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest"
 
 // App
-import { courierApplicationCopyOf, courierProblemOf } from "./courier-application-copy"
+import { courierApplicationCopyOf, courierProblemOf, isCourierAlreadyListed } from "./courier-application-copy"
 import { en } from "@/locales/en"
 import { ptBR } from "@/locales/pt-BR"
 import { CourierApplicationRequestError } from "@/services/couriers/courier-application-requests"
@@ -21,15 +21,26 @@ describe("courierProblemOf (BEELINK-322)", () => {
     ["COURIER_DOCUMENT_INVALID", "document", "Esse CPF não confere. Confira os números."],
     ["COURIER_EMAIL_INVALID", "email", "Informe um e-mail válido."],
     ["COURIER_WHATSAPP_INVALID", "whatsapp", "Informe um celular com DDD."],
-    ["COURIER_CITY_NOT_OPEN", "city", "O cadastro ainda não está aberto para essa cidade."],
-    ["COURIER_VEHICLE_INVALID", "vehicle", "Escolha como você entrega."],
-    ["COURIER_TERMS_REQUIRED", "acceptedTerms", "Marque o aceite para enviar."],
-    // BEELINK-325: a person is on the list once, and each of the three that say who they are has its own sentence.
-    ["COURIER_DOCUMENT_TAKEN", "document", "Este CPF já está cadastrado."],
+    ["COURIER_VEHICLE_INVALID", "vehicle", "Escolha como vai fazer suas entregas."],
+    ["COURIER_TERMS_REQUIRED", "acceptedTerms", "Marque o aceite para continuar."],
+    // BEELINK-325: an e-mail or a number already on the list, under another CPF, is the form's to fix.
     ["COURIER_EMAIL_TAKEN", "email", "Este e-mail já está cadastrado."],
     ["COURIER_WHATSAPP_TAKEN", "whatsapp", "Este WhatsApp já está cadastrado."],
   ])("puts %s on the %s, in that field's sentence, with nothing to send again at once", (code, field, message) => {
     expect(refused(code)).toEqual({ field, message })
+  })
+
+  // BEELINK-329: the form asks for no city, so a refusal of it has no field to stand on.
+  it("says COURIER_CITY_NOT_OPEN on no field, in its own sentence, with nothing to send again at once", () => {
+    expect(refused("COURIER_CITY_NOT_OPEN")).toEqual({ field: null, message: "O cadastro ainda não está aberto para essa cidade." })
+  })
+
+  // BEELINK-329: a CPF on the list already is said where the confirmation stands, and is no problem of the form's.
+  it("is nothing for a CPF already on the list, which is told apart from every other answer", () => {
+    expect(refused("COURIER_DOCUMENT_TAKEN")).toBeNull()
+    expect(isCourierAlreadyListed(new CourierApplicationRequestError("COURIER_DOCUMENT_TAKEN"))).toBe(true)
+    for (const code of ["COURIER_WHATSAPP_TAKEN", "COURIER_EMAIL_TAKEN", "COURIER_DOCUMENT_INVALID", "UNKNOWN"]) expect(isCourierAlreadyListed(new CourierApplicationRequestError(code))).toBe(false)
+    for (const other of [null, undefined, new Error("COURIER_DOCUMENT_TAKEN"), { errorCode: "COURIER_DOCUMENT_TAKEN" }]) expect(isCourierAlreadyListed(other)).toBe(false)
   })
 
   /** The general sentence says to wait a minute, and this route's window is ten. */

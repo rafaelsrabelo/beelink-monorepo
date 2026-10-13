@@ -22,14 +22,14 @@ const ZULEICA = {
   name: "Zuleica Tavares",
   document: "529.982.247-25",
   email: "zuleica.tavares@exemplo.test",
-  whatsapp: "(85) 98765-4321",
-  city: "FORTALEZA_CE",
+  whatsapp: "(85) 9 8765-4321",
   vehicle: "MOTORCYCLE",
   acceptedTerms: true,
   website: "",
 } satisfies LandingCourierValues
 
-const EVERYTHING = "Para enviar, falta: nome completo, CPF, e-mail, WhatsApp, aceite dos termos."
+const EVERYTHING = "Para continuar, falta: nome completo, CPF, e-mail, WhatsApp, aceite dos termos."
+const TITLE = "Dê o primeiro passo para entregar com a Beelink"
 
 type User = ReturnType<typeof userEvent.setup>
 
@@ -41,7 +41,7 @@ function renderForm(props: Partial<LandingCourierFormProps> = {}) {
 }
 
 const field = (label: string) => screen.getByLabelText(label)
-const send = () => screen.getByRole("button", { name: /Enviar cadastro|Enviando|Tentar de novo/ })
+const send = () => screen.getByRole("button", { name: /Continuar|Enviando|Tentar de novo/ })
 const accept = () => screen.getByRole("checkbox", { name: /Li e aceito/ })
 
 /** Types what a person types: digits alone in the CPF and the WhatsApp, which the masks dress. */
@@ -59,7 +59,7 @@ describe("LandingCourierForm, before anything is typed", () => {
     renderForm()
 
     expect(send()).toBeDisabled()
-    expect(send()).toHaveAccessibleName("Enviar cadastro")
+    expect(send()).toHaveAccessibleName("Continuar")
     expect(send()).toHaveAccessibleDescription(EVERYTHING)
     expect(screen.getByText(EVERYTHING)).toBeVisible()
     expect(screen.getByRole("status")).toBeEmptyDOMElement()
@@ -71,8 +71,17 @@ describe("LandingCourierForm, before anything is typed", () => {
     expect(field("Nome completo")).toHaveAttribute("placeholder", "Como está no documento")
     expect(field("CPF")).toHaveAttribute("placeholder", "000.000.000-00")
     expect(field("E-mail")).toHaveAttribute("placeholder", "nome@exemplo.com")
-    expect(field("WhatsApp")).toHaveAttribute("placeholder", "(00) 00000-0000")
-    expect(within(screen.getByRole("form", { name: "Comece seu cadastro" })).getAllByRole("textbox").map((input) => input.getAttribute("name"))).toEqual(["name", "document", "email", "whatsapp"])
+    expect(field("WhatsApp")).toHaveAttribute("placeholder", "(00) 0 0000-0000")
+    expect(within(screen.getByRole("form", { name: TITLE })).getAllByRole("textbox").map((input) => input.getAttribute("name"))).toEqual(["name", "document", "email", "whatsapp"])
+  })
+
+  // BEELINK-329: the one city open is added by whoever sends, and the documents are a later step's.
+  it("asks for no city, and says under its button what is left for the next step", () => {
+    renderForm()
+
+    expect(screen.queryByRole("combobox")).not.toBeInTheDocument()
+    expect(document.querySelector("select")).toBeNull()
+    expect(screen.getByText("Os documentos ficam para o próximo passo.")).toBeVisible()
   })
 
   it("gives the CPF and the WhatsApp a numeric keyboard, and the e-mail its own", () => {
@@ -85,22 +94,12 @@ describe("LandingCourierForm, before anything is typed", () => {
     expect(field("CPF")).toHaveAttribute("autocomplete", "off")
   })
 
-  it("offers one city, Fortaleza/CE, already chosen, and says why", () => {
-    renderForm()
-
-    const city = field("Cidade onde quer entregar") as HTMLSelectElement
-    expect(city.tagName).toBe("SELECT")
-    expect([...city.options].map((option) => [option.value, option.textContent])).toEqual([["FORTALEZA_CE", "Fortaleza/CE"]])
-    expect(city).toHaveValue("FORTALEZA_CE")
-    expect(city).toHaveAccessibleDescription("Por enquanto, o cadastro é só para Fortaleza.")
-  })
-
   it("starts on the motorbike, with nothing refused", () => {
     renderForm()
 
     expect(screen.getByRole("radio", { name: "Moto" })).toBeChecked()
-    expect(screen.getAllByRole("radio").map((radio) => radio.parentElement!.textContent)).toEqual(["Moto", "Bicicleta", "Carro", "Utilitário"])
-    expect(screen.getByRole("group", { name: "Como você entrega?" })).toBeInTheDocument()
+    expect(screen.getAllByRole("radio").map((radio) => radio.parentElement!.textContent)).toEqual(["Moto", "Bike", "Carro", "Utilitário"])
+    expect(screen.getByRole("group", { name: "Como vai fazer suas entregas?" })).toBeInTheDocument()
     expect(document.querySelector("[aria-invalid]")).toBeNull()
     expect(screen.queryByRole("alert")).not.toBeInTheDocument()
   })
@@ -125,7 +124,6 @@ describe("LandingCourierForm, before anything is typed", () => {
     expect(button).toHaveAttribute("disabled")
     expect(page.querySelector(`[id="${button.getAttribute("aria-describedby")}"]`)).toHaveTextContent(EVERYTHING)
     expect(page.querySelector('input[type="radio"][value="MOTORCYCLE"]')).toHaveAttribute("checked")
-    expect([...page.querySelectorAll("select option")].map((option) => option.getAttribute("value"))).toEqual(["FORTALEZA_CE"])
     expect([...page.querySelectorAll("a")].map((link) => link.getAttribute("href"))).toEqual(["/termos", "/privacidade"])
   })
 })
@@ -142,7 +140,7 @@ describe("LandingCourierForm, while it is filled in", () => {
     await user.type(field("WhatsApp"), "859")
     expect(field("WhatsApp")).toHaveValue("(85) 9")
     await user.type(field("WhatsApp"), "87654321")
-    expect(field("WhatsApp")).toHaveValue("(85) 98765-4321")
+    expect(field("WhatsApp")).toHaveValue("(85) 9 8765-4321")
   })
 
   it("dresses them when they are pasted whole, the country's 55 taken off", async () => {
@@ -154,7 +152,7 @@ describe("LandingCourierForm, while it is filled in", () => {
 
     await user.click(field("WhatsApp"))
     await user.paste("+55 85 98765-4321")
-    expect(field("WhatsApp")).toHaveValue("(85) 98765-4321")
+    expect(field("WhatsApp")).toHaveValue("(85) 9 8765-4321")
   })
 
   it("takes no twelfth digit of a CPF or of a WhatsApp, and nothing that is not a digit", async () => {
@@ -164,7 +162,7 @@ describe("LandingCourierForm, while it is filled in", () => {
     await user.type(field("WhatsApp"), "85-98765-4321-77")
 
     expect(field("CPF")).toHaveValue("529.982.247-25")
-    expect(field("WhatsApp")).toHaveValue("(85) 98765-4321")
+    expect(field("WhatsApp")).toHaveValue("(85) 9 8765-4321")
   })
 
   it.each([
@@ -205,8 +203,8 @@ describe("LandingCourierForm, while it is filled in", () => {
     accept().focus()
     await user.tab()
 
-    expect(await screen.findByText("Marque o aceite para enviar.")).toBeVisible()
-    expect(accept()).toHaveAccessibleDescription("Marque o aceite para enviar.")
+    expect(await screen.findByText("Marque o aceite para continuar.")).toBeVisible()
+    expect(accept()).toHaveAccessibleDescription("Marque o aceite para continuar.")
   })
 
   it("takes a refusal back once the field is put right", async () => {
@@ -225,13 +223,13 @@ describe("LandingCourierForm, while it is filled in", () => {
     const { user } = renderForm()
 
     await user.type(field("Nome completo"), ZULEICA.name)
-    expect(send()).toHaveAccessibleDescription("Para enviar, falta: CPF, e-mail, WhatsApp, aceite dos termos.")
+    expect(send()).toHaveAccessibleDescription("Para continuar, falta: CPF, e-mail, WhatsApp, aceite dos termos.")
     await user.type(field("CPF"), "52998224725")
-    expect(send()).toHaveAccessibleDescription("Para enviar, falta: e-mail, WhatsApp, aceite dos termos.")
+    expect(send()).toHaveAccessibleDescription("Para continuar, falta: e-mail, WhatsApp, aceite dos termos.")
     await user.type(field("E-mail"), ZULEICA.email)
-    expect(send()).toHaveAccessibleDescription("Para enviar, falta: WhatsApp, aceite dos termos.")
+    expect(send()).toHaveAccessibleDescription("Para continuar, falta: WhatsApp, aceite dos termos.")
     await user.type(field("WhatsApp"), "85987654321")
-    expect(send()).toHaveAccessibleDescription("Para enviar, falta: aceite dos termos.")
+    expect(send()).toHaveAccessibleDescription("Para continuar, falta: aceite dos termos.")
     expect(send()).toBeDisabled()
     expect(screen.getByRole("status")).toBeEmptyDOMElement()
 
@@ -239,15 +237,15 @@ describe("LandingCourierForm, while it is filled in", () => {
 
     expect(send()).toBeEnabled()
     expect(send()).not.toHaveAccessibleDescription()
-    expect(screen.queryByText(/Para enviar, falta/)).not.toBeInTheDocument()
-    expect(screen.getByRole("status")).toHaveTextContent("Tudo certo: o botão Enviar cadastro está liberado.")
+    expect(screen.queryByText(/Para continuar, falta/)).not.toBeInTheDocument()
+    expect(screen.getByRole("status")).toHaveTextContent("Tudo certo: o botão Continuar está liberado.")
   })
 
   it.each([
-    ["the acceptance is taken back", async (user: User) => user.click(accept()), "Para enviar, falta: aceite dos termos."],
-    ["a digit of the CPF is erased", async (user: User) => user.type(field("CPF"), "{Backspace}"), "Para enviar, falta: CPF."],
-    ["the surname is erased", async (user: User) => user.type(field("Nome completo"), "{Backspace>8/}"), "Para enviar, falta: nome completo."],
-    ["the e-mail is emptied", async (user: User) => user.clear(field("E-mail")), "Para enviar, falta: e-mail."],
+    ["the acceptance is taken back", async (user: User) => user.click(accept()), "Para continuar, falta: aceite dos termos."],
+    ["a digit of the CPF is erased", async (user: User) => user.type(field("CPF"), "{Backspace}"), "Para continuar, falta: CPF."],
+    ["the surname is erased", async (user: User) => user.type(field("Nome completo"), "{Backspace>8/}"), "Para continuar, falta: nome completo."],
+    ["the e-mail is emptied", async (user: User) => user.clear(field("E-mail")), "Para continuar, falta: e-mail."],
   ])("locks again when %s", async (_, undo, missing) => {
     const { user } = renderForm({ initial: ZULEICA })
     expect(send()).toBeEnabled()
@@ -262,7 +260,7 @@ describe("LandingCourierForm, while it is filled in", () => {
   it("is unlocked by any of the four ways of delivering: one is always chosen", async () => {
     const { user } = renderForm({ initial: ZULEICA })
 
-    for (const vehicle of ["Bicicleta", "Carro", "Utilitário", "Moto"]) {
+    for (const vehicle of ["Bike", "Carro", "Utilitário", "Moto"]) {
       await user.click(screen.getByRole("radio", { name: vehicle }))
       expect(send()).toBeEnabled()
     }
@@ -270,10 +268,10 @@ describe("LandingCourierForm, while it is filled in", () => {
 })
 
 describe("LandingCourierForm, sent", () => {
-  it("hands over what was typed as the masks wrote it, the city by its code, the vehicle, the acceptance and the empty trap", async () => {
+  it("hands over what was typed as the masks wrote it, the vehicle, the acceptance and the empty trap — and no city", async () => {
     const { user, onSubmit } = renderForm()
     await fill(user)
-    await user.click(screen.getByRole("radio", { name: "Bicicleta" }))
+    await user.click(screen.getByRole("radio", { name: "Bike" }))
 
     await user.click(send())
 
@@ -297,11 +295,9 @@ describe("LandingCourierForm, sent", () => {
     expect(field("WhatsApp")).toHaveFocus()
     await user.keyboard("85987654321")
     await user.tab()
-    expect(field("Cidade onde quer entregar")).toHaveFocus()
-    await user.tab()
     expect(screen.getByRole("radio", { name: "Moto" })).toHaveFocus()
     await user.keyboard("{ArrowRight}")
-    expect(screen.getByRole("radio", { name: "Bicicleta" })).toBeChecked()
+    expect(screen.getByRole("radio", { name: "Bike" })).toBeChecked()
     await user.tab()
     expect(accept()).toHaveFocus()
     await user.keyboard(" ")
@@ -375,13 +371,12 @@ describe("LandingCourierForm, when the send met a problem", () => {
     await waitFor(() => expect(field("CPF")).toHaveFocus())
     expect(screen.queryByRole("alert")).not.toBeInTheDocument()
     expect(send()).toBeEnabled()
-    expect(send()).toHaveAccessibleName("Enviar cadastro")
+    expect(send()).toHaveAccessibleName("Continuar")
     untouched()
   })
 
   it.each([
-    ["city", () => field("Cidade onde quer entregar")],
-    ["vehicle", () => screen.getByRole("group", { name: "Como você entrega?" })],
+    ["vehicle", () => screen.getByRole("group", { name: "Como vai fazer suas entregas?" })],
     ["acceptedTerms", () => accept()],
   ] as const)("can say a refusal of the %s too", (name, control) => {
     renderForm({ initial: ZULEICA, problem: { field: name, message: "Recusado pela API." } })
@@ -393,7 +388,7 @@ describe("LandingCourierForm, when the send met a problem", () => {
     renderForm({ initial: ZULEICA, problem: limited })
 
     expect(screen.getByRole("alert")).toHaveTextContent("Muitos envios em pouco tempo. Espere alguns minutos e tente de novo.")
-    expect(send()).toHaveAccessibleName("Enviar cadastro")
+    expect(send()).toHaveAccessibleName("Continuar")
     expect(document.querySelector("[aria-invalid]")).toBeNull()
     untouched()
   })
@@ -422,8 +417,8 @@ describe("LandingCourierForm, when the send met a problem", () => {
 
 describe("LandingCourierForm, once the application was taken", () => {
   /** The screen's part, stood in for: it holds where the send is. */
-  function Taken({ onAgain }: { onAgain?: () => void }) {
-    const [status, setStatus] = useState<"idle" | "sent">("idle")
+  function Taken({ onAgain, outcome = "sent" }: { onAgain?: () => void; outcome?: "sent" | "already" }) {
+    const [status, setStatus] = useState<"idle" | "sent" | "already">("idle")
 
     return (
       <LandingCourierForm
@@ -432,7 +427,7 @@ describe("LandingCourierForm, once the application was taken", () => {
         text={text}
         status={status}
         initial={ZULEICA}
-        onSubmit={() => setStatus("sent")}
+        onSubmit={() => setStatus(outcome)}
         onAgain={() => {
           onAgain?.()
           setStatus("idle")
@@ -441,6 +436,9 @@ describe("LandingCourierForm, once the application was taken", () => {
     )
   }
 
+  const NEXT = "Em breve você recebe no seu e-mail as informações para concluir o cadastro."
+  const ALREADY = "Não precisa enviar de novo. As informações para concluir chegam no e-mail informado nesse cadastro."
+
   it("gives its place to the confirmation, which says the rest arrives by e-mail, takes the focus and is said aloud", async () => {
     const user = userEvent.setup()
     render(<Taken />)
@@ -448,11 +446,42 @@ describe("LandingCourierForm, once the application was taken", () => {
     await user.click(send())
 
     const confirmation = await screen.findByRole("group", { name: "Cadastro recebido." })
-    expect(within(confirmation).getByText("Em breve você recebe no seu e-mail as informações para concluir o cadastro.")).toBeVisible()
+    expect(within(confirmation).getByText(NEXT)).toBeVisible()
     await waitFor(() => expect(confirmation).toHaveFocus())
-    expect(screen.getByRole("status")).toHaveTextContent("Cadastro recebido. Em breve você recebe no seu e-mail as informações para concluir o cadastro.")
+    expect(screen.getByRole("status")).toHaveTextContent(`Cadastro recebido. ${NEXT}`)
     expect(screen.queryByRole("form")).not.toBeInTheDocument()
     expect(screen.queryByLabelText("CPF")).not.toBeInTheDocument()
+  })
+
+  describe("when its CPF was on the list already", () => {
+    it("gives its place to the same card saying so, with nothing refused on a field, the focus on it and the sentence said aloud", async () => {
+      const user = userEvent.setup()
+      render(<Taken outcome="already" />)
+
+      await user.click(send())
+
+      const confirmation = await screen.findByRole("group", { name: "Esse CPF já tem cadastro." })
+      expect(within(confirmation).getByText(ALREADY)).toBeVisible()
+      await waitFor(() => expect(confirmation).toHaveFocus())
+      expect(screen.getByRole("status")).toHaveTextContent(`Esse CPF já tem cadastro. ${ALREADY}`)
+      expect(screen.queryByRole("form")).not.toBeInTheDocument()
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument()
+      expect(screen.queryByText("Cadastro recebido.")).not.toBeInTheDocument()
+    })
+
+    it("offers another CPF: the form comes back empty, with the focus on its first field", async () => {
+      const user = userEvent.setup()
+      const again = vi.fn()
+      render(<Taken outcome="already" onAgain={again} />)
+      await user.click(send())
+
+      await user.click(await screen.findByRole("button", { name: "Cadastrar outro CPF" }))
+
+      expect(again).toHaveBeenCalledTimes(1)
+      expect(await screen.findByRole("form", { name: TITLE })).toBeInTheDocument()
+      expect(field("CPF")).toHaveValue("")
+      await waitFor(() => expect(field("Nome completo")).toHaveFocus())
+    })
   })
 
   it("offers another application: the form comes back empty, locked, and with the focus on its first field", async () => {
@@ -464,7 +493,7 @@ describe("LandingCourierForm, once the application was taken", () => {
     await user.click(await screen.findByRole("button", { name: "Enviar outro cadastro" }))
 
     expect(again).toHaveBeenCalledTimes(1)
-    expect(await screen.findByRole("form", { name: "Comece seu cadastro" })).toBeInTheDocument()
+    expect(await screen.findByRole("form", { name: TITLE })).toBeInTheDocument()
     expect(field("Nome completo")).toHaveValue("")
     expect(field("CPF")).toHaveValue("")
     expect(field("E-mail")).toHaveValue("")
@@ -564,7 +593,7 @@ describe("LandingCourierForm, to a reader", () => {
     await user.type(field("WhatsApp"), "85")
     accept().focus()
     await user.tab()
-    await screen.findByText("Marque o aceite para enviar.")
+    await screen.findByText("Marque o aceite para continuar.")
     await expectNoA11yViolations(empty.container)
     empty.unmount()
 
@@ -574,6 +603,7 @@ describe("LandingCourierForm, to a reader", () => {
       { initial: ZULEICA, problem: { field: "document", message: "O CPF não foi aceito." } },
       { initial: ZULEICA, problem: { field: null, message: "Não foi possível enviar agora.", retry: true } },
       { initial: ZULEICA, status: "sent" },
+      { initial: ZULEICA, status: "already" },
     ]
     for (const state of states) {
       const view = render(<LandingCourierForm termsHref="/termos" privacyHref="/privacidade" text={text} onSubmit={() => {}} {...state} />)

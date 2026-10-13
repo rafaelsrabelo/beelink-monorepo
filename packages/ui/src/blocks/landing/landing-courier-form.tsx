@@ -5,7 +5,7 @@ import { useEffect, useId, useMemo, useRef } from "react"
 
 // Libs
 import { zodResolver } from "@hookform/resolvers/zod"
-import { ArrowRightIcon, ChevronDownIcon } from "lucide-react"
+import { ArrowRightIcon } from "lucide-react"
 import { useForm, useWatch } from "react-hook-form"
 
 // UI
@@ -13,7 +13,7 @@ import { withParts } from "@harness-monorepo/ui/lib/text-parts"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Locales
-import type { LandingCourierCityValue, LandingCourierFieldValue, LandingLegalValue, UiMessages } from "@harness-monorepo/ui/locales/messages"
+import type { LandingCourierFieldValue, LandingLegalValue, UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import { LandingCourierConsent } from "./landing-courier-consent"
@@ -22,7 +22,7 @@ import { maskCpf, maskMobile } from "./landing-courier-masks"
 import { createCourierSchema, missingCourierFields, type LandingCourierValues } from "./landing-courier-schema"
 import { LandingCourierSent } from "./landing-courier-sent"
 import { LandingCourierVehicles } from "./landing-courier-vehicles"
-import { LANDING_COURIER_CARD, LANDING_CTA, LANDING_FIELD, LANDING_FIELD_LABEL, LANDING_FIELDS, LANDING_FOCUS_ON_GROUND, LANDING_INPUT, LANDING_REFUSAL } from "./landing-styles"
+import { LANDING_COURIER_CARD, LANDING_CTA, LANDING_FIELDS, LANDING_FOCUS_ON_GROUND } from "./landing-styles"
 
 /** What the last send met, in a sentence the screen made: this block never sees an `errorCode`. */
 export interface LandingCourierProblem {
@@ -41,14 +41,17 @@ export interface LandingCourierFormProps {
    * written into the page for the browser to read back, and the whole dictionary would be.
    */
   text: UiMessages["landing"]["couriers"]["form"]
-  /** Where the send is. `sent` puts the confirmation where the form stood, so it cannot go twice. */
-  status?: "idle" | "sending" | "sent"
+  /**
+   * Where the send is. `sent` puts the confirmation where the form stood, so it cannot go twice;
+   * `already` puts there that the CPF is on the list — nothing was kept, and there is nothing to fix.
+   */
+  status?: "idle" | "sending" | "sent" | "already"
   problem?: LandingCourierProblem | null
   /** A form with nothing left to fix. The screen owns the send: this block reaches no network. */
   onSubmit: (application: LandingCourierValues) => void
   /** The form was typed in again: what was said of the last send is not about it any more. */
   onEdit?: () => void
-  /** "Enviar outro cadastro", once one was taken. */
+  /** "Enviar outro cadastro", once one was taken or found on the list. */
   onAgain?: () => void
   /** A plain click on one of the two legal links, when the screen reads them over the form; without it they lead to their pages. */
   onRead?: (document: LandingLegalValue, link: HTMLElement) => void
@@ -57,8 +60,10 @@ export interface LandingCourierFormProps {
 }
 
 /**
- * "Comece seu cadastro": the form that puts a person on the list of those who asked to deliver with
- * Beelink (BEELINK-322). Today for one city, so the city is a choice of one.
+ * The first step of a courier's sign-up (BEELINK-329): a name, a CPF, an e-mail, a WhatsApp and how
+ * the person delivers, which puts them on the list of those who asked to deliver with Beelink. It
+ * asks for no city — the one open is the section's to name and the sender's to add — and the
+ * documents are a step still to come, which the line under the button says.
  *
  * **The button is locked until nothing is missing**, by the same check that writes the sentence
  * under it — the two cannot disagree — and that sentence is the button's description. A field shows
@@ -68,18 +73,20 @@ export interface LandingCourierFormProps {
  * Until the script arrives the page holds a locked button and a form whose `method` sends nothing:
  * a form's default is a GET that writes the name, the CPF and the phone into the address.
  *
- * Native controls dressed in the brand's tokens, the city's `<select>` included, and not the design
- * system's primitives: those draw nothing before their script, and wear the panel's tokens.
+ * Native controls dressed in the brand's tokens, and not the design system's primitives: those draw
+ * nothing before their script, and wear the panel's tokens.
  */
 export function LandingCourierForm({ termsHref, privacyHref, text, status = "idle", problem = null, onSubmit, onEdit, onAgain, onRead, initial }: LandingCourierFormProps) {
   const id = useId()
   const schema = useMemo(() => createCourierSchema(text), [text])
-  const cities = Object.keys(text.cities) as LandingCourierCityValue[]
-  const empty = { name: "", document: "", email: "", whatsapp: "", city: cities[0]!, vehicle: "MOTORCYCLE", acceptedTerms: false, website: "" } satisfies LandingCourierValues
+  const empty = { name: "", document: "", email: "", whatsapp: "", vehicle: "MOTORCYCLE", acceptedTerms: false, website: "" } satisfies LandingCourierValues
   const form = useForm<LandingCourierValues>({ resolver: zodResolver(schema), mode: "onTouched", defaultValues: { ...empty, ...initial } })
   const missing = missingCourierFields(schema, useWatch({ control: form.control }))
   const locked = missing.length > 0
   const sending = status === "sending"
+  // Nothing left to send: the confirmation stands where the form did, saying which of the two it was.
+  const closed = status === "sent" || status === "already"
+  const confirmation = status === "already" ? text.already : text.sent
   const errors = form.formState.errors
   const refusalOf = (field: LandingCourierFieldValue) => errors[field]?.message ?? (problem?.field === field ? problem.message : undefined)
   // Set by "Enviar outro cadastro": the form that comes back takes the focus the button had.
@@ -91,16 +98,16 @@ export function LandingCourierForm({ termsHref, privacyHref, text, status = "idl
   }, [problem?.field, problem?.message, form])
 
   useEffect(() => {
-    if (status === "sent" || !returning.current) return
+    if (closed || !returning.current) return
     returning.current = false
     form.setFocus("name")
-  }, [status, form])
+  }, [closed, form])
 
   return (
     <>
-      {status === "sent" ? (
+      {closed ? (
         <LandingCourierSent
-          text={text.sent}
+          text={confirmation}
           onAgain={() => {
             // The next one is another person's: nothing of the last is left in the fields.
             form.reset(empty)
@@ -110,42 +117,15 @@ export function LandingCourierForm({ termsHref, privacyHref, text, status = "idl
         />
       ) : (
         <form noValidate method="dialog" aria-labelledby={`${id}-title`} onSubmit={form.handleSubmit(onSubmit)} onChange={() => onEdit?.()} className={cn(LANDING_FOCUS_ON_GROUND, LANDING_COURIER_CARD)}>
-          <div className="flex flex-col gap-1.5">
-            <h3 id={`${id}-title`} className="text-[28px] font-extrabold tracking-[-0.02em]">
-              {text.title}
-            </h3>
-            <p className="text-[15px] text-brand-muted">{text.lead}</p>
-          </div>
+          <h3 id={`${id}-title`} className="text-lg leading-tight font-extrabold tracking-[-0.01em] lg:text-xl">
+            {text.title}
+          </h3>
 
           <div className={LANDING_FIELDS}>
             <LandingCourierField id={`${id}-name`} label={text.name} refusal={refusalOf("name")} autoComplete="name" placeholder={text.namePlaceholder} {...form.register("name")} />
             <LandingCourierField id={`${id}-document`} label={text.document} refusal={refusalOf("document")} mask={maskCpf} inputMode="numeric" autoComplete="off" placeholder={text.documentPlaceholder} {...form.register("document")} />
             <LandingCourierField id={`${id}-email`} label={text.email} refusal={refusalOf("email")} type="email" inputMode="email" autoComplete="email" placeholder={text.emailPlaceholder} {...form.register("email")} />
             <LandingCourierField id={`${id}-whatsapp`} label={text.whatsapp} refusal={refusalOf("whatsapp")} mask={maskMobile} inputMode="numeric" autoComplete="tel-national" placeholder={text.whatsappPlaceholder} {...form.register("whatsapp")} />
-
-            <div className={LANDING_FIELD}>
-              <label htmlFor={`${id}-city`} className={LANDING_FIELD_LABEL}>
-                {text.city}
-              </label>
-              <div className="relative flex flex-col">
-                <select id={`${id}-city`} {...form.register("city")} aria-invalid={refusalOf("city") ? true : undefined} aria-describedby={`${id}-city-hint${refusalOf("city") ? ` ${id}-city-refusal` : ""}`} className={cn(LANDING_INPUT, "cursor-pointer appearance-none pr-11")}>
-                  {cities.map((city) => (
-                    <option key={city} value={city}>
-                      {text.cities[city]}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDownIcon aria-hidden="true" className="pointer-events-none absolute top-1/2 right-4 size-5 -translate-y-1/2" />
-              </div>
-              <span id={`${id}-city-hint`} className="text-[13px] text-brand-muted">
-                {text.cityHint}
-              </span>
-              {refusalOf("city") ? (
-                <span id={`${id}-city-refusal`} className={LANDING_REFUSAL}>
-                  {refusalOf("city")}
-                </span>
-              ) : null}
-            </div>
           </div>
 
           <LandingCourierVehicles id={`${id}-vehicle`} legend={text.vehicle} labels={text.vehicles} initial={initial?.vehicle ?? empty.vehicle} radio={form.register("vehicle")} refusal={refusalOf("vehicle")} />
@@ -163,25 +143,27 @@ export function LandingCourierForm({ termsHref, privacyHref, text, status = "idl
             </p>
           ) : null}
 
+          {/* Only its rise is eased. Its colours change at once: faded, the unlocking passes through a grey on a grey nobody can read. */}
           <button
             type="submit"
             disabled={locked || sending}
             aria-describedby={locked ? `${id}-missing` : undefined}
-            className={cn(LANDING_CTA, "h-[58px] cursor-pointer bg-brand-ink text-[17px] font-extrabold text-brand-on-ink disabled:pointer-events-none disabled:bg-brand-line-strong disabled:text-brand-muted")}
+            className={cn(LANDING_CTA, "h-[52px] cursor-pointer bg-brand-ink text-base font-extrabold text-brand-on-ink transition-[translate,box-shadow] disabled:pointer-events-none disabled:bg-brand-line-strong disabled:text-brand-muted")}
           >
             {sending ? text.sending : problem?.retry ? text.retry : text.submit}
-            {sending ? null : <ArrowRightIcon aria-hidden="true" className="size-[18px]" />}
+            {sending ? null : <ArrowRightIcon aria-hidden="true" className="size-4" />}
           </button>
           {locked ? (
-            <p id={`${id}-missing`} className="text-center text-[13px] leading-[1.45] text-brand-text">
+            <p id={`${id}-missing`} className="text-center text-xs leading-[1.45] text-brand-text">
               {withParts(text.missing, { fields: missing.map((field) => text.missingNames[field]).join(", ") })}
             </p>
           ) : null}
+          <p className="text-center text-xs text-brand-muted">{text.next}</p>
         </form>
       )}
-      {/* In the page before there is anything to say, so a reader hears the sentence arrive: that the button unlocked, and that the form was taken. */}
+      {/* In the page before there is anything to say, so a reader hears the sentence arrive: that the button unlocked, and what became of the form. */}
       <p role="status" className="sr-only">
-        {status === "sent" ? `${text.sent.title} ${text.sent.text}` : status === "idle" && !locked ? text.ready : ""}
+        {closed ? `${confirmation.title} ${confirmation.text}` : status === "idle" && !locked ? text.ready : ""}
       </p>
     </>
   )

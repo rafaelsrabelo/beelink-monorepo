@@ -31,18 +31,21 @@ export function mobileDigitsOf(typed: string): string {
 }
 
 /**
- * `(00) 00000-0000`: a mobile with its area code. Not the shop screen's `maskPhone` — that one keeps
- * a landline's shape and a country code's digits, and this field takes a Brazilian mobile only.
+ * `(00) 0 0000-0000`: a mobile with its area code, the nine every mobile starts with standing apart
+ * from the eight digits after it. Not the shop screen's `maskPhone` — that one keeps a landline's
+ * shape and a country code's digits, and this field takes a Brazilian mobile only.
  */
 export function maskMobile(typed: string): string {
   const digits = mobileDigitsOf(typed)
   if (digits.length <= 2) return digits ? `(${digits}` : ""
 
   const area = digits.slice(0, 2)
-  const head = digits.slice(2, 7)
+  const first = digits.slice(2, 3)
+  const head = digits.slice(3, 7)
   const tail = digits.slice(7)
+  const number = head ? `${first} ${head}` : first
 
-  return tail ? `(${area}) ${head}-${tail}` : `(${area}) ${head}`
+  return tail ? `(${area}) ${number}-${tail}` : `(${area}) ${number}`
 }
 
 /**

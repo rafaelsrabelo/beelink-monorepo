@@ -26,7 +26,6 @@ import { LandingConsentLive } from "@/components/landing/landing-consent-live"
 import { LandingCourierFormLive } from "@/components/landing/landing-courier-form-live"
 import { LandingConsentReopen } from "@/components/landing/landing-consent-reopen"
 import { SiteMeasured } from "@/components/site-analytics/site-measured"
-import courierStreet from "@/assets/images/courier-street.jpg"
 import courierSunny from "@/assets/images/courier-sunny.jpg"
 import panelLaptop from "@/assets/images/panel-laptop.jpg"
 import parcelPhoneTruck from "@/assets/images/parcel-phone-truck.jpg"
@@ -119,7 +118,6 @@ export default async function LandingPage() {
             <LandingSteps messages={ui} />
             <LandingPlans prices={PLAN_PRICES} locale={locale} signupHref={SIGNUP} linkComponent={AppLink} messages={ui} />
             <LandingCouriers
-              photo={<BrandPhoto image={courierStreet} alt="" sizes="(min-width: 80rem) min(60vw, 1180px), 100vw" />}
               form={
                 <LandingCourierFormLive
                   termsHref={LEGAL_ROUTES.terms}

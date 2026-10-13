@@ -50,45 +50,46 @@ describe("maskMobile", () => {
     ["8", "(8"],
     ["85", "(85"],
     ["859", "(85) 9"],
-    ["8598888", "(85) 98888"],
-    ["85988887", "(85) 98888-7"],
-    ["85988887777", "(85) 98888-7777"],
+    ["8598", "(85) 9 8"],
+    ["8598888", "(85) 9 8888"],
+    ["85988887", "(85) 9 8888-7"],
+    ["85988887777", "(85) 9 8888-7777"],
   ])("writes %j as %j while it is typed, and never ends in punctuation", (typed, shown) => {
     expect(maskMobile(typed)).toBe(shown)
   })
 
   it.each([
-    ["85988887777", "(85) 98888-7777"],
-    ["(85) 98888-7777", "(85) 98888-7777"],
-    ["85 9 8888 7777", "(85) 98888-7777"],
-    ["+55 85 98888-7777", "(85) 98888-7777"],
-    ["+55 (85) 9 8888-7777", "(85) 98888-7777"],
-    ["5585988887777", "(85) 98888-7777"],
-    ["55 85 98888-7777", "(85) 98888-7777"],
-    ["085 98888-7777", "(85) 98888-7777"],
-    ["+55 085 98888-7777", "(85) 98888-7777"],
+    ["85988887777", "(85) 9 8888-7777"],
+    ["(85) 98888-7777", "(85) 9 8888-7777"],
+    ["85 9 8888 7777", "(85) 9 8888-7777"],
+    ["+55 85 98888-7777", "(85) 9 8888-7777"],
+    ["+55 (85) 9 8888-7777", "(85) 9 8888-7777"],
+    ["5585988887777", "(85) 9 8888-7777"],
+    ["55 85 98888-7777", "(85) 9 8888-7777"],
+    ["085 98888-7777", "(85) 9 8888-7777"],
+    ["+55 085 98888-7777", "(85) 9 8888-7777"],
   ])("reads %j pasted whole as %j: the country's 55 and the trunk's 0 are not the number", (pasted, shown) => {
     expect(maskMobile(pasted)).toBe(shown)
   })
 
   /** 55 is Santa Maria's area code: a twelfth key pressed by mistake must not make it another number. */
   it("never takes an area code of 55 for the country's, typed a digit at a time", () => {
-    expect(maskMobile("55999998888")).toBe("(55) 99999-8888")
-    expect(maskMobile("(55) 99999-88881")).toBe("(55) 99999-8888")
-    expect(maskMobile("5599999")).toBe("(55) 99999")
+    expect(maskMobile("55999998888")).toBe("(55) 9 9999-8888")
+    expect(maskMobile("(55) 9 9999-88881")).toBe("(55) 9 9999-8888")
+    expect(maskMobile("5599999")).toBe("(55) 9 9999")
   })
 
   it("leaves out what is typed past the eleventh digit", () => {
-    expect(maskMobile("(85) 98888-77779")).toBe("(85) 98888-7777")
+    expect(maskMobile("(85) 9 8888-77779")).toBe("(85) 9 8888-7777")
   })
 
   it("writes its own output again as it is", () => {
-    for (const typed of ["(8", "(85", "(85) 9", "(85) 98888", "(85) 98888-7", "(85) 98888-7777"]) expect(maskMobile(typed)).toBe(typed)
+    for (const typed of ["(8", "(85", "(85) 9", "(85) 9 8", "(85) 9 8888", "(85) 9 8888-7", "(85) 9 8888-7777"]) expect(maskMobile(typed)).toBe(typed)
   })
 
   /** A landline is not refused here — the field's check does that — but it is not dressed as a mobile either. */
   it("writes a landline's ten digits in the mobile's shape, one short", () => {
-    expect(maskMobile("8533334444")).toBe("(85) 33334-444")
+    expect(maskMobile("8533334444")).toBe("(85) 3 3334-444")
   })
 })
 
@@ -137,8 +138,8 @@ describe("maskField", () => {
 
     maskField(phone, maskMobile)
 
-    expect(phone.value).toBe("(85) 98888-7777")
-    expect(phone.selectionStart).toBe(15)
+    expect(phone.value).toBe("(85) 9 8888-7777")
+    expect(phone.selectionStart).toBe(16)
   })
 
   /** A field the browser fills in is not the one in use: selecting inside it would move the focus. */

@@ -31,7 +31,6 @@ function photo(seed: string, width: number, height: number, alt = "") {
 }
 
 const photos = {
-  courier: photo("beelink-moto", 1024, 1536),
   busStop: photo("beelink-ponto", 1024, 1280, ptBR.landing.posters.busStopAlt),
   wall: photo("beelink-muro", 1024, 1536, ptBR.landing.posters.wallAlt),
 }
@@ -76,7 +75,7 @@ export const Pagina: Story = {
         <LandingIntegrations logos={integrationLogos} />
         <LandingSteps />
         <LandingPlans prices={examplePlanPrices} locale="pt-BR" signupHref={hrefs.signupHref} />
-        <LandingCouriers photo={photos.courier} form={courierForm} />
+        <LandingCouriers form={courierForm} />
         <LandingFaq prices={examplePlanPrices} locale="pt-BR" />
         <LandingPosters busStop={photos.busStop} wall={photos.wall} />
         <LandingCta signupHref={hrefs.signupHref} trialDays={examplePlanPrices.trialDays} />
@@ -141,7 +140,7 @@ export const Entregadores: Story = {
   args: { children: null },
   render: () => (
     <LandingShell className="min-h-0 py-10">
-      <LandingCouriers photo={photos.courier} form={courierForm} />
+      <LandingCouriers form={courierForm} />
     </LandingShell>
   ),
 }

@@ -3,15 +3,12 @@
 // React
 import type { ComponentProps } from "react"
 
-// Libs
-import { BikeIcon, CarIcon, MotorbikeIcon, TruckIcon, type LucideIcon } from "lucide-react"
-
 // Locales
 import type { LandingVehicleValue } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import { LANDING_VEHICLES } from "./landing-courier-schema"
-import { LANDING_REFUSAL } from "./landing-styles"
+import { LANDING_FIELD_LABEL, LANDING_REFUSAL } from "./landing-styles"
 
 export interface LandingCourierVehiclesProps {
   id: string
@@ -24,28 +21,28 @@ export interface LandingCourierVehiclesProps {
   refusal?: string
 }
 
-const VEHICLE_ICON: Record<LandingVehicleValue, LucideIcon> = { MOTORCYCLE: MotorbikeIcon, BICYCLE: BikeIcon, CAR: CarIcon, VAN: TruckIcon }
-
-/** "Como você entrega?": the four ways, one always chosen. A real radio group, so the arrow keys move the choice. */
+/**
+ * "Como vai fazer suas entregas?": the four ways side by side, one always chosen. Drawn as buttons and
+ * built as a real radio group, so the arrow keys move the choice and a reader hears one of four.
+ *
+ * 44px tall at every width: a thumb's target. On the narrowest phones four in a row leave the longest
+ * word no room, and they stand two by two.
+ */
 export function LandingCourierVehicles({ id, legend, labels, initial, radio, refusal }: LandingCourierVehiclesProps) {
   return (
-    <fieldset aria-describedby={refusal ? `${id}-refusal` : undefined} className="flex flex-col gap-2">
-      <legend className="mb-2 text-sm font-bold">{legend}</legend>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {LANDING_VEHICLES.map((vehicle) => {
-          const Icon = VEHICLE_ICON[vehicle]
-          return (
-            // The whole card is the radio's label: it reads as chosen, and a key reaches it.
-            <label
-              key={vehicle}
-              className="flex h-[72px] cursor-pointer flex-col items-center justify-center gap-1 rounded-[14px] border-[1.5px] border-brand-line-strong bg-brand-surface text-[13px] font-semibold hover:border-brand-ink has-checked:border-2 has-checked:border-brand-ink has-checked:bg-brand-yellow has-checked:font-bold has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-brand-ink"
-            >
-              <input type="radio" value={vehicle} defaultChecked={vehicle === initial} {...radio} className="sr-only" />
-              <Icon aria-hidden="true" className="size-[22px]" />
-              {labels[vehicle]}
-            </label>
-          )
-        })}
+    <fieldset aria-describedby={refusal ? `${id}-refusal` : undefined} className="flex flex-col gap-1.5">
+      <legend className={`mb-1.5 ${LANDING_FIELD_LABEL}`}>{legend}</legend>
+      <div className="grid grid-cols-2 gap-1.5 min-[22.5rem]:grid-cols-4">
+        {LANDING_VEHICLES.map((vehicle) => (
+          // The whole button is the radio's label: it reads as chosen, and a key reaches it.
+          <label
+            key={vehicle}
+            className="flex h-11 cursor-pointer items-center justify-center rounded-[10px] border-[1.5px] border-brand-line-strong bg-brand-surface px-1 text-xs font-semibold hover:border-brand-ink has-checked:border-2 has-checked:border-brand-ink has-checked:bg-brand-yellow has-checked:font-extrabold has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-brand-ink lg:text-[13px]"
+          >
+            <input type="radio" value={vehicle} defaultChecked={vehicle === initial} {...radio} className="sr-only" />
+            {labels[vehicle]}
+          </label>
+        ))}
       </div>
       {refusal ? (
         <span id={`${id}-refusal`} className={LANDING_REFUSAL}>
