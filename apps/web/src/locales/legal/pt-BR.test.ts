@@ -202,10 +202,12 @@ describe("bee-link's legal texts (BEELINK-171)", () => {
       expect(analytics).toMatch(/aceitar ali não vale como aceite do aviso de cookies de nenhuma loja, e aceitar numa loja não libera a medição do site/)
     })
 
-    it("says how a yes is taken back, where the answer is kept, and what stays in the browser", () => {
+    // BEELINK-320 takes Google's cookies out at a yes taken back; the text said they stayed, and was corrected within its version.
+    it("says how a yes is taken back, where the answer is kept, and that Google's cookies are taken out", () => {
       expect(analytics).toMatch(/o link "Cookies", no rodapé da página inicial, abre o aviso de novo e mostra a sua escolha atual/)
-      expect(analytics).toMatch(/Se você retira o aceite, o bee-link deixa de carregar o Google Analytics no seu navegador e de enviar dados ao Google/)
-      expect(analytics).toMatch(/Os cookies do Google Analytics continuam no seu navegador até vencerem ou até você apagá-los/)
+      expect(analytics).toMatch(/Se você retira o aceite, o bee-link deixa de carregar o Google Analytics no seu navegador e de enviar dados ao Google, e apaga do seu navegador os cookies do Google Analytics/)
+      expect(analytics).not.toMatch(/continuam no seu navegador/)
+      expect(analytics).toMatch(/O que já foi enviado ao Google passa a seguir a política de privacidade dele/)
       expect(analytics).toMatch(/no cookie bl_site_consent, e o bee-link pergunta de novo depois de 180 dias\. Ela não é registrada no banco de dados/)
     })
 

@@ -622,7 +622,7 @@ export const legalTexts = {
           },
           {
             kind: "paragraph",
-            text: "Você pode mudar de ideia quando quiser: o link \"Cookies\", no rodapé da página inicial, abre o aviso de novo e mostra a sua escolha atual. Se você retira o aceite, o bee-link deixa de carregar o Google Analytics no seu navegador e de enviar dados ao Google. Os cookies do Google Analytics continuam no seu navegador até vencerem ou até você apagá-los nas configurações do navegador, e o que já foi enviado ao Google passa a seguir a política de privacidade dele.",
+            text: "Você pode mudar de ideia quando quiser: o link \"Cookies\", no rodapé da página inicial, abre o aviso de novo e mostra a sua escolha atual. Se você retira o aceite, o bee-link deixa de carregar o Google Analytics no seu navegador e de enviar dados ao Google, e apaga do seu navegador os cookies do Google Analytics. O que já foi enviado ao Google passa a seguir a política de privacidade dele.",
           },
           {
             kind: "paragraph",
