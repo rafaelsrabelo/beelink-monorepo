@@ -16,11 +16,11 @@ export interface LegalTexts {
  * keeps or shares is a new version of these texts, with a new `version`.
  */
 export const legalTexts = {
-  version: "2026-10-13",
+  version: "2026-10-14",
   terms: {
     lang: "pt-BR",
     title: "Termos de uso",
-    effective: "Vigente desde 13 de outubro de 2026",
+    effective: "Vigente desde 14 de outubro de 2026",
     intro: [
       "Estes Termos de uso são as regras para usar o bee-link. Eles explicam o que a plataforma faz, o que ela não faz e o que se espera de cada pessoa que a usa.",
       "Eles valem para dois públicos: o lojista, que cria uma conta no painel para publicar a sua loja, e o cliente, que cria uma conta numa loja para comprar dela. Quando uma regra vale só para um dos dois, o texto diz.",
@@ -361,7 +361,7 @@ export const legalTexts = {
   privacy: {
     lang: "pt-BR",
     title: "Política de privacidade",
-    effective: "Vigente desde 13 de outubro de 2026",
+    effective: "Vigente desde 14 de outubro de 2026",
     intro: [
       "Esta Política de privacidade explica quais dados pessoais o bee-link trata, para quê, com quem os compartilha, por quanto tempo os guarda e como você exerce os seus direitos, conforme a Lei Geral de Proteção de Dados (Lei nº 13.709/2018, a LGPD).",
       "Ela vale para os lojistas, para os clientes das lojas, para quem se candidata a fazer entregas e para quem visita o site do bee-link ou uma loja sem criar conta. Ao criar uma conta, ou ao definir uma senha pelo link enviado por e-mail, ou ao enviar o cadastro de entregador, você declara que leu esta Política.",
@@ -485,11 +485,11 @@ export const legalTexts = {
           },
           {
             kind: "paragraph",
-            text: "Esses dados formam uma lista de interesse. O bee-link os usa para saber quem quer entregar e em qual cidade, e para falar com você, pelo e-mail ou pelo WhatsApp informados, sobre a conclusão do cadastro. O CPF identifica o cadastro: existe um só por CPF.",
+            text: "Esses dados formam uma lista de interesse. O bee-link os usa para saber quem quer entregar e em qual cidade, e para falar com você, pelo e-mail ou pelo WhatsApp informados, sobre a conclusão do cadastro. Cada pessoa entra na lista uma vez: existe um só cadastro por CPF, por e-mail e por número de WhatsApp.",
           },
           {
             kind: "paragraph",
-            text: "Se o formulário for enviado de novo com o mesmo CPF, os dados novos substituem os anteriores, e o aceite registrado passa a ser o do novo envio. A resposta do site é a mesma nos dois casos, e não diz se o CPF já estava na lista.",
+            text: "Se o formulário for enviado com um CPF, um e-mail ou um número de WhatsApp que já está na lista, o cadastro não é aceito, e o site diz qual dos três já estava cadastrado. O cadastro que já existia não é alterado. Por isso, quem digita um desses dados no formulário fica sabendo se ele já está na lista.",
           },
           {
             kind: "paragraph",

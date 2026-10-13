@@ -34,6 +34,26 @@ const typed = {
   acceptedTerms: true,
 } satisfies CourierApplicationPayload;
 
+/** Somebody else altogether: another CPF, another e-mail, another number. */
+const other = {
+  ...typed,
+  name: 'Raimundo Nonato Alves',
+  document: '111.444.777-35',
+  email: 'raimundo@exemplo.test',
+  whatsapp: '(85) 91234-5678',
+} satisfies CourierApplicationPayload;
+
+/** A CPF that checks out, from its first nine digits: nobody's, made for the tests that need many. */
+function cpfOf(nine: string): string {
+  const digit = (digits: string) => {
+    const sum = [...digits].reduce((total, each, at) => total + Number(each) * (digits.length + 1 - at), 0);
+    return String(((sum * 10) % 11) % 10);
+  };
+  const first = digit(nine);
+
+  return nine + first + digit(nine + first);
+}
+
 /** Every way the four values that say who that person is could show up in a line of the log. */
 const PERSONAL = /Zuleica|Tavares|529\.982\.247|52998224725|98765-4321|987654321/i;
 
@@ -107,55 +127,67 @@ describe('courier applications', () => {
     expect(kept[0]!.termsAcceptedAt.getTime()).toBeLessThanOrEqual(Date.now());
   });
 
-  it('takes the same CPF again without a second row, replacing what was kept and when the terms were taken', async () => {
+  it('refuses a CPF already on the list, however it is written, and leaves what was kept as it was', async () => {
     await send(typed);
-    // The first application, made to be an old one: another day, under the terms that came before.
-    await prisma.$executeRaw`
-      UPDATE "courier_applications"
-      SET "createdAt" = '2026-09-30 12:00:00', "updatedAt" = '2026-09-30 12:00:00', "termsAcceptedAt" = '2026-09-30 12:00:00', "termsVersion" = '2026-09-30'`;
     const [first] = await rows();
-    const before = Date.now();
 
     const again = await send({
-      ...typed,
-      // The same CPF, written another way.
+      ...other,
+      // The same CPF, written another way, and nothing else of that person.
       document: '52998224725',
-      name: 'Zuleica T. Brandão',
-      email: 'zuleica.brandao@exemplo.test',
-      whatsapp: '85 91234-5678',
       vehicle: 'CAR',
     });
 
-    expect(again.statusCode).toBe(204);
-    expect(again.payload).toBe('');
-
-    const kept = await rows();
-    expect(kept).toHaveLength(1);
-    expect(kept[0]).toMatchObject({
-      id: first!.id,
-      createdAt: first!.createdAt,
-      name: 'Zuleica T. Brandão',
-      document: '52998224725',
-      email: 'zuleica.brandao@exemplo.test',
-      whatsapp: '5585912345678',
-      vehicle: 'CAR',
-      termsVersion: LEGAL_VERSION,
-    });
-    expect(first!.createdAt.toISOString()).toBe('2026-09-30T12:00:00.000Z');
-    expect(kept[0]!.termsAcceptedAt.getTime()).toBeGreaterThanOrEqual(before);
-    expect(kept[0]!.updatedAt.getTime()).toBeGreaterThanOrEqual(before);
+    expect(again.statusCode).toBe(409);
+    expect(again.json<ApiErrorBody>()).toMatchObject({ statusCode: 409, errorCode: 'COURIER_DOCUMENT_TAKEN' });
+    expect(await rows()).toEqual([first]);
   });
 
-  it('keeps one row of ten sent at once with one CPF', async () => {
+  it.each([
+    ['e-mail, typed in another case', { email: 'ZULEICA.TAVARES@exemplo.test' }, 'COURIER_EMAIL_TAKEN'],
+    ['WhatsApp, typed with its country code', { whatsapp: '+55 85 98765-4321' }, 'COURIER_WHATSAPP_TAKEN'],
+  ] satisfies [string, object, CourierApplicationErrorCode][])('refuses another CPF that comes with the same %s', async (_what, same, errorCode) => {
+    await send(typed);
+    const [first] = await rows();
+
+    const response = await send({ ...other, ...same });
+
+    expect(response.statusCode).toBe(409);
+    expect(response.json<ApiErrorBody>()).toMatchObject({ statusCode: 409, errorCode });
+    expect(await rows()).toEqual([first]);
+  });
+
+  it('names the CPF when the three of them are on the list', async () => {
+    await send(typed);
+
+    expect((await send(typed)).json<ApiErrorBody>().errorCode).toBe('COURIER_DOCUMENT_TAKEN');
+  });
+
+  it('keeps one of ten sent at once with one CPF, and refuses the nine', async () => {
     const answers = await Promise.all(Array.from({ length: 10 }, () => send(typed)));
 
-    expect(answers.map((response) => response.statusCode)).toEqual(Array.from({ length: 10 }, () => 204));
+    expect(answers.map((response) => response.statusCode).sort()).toEqual([204, ...Array.from({ length: 9 }, () => 409)]);
     expect(await rows()).toHaveLength(1);
+  });
+
+  // No index holds an e-mail to one row: what does is that looking and writing are one step.
+  it('keeps one of ten people sent at once with one e-mail, and one of ten with one WhatsApp', async () => {
+    const crowd = (shared: object, from: number) =>
+      Array.from({ length: 10 }, (_, at) =>
+        send({ ...typed, document: cpfOf(String(100000000 + from + at)), email: `pessoa${from + at}@exemplo.test`, whatsapp: `(85) 9${String(10000000 + from + at)}`, ...shared }),
+      );
+
+    const byEmail = await Promise.all(crowd({ email: 'uma.so@exemplo.test' }, 0));
+    const byWhatsapp = await Promise.all(crowd({ whatsapp: '(85) 99999-0000' }, 100));
+
+    expect(byEmail.map((response) => response.statusCode).sort()).toEqual([204, ...Array.from({ length: 9 }, () => 409)]);
+    expect(byWhatsapp.map((response) => response.statusCode).sort()).toEqual([204, ...Array.from({ length: 9 }, () => 409)]);
+    expect(await rows()).toHaveLength(2);
   });
 
   it('keeps two people apart', async () => {
     await send(typed);
-    await send({ ...typed, document: '111.444.777-35', name: 'Raimundo Nonato Alves', email: 'raimundo@exemplo.test' });
+    await send(other);
 
     expect((await rows()).map((row) => row.document)).toEqual(['52998224725', '11144477735']);
   });
@@ -200,13 +232,13 @@ describe('courier applications', () => {
     const allowed = [await send(typed, one), await send(typed, one), await send({ ...typed, name: 'Zuleica' }, one)];
     const blocked = await send(typed, one);
 
-    // A refusal counts like a save: the limit is on asking, not on being kept.
-    expect(allowed.map((response) => response.statusCode)).toEqual([204, 204, 400]);
+    // A refusal counts like a save, whichever refusal it is: the limit is on asking, not on being kept.
+    expect(allowed.map((response) => response.statusCode)).toEqual([204, 409, 400]);
     expect(blocked.statusCode).toBe(429);
     expect(blocked.json<ApiErrorBody>()).toMatchObject({ statusCode: 429, errorCode: 'RATE_LIMITED' });
     expect(blocked.headers['retry-after']).toBeDefined();
 
-    expect((await send(typed, '198.51.100.8')).statusCode).toBe(204);
+    expect((await send(other, '198.51.100.8')).statusCode).toBe(204);
   });
 
   describe('the table', () => {
@@ -239,6 +271,16 @@ describe('courier applications', () => {
       expect((await send(typed)).statusCode).toBe(204);
 
       expect(requestLine(204)).toBeDefined();
+      expect(logged.join('')).not.toMatch(PERSONAL);
+    });
+
+    it('writes a line for one refused as already on the list, with nothing of who sent it or of who was there', async () => {
+      await send(typed);
+      logged.length = 0;
+
+      expect((await send(typed)).statusCode).toBe(409);
+
+      expect(requestLine(409)).toBeDefined();
       expect(logged.join('')).not.toMatch(PERSONAL);
     });
 

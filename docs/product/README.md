@@ -228,10 +228,10 @@ bee-link keeps a **list of people who asked to deliver** for its shops. It is a 
 
 - **The landing page asks** for a full name, a CPF, an e-mail, a WhatsApp number, the city and how the person delivers, and for the terms of use and the privacy policy to be accepted — both read over the form, without leaving it.
 - **One city is open today: Fortaleza.** A city is opened by bee-link; it is not written in by whoever applies.
-- **One entry per CPF.** The form sent again with the same CPF replaces what was kept, and the answer never says whether a CPF was already on the list.
+- **A person is on the list once.** A CPF, an e-mail or a WhatsApp number already there is refused, and the page says which of the three; what was kept is left as it was, so nobody who knows a CPF can write over the person it belongs to. The price is that whoever types one of the three learns whether it is on the list.
 - **The entry keeps which version of the terms was accepted, and when.**
 - **The product writes to nobody.** The page says the information to finish the registration arrives by e-mail; no message is sent by bee-link itself, and nobody is approved or refused by it. Whoever answers these people does it by hand, from the list.
-- **Nothing deletes an entry by itself.** A person asks through the channel the privacy policy gives, and it is taken out by hand.
+- **Nothing deletes or corrects an entry by itself.** Sending the form again changes nothing: a person asks through the channel the privacy policy gives, and the entry is corrected or taken out by hand.
 
 ## What the product does not do
 

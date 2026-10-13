@@ -14,11 +14,11 @@ export type CourierCity = "FORTALEZA_CE";
 
 /**
  * What a person sends to say they want to deliver (BEELINK-321). Anonymous, rate-limited per address,
- * and answered 204 with no body whether it was a first application, one from a CPF already on the
- * list — which replaces what was kept, and says so to nobody — or a trapped one.
+ * and answered 204 with no body when it was kept — or trapped.
  *
  * Each field is checked by the API, which has the last word; a refusal is a 400 with the field's own
- * `CourierApplicationErrorCode`.
+ * `CourierApplicationErrorCode`. A person is on the list once (BEELINK-325): a CPF, an e-mail or a
+ * WhatsApp number already there is a 409 that names which, and what was kept is left as it was.
  */
 export interface CourierApplicationPayload {
   /** The full name, as on the document: at least a first name and a surname, 120 characters at most. */
@@ -48,9 +48,10 @@ export interface CourierApplicationPayload {
 }
 
 /**
- * The `errorCode` values `POST /courier-applications` answers with a 400, one per field. With more
- * than one field refused, the answer names the first in the order they are listed here. The apps own
- * the sentences.
+ * The `errorCode` values `POST /courier-applications` refuses a body with, one per field: a 400 for
+ * a field that is wrong, a 409 for one already on the list. With more than one field refused, the
+ * answer names the first in the order they are listed here — every wrong field before any taken
+ * one. The apps own the sentences.
  *
  * A field left out is refused like a wrong one, with its own code. A body carrying a field the route
  * does not know is `BAD_REQUEST`, and too many from one address is `RATE_LIMITED` (429).
@@ -67,4 +68,10 @@ export type CourierApplicationErrorCode =
   | "COURIER_CITY_NOT_OPEN"
   | "COURIER_VEHICLE_INVALID"
   /** `acceptedTerms` is not `true`. */
-  | "COURIER_TERMS_REQUIRED";
+  | "COURIER_TERMS_REQUIRED"
+  /** 409: that CPF is on the list already, written with its points or without. */
+  | "COURIER_DOCUMENT_TAKEN"
+  /** 409: that e-mail is on the list already, in whatever case it was typed. */
+  | "COURIER_EMAIL_TAKEN"
+  /** 409: that WhatsApp number is on the list already, with its country code or without. */
+  | "COURIER_WHATSAPP_TAKEN";
