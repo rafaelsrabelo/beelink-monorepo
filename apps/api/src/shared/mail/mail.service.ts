@@ -14,6 +14,7 @@ import type { AccountShop } from '../../modules/auth/account-scope.js';
 import { EMAIL_VERIFICATION_TTL_HOURS, PASSWORD_RESET_TTL_MINUTES } from '../../modules/auth/auth.constants.js';
 import { env } from '../config/env.js';
 import { cashbackExpiring, type CashbackExpiringContent } from './cashback-expiring.template.js';
+import { courierApplicationReceived, type CourierApplicationReceivedContent } from './courier-application-received.template.js';
 import { paymentApproved, type PaymentApprovedContent } from './payment-approved.template.js';
 import { paymentRefunded, type PaymentRefundedContent } from './payment-refunded.template.js';
 import { emailVerification, favoriteNotice, leadReceived, orderStatusChanged, passwordReset, type FavoriteNoticeContent, type OrderStatusContent } from './mail.templates.js';
@@ -99,6 +100,14 @@ export class MailService implements OnApplicationBootstrap {
   /** A customer's cashback about to expire (BEELINK-241); answers whether it went, for its outbox. */
   async sendCashbackExpiring(to: string, content: CashbackExpiringContent, url: string, settingsUrl: string): Promise<boolean> {
     return this.send(to, cashbackExpiring(content, url, settingsUrl), content.shopName);
+  }
+
+  /**
+   * A person who asked to deliver is told the application arrived (BEELINK-326); answers whether it
+   * went, for its outbox. From bee-link itself: there is no shop to name.
+   */
+  async sendCourierApplicationReceived(to: string, content: CourierApplicationReceivedContent): Promise<boolean> {
+    return this.send(to, courierApplicationReceived(content));
   }
 
   /** One per lead, to the site's owner. The visitor's words travel escaped — see `leadReceived`. */

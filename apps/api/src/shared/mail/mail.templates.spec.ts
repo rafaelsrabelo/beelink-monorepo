@@ -1,5 +1,6 @@
 // App
 import { cashbackExpiring } from './cashback-expiring.template.js';
+import { courierApplicationReceived } from './courier-application-received.template.js';
 import { paymentApproved } from './payment-approved.template.js';
 import { paymentRefunded } from './payment-refunded.template.js';
 import { emailVerification, escapeHtml, favoriteNotice, leadReceived, orderStatusChanged, passwordReset } from './mail.templates.js';
@@ -261,5 +262,76 @@ describe('the payment refunded e-mail (BEELINK-208)', () => {
     expect(mail.html).toContain('Bia &lt;b&gt;');
     expect(mail.html).toContain('Lessari &amp; Cia estornou');
     expect(mail.html).not.toContain('<b>');
+  });
+});
+
+describe("a courier's application, acknowledged (BEELINK-326)", () => {
+  const mail = courierApplicationReceived({ name: 'Zuleica Tavares Lima', city: 'Fortaleza' });
+
+  it('says the application arrived and that the way to go on comes to this same address', () => {
+    expect(mail.subject).toBe('Recebemos o seu cadastro de entregador na Beelink');
+    expect(mail.text).toBe(
+      'Olá, Zuleica.\n\nRecebemos o seu cadastro para fazer entregas com a Beelink em Fortaleza.\n\nEm breve você recebe, neste e-mail, as orientações para seguir com o cadastro. Por enquanto, não é preciso fazer mais nada.\n\nEquipe Beelink',
+    );
+  });
+
+  it('says the same in the card of every other e-mail', () => {
+    expect(mail.html).toContain('<table role="presentation" style="max-width:480px;margin:0 auto;background:#ffffff;border-radius:12px;padding:32px">');
+    expect(mail.html).toContain('<h1 style="margin:0 0 16px;font-size:20px">Olá, Zuleica.</h1>');
+    expect(mail.html).toContain('Recebemos o seu cadastro para fazer entregas com a Beelink em Fortaleza.');
+    expect(mail.html).toContain('Em breve você recebe, neste e-mail, as orientações para seguir com o cadastro. Por enquanto, não é preciso fazer mais nada.');
+    expect(mail.html).toContain('Equipe Beelink');
+  });
+
+  it('leads nowhere: no button, no link, no address', () => {
+    expect(mail.html).not.toMatch(/<a\b|href|https?:|www\./i);
+    expect(mail.html).not.toContain('Se o botão não funcionar');
+    expect(mail.text).not.toMatch(/https?:|www\./i);
+  });
+
+  it('says the first name and nothing else of the name', () => {
+    expect(JSON.stringify(mail)).not.toMatch(/Tavares|Lima/);
+  });
+
+  it.each([
+    ["D'Ávila Souza", "Olá, D'Ávila."],
+    ['D’Ávila Souza', 'Olá, D’Ávila.'],
+    ['Maria-José Lima', 'Olá, Maria-José.'],
+    // An accent typed apart from its letter is the same name.
+    ['Joa\u0303o Silva', 'Olá, João.'],
+  ])('greets %s by a first name of letters, an apostrophe or a hyphen', (name, greeting) => {
+    expect(courierApplicationReceived({ name, city: 'Fortaleza' }).text.split('\n')[0]).toBe(greeting);
+  });
+
+  // The address was confirmed by nobody: whoever typed it chose what its owner reads after "Olá,".
+  it.each([
+    ['www.exemplo.com Silva'],
+    ['https://exemplo.com Silva'],
+    ['ganhe@exemplo.com Silva'],
+    ['<b>Zuleica</b> Tavares'],
+    ['Zuleica2 Tavares'],
+    ['-- Tavares'],
+  ])('greets nobody by name when the first word, as in %s, is anything but a name', (name) => {
+    const unnamed = courierApplicationReceived({ name, city: 'Fortaleza' });
+
+    expect(unnamed.text.split('\n')[0]).toBe('Olá.');
+    expect(unnamed.html).toContain('<h1 style="margin:0 0 16px;font-size:20px">Olá.</h1>');
+    expect(JSON.stringify(unnamed)).not.toMatch(/exemplo|Zuleica|Tavares|Silva/);
+  });
+
+  it('escapes a name for the HTML and leaves it as typed in the text', () => {
+    const quoted = courierApplicationReceived({ name: "D'Ávila Souza", city: 'Fortaleza' });
+
+    expect(quoted.html).toContain('Olá, D&#39;Ávila.');
+    expect(quoted.text).toContain("Olá, D'Ávila.");
+  });
+
+  // The city is kept as a code, and a code that left the list has no name.
+  it('says the sentence without a city when the code names none', () => {
+    const nowhere = courierApplicationReceived({ name: 'Zuleica Tavares', city: null });
+
+    expect(nowhere.text).toContain('Recebemos o seu cadastro para fazer entregas com a Beelink.\n');
+    expect(nowhere.html).toContain('Recebemos o seu cadastro para fazer entregas com a Beelink.</p>');
+    expect(JSON.stringify(nowhere)).not.toMatch(/ em |null|undefined/);
   });
 });
