@@ -882,6 +882,23 @@ describe("a page's subscription at bee-link's own Asaas account, by the cycle it
       expect(asaas.standingSubscriptions[0]).toMatchObject({ cycle: 'YEARLY' });
     });
 
+    it('no longer shows the invoice of the subscription it removed when the new one could not be made: the row names nothing, and the next choice makes one', async () => {
+      await choose('MONTHLY');
+      asaas.failing('createSubscription', new AsaasThrottled('Asaas failed (429)', null));
+
+      expectRefusal(await choose('ANNUAL'), 503, 'BILLING_UNREACHABLE');
+
+      // The monthly one is gone from Asaas, and its invoice with it: what the row said of it would open nothing.
+      expect(asaas.standingSubscriptions).toHaveLength(0);
+      expect(await rowOf()).toMatchObject({ asaasSubscriptionId: null, planId: null, cycle: null, priceCents: null, firstDueDate: null, invoiceUrl: null, asaasSubscriptionClaimedUntil: null });
+      const read = (await call('GET', '/api/stores/padaria/subscription', owner)).json<StoreSubscriptionAnswer>();
+      expect(read.subscription).toMatchObject({ status: 'TRIALING', plan: null, cycle: null, priceCents: null, invoiceUrl: null });
+
+      expect((await choose('ANNUAL')).statusCode).toBe(200);
+      expect(asaas.standingSubscriptions).toHaveLength(1);
+      expect(await rowOf()).toMatchObject({ cycle: 'ANNUAL', priceCents: 57480 });
+    });
+
     it('names the subscription it made on the row though its charge could not be read, and answers the invoice on the next choice without making another', async () => {
       asaas.before('createSubscription', () => asaas.failing('subscriptionCharges', new AsaasUnreachable('Asaas failed (502)')));
 
