@@ -202,6 +202,24 @@ test.describe("Beelink's own Google Analytics, once the page is left or the yes 
     expect(await googleCookies(page)).toEqual([])
   })
 
+  test("tells again at a yes given again, with the library the tab already holds", async ({ page, context, baseURL }) => {
+    await saidYes(context, baseURL)
+    await open(page, "/")
+    await expect.poll(told).toEqual([`page_view @ ${baseURL}/`])
+
+    await page.getByRole("button", { name: "Cookies" }).click()
+    await notice(page).getByRole("button", { name: "Recusar" }).click()
+    await expect.poll(() => googleCookies(page)).toEqual([])
+
+    await page.getByRole("button", { name: "Cookies" }).click()
+    await notice(page).getByRole("button", { name: "Aceitar" }).click()
+
+    await expect.poll(told).toEqual([`page_view @ ${baseURL}/`, `page_view @ ${baseURL}/`])
+    expect(await lockOf(page)).toBe(false)
+    expect(google.scripts()).toEqual([SCRIPT])
+    expect(await googleCookies(page)).toEqual(["_ga", "_ga_TEST000000"])
+  })
+
   test("loads nothing on any other page, whatever the answer: the other signed-out screens, the legal pages, a shop's address", async ({ page, context, baseURL }) => {
     await saidYes(context, baseURL)
 

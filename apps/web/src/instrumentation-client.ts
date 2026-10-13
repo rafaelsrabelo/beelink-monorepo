@@ -12,11 +12,17 @@ import { shutGoogleAnalytics } from "@/lib/google-analytics"
  */
 export function onRouterTransitionStart(url: string, navigationType: "push" | "replace" | "traverse"): void {
   // Back and Forward arrive here with the address already changed: there is no telling whether a page was left, so it is taken as left.
-  if (navigationType !== "traverse") {
-    const to = new URL(url, window.location.href)
-    // An anchor of the same page, or a parameter of it, is no departure.
-    if (to.origin === window.location.origin && to.pathname === window.location.pathname) return
-  }
+  if (navigationType !== "traverse" && staysOnThePage(url)) return
 
   shutGoogleAnalytics()
+}
+
+/** An anchor of the same page, or a parameter of it, is no departure. An address that cannot be read is taken as one. */
+function staysOnThePage(url: string): boolean {
+  try {
+    const to = new URL(url, window.location.href)
+    return to.origin === window.location.origin && to.pathname === window.location.pathname
+  } catch {
+    return false
+  }
 }

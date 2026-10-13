@@ -31,6 +31,7 @@ describe("the start of a navigation", () => {
     ["another measured page — it opens again on arriving", "/signup"],
     ["an address written whole", "http://localhost:3000/privacidade"],
     ["another site", "https://example.com/"],
+    ["an address that cannot be read", "http://["],
   ])("shuts the library before the address changes, for %s", (_name, url) => {
     startGoogleAnalytics(ID, HOME)
     expect(window[LOCK]).toBe(false)
