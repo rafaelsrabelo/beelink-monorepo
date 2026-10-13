@@ -165,3 +165,137 @@ DELETE FROM "courier_applications" WHERE "document" = '00000000000' RETURNING "i
 
 Uma linha devolvida é o cadastro apagado; nenhuma, o CPF não estava na lista. Para ler antes de
 apagar: `SELECT * FROM "courier_applications" WHERE "document" = '00000000000';`
+
+## Notas da entrega (acréscimo, 12/10)
+
+**Correções ao que está acima.**
+
+- **Decisão 14:** "um campo que o corpo não tem" ficou ambíguo. Um campo obrigatório **que falta** é
+  recusado com o código daquele campo, como um campo errado (`{}` responde `COURIER_NAME_INVALID`). O
+  `BAD_REQUEST` sem código próprio é para um campo **que a rota não conhece** (`termsVersion`, por
+  exemplo) e para a armadilha com o tipo errado.
+- **Decisão 20:** o que vai para o log quando o banco recusa é a classe do erro, o código do Prisma e
+  o SQLSTATE do Postgres, por exemplo `PrismaClientKnownRequestError P2039 23514` (23514 é uma
+  `CHECK`). Cada um só entra se tiver forma de código (uma palavra só); qualquer outra coisa que o
+  erro carregue pode ser a linha, e fica de fora.
+- **Decisão 16:** o `upsert` do Prisma vira **uma instrução**, `INSERT … ON CONFLICT ("document") DO
+  UPDATE`. Conferido lendo o SQL que ele emite. Dez envios simultâneos do mesmo CPF respondem 204 e
+  deixam uma linha (teste e2e).
+- **Definição de Pronto, item 1, "aplica do zero":** ver "O que foi e o que não foi conferido".
+
+**Onde ficou cada coisa.**
+
+- Contratos: `packages/contracts/src/courier.ts` (`CourierVehicle`, `CourierCity`,
+  `CourierApplicationPayload`, `CourierApplicationErrorCode`), exportado pelo `index.ts`.
+- Migração `20261013010008_courier_applications` e `prisma/schema/courier.prisma`: o enum
+  `CourierVehicle`, a tabela, o índice único `courier_applications_document_key` e as `CHECK`
+  `courier_applications_document_check` (`^[0-9]{11}$`) e `courier_applications_whatsapp_check`
+  (`^[0-9]{10,15}$`). Gerada pelo `prisma migrate dev --create-only`; as duas `CHECK` e o comentário do
+  topo foram escritos à mão.
+- API, `apps/api/src/modules/couriers/`: `courier-applications.controller.ts` (a rota e o limite),
+  `courier-applications.service.ts` (a armadilha, o `upsert`, a versão dos termos e a falha do banco),
+  `couriers.constants.ts` (`COURIER_CITIES`, `COURIER_VEHICLES`, os limites e as duas expressões),
+  `dto/courier-application.dto.ts` (normaliza e recusa), `couriers.module.ts`.
+- `apps/api/src/app.module.ts`: o módulo registrado, e as opções do pino passaram a ter nome
+  (`requestLogOptions`, exportadas, com o mesmo conteúdo) para o teste do log subir o app com elas.
+- Variáveis: `COURIER_APPLICATION_RATE_LIMIT_MAX` (5) e `COURIER_APPLICATION_RATE_LIMIT_WINDOW`
+  (`10 minutes`) em `env.ts`, `.env.example`, `docker-compose.dokploy.yml` e na tabela do README da API.
+
+**Desfazer a migração.** O Prisma não tem migração de volta. À mão:
+
+```sql
+BEGIN;
+DROP TABLE "courier_applications";
+DROP TYPE "CourierVehicle";
+DELETE FROM "_prisma_migrations" WHERE "migration_name" = '20261013010008_courier_applications';
+COMMIT;
+```
+
+Sem a última linha o `prisma migrate deploy` acha que ela já está aplicada. Apaga todos os cadastros.
+
+**Contrato para o AA6 (BEELINK-322).**
+
+- **Rota:** `POST {API_URL}/courier-applications`, sem sessão, corpo JSON. Resposta `204` sem corpo
+  para novo, repetido e armadilha. O handler do web deve usar `forwardToApi` (como
+  `app/api/storefront/[slug]/contact/route.ts`): é ele que repassa o endereço do visitante, e o
+  limite é por endereço.
+- **Corpo, `CourierApplicationPayload`:** `name`, `document` (o CPF, com ou sem pontuação), `email`,
+  `whatsapp` (como digitado, com ou sem `+55`), `city` (`CourierCity`: hoje só `"FORTALEZA_CE"`),
+  `vehicle` (`CourierVehicle`: `MOTORCYCLE`, `BICYCLE`, `CAR`, `VAN`, os mesmos valores do
+  `LandingVehicleValue` do formulário), `acceptedTerms` (o booleano `true`) e `website` (a armadilha:
+  um campo fora da vista; vazio ou ausente numa pessoa).
+- **Nenhum outro campo.** Um corpo com um campo a mais (`consent`, `termsVersion`…) responde
+  `400 BAD_REQUEST`. O formulário de hoje chama o aceite de `consent`: no fio ele é `acceptedTerms`.
+- **Recusas, `CourierApplicationErrorCode`, todas 400:** `COURIER_NAME_INVALID`,
+  `COURIER_DOCUMENT_INVALID`, `COURIER_EMAIL_INVALID`, `COURIER_WHATSAPP_INVALID`,
+  `COURIER_CITY_NOT_OPEN`, `COURIER_VEHICLE_INVALID`, `COURIER_TERMS_REQUIRED`. Vem **um código por
+  resposta**, o do primeiro campo recusado nessa ordem: o formulário precisa validar tudo antes de
+  enviar, e o código serve para apontar o campo quando o servidor discorda. `429 RATE_LIMITED` é o
+  excesso (5 envios em 10 minutos por endereço, contando os recusados).
+- **A regra do WhatsApp mudou em relação ao formulário de hoje:** só celular (DDD sem zero, nove
+  dígitos começando por 9). O `hasAreaCode` de `landing-courier-schema.ts` ainda aceita fixo.
+- **A cidade vai pelo código**, e o rótulo ("Fortaleza/CE") é texto do formulário, num
+  `Record<CourierCity, string>` para não compilar sem a cidade nova.
+- **A resposta não diz se o CPF já estava na lista.** A frase de sucesso do formulário é a mesma nos
+  dois casos.
+- **A política de privacidade** ainda não fala dos dados do entregador: entra no AA6, com nova
+  `LegalVersion`, antes de o formulário enviar.
+
+**O que foi e o que não foi conferido.**
+
+- Unidade: `courier-applications.service.spec.ts` (11) e `dto/courier-application.dto.spec.ts` (65),
+  76 testes. Com eles a API tem 1412 testes de unidade, todos passando.
+- `pnpm ci-check`: verde (type-check, lint, testes de `api` 1412, `web` 2719 e `ui` 2709, arch-gates
+  e docs-gate).
+- e2e da rota, `test/courier-applications.e2e-spec.ts`, 19 testes contra o Postgres: grava
+  normalizado com a versão do servidor; mesmo CPF não cria a segunda linha, troca os dados e o aceite
+  e mantém `createdAt`; dez envios simultâneos, uma linha; a armadilha; os sete códigos; um corpo que
+  nomeia a versão dos termos; o 429 por endereço; as duas `CHECK` e o índice único recusando por
+  conta própria; e o log nos três casos.
+- **O teste do log foi posto à prova:** com o serviço trocado para deixar o erro do banco subir, o
+  teste do 500 falha, e a linha que o filtro escreve traz
+  `Failing row contains (…, Zuleica Tavares, 52998224725, zuleica.tavares@exemplo.test, 5585987654321, …)`.
+  O serviço voltou ao que era.
+- **O que o pino escreve de um 204 nessa rota** (lido do fluxo, sem os cabeçalhos da resposta):
+  `{"level":30,"req":{"id":"req-1","method":"POST","url":"/api/courier-applications","query":{},"headers":{"x-forwarded-for":"203.0.113.1","user-agent":"lightMyRequest","host":"localhost:80","content-type":"application/json","content-length":"188"},"remoteAddress":"127.0.0.1"},"res":{"statusCode":204},"responseTime":22,"msg":"request completed"}`.
+  O 400 é a mesma linha com `statusCode: 400`, sem a mensagem da recusa.
+- Suíte e2e inteira da API, no commit `a1297f88`, contra `harness_landing_test` na 5442 e o Mailpit
+  da 8027: **86 de 88 arquivos e 1134 de 1140 testes passaram.** As seis falhas são as conhecidas do
+  `.env` deste worktree: cinco em `custom-domain.e2e-spec.ts` (`SHOP_DOMAIN_PROBE=false`; com
+  `SHOP_DOMAIN_PROBE=true` no shell o arquivo passa 14 de 14 nesta branch) e uma em
+  `meta-pixel-without-vault-key.e2e-spec.ts` (a `INTEGRATIONS_SECRET_KEY` do `.env` volta). As mesmas
+  seis falham com `app.module.ts` e `env.ts` como estão em `origin/main`, isto é, sem o módulo novo
+  carregado.
+- `pnpm --filter api build`: passou. `next build` e `turbo build` não foram rodados (disco).
+- **A migração:** aplicada em `harness_landing` pelo `prisma migrate dev`, que antes repassa todas as
+  109 migrações num banco temporário vazio e não achou diferença com o schema. No banco de teste, o
+  SQL de desfazer acima foi rodado, o `migrate status` passou a dizer que ela faltava e o
+  `migrate deploy` a aplicou de novo. **Não foi feito:** um `migrate deploy` das 109 num banco novo
+  criado por mim (só os dois bancos deste worktree podiam ser tocados, e o `migrate reset` é
+  destrutivo).
+- Com a API de pé na 3201 (`pnpm dev`), por `curl`: um cadastro válido respondeu 204 e gravou a
+  linha normalizada; o mesmo CPF com outros dados respondeu 204 e atualizou a linha, com `createdAt`
+  igual; a armadilha respondeu 204 sem gravar; as sete recusas e o campo desconhecido responderam 400
+  com os códigos; o sexto envio do mesmo endereço respondeu 429. O log do `pino-pretty` não trouxe
+  nome, CPF, e-mail nem telefone. O Swagger mostra a rota sem cadeado, o corpo e os códigos. A linha
+  de teste foi apagada com o `DELETE` deste plano, e a tabela de desenvolvimento ficou vazia.
+- **Não exercitado:** a rota chamada pelo web (o handler não existe), o limite com o endereço
+  repassado pelo web de verdade, e nada em produção ou homologação.
+
+**Achados fora do escopo, não corrigidos.**
+
+1. **O comando do e2e sem `TEST_DATABASE_URL` aponta para a 5432.** `vitest.config.e2e.ts` lê
+   `TEST_DATABASE_URL` do ambiente do shell antes de qualquer `.env` ser carregado, então a linha do
+   `apps/api/.env` não vale para ele. Aqui a primeira tentativa bateu em `localhost:5432` e a conexão
+   foi recusada (nada escutava lá, nada foi escrito). A suíte foi rodada com
+   `TEST_DATABASE_URL=postgresql://harness:harness@localhost:5442/harness_landing_test` no comando.
+   Com o Postgres de outro projeto ligado na 5432, o `global-setup` criaria um banco nele.
+2. **O filtro de exceções registra inteiro qualquer erro que responde 500, em todo módulo.** Uma
+   recusa do Postgres em qualquer tabela com dado pessoal (o CPF de um cliente, o documento de um
+   pedido) escreve a linha recusada no log, pelo `meta.driverAdapterError.cause.detail` do erro do
+   Prisma. Este ticket protegeu só a escrita dele. Vale um ticket para o filtro, ou para o
+   serializador de erro do pino.
+3. **A linha de toda requisição traz o `x-forwarded-for`**, o endereço do visitante. Vale para esta
+   rota como para todas.
+4. `LEAD_RATE_LIMIT_*` e a rota `POST /stores/:slug/contact` não estão nas tabelas de
+   `apps/api/docs/README.md`.
