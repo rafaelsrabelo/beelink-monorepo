@@ -8,8 +8,9 @@
 -- A price is whole cents for the WHOLE cycle, which is what Asaas is asked to charge: 32340 is six
 -- months at R$ 53,90, and 57480 a year at R$ 47,90. NULL is a cycle the plan is not sold in.
 --
--- A page that already pays keeps what it agreed to (`store_subscriptions.priceCents`): a price changed
--- here is the price of whoever chooses from then on.
+-- A price changed here does not reach a subscription already made at Asaas, which goes on charging
+-- the value it was made with — the one `store_subscriptions.priceCents` keeps. Raising what a paying
+-- page pays is a decision of its own, and not something editing this file does.
 --
 -- THE LANDING HOLDS A SECOND COPY of these amounts, in apps/web/src/lib/plans.ts, until the web reads
 -- them from the API (BEELINK-293). Until then the two files change together, by hand.

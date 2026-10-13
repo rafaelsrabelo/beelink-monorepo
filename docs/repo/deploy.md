@@ -9,7 +9,7 @@ Production is one Docker Compose stack on a Dokploy server: [docker-compose.dokp
 | Service | Image | Network | Why it is shaped this way |
 |---|---|---|---|
 | `postgres` | `postgres:18-alpine` | internal | the seed calls `uuidv7()`, which exists from 18; `pg_trgm` and `unaccent` ship in its contrib |
-| `migrate` | the API's `build` stage | internal | `prisma migrate deploy`, then the store-categories seed, then it exits — `exited` is its healthy state |
+| `migrate` | the API's `build` stage | internal | `prisma migrate deploy`, then the seed — the store categories and bee-link's plans — then it exits — `exited` is its healthy state |
 | `api` | the API's `runtime` stage | internal + `dokploy-network` | **one public route**: the real-time socket at `/api/socket.io` on the web's domain ([realtime.md](realtime.md)). Every other call goes through the web's route handlers |
 | `web` | Next.js `standalone` | internal + `dokploy-network` | the only thing Traefik can see; serves the shop windows at `/<slug>` and the panel at `/admin/<slug>` — and, at a shop's own domain, that shop's window at the root ([Shop domains](#shop-domains)) |
 
@@ -100,6 +100,13 @@ A shop may have a domain of its own (BEELINK-281): its owner saves it (`PUT /api
 - **A check that fails never moves an `ACTIVE` domain back to `PENDING`**: the problem is answered and kept, and the status stays. Taking a domain off a shop is its owner removing it (`DELETE` on the same route), or `UPDATE stores SET "customDomain" = NULL, "customDomainStatus" = NULL, "customDomainCheckedAt" = NULL, "customDomainProblem" = NULL WHERE slug = …`.
 - **A domain belongs to the first shop that saves it.** Pointing an `A` record at a shared address proves nothing about which shop it is for. While each domain is added by hand, look at which shop holds it before adding its entry: `SELECT slug, "customDomain", "customDomainStatus" FROM stores WHERE "customDomain" IS NOT NULL`.
 - **Nothing here was tried on the production server**, the `api` container reaching its own public address least of all. The first domain is the test: with its DNS pointed and its entry added, `POST /api/stores/:slug/custom-domain/check` should answer it `ACTIVE`.
+
+## bee-link's own plans
+
+What a page pays bee-link (BEELINK-218) is charged at bee-link's own Asaas account, apart from every shop's. Nothing of it calls Asaas yet.
+
+- **`BILLING_ENFORCED` is left out until the day charging starts.** Unset or `false`, nothing is charged, nothing locks and the panel says nothing of a plan. A page's 7-day trial is counted from its creation either way, so the day it is set to `true` every page created more than seven days before reads as expired: look at those first.
+- **The plans and their prices are the seed's** — `apps/api/prisma/seed/plans.sql`, run by `migrate` on every deploy. A price or an `active` changed by hand in the database is put back by the next deploy; change the file. The landing shows its own copy of the prices (`apps/web/src/lib/plans.ts`), and the two are changed together.
 
 ## Homologation
 

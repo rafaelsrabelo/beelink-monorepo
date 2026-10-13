@@ -40,6 +40,19 @@ A **store** is the tenant. Everything else in the product — products, orders, 
 - A store has an **address** and a position on the map. That position is what delivery distance is measured from.
 - **Only the owner may read or change anything of theirs.** This is decided by the product, once, at the point the data is served — not by the screen that happens to be asking. Two shopkeepers are strangers to each other.
 
+## What a page costs
+
+bee-link is paid for **by the page**. A page is a store, and the plan, the trial and the standing below are the page's, not the account's that owns it.
+
+- **Each page has its own.** An account with two pages has two trials and two subscriptions, and pays for two. A page that stops for want of payment stops alone: the same account's other pages go on.
+- **A new page is tried for 7 days, with no card asked.** The trial is counted from the day the page was created and ends with a day, not with an hour: at midnight in Brasília, closing the seventh day after that one. So a page is never tried for less than seven whole days.
+- **A plan is paid by the cycle**: by the month, for six months or for a year, each charged once for the whole of it, the longer ones costing less a month. A plan need not be sold in every cycle. **Beelink** is the plan on sale; **Beelink + Beelia** is registered and not sold until Beelia exists.
+- **A renewal falls on the first charge's day of the month**, and on the month's last day where the month lacks it: a subscription first charged on the 31st of October renews on the 30th of November, and then on the 31st of December.
+- **A page stands in one of seven ways**: *in trial*; *trial expired* — the trial ended and the page never paid; *active* — a paid period is running; *past due* — the period's charge was not paid by its due day; *suspended* — stopped for want of payment, having paid before; *cancelled* — its shopkeeper cancelled, and the period paid for is over; *exempt* — it owes nothing, by bee-link's own choice.
+- **It is bee-link charging the shopkeeper, apart from the shop's sales.** A customer's payment goes to the shop's own Asaas account and never meets what the page pays bee-link.
+- **Of a card, bee-link keeps its brand and its last four digits**, and nothing else.
+- **None of it is charged yet.** Until bee-link switches charging on, nothing is charged, no page is locked, and the panel shows no plan, no notice and no payment screen; a page's trial is counted all the same. A page that existed before subscriptions did has none until it is given one.
+
 ## The shop window
 
 The shop window at `/<slug>` is **anonymous**. No one signs in to buy, nothing about a visitor is required before they choose, and the page must be readable by a search engine and by a phone on a bad connection. It is the surface the product is judged on.
