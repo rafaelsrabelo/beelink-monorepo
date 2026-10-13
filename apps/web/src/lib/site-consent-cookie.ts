@@ -33,6 +33,20 @@ export function decodeSiteConsent(raw: string | undefined): SiteConsentChoice | 
   return raw === "granted" || raw === "denied" ? raw : null
 }
 
+/**
+ * The answer this browser holds right now, out of `document.cookie` (BEELINK-320). A page the router
+ * kept may have been drawn for an answer the visitor has since changed — in this tab or in another —
+ * and nothing is loaded on the word of a page.
+ */
+export function siteConsentIn(cookies: string): SiteConsentChoice | null {
+  const held = cookies
+    .split(";")
+    .map((entry) => entry.trim())
+    .find((entry) => entry.startsWith(`${SITE_CONSENT_COOKIE}=`))
+
+  return decodeSiteConsent(held?.slice(SITE_CONSENT_COOKIE.length + 1))
+}
+
 /** The `Set-Cookie` a page writes: for the whole site, since the sign-in and the sign-up read the answer the landing was given. */
 export function siteConsentCookieOf(choice: SiteConsentChoice, secure: boolean): string {
   return `${SITE_CONSENT_COOKIE}=${choice}; Path=/; Max-Age=${SITE_CONSENT_MAX_AGE_SECONDS}; SameSite=Lax${secure ? "; Secure" : ""}`
