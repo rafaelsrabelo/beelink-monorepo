@@ -3077,6 +3077,13 @@ export const ptBR: UiMessages = {
         cityRequired: "Informe a cidade.",
         consentRequired: "Marque o aceite para continuar.",
         notOpen: "O cadastro de entregadores abre em breve. Nada foi enviado: seus dados não saíram deste aparelho.",
+        legal: {
+          titles: { terms: "Termos de uso", privacy: "Política de privacidade" },
+          close: "Fechar",
+          failed: "Não foi possível carregar o texto agora.",
+          retry: "Tentar de novo",
+          openPage: "Abrir numa nova aba",
+        },
       },
     },
     faq: {

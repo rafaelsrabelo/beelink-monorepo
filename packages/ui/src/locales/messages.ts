@@ -3572,6 +3572,18 @@ export interface UiMessages {
         consentRequired: string
         /** Said once the form is valid: the sign-up is not open, and nothing left the browser. */
         notOpen: string
+        /**
+         * The dialog the two legal texts are read in, over the form (BEELINK-322). `titles` name it
+         * while the text itself is on its way; the text's own title takes over once it arrives.
+         */
+        legal: {
+          titles: Record<LandingLegalValue, string>
+          close: string
+          failed: string
+          retry: string
+          /** The way to the text's own page, when it will not load in the dialog. */
+          openPage: string
+        }
       }
     }
     faq: {
@@ -4237,6 +4249,9 @@ export type LandingPlanPeriodValue = "monthly" | "semiannual" | "annual"
 
 /** How a courier delivers, as the landing's form offers it. */
 export type LandingVehicleValue = "MOTORCYCLE" | "BICYCLE" | "CAR" | "VAN"
+
+/** Bee-link's two legal texts, which the courier's form opens over itself. */
+export type LandingLegalValue = "terms" | "privacy"
 
 export interface LandingStep {
   title: string

@@ -3076,6 +3076,13 @@ export const en: UiMessages = {
         cityRequired: "Enter the city.",
         consentRequired: "Tick the box to continue.",
         notOpen: "The courier sign-up opens soon. Nothing was sent: your details did not leave this device.",
+        legal: {
+          titles: { terms: "Terms of use", privacy: "Privacy policy" },
+          close: "Close",
+          failed: "The text could not be loaded right now.",
+          retry: "Try again",
+          openPage: "Open in a new tab",
+        },
       },
     },
     faq: {
