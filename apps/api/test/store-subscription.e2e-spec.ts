@@ -272,6 +272,19 @@ describe("a page's subscription at bee-link's own Asaas account, by the cycle it
       expect(await rowOf()).toMatchObject({ priceCents: 6490, asaasSubscriptionId: asaas.standingSubscriptions[0]!.id });
     });
 
+    it('replaces one of another cycle though the two cost the same: the amount alone does not make it the one chosen', async () => {
+      await prisma.plan.update({ where: { slug: 'beelink' }, data: { annualPriceCents: 5990 } });
+      await choose('MONTHLY');
+      const monthly = (await rowOf()).asaasSubscriptionId;
+
+      expect((await choose('ANNUAL')).statusCode).toBe(200);
+
+      expect(asaas.standingSubscriptions).toHaveLength(1);
+      expect(asaas.standingSubscriptions[0]).toMatchObject({ cycle: 'YEARLY', valueCents: 5990 });
+      expect(asaas.standingSubscriptions[0]!.id).not.toBe(monthly);
+      expect(await rowOf()).toMatchObject({ cycle: 'ANNUAL', priceCents: 5990 });
+    });
+
     it.each(['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH', 'REFUNDED', 'AWAITING_RISK_ANALYSIS', 'CHARGEBACK_REQUESTED', 'A_WORD_ASAAS_ADDS_LATER'])(
       'removes nothing and makes nothing once Asaas says the charge is %s — whichever cycle is chosen',
       async (status) => {
