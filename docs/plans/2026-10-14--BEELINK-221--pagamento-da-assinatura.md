@@ -324,3 +324,211 @@ DELETE FROM "_prisma_migrations" WHERE "migration_name" = '20261014120000_billin
 
 Não apaga nada do que foi contratado nem a situação das páginas: só a fila de eventos e as marcas de
 quando olhar.
+
+---
+
+## Como ficou (acréscimo de 15/10/2026, depois do código)
+
+### O que mudou em relação ao plano acima
+
+1. **As decisões 1 a 35 viraram código como estão escritas.** Os arquivos: `subscription-facts.ts` (as
+   contas puras: o calendário, a situação, o período, a forma, o cartão, a fatura e quando olhar),
+   `subscription-sync.service.ts` (`SubscriptionSync`: a porta, a rota de conferir e a passada da
+   rotina), `billing-events.service.ts` e `billing-webhook.controller.ts` (o webhook),
+   `platform-webhook.config.ts` (o token e o endereço), `platform-webhook-keeper.ts` (o cadastro) e
+   `billing-routine.ts` (a rotina), todos em `modules/billing/`; a rota do web em
+   `apps/web/src/app/api/billing/asaas/webhook/route.ts`.
+2. **Uma cobrança contestada numa página que pagou deixa a página `PAST_DUE` com
+   `currentPeriodEndsAt` nulo** quando era o único pagamento: o dinheiro contestado não conta como pago
+   (decisão 6), e não sobra período pago. A tabela da decisão 12 já levava a isso; fica dito aqui
+   porque o S5 vai ler esse nulo.
+3. **A regra do endereço público de um webhook foi para `shared/asaas/asaas-webhook-url.ts`**
+   (`publicWebhookUrl(webUrl, path)`). `publicWebhookUrlOf` das lojas virou uma linha que a chama com o
+   caminho delas; o spec dela (`asaas.config.spec.ts`) passa sem alteração, e os specs e2e
+   `asaas-connection` (7) e `asaas-webhook` (24) também.
+4. **Um teste do S10 mudou de propósito** (`test/store-subscription.e2e-spec.ts`, "removes nothing and
+   makes nothing once Asaas says the charge is %s"): a escolha que vê um pagamento agora lê a página
+   antes de recusar, então o teste confere, para cada palavra do Asaas, a situação que a página passa a
+   ter (`ACTIVE`, `CANCELED`, `TRIALING` ou `PAST_DUE`) e que a segunda escolha de uma página que ficou
+   ativa é recusada antes do Asaas (`BILLING_PAGE_ACTIVE`). O teste da decisão 21 do S10 ganhou duas
+   linhas: a página que pagou durante a troca fica `CANCELED` com o mês pago pela frente.
+5. **O Asaas de mentira dos testes** ganhou webhooks (com o token, que uma leitura nunca devolve),
+   `refund(id)`, e `pay` passou a aceitar como a cobrança foi paga; um `before` pode devolver qualquer
+   coisa (é esperado, não lido).
+6. **O cadastro do webhook tem teste de unidade** (`platform-webhook-keeper.spec.ts`), com a
+   configuração trocada por `vi.mock`, como o spec do cadastro das lojas faz. Nenhum spec dentro de
+   `src/` escreve o nome do token: a regra de arquitetura nova não abre exceção para spec, como a da
+   chave.
+
+### O que foi rodado
+
+Postgres 18.6 (`beelink-domain-db`, porta 5442) e Mailpit (1027/8027).
+
+1. **A migration, do zero**, num banco de rascunho (`harness_landing_s3_proof`, criado e apagado):
+   `prisma migrate deploy` aplicou as 114 ("All migrations have been successfully applied.");
+   `prisma migrate diff --exit-code` saiu com 0 nos dois sentidos. O roteiro de desfazer rodou como está
+   escrito; depois dele o `migrate diff` saiu com 2, e a migration aplicou de novo (diff 0). No banco de
+   desenvolvimento e no de teste ela também aplicou.
+2. **Unidade:** `pnpm --filter api test`, 135 arquivos e 1.745 testes, todos passando (eram 133 e
+   1.682 no S10), em `695d436a`; depois disso só specs e2e mudaram.
+3. **Tipos e lint:** `tsc --noEmit` na API (no último commit, `3e1818b5`) e em `packages/contracts`,
+   saída 0; `oxlint` na API, 0 erros (os mesmos dois avisos antigos, em arquivos que este ticket não
+   toca). No web: `type-check` (`next typegen` e `tsc`) saída 0, `eslint` na rota nova sem nada, e o
+   teste da rota nova com o das lojas (6 testes) passando.
+4. **e2e, um arquivo por vez**, em `695d436a`: `store-subscription` (79), `store-subscription-key` (9),
+   `store-subscription-not-enforced` (8), `store-subscription-without-key` (9), `subscription-payment`
+   (30), `billing-webhook` (14), `billing-webhook-key` (4), `billing` (18), `billing-enforced` (2),
+   `billing-account` (34), `billing-account-key` (9), `billing-account-without-key` (6), `stores` (19),
+   `asaas-connection` (7) e `asaas-webhook` (24): 282 testes, todos passando. Depois, os dois specs que
+   ganharam testes rodaram de novo no último commit: `subscription-payment` (32) e `billing-webhook`
+   (14).
+5. **`pnpm arch-gates` e `pnpm docs-gate`** verdes em todos os commits (rodam no `pre-commit`). A regra
+   nova (`api/platform-webhook-token-in-billing`) ficou vermelha com o nome do token num segundo
+   arquivo, e verde de novo sem ele.
+6. **Os testes postos à prova com 40 erros de propósito**, um por vez, cada um desfeito em seguida
+   (`git status` vazio conferido entre um e outro). **37 fizeram algum teste falhar de primeira.** Dois
+   não fizeram e ganharam o teste que faltava, que depois falhou com o erro plantado: "uma referência é
+   reconhecida qualquer que seja a caixa" (o teste usava a referência de uma página que não existe) e
+   "a escolha que acha e reaproveita uma assinatura não marca a primeira olhada da rotina". O terceiro
+   é equivalente: tirar a guarda da própria rotina não muda nada, porque cada passo dela tem a sua.
+   Entre os 40: escrever a leitura de uma assinatura que a linha já não nomeia; escrever com a marca de
+   uma escolha segurada; escrever uma leitura velha por cima de uma nova; **perguntar ao Asaas dentro da
+   transação, com a trava da linha segurada** (pego pelo teste em que uma escolha precisa responder
+   enquanto a leitura espera o Asaas); perguntar com a cobrança desligada; a rota de conferir perguntar
+   toda vez; a rotina não empurrar a vez antes de perguntar, ou seguir depois de um 429; a escolha não
+   ler o pagamento, ou lê-lo antes de soltar a marca; o webhook aceitar sem token, comparar por
+   prefixo, gravar com a cobrança desligada, trabalhar de novo uma entrega repetida, aplicar o corpo,
+   trabalhar um evento que não é nosso, não segurar a varredura num 429, dar por feito o evento de uma
+   página ocupada, ler a página uma vez por evento; o cadastro criar sem procurar, religar sem o token,
+   cadastrar com a cobrança desligada; o cliente deixar o token numa recusa, ou cadastrar sem eventos;
+   contar `PENDING` ou a análise de risco como pago; não cancelar a devolução; cancelar a página que
+   nunca pagou; zerar o período de uma removida; tirar `SUSPENDED`; mover `EXEMPT`; terminar o período
+   no começo do dia; não emendar a renovação paga antes; encadear a renovação em vez de contar da
+   primeira; guardar cartão de um Pix; oferecer a fatura de um período que já acabou; ler `ACTIVE`
+   depois do fim do período.
+
+### No sandbox, de verdade
+
+Em 15/10/2026, das 00:10 às 00:17 de Brasília. A API de pé (`nest start`, porta 3201, banco
+`harness_landing`, `BILLING_ENFORCED=true`), com a chave de sandbox só no ambiente do comando, um token
+de webhook inventado para a ocasião e o `WEB_URL` do `.env` (`http://localhost:3200`), com o qual
+**nenhum webhook é cadastrado** na conta de teste. A linha da subida: `bee-link's own Asaas account is
+set up (SANDBOX)`, e as rotas mapeadas, inclusive `POST /api/stores/:storeSlug/subscription/check` e
+`POST /api/billing/asaas/webhook`. Uma conta inventada, "Teste S3 Lojista A", com CPF inventado e
+válido, e sete páginas "Teste S3 Página …". Os dados de cobrança criaram o cliente (`customerReady:
+true`), e a escolha de cada página criou a assinatura dela, com a primeira cobrança em 15/10. Tudo
+abaixo foi **visto**.
+
+| Página | Como soube do pagamento | O que a página ficou |
+|---|---|---|
+| mensal (`MONTHLY`) | `POST …/check`: antes de pagar, `TRIALING` com a fatura; depois da ação de teste (`RECEIVED`, `BOLETO`) | `ACTIVE` até `2026-11-16T03:00:00.000Z` (o fim de 15/11 em Brasília), `BOLETO`, sem fatura |
+| semestral (`SEMIANNUAL`) | o webhook, com um corpo como o do Asaas enviado à mão para a porta 3201: token errado `401`, sem token `401`, nenhum evento gravado; com o token `RECORDED` | `ACTIVE` até `2027-04-16T03:00:00.000Z`. O mesmo evento de novo: `DUPLICATE`. `PAYMENT_CREATED` e `PAYMENT_OVERDUE` chegando depois: `RECORDED`, trabalhados, e a página continuou `ACTIVE` com o mesmo fim. O evento de outro produto: `IGNORED`. Em `billing_events`: três `APPLIED` (uma tentativa cada) e um `IGNORED` |
+| anual (`ANNUAL`) | nenhum aviso: paga, e `nextCheckAt` posto no passado | a rotina achou na volta seguinte (17 s depois): `ACTIVE` até `2027-10-16T03:00:00.000Z`, e a próxima olhada marcada para `2027-10-15 15:00` UTC, o meio-dia do último dia coberto |
+| removida (`MONTHLY`) | paga, conferida (`ACTIVE`), e a assinatura removida no Asaas | `CANCELED` com `currentPeriodEndsAt` mantido em `2026-11-16T03:00:00.000Z` e `nextCheckAt` nulo; a única linha de aviso do log |
+| nunca paga (`MONTHLY`) | duas conferências seguidas: a segunda não perguntou ao Asaas (`asaasCheckedAt` igual); depois a assinatura removida no Asaas, sem pagar | `TRIALING`, 7 dias de teste, sem fatura, `nextCheckAt` nulo |
+| pix (`MONTHLY`) | a cobrança trocada para `PIX` no Asaas, confirmada pela ação de teste (`RECEIVED`, `PIX`) | `ACTIVE` (`PIX`). A devolução pedida: `200`, com o estorno `AWAITING_CRITICAL_ACTION_AUTHORIZATION` e a cobrança ainda `RECEIVED`; conferida de novo, a página continuou `ACTIVE` |
+| escolha (`MONTHLY`) | a ação de teste respondeu `500` na primeira tentativa e `200` na segunda; a mesma escolha de novo, sem conferir antes | `409 BILLING_SUBSCRIPTION_PAID`, e o `GET` logo depois: `ACTIVE` até `2026-11-16T03:00:00.000Z`; uma assinatura de pé sob a referência dela |
+
+A página mensal, já ativa, escolhendo o anual: `409 BILLING_PAGE_ACTIVE`, sem perguntar nada ao
+Asaas.
+
+**O log da API**, lido no fim (390 linhas): a chave 0 vezes (inteira, sem o prefixo, um pedaço do
+meio, o começo), o token do webhook 0 vezes, o nome, o e-mail e qualquer sequência de 11 dígitos 0
+vezes, `creditCardToken` 0 vezes; uma linha de aviso, a da remoção.
+
+**Limpeza:** as cinco assinaturas que ainda estavam de pé foram removidas e o cliente também; a busca
+por "Teste S3" no nome responde 0; a conta tem os mesmos dois webhooks de antes; a assinatura
+`teste-s8-sub-amanha-ok` só foi lida. **O pedido de devolução do Pix ficou no Asaas esperando a
+autorização** (numa cobrança paga de uma assinatura já removida): não achei como cancelá-lo pela API.
+A conta, as sete páginas e os quatro eventos foram apagados do banco; a API foi encerrada e
+`pgrep -fl "worktrees/landing"` responde vazio.
+
+**A assinatura do S8, lida de novo** (00:19 de 15/10): a cobrança com vencimento em 14/10, com cartão
+guardado, continuava `PENDING` depois do fim do próprio dia. O sandbox não cobrou o cartão no
+vencimento (risco 2).
+
+### O que não foi rodado
+
+- `pnpm ci-check`, `turbo` em todos os workspaces, `next build`, a suíte e2e inteira e o Playwright: o
+  briefing proíbe nesta máquina. Fica para o push.
+- **Uma entrega de verdade do Asaas.** Os eventos foram enviados à mão, com o corpo no formato da
+  documentação; o sandbox não alcança esta máquina.
+- **O cadastro do webhook pelo código, contra o sandbox.** Ele cria o webhook ligado, e um webhook
+  ligado apontando para um endereço que não responde faz o Asaas pausar a fila. Exercitado: a forma do
+  pedido, por `curl`, desativado, lido, alterado e removido (tabela do começo); o código, com testes de
+  unidade e e2e com o Asaas de mentira e com o cliente HTTP de verdade sobre um `fetch` simulado.
+- **Uma devolução concluída (`REFUNDED`), um estorno de cartão, uma contestação, a análise de risco e
+  a renovação cobrada no cartão**: só com o Asaas de mentira.
+- Duas instâncias da API ao mesmo tempo. Nada em homologação nem em produção.
+
+### O que o S11 (BEELINK-293, a tela "Assinar") precisa saber
+
+- **As rotas da API, todas do dono da página:**
+  - `GET /api/stores/:slug/subscription` → `StoreSubscriptionAnswer`. Não pergunta nada ao Asaas.
+  - `PUT /api/stores/:slug/subscription` com `{ cycle }` → `SubscriptionChoice` (do S10).
+  - `POST /api/stores/:slug/subscription/check` → `StoreSubscriptionAnswer`, **depois de ler o Asaas**.
+    Pergunta ao Asaas no máximo uma vez a cada 10 s por página (dentro disso responde o que a linha
+    tem) e conta no limite das escritas de loja (`STORE_WRITE_RATE_LIMIT_*`, 20 por minuto por
+    endereço). Com a cobrança desligada, sem chave ou sem assinatura no Asaas, é o mesmo que o `GET`.
+    Erros: `503 BILLING_UNREACHABLE` (o Asaas não respondeu; a assinatura está como foi lida da última
+    vez), `503 BILLING_UNAVAILABLE` (o Asaas recusou a chave da Beelink), `429 RATE_LIMITED`, e os de
+    dono (`403 STORE_FORBIDDEN`, `404 STORE_NOT_FOUND`, `401`).
+  - As rotas do web (BFF) para as três são do S11. A única rota nova do web aqui é a do webhook.
+- **Como esperar o pagamento:** depois de abrir a fatura em outra aba, chamar o `check` quando a aba do
+  painel volta a ficar visível e, enquanto espera, a cada 10 a 15 s, não mais que isso. Em
+  desenvolvimento não há webhook, então é o `check` que faz a página mudar.
+- **`409 BILLING_SUBSCRIPTION_PAID` mudou de sentido para a tela:** a API já leu o pagamento antes de
+  responder. Basta ler a assinatura de novo: normalmente ela já está `ACTIVE`. Uma página `ACTIVE` com
+  período em curso recebe `409 BILLING_PAGE_ACTIVE` no `PUT`, antes de qualquer pergunta ao Asaas.
+- **O que cada situação quer dizer na tela:**
+  - `TRIALING` / `TRIAL_EXPIRED`: nunca pagou. Uma assinatura escolhida e não paga, mesmo removida no
+    Asaas, não muda isso; `invoiceUrl` some quando a fatura deixa de poder ser paga.
+  - `ACTIVE`: `currentPeriodEndsAt` é até quando (o primeiro instante depois do dia do vencimento
+    seguinte). `invoiceUrl` pode trazer a fatura da **renovação** assim que o Asaas a cria: para quem
+    paga com cartão (`paymentMethod: CREDIT_CARD`) ela é cobrada sozinha no vencimento; para Pix e
+    boleto é a que o lojista precisa pagar.
+  - `PAST_DUE`: pagou antes, e o período acabou sem a cobrança seguinte paga. `invoiceUrl` é a da
+    cobrança devida; pagar volta para `ACTIVE`. Uma linha `ACTIVE` lida depois do fim já sai `PAST_DUE`.
+  - `CANCELED`: a assinatura acabou (removida no Asaas, ou o dinheiro do período devolvido). Com
+    `currentPeriodEndsAt` no futuro, a página ainda funciona até lá ("cancelada, funciona até …"); com
+    ele nulo ou no passado, não. Escolher um ciclo de novo cria outra assinatura.
+  - `SUSPENDED`: do S5. `EXEMPT`: isenta, nada a mostrar de pagamento.
+- **`card`** só existe quando o último dinheiro andou por cartão; `paymentMethod` é a forma do último
+  dinheiro que andou (paga, devolvida ou contestada).
+- **A tela não pode prometer a devolução**: na conta de teste ela fica esperando autorização no painel
+  do Asaas e a página segue paga até o Asaas dizer `REFUNDED`.
+
+### O que o S5 (BEELINK-223, a trava e a carência) precisa saber
+
+- **Quem escreve o quê:** este ticket escreve `status` (`ACTIVE`, `PAST_DUE`, `CANCELED`, ou mantém a
+  que estava), `currentPeriodEndsAt`, `paymentMethod`, `cardBrand`, `cardLast4`, `invoiceUrl`,
+  `asaasCheckedAt` e `nextCheckAt`, sempre por `SubscriptionSync` (nada fora de `modules/billing` escreve
+  na tabela). **Nunca escreve `SUSPENDED` nem `TRIAL_EXPIRED`**: o primeiro é do S5; o segundo, a leitura
+  deriva (S1). Uma linha `SUSPENDED` fica `SUSPENDED` enquanto não paga, vira `ACTIVE` quando paga e
+  `CANCELED` quando a assinatura acaba. `EXEMPT` nunca é mexida.
+- **Quando cada situação é escrita:** a cada leitura do Asaas (webhook, rotina, `check`, ou a escolha
+  que encontra um pagamento). `ACTIVE` quando uma cobrança paga cobre hoje; `PAST_DUE` quando a página
+  já pagou e o período acabou sem a seguinte paga (inclusive quando o único pagamento foi contestado,
+  com `currentPeriodEndsAt` nulo); `CANCELED` quando a assinatura sumiu do Asaas numa página que já
+  pagou, ou quando o dinheiro do período foi devolvido.
+- **Quem tem acesso, pelas colunas:** `TRIALING` até `trialEndsAt`; `ACTIVE` até
+  `currentPeriodEndsAt` (exclusivo; a leitura já diz `PAST_DUE` depois); **`CANCELED` com
+  `currentPeriodEndsAt` no futuro ainda tem acesso** até ele; `EXEMPT` sempre; o mês grátis do S6 em
+  `freePeriodEndsAt`. Os três fins são instantes exclusivos (S1, decisão 7).
+- **A carência conta de `currentPeriodEndsAt`** de uma página `PAST_DUE`. Ele pode ser nulo (contestação
+  do único pagamento): decida de onde conta nesse caso.
+- **A rotina da cobrança (`BillingRoutine`) roda a cada minuto** só com a cobrança ligada e a chave; é o
+  lugar natural de um passo do S5 (suspender quem passou da carência). `nextCheckAt` é a vez da leitura
+  do Asaas, não da trava: o S5 deve decidir por suas próprias colunas.
+- **Uma página `ACTIVE` cuja renovação no cartão o Asaas cobra tarde** fica `PAST_DUE` na meia-noite do
+  vencimento até a leitura seguinte (risco 2): a carência precisa absorver isso.
+
+### Riscos, além dos de cima
+
+7. **Um pedido de devolução de Pix ficou pendurado na conta de teste**, esperando a autorização de ação
+   crítica. Se alguém autorizar no painel, R$ 59,90 de teste voltam para um cliente removido.
+8. **A rota de conferir pode chamar o Asaas duas vezes por página** num clique duplo (as duas veem a
+   leitura antiga antes de uma gravar). São quatro chamadas, e a segunda leitura não escreve por cima da
+   primeira se for mais velha.
+9. **A remoção de uma assinatura nunca paga não cancela a página** (decisão 13): se o Rafael quiser o
+   contrário, é uma linha em `subscription-facts.ts` e dois testes.
