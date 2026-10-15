@@ -29,9 +29,11 @@ import type { Prefs } from "@/lib/prefs"
 // App
 import { AppLink } from "@/components/app-link"
 import { LocaleSwitcher } from "@/components/locale-switcher"
+import { pageSlugOf } from "@/lib/page-lock-view"
 import { PREFS_COOKIE, PREFS_MAX_AGE } from "@/lib/prefs"
 import { startOver } from "@/lib/start-over"
 import { useSignOut } from "@/services/auth/auth-hooks"
+import { usePlanCard } from "@/services/billing/plan-card-hooks"
 import { useMyStores } from "@/services/stores/store-hooks"
 import { PanelNotifications } from "@/components/panel-notifications"
 import { menuBadgeOf, type PanelMenuArea } from "@/lib/panel-menu-counts"
@@ -72,7 +74,10 @@ export function AppShell({ user, ui, web, locale, prefs, children }: AppShellPro
 
   // `/admin/<slug>/...`, and nothing else. `/admin` itself is the doorway that picks a shop — it
   // lives in the `(pick)` group, which has no sidebar, so no menu is ever built for it.
-  const shopSlug = pathname.match(/^\/admin\/([^/]+)/)?.[1] ?? null
+  const shopSlug = pageSlugOf(pathname)
+
+  // The open page's plan (BEELINK-220): none away from a page, and none where billing is off.
+  const plan = usePlanCard(shopSlug, locale)
 
   const stores = useMyStores()
   const workspaces = (stores.data ?? []).map((store) => ({
@@ -186,6 +191,7 @@ export function AppShell({ user, ui, web, locale, prefs, children }: AppShellPro
                 ]
           }
           footerItems={[item(site ? nav.siteSettings : nav.settings, "/store", <SettingsIcon />)]}
+          plan={plan ?? undefined}
           activeHref={pathname}
           open={drawerOpen}
           collapsed={railCollapsed}
