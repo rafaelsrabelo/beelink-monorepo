@@ -56,6 +56,12 @@ describe("isCpfOrCnpj, the API's rule restated", () => {
     expect(isCnpj(TYPED_CNPJ)).toBe(true)
     expect(isCnpj(TYPED_CPF)).toBe(false)
   })
+
+  /** A sum whose rest is under two makes a zero, not eleven less it: the one case the CNPJ above never meets. */
+  it("takes a CNPJ whose check digit is a zero", () => {
+    expect(isCnpj("11.222.333/1003-05")).toBe(true)
+    expect(isCnpj("11.222.333/1003-15")).toBe(false)
+  })
 })
 
 describe("isBillingName", () => {
