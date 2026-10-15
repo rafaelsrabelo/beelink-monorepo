@@ -24,6 +24,23 @@ describe('where a subscription stands at an instant', () => {
     expect(statusAt({ status, trialEndsAt }, new Date('2027-01-01T00:00:00.000Z'))).toBe(status);
   });
 
+  it('reads an active page as past due from the instant its paid period ends, though nothing wrote it (BEELINK-221)', () => {
+    const currentPeriodEndsAt = new Date('2026-11-15T03:00:00.000Z');
+
+    expect(statusAt({ status: 'ACTIVE', trialEndsAt, currentPeriodEndsAt }, new Date('2026-11-15T02:59:59.999Z'))).toBe('ACTIVE');
+    expect(statusAt({ status: 'ACTIVE', trialEndsAt, currentPeriodEndsAt }, currentPeriodEndsAt)).toBe('PAST_DUE');
+    expect(statusAt({ status: 'ACTIVE', trialEndsAt, currentPeriodEndsAt: null }, new Date('2027-01-01T00:00:00.000Z'))).toBe('ACTIVE');
+  });
+
+  it('reads nothing but an active page off its paid period: a cancelled one is cancelled while what it paid for runs, and after', () => {
+    const currentPeriodEndsAt = new Date('2026-11-15T03:00:00.000Z');
+
+    for (const status of ['CANCELED', 'PAST_DUE', 'SUSPENDED', 'EXEMPT'] as const) {
+      expect(statusAt({ status, trialEndsAt, currentPeriodEndsAt }, new Date('2026-11-01T00:00:00.000Z'))).toBe(status);
+      expect(statusAt({ status, trialEndsAt, currentPeriodEndsAt }, new Date('2027-01-01T00:00:00.000Z'))).toBe(status);
+    }
+  });
+
   it('knows the seven of them', () => {
     expect(SUBSCRIPTION_STATUSES).toEqual(['TRIALING', 'TRIAL_EXPIRED', 'ACTIVE', 'PAST_DUE', 'SUSPENDED', 'CANCELED', 'EXEMPT']);
   });

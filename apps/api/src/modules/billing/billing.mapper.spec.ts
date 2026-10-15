@@ -136,6 +136,13 @@ describe('a subscription, as its page’s owner reads it', () => {
     expect(Object.keys(toStoreSubscription(paying, new Date()).plan ?? {}).sort()).toEqual(['id', 'name', 'slug']);
   });
 
+  it('reads an active page as past due once its paid period is over, the row still saying ACTIVE (BEELINK-221)', () => {
+    const paid = { ...trialing, status: 'ACTIVE', currentPeriodEndsAt: new Date('2026-11-15T03:00:00.000Z') } satisfies StoreSubscriptionRow;
+
+    expect(toStoreSubscription(paid, new Date('2026-11-15T02:59:59.999Z')).status).toBe('ACTIVE');
+    expect(toStoreSubscription(paid, new Date('2026-11-15T03:00:00.000Z'))).toMatchObject({ status: 'PAST_DUE', currentPeriodEndsAt: '2026-11-15T03:00:00.000Z' });
+  });
+
   it('tells of a card only its brand and its last four digits', () => {
     const card = { ...trialing, status: 'ACTIVE', paymentMethod: 'CREDIT_CARD', cardBrand: 'MASTERCARD', cardLast4: '8829' } satisfies StoreSubscriptionRow;
 
