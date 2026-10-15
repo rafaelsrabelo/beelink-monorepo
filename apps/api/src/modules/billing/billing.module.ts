@@ -24,7 +24,9 @@ import { SubscriptionSync } from './subscription-sync.service.js';
  * What a page owes bee-link (BEELINK-218): the plans, each page's subscription and trial, who is
  * charged for an account's pages, the subscription a page's chosen cycle makes at Asaas, and what
  * Asaas says of its payment — by bee-link's own webhook, the routine behind it, or the panel asking
- * (BEELINK-221) — bee-link's own coupons, each a free month for a page (BEELINK-224), and the e-mail that tells a shopkeeper the day charging starts (BEELINK-297), sent from the outbox a terminal's command fills. This is bee-link charging the shopkeeper, at bee-link's own Asaas
+ * (BEELINK-221) — bee-link's own coupons, each a free month for a page (BEELINK-224), and the e-mail
+ * that tells a shopkeeper the day charging starts (BEELINK-297), sent from the outbox a terminal's
+ * command fills. This is bee-link charging the shopkeeper, at bee-link's own Asaas
  * account (`PlatformAsaas`), and it never meets a shop's own sales: not `modules/payments`, and not
  * the key a shop pasted, which `integrations/asaas` alone opens. What it has in common with those is
  * the request to Asaas itself (`shared/asaas`) and two pure functions of `integrations/asaas`.
