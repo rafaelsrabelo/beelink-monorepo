@@ -149,16 +149,54 @@ model StoreSubscription {
 
   /// Null until Asaas tells of a payment: a subscription is made with no method chosen.
   paymentMethod SubscriptionPaymentMethod?
-  /// Asaas's hosted invoice of the charge waiting to be paid. Null with none waiting.
+  /// Asaas's hosted invoice of the charge waiting to be paid whose period is not over. Null with none
+  /// waiting.
   invoiceUrl    String?                    @db.VarChar(500)
   /// All that is kept of a card, the two together or none, by a CHECK: its brand in Asaas's word and
   /// its last four digits. No column holds a number, a holder, a validity or a token.
   cardBrand     String?                    @db.VarChar(20)
   cardLast4     String?                    @db.Char(4)
 
+  /// The instant the read of Asaas whose facts this row holds began (BEELINK-221): status, period,
+  /// method, card and invoice. A read that began before it is never written over it, so two reads at
+  /// once end with the newer whichever finishes last. Null until Asaas was first read for the page.
+  asaasCheckedAt DateTime?
+  /// When the billing routine is to read Asaas for this page again (BEELINK-221): set by every read,
+  /// by where the page stands — near the end of a paid period, further and further apart while a
+  /// charge waits — and pushed ahead before the routine asks. Null: the routine leaves it alone.
+  nextCheckAt    DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([planId])
+  @@index([nextCheckAt])
   @@map("store_subscriptions")
+}
+
+/// An event of bee-link's own Asaas webhook (BEELINK-221), written before it is answered and worked
+/// after, the way `asaas_events` holds a shop's. Its body is never applied — working one is reading
+/// Asaas for the page it is about — so all that is kept of it is its id, its name and that page.
+model BillingEvent {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  /// Asaas's id of the event, `evt_…`; the SHA-256 of the body for one that came with none. Unique:
+  /// what makes a second delivery a no-op. The account is one, so the id alone is.
+  eventId        String    @unique @db.VarChar(160)
+  /// `PAYMENT_RECEIVED`, `SUBSCRIPTION_DELETED`…
+  event          String    @db.VarChar(80)
+  /// The row of `store_subscriptions` it is about; null for one about nothing of bee-link's, which is
+  /// written done. Not a relation: an event may name a page deleted since, and is kept all the same to
+  /// tell a second delivery by.
+  subscriptionId String?   @db.Uuid
+  /// What came of it: APPLIED, IGNORED, or GIVEN_UP after the last try. Null while it waits.
+  outcome        String?   @db.VarChar(20)
+
+  attempts      Int       @default(0)
+  nextAttemptAt DateTime  @default(now())
+  processedAt   DateTime?
+  lastError     String?   @db.VarChar(500)
+  createdAt     DateTime  @default(now())
+
+  @@index([processedAt, nextAttemptAt])
+  @@map("billing_events")
 }

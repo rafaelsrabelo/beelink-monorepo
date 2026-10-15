@@ -40,6 +40,8 @@ const trialing = {
   invoiceUrl: null,
   cardBrand: null,
   cardLast4: null,
+  asaasCheckedAt: null,
+  nextCheckAt: null,
   createdAt: new Date('2026-10-13T16:24:00.000Z'),
   updatedAt: new Date('2026-10-13T16:24:00.000Z'),
 } satisfies StoreSubscriptionRow;
