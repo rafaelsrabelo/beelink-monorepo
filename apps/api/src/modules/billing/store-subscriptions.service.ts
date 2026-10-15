@@ -15,26 +15,30 @@ import { BillingAccounts } from './billing-accounts.service.js';
 import { brasiliaDayOf } from './billing-dates.js';
 import { accountRequired, unavailable } from './billing-refusals.js';
 import { ASAAS_CYCLES, billingError, CHECK_FIRST_MS, PLAN_ON_SALE, SUBSCRIPTION_CLAIM_MS, SUBSCRIPTION_UNKNOWN_HOLD_MS, subscriptionReferenceOf } from './billing.constants.js';
-import { priceOf, toStoreSubscription, type StoreSubscriptionRow } from './billing.mapper.js';
+import { priceOf, SUBSCRIPTION_READ, toStoreSubscription, type StoreSubscriptionRow } from './billing.mapper.js';
 import { PageLocks } from './page-locks.service.js';
 import { PlatformAsaas, PlatformAsaasUnconfigured, type PlatformCharge, type PlatformCustomerData, type PlatformSubscription } from './platform-asaas.client.js';
 import { awaitsPayment, firstChargeOf, invoiceDescriptionOf, serves, touchedByMoney } from './subscription-attempt.js';
 import { reasonOf, SubscriptionSync } from './subscription-sync.service.js';
 
-/** One choice's talk with Asaas about a page's subscription, taken and not yet settled. */
-interface Talk {
+/** A talk with Asaas about a page's subscription, taken and not yet settled, whatever it is for. */
+interface Claim {
   /** The row's own id: what the subscription is named by at Asaas. */
   id: string;
   storeId: string;
-  userId: string;
-  /** The plan's price for the cycle as the database held it when the talk was taken: what Asaas is asked to charge, and what the row is to say. */
-  want: { planId: string; planName: string; cycle: BillingCycle; priceCents: number; storeName: string };
   /** Who is charged — carried only so Asaas's words are cleaned of them before a line is logged. */
   payer: PlatformCustomerData;
   /** Asaas's id of the subscription as the row held it when the talk was taken; null when it held none. */
   knownId: string | null;
   /** `asaasSubscriptionClaimedUntil` as this request wrote it: what it is recognized by when renewed, held and let go. */
   until: Date;
+}
+
+/** One choice's talk: the claim, and what it asks of Asaas. */
+interface Talk extends Claim {
+  userId: string;
+  /** The plan's price for the cycle as the database held it when the talk was taken: what Asaas is asked to charge, and what the row is to say. */
+  want: { planId: string; planName: string; cycle: BillingCycle; priceCents: number; storeName: string };
 }
 
 /** A subscription standing at Asaas under the page's reference, with its charges. */
@@ -116,6 +120,50 @@ export class StoreSubscriptions {
       if (error instanceof SubscriptionPaid) await this.readPaid(storeId);
       throw this.said(error, talk);
     }
+  }
+
+  /**
+   * Whatever stands unpaid at Asaas for the page, taken out — for a coupon's free month (BEELINK-224),
+   * in which nothing may go on charging the page. The talk of a choice, with nothing made after it: the
+   * claim committed first, Asaas asked with no lock held, what stands found by the page's reference and
+   * by the row's own id, and each one removed and looked at again; a charge money touched stops it all,
+   * nothing removed, and the page is read through the door. Once it is done the row names no
+   * subscription, and the claim is let go. Its caller asks only for a page whose row names one.
+   */
+  async withdraw(storeId: string, userId: string): Promise<void> {
+    const claim = await this.claimWithdrawal(storeId, userId);
+    try {
+      const attempts: Attempt[] = [];
+      for (const subscription of await this.standing(claim)) attempts.push({ subscription, charges: await this.asaas.subscriptionCharges(subscription.id) });
+      if (attempts.some(({ charges }) => touchedByMoney(charges))) throw paid();
+
+      for (const attempt of attempts) await this.remove(claim, attempt.subscription.id);
+      await this.mine(claim, { asaasSubscriptionId: null, planId: null, cycle: null, priceCents: null, firstDueDate: null, invoiceUrl: null, nextCheckAt: null, asaasSubscriptionClaimedUntil: null });
+    } catch (error) {
+      await this.letGo(claim);
+      if (error instanceof SubscriptionPaid) await this.readPaid(storeId);
+      throw this.said(error, claim);
+    }
+  }
+
+  /** A withdrawal's claim, under the page's row lock as a choice's is: refused while another talk holds the page, and nothing else written. */
+  private claimWithdrawal(storeId: string, userId: string): Promise<Claim> {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT 1 FROM "store_subscriptions" WHERE "storeId" = ${storeId}::uuid FOR UPDATE`;
+      const row = await tx.storeSubscription.findUnique({ where: { storeId }, select: { id: true, asaasSubscriptionId: true, asaasSubscriptionClaimedUntil: true } });
+      if (!row) throw new ConflictException(billingError('BILLING_SUBSCRIPTION_MISSING', 'A page from before subscriptions existed has nothing at Asaas'));
+
+      const now = new Date();
+      if (row.asaasSubscriptionClaimedUntil && row.asaasSubscriptionClaimedUntil > now) throw busy();
+
+      // Read only to clean Asaas's words of them: a subscription stands at Asaas for an account that gave them.
+      const account = await tx.billingAccount.findUnique({ where: { userId }, select: { name: true, document: true, user: { select: { email: true } } } });
+      const until = new Date(now.getTime() + SUBSCRIPTION_CLAIM_MS);
+      await tx.storeSubscription.update({ where: { id: row.id }, data: { asaasSubscriptionClaimedUntil: until } });
+
+      const payer = account ? { name: account.name, document: account.document, email: account.user.email } : { name: '', document: '', email: '' };
+      return { id: row.id, storeId, payer, knownId: row.asaasSubscriptionId, until };
+    });
   }
 
   /**
@@ -208,7 +256,7 @@ export class StoreSubscriptions {
    * did not bring it, the one the row names — a search that lags is no leave to make another. That one
    * only while it carries the page's reference: nothing named otherwise is this page's to remove.
    */
-  private async standing(talk: Talk): Promise<PlatformSubscription[]> {
+  private async standing(talk: Claim): Promise<PlatformSubscription[]> {
     const reference = subscriptionReferenceOf(talk.id);
     const found = await this.asaas.subscriptions(reference);
 
@@ -227,7 +275,7 @@ export class StoreSubscriptions {
    * look before and the removal is kept by Asaas on the removed subscription, and no other may be made
    * over money already taken.
    */
-  private async remove(talk: Talk, asaasSubscriptionId: string): Promise<void> {
+  private async remove(talk: Claim, asaasSubscriptionId: string): Promise<void> {
     await this.renew(talk);
     await this.asaas.removeSubscription(asaasSubscriptionId);
 
@@ -282,7 +330,7 @@ export class StoreSubscriptions {
   }
 
   /** The row told that the subscription it named stands no more: read meanwhile, it shows no invoice that was removed. */
-  private async forget(talk: Talk): Promise<void> {
+  private async forget(talk: Claim): Promise<void> {
     await this.mine(talk, { asaasSubscriptionId: null, planId: null, cycle: null, priceCents: null, firstDueDate: null, invoiceUrl: null });
   }
 
@@ -302,28 +350,28 @@ export class StoreSubscriptions {
       throw new ServiceUnavailableException(billingError('BILLING_UNREACHABLE', 'Asaas holds the subscription and has told of no invoice yet: the same choice again reads it'));
     }
 
-    const row = await this.prisma.storeSubscription.findUniqueOrThrow({ where: { id: talk.id }, include: { plan: { select: { id: true, slug: true, name: true } } } });
+    const row = await this.prisma.storeSubscription.findUniqueOrThrow({ where: { id: talk.id }, include: SUBSCRIPTION_READ });
     return { row, invoiceUrl };
   }
 
   /** A write to the page's row only while the talk is still this request's: one that lost it writes nothing, and leaves everything to whoever took it. */
-  private async mine(talk: Talk, data: Prisma.StoreSubscriptionUncheckedUpdateManyInput): Promise<void> {
+  private async mine(talk: Claim, data: Prisma.StoreSubscriptionUncheckedUpdateManyInput): Promise<void> {
     const { count } = await this.prisma.storeSubscription.updateMany({ where: { id: talk.id, asaasSubscriptionClaimedUntil: talk.until }, data });
     if (count === 0) throw busy();
   }
 
   /** The claim pushed ahead just before a call that changes something at Asaas — and only while it is still this request's. */
-  private async renew(talk: Talk): Promise<void> {
+  private async renew(talk: Claim): Promise<void> {
     const until = new Date(Date.now() + SUBSCRIPTION_CLAIM_MS);
     await this.mine(talk, { asaasSubscriptionClaimedUntil: until });
     talk.until = until;
   }
 
-  private async holdFor(talk: Talk, ms: number): Promise<void> {
+  private async holdFor(talk: Claim, ms: number): Promise<void> {
     await this.prisma.storeSubscription.updateMany({ where: { id: talk.id, asaasSubscriptionClaimedUntil: talk.until }, data: { asaasSubscriptionClaimedUntil: new Date(Date.now() + ms) } });
   }
 
-  private async letGo(talk: Talk): Promise<void> {
+  private async letGo(talk: Claim): Promise<void> {
     await this.prisma.storeSubscription.updateMany({ where: { id: talk.id, asaasSubscriptionClaimedUntil: talk.until }, data: { asaasSubscriptionClaimedUntil: null } });
   }
 
@@ -331,7 +379,7 @@ export class StoreSubscriptions {
    * How a failed talk is told: a stable code, never Asaas's words. What Asaas said goes to the log
    * with the page's id — and with nothing of who is charged, whatever Asaas repeated.
    */
-  private said(error: unknown, talk: Talk): unknown {
+  private said(error: unknown, talk: Claim): unknown {
     const { storeId } = talk;
     if (error instanceof HttpException) return error;
     if (error instanceof PlatformAsaasUnconfigured) return unavailable();

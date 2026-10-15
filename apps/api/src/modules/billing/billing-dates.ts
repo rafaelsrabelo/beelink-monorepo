@@ -95,3 +95,14 @@ export function renewalDayOf(firstDueDay: string, cycle: BillingCycle, renewal: 
 export function periodEndDayOf(firstDueDay: string, cycle: BillingCycle, period = 0): string {
   return renewalDayOf(firstDueDay, cycle, period + 1);
 }
+
+/**
+ * The first instant a free month that begins on `firstDay` is over (BEELINK-224): the midnight in
+ * Brasília closing the same day a month later — that month's last day, where it lacks it. A month as
+ * Asaas counts one, so a free month ends as a paid one does: a charge due on 15/10 pays until 15/11 is
+ * over, and a free month begun on 15/10 lasts as long. A coupon's month, and the one the pages that
+ * existed on 13/10/2026 were given (`freeMonthEndOf('2026-10-13')`, the end of 13/11/2026).
+ */
+export function freeMonthEndOf(firstDay: string): Date {
+  return closeOfBrasiliaDay(renewalDayOf(firstDay, 'MONTHLY', 1));
+}

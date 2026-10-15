@@ -67,7 +67,10 @@ class StoreSubscriptionResponse implements StoreSubscription {
   @ApiProperty({ nullable: true, type: Number, description: 'What the cycle costs this page, as agreed when it was chosen.' }) priceCents!: number | null;
   @ApiProperty({ nullable: true, type: String, format: 'date-time', description: 'The first instant the paid period is over.' }) currentPeriodEndsAt!: string | null;
   @ApiProperty({ nullable: true, type: String, format: 'date-time' }) cancelRequestedAt!: string | null;
-  @ApiProperty({ nullable: true, type: String, format: 'date-time', description: 'The first instant a free period given by a coupon is over.' }) freePeriodEndsAt!: string | null;
+  @ApiProperty({ nullable: true, type: String, format: 'date-time', description: "The first instant a free period is over — a coupon's month, or the one the pages that existed on 13/10/2026 were given. While it is ahead the page is open, whatever `status` says." }) freePeriodEndsAt!: string | null;
+  @ApiProperty({ nullable: true, type: String, format: 'date', example: '2026-11-21', description: "The last day the free period covers, on Brasília's calendar; kept once it is over." }) freePeriodLastDay!: string | null;
+  @ApiProperty({ nullable: true, type: Number, description: "Days of Brasília's calendar until `freePeriodLastDay`, 0 on that day; null when no free period covers the instant of the read." }) freePeriodDaysLeft!: number | null;
+  @ApiProperty({ nullable: true, type: String, format: 'date-time', description: 'When the page used its one coupon; null while it used none.' }) couponRedeemedAt!: string | null;
   @ApiProperty({ enum: SUBSCRIPTION_PAYMENT_METHODS, nullable: true, type: String }) paymentMethod!: SubscriptionPaymentMethod | null;
   @ApiProperty({ nullable: true, type: String, description: "Asaas's page for the charge waiting to be paid." }) invoiceUrl!: string | null;
   @ApiProperty({ nullable: true, type: SubscriptionCardResponse, description: 'All that is kept of a card.' }) card!: SubscriptionCardResponse | null;

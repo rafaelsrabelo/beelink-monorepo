@@ -176,6 +176,10 @@ describe("what a page owes bee-link: the plans, and each page's subscription (BE
           currentPeriodEndsAt: null,
           cancelRequestedAt: null,
           freePeriodEndsAt: null,
+          // No free month, and no coupon used (BEELINK-224).
+          freePeriodLastDay: null,
+          freePeriodDaysLeft: null,
+          couponRedeemedAt: null,
           paymentMethod: null,
           invoiceUrl: null,
           card: null,

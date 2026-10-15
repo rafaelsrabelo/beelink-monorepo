@@ -31,7 +31,16 @@ export function toPlan(row: PlanModel): Plan {
   return { id: row.id, slug: row.slug, name: row.name, cycles };
 }
 
-export type StoreSubscriptionRow = StoreSubscriptionModel & { plan: Pick<PlanModel, 'id' | 'slug' | 'name'> | null };
+/** What a read of a page's subscription takes beside its row: the plan it is on, and its coupon, once used (BEELINK-224). */
+export const SUBSCRIPTION_READ = {
+  plan: { select: { id: true, slug: true, name: true } },
+  couponRedemption: { select: { createdAt: true } },
+} as const;
+
+export type StoreSubscriptionRow = StoreSubscriptionModel & {
+  plan: Pick<PlanModel, 'id' | 'slug' | 'name'> | null;
+  couponRedemption: { createdAt: Date } | null;
+};
 
 /**
  * A subscription as its page's owner reads it at `now`. Asaas's ids stay behind: the panel has no
@@ -40,6 +49,7 @@ export type StoreSubscriptionRow = StoreSubscriptionModel & { plan: Pick<PlanMod
  */
 export function toStoreSubscription(row: StoreSubscriptionRow, now: Date, locks: boolean): StoreSubscription {
   const status = statusAt(row, now);
+  const free = row.freePeriodEndsAt;
   return {
     id: row.id,
     status,
@@ -52,7 +62,11 @@ export function toStoreSubscription(row: StoreSubscriptionRow, now: Date, locks:
     priceCents: row.priceCents,
     currentPeriodEndsAt: row.currentPeriodEndsAt?.toISOString() ?? null,
     cancelRequestedAt: row.cancelRequestedAt?.toISOString() ?? null,
-    freePeriodEndsAt: row.freePeriodEndsAt?.toISOString() ?? null,
+    freePeriodEndsAt: free?.toISOString() ?? null,
+    freePeriodLastDay: free ? lastDayBefore(free) : null,
+    // A number only while a free period covers the read: the panel's "free until" is this, never the status.
+    freePeriodDaysLeft: free && now.getTime() < free.getTime() ? daysLeft(free, now) : null,
+    couponRedeemedAt: row.couponRedemption?.createdAt.toISOString() ?? null,
     paymentMethod: row.paymentMethod,
     invoiceUrl: row.invoiceUrl,
     // The two columns are set together, by the table's CHECK.

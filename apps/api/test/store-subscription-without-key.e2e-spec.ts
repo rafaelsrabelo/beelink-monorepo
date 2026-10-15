@@ -88,6 +88,19 @@ describe("a deployment that charges and has no key of bee-link's own Asaas accou
     expect(toAsaas).toEqual([]);
   });
 
+  it('answers a coupon with the stable error that says billing is unavailable, spends nothing and asks Asaas nothing (BEELINK-224)', async () => {
+    await prisma.platformCoupon.create({ data: { code: 'TESTE-SEM-CHAVE' } });
+    const before = await prisma.storeSubscription.findFirstOrThrow();
+
+    const response = await call('POST', '/api/stores/padaria/subscription/coupon', owner, { code: 'TESTE-SEM-CHAVE' });
+
+    expect(response.statusCode).toBe(503);
+    expect(response.json<ApiErrorBody>()).toMatchObject({ statusCode: 503, errorCode: 'BILLING_UNAVAILABLE' });
+    expect(await prisma.storeSubscription.findFirstOrThrow()).toEqual(before);
+    expect(await prisma.platformCoupon.findUniqueOrThrow({ where: { code: 'TESTE-SEM-CHAVE' } })).toMatchObject({ redemptionCount: 0 });
+    expect(toAsaas).toEqual([]);
+  });
+
   it('leaves the page read as it was', async () => {
     const read = await call('GET', '/api/stores/padaria/subscription', owner);
 

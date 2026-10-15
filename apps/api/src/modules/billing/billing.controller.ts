@@ -25,25 +25,31 @@ import type { AuthenticatedUser } from '../auth/auth.decorators.js';
 import { CurrentUser } from '../auth/auth.decorators.js';
 import { BillingService } from './billing.service.js';
 import { StoreSubscriptionAnswerResponse, SubscriptionChoiceResponse } from './dto/billing.response.js';
+import { CouponRedemptionDto } from './dto/coupon-redemption.dto.js';
 import { SubscriptionChoiceDto } from './dto/subscription-choice.dto.js';
 import { OpenWhileLocked } from './page-lock.decorators.js';
+import { PlatformCoupons } from './platform-coupons.service.js';
 import { StoreSubscriptions } from './store-subscriptions.service.js';
 import { SubscriptionSync } from './subscription-sync.service.js';
 
 /** The shop writes' own pair, as the billing account's write: each choice, and each check, calls a third party whose quota is one for every shopkeeper. */
 const writeRateLimit = { max: env.STORE_WRITE_RATE_LIMIT_MAX, timeWindow: env.STORE_WRITE_RATE_LIMIT_WINDOW };
 
+/** The sign-in's pair, in a bucket of this route's own: guessing a coupon's code is guessing a password (BEELINK-224). */
+const couponRateLimit = { max: env.AUTH_RATE_LIMIT_MAX, timeWindow: env.AUTH_RATE_LIMIT_WINDOW };
+
 /**
  * A page's subscription to bee-link (BEELINK-219), as its owner reads it, chooses its cycle
- * (BEELINK-292) and asks whether it was paid (BEELINK-221). Closed, like every panel route — the global
- * guard takes the shopkeeper's token and refuses a shopper's.
+ * (BEELINK-292), asks whether it was paid (BEELINK-221) and uses a coupon of bee-link's on it
+ * (BEELINK-224). Closed, like every panel route — the global guard takes the shopkeeper's token and
+ * refuses a shopper's.
  */
 @ApiTags('billing')
 @ApiBearerAuth()
 @ApiUnauthorizedResponse({ description: 'AUTH_UNAUTHENTICATED' })
 @ApiNotFoundResponse({ description: 'STORE_NOT_FOUND' })
 @ApiForbiddenResponse({ description: 'STORE_FORBIDDEN' })
-// What a locked page still answers its owner: the subscription that opens it again (BEELINK-223).
+// What a locked page still answers its owner: the subscription that opens it again (BEELINK-223), a coupon's month included.
 @OpenWhileLocked()
 @Controller('stores/:storeSlug/subscription')
 export class BillingController {
@@ -51,6 +57,7 @@ export class BillingController {
     private readonly billing: BillingService,
     private readonly subscriptions: StoreSubscriptions,
     private readonly payments: SubscriptionSync,
+    private readonly coupons: PlatformCoupons,
   ) {}
 
   @Get()
@@ -88,5 +95,23 @@ export class BillingController {
   @ApiTooManyRequestsResponse({ description: 'RATE_LIMITED — too many writes from this address' })
   check(@Param('storeSlug') storeSlug: string, @CurrentUser() current: AuthenticatedUser): Promise<StoreSubscriptionAnswer> {
     return this.payments.check(storeSlug, current.id);
+  }
+
+  @Post('coupon')
+  @HttpCode(HttpStatus.OK)
+  @RouteConfig({ rateLimit: couponRateLimit })
+  @ApiOperation({
+    summary:
+      "Use a coupon of bee-link's on the page (BEELINK-224): one free month — never a discount — once in the page's life, for a page that never paid. The month begins at the latest of now, the trial's end and a free period still running, and ends with the same day of the next month. Nothing is made at Asaas; an unpaid subscription the page chose is taken out of Asaas first. Answered as `GET` reads the page then",
+  })
+  @ApiOkResponse({ type: StoreSubscriptionAnswerResponse })
+  @ApiConflictResponse({
+    description:
+      'BILLING_COUPON_NOT_FOUND · BILLING_COUPON_DISABLED · BILLING_COUPON_EXPIRED · BILLING_COUPON_EXHAUSTED · BILLING_COUPON_ALREADY_USED · BILLING_COUPON_PAGE_PAID · BILLING_NOT_ENFORCED · BILLING_SUBSCRIPTION_MISSING · BILLING_PAGE_EXEMPT · BILLING_PAGE_ACTIVE · BILLING_SUBSCRIPTION_BUSY — nothing was written. BILLING_SUBSCRIPTION_PAID — the subscription the page chose was paid; nothing was removed or written',
+  })
+  @ApiServiceUnavailableResponse({ description: "BILLING_UNAVAILABLE — this deployment has no Asaas account of bee-link's own. BILLING_UNREACHABLE — Asaas did not answer while the page's unpaid subscription was taken out; nothing of the coupon was written" })
+  @ApiTooManyRequestsResponse({ description: 'RATE_LIMITED — too many tries from this address' })
+  redeemCoupon(@Param('storeSlug') storeSlug: string, @CurrentUser() current: AuthenticatedUser, @Body() body: CouponRedemptionDto): Promise<StoreSubscriptionAnswer> {
+    return this.coupons.redeem(storeSlug, current.id, body.code);
   }
 }
