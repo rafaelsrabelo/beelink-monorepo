@@ -99,11 +99,12 @@ describe('the notice that charging starts', () => {
     // Ana: a page from before subscriptions, and one created on 14/10 whose trial ended on 21/10.
     await page(anaId, 'doces-da-ana', 'Doces da Ana', '2026-09-20T13:00:00.000Z');
     await page(anaId, 'ana-bolos', 'Ana Bolos', '2026-10-14T13:00:00.000Z', {});
-    // Bia: exempt alone. Caio: paying alone. Duda: a page of 13/10, and an exempt one beside it.
+    // Bia: exempt alone. Caio: paying alone. Duda: a page of 13/10, with an exempt one and a paying one beside it.
     await page(biaId, 'bia-teste', 'Bia Teste', '2026-10-13T18:00:00.000Z', { status: 'EXEMPT' });
     await page(caioId, 'caio-paga', 'Caio Paga', '2026-10-13T18:00:00.000Z', { status: 'ACTIVE', currentPeriodEndsAt: new Date('2026-12-13T03:00:00.000Z') });
     await page(dudaId, 'duda-doces', 'Duda Doces', '2026-10-13T19:00:00.000Z', {});
     await page(dudaId, 'duda-isenta', 'Duda Isenta', '2026-10-13T20:00:00.000Z', { status: 'EXEMPT' });
+    await page(dudaId, 'duda-paga', 'Duda Paga', '2026-10-13T21:00:00.000Z', { status: 'ACTIVE', currentPeriodEndsAt: new Date('2026-11-25T03:00:00.000Z') });
     // The month of 13/10, as the deploy gave it.
     await migrate();
   });
@@ -126,6 +127,7 @@ describe('the notice that charging starts', () => {
     const toDuda = await noticeTo(duda);
     expect(toDuda.Text).toContain(`Sua página:\n\n- Duda Doces (${host}/duda-doces): sem um plano`);
     expect(toDuda.Text).not.toContain('Duda Isenta');
+    expect(toDuda.Text).not.toContain('Duda Paga');
     expect(await countMessages(bia)).toBe(0);
     expect(await countMessages(caio)).toBe(0);
   });
