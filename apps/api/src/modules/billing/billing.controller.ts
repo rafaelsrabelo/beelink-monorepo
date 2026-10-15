@@ -1,5 +1,5 @@
 // Nest
-import { Body, Controller, Get, Param, Put } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Put } from '@nestjs/common';
 import { RouteConfig } from '@nestjs/platform-fastify';
 import {
   ApiBadGatewayResponse,
@@ -27,14 +27,15 @@ import { BillingService } from './billing.service.js';
 import { StoreSubscriptionAnswerResponse, SubscriptionChoiceResponse } from './dto/billing.response.js';
 import { SubscriptionChoiceDto } from './dto/subscription-choice.dto.js';
 import { StoreSubscriptions } from './store-subscriptions.service.js';
+import { SubscriptionSync } from './subscription-sync.service.js';
 
-/** The shop writes' own pair, as the billing account's write: each choice calls a third party whose quota is one for every shopkeeper. */
+/** The shop writes' own pair, as the billing account's write: each choice, and each check, calls a third party whose quota is one for every shopkeeper. */
 const writeRateLimit = { max: env.STORE_WRITE_RATE_LIMIT_MAX, timeWindow: env.STORE_WRITE_RATE_LIMIT_WINDOW };
 
 /**
- * A page's subscription to bee-link (BEELINK-219), as its owner reads it and chooses its cycle
- * (BEELINK-292). Closed, like every panel route — the global guard takes the shopkeeper's token and
- * refuses a shopper's.
+ * A page's subscription to bee-link (BEELINK-219), as its owner reads it, chooses its cycle
+ * (BEELINK-292) and asks whether it was paid (BEELINK-221). Closed, like every panel route — the global
+ * guard takes the shopkeeper's token and refuses a shopper's.
  */
 @ApiTags('billing')
 @ApiBearerAuth()
@@ -46,6 +47,7 @@ export class BillingController {
   constructor(
     private readonly billing: BillingService,
     private readonly subscriptions: StoreSubscriptions,
+    private readonly payments: SubscriptionSync,
   ) {}
 
   @Get()
@@ -69,5 +71,19 @@ export class BillingController {
   @ApiTooManyRequestsResponse({ description: 'RATE_LIMITED — too many writes from this address' })
   choose(@Param('storeSlug') storeSlug: string, @CurrentUser() current: AuthenticatedUser, @Body() body: SubscriptionChoiceDto): Promise<SubscriptionChoice> {
     return this.subscriptions.choose(storeSlug, current.id, body.cycle);
+  }
+
+  @Post('check')
+  @HttpCode(HttpStatus.OK)
+  @RouteConfig({ rateLimit: writeRateLimit })
+  @ApiOperation({
+    summary:
+      "Ask Asaas now whether the page's charge was paid, and read the subscription as it then stands — as `GET` reads it. Asaas is asked at most once in ten seconds for a page; inside that, the subscription as last read is the answer. Where nothing is charged, there is no key, or the page has no subscription at Asaas, nothing is asked",
+  })
+  @ApiOkResponse({ type: StoreSubscriptionAnswerResponse })
+  @ApiServiceUnavailableResponse({ description: 'BILLING_UNREACHABLE — Asaas did not answer; the subscription is as last read. BILLING_UNAVAILABLE — Asaas refused bee-link\'s own key' })
+  @ApiTooManyRequestsResponse({ description: 'RATE_LIMITED — too many writes from this address' })
+  check(@Param('storeSlug') storeSlug: string, @CurrentUser() current: AuthenticatedUser): Promise<StoreSubscriptionAnswer> {
+    return this.payments.check(storeSlug, current.id);
   }
 }

@@ -285,24 +285,34 @@ describe("a page's subscription at bee-link's own Asaas account, by the cycle it
       expect(await rowOf()).toMatchObject({ cycle: 'ANNUAL', priceCents: 5990 });
     });
 
-    it.each(['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH', 'REFUNDED', 'AWAITING_RISK_ANALYSIS', 'CHARGEBACK_REQUESTED', 'A_WORD_ASAAS_ADDS_LATER'])(
-      'removes nothing and makes nothing once Asaas says the charge is %s — whichever cycle is chosen',
-      async (status) => {
+    it.each([
+      ['CONFIRMED', 'ACTIVE'],
+      ['RECEIVED', 'ACTIVE'],
+      ['RECEIVED_IN_CASH', 'ACTIVE'],
+      ['REFUNDED', 'CANCELED'],
+      ['AWAITING_RISK_ANALYSIS', 'TRIALING'],
+      ['CHARGEBACK_REQUESTED', 'PAST_DUE'],
+      ['A_WORD_ASAAS_ADDS_LATER', 'TRIALING'],
+    ] as const)(
+      'removes nothing and makes nothing once Asaas says the charge is %s — whichever cycle is chosen — and has the page read as it then stands, %s (BEELINK-221)',
+      async (status, standing) => {
         await choose('MONTHLY');
         const before = await rowOf();
         asaas.pay(before.asaasSubscriptionId!, status);
+        asaas.calls.length = 0;
 
-        for (const cycle of ['MONTHLY', 'ANNUAL']) {
-          asaas.calls.length = 0;
-          const response = await choose(cycle);
+        expectRefusal(await choose('ANNUAL'), 409, 'BILLING_SUBSCRIPTION_PAID');
+        // The talk's own look, and then the read of the payment, with the claim let go: nothing asked of Asaas changes anything there.
+        expect(asaas.calls).toEqual(['subscriptions', 'subscriptionCharges', 'subscription', 'subscriptionCharges']);
+        // What the row says of Asaas is as the choice left it; the read wrote where the page stands.
+        expect(await rowOf()).toMatchObject({ status: standing, asaasSubscriptionId: before.asaasSubscriptionId, cycle: 'MONTHLY', priceCents: 5990, asaasSubscriptionClaimedUntil: null });
 
-          expectRefusal(response, 409, 'BILLING_SUBSCRIPTION_PAID');
-          expect(asaas.calls).toEqual(['subscriptions', 'subscriptionCharges']);
-        }
+        // Chosen again: still refused — before Asaas is asked, for a page the payment made active.
+        asaas.calls.length = 0;
+        expectRefusal(await choose('MONTHLY'), 409, standing === 'ACTIVE' ? 'BILLING_PAGE_ACTIVE' : 'BILLING_SUBSCRIPTION_PAID');
+        if (standing === 'ACTIVE') expect(asaas.calls).toEqual([]);
         expect(asaas.standingSubscriptions.map((subscription) => subscription.id)).toEqual([before.asaasSubscriptionId]);
         expect(asaas.subscriptionsHeld).toHaveLength(1);
-        // The page is not marked paid here: the row is as the choice left it, and free for whoever applies the payment.
-        expect(await rowOf()).toMatchObject({ status: 'TRIALING', asaasSubscriptionId: before.asaasSubscriptionId, cycle: 'MONTHLY', priceCents: 5990, currentPeriodEndsAt: null, asaasSubscriptionClaimedUntil: null });
       },
     );
 
@@ -318,6 +328,10 @@ describe("a page's subscription at bee-link's own Asaas account, by the cycle it
       expect(asaas.count('createSubscription')).toBe(1);
       expect(asaas.standingSubscriptions).toHaveLength(0);
       expect(await rowOf()).toMatchObject({ asaasSubscriptionId: before.asaasSubscriptionId, cycle: 'MONTHLY', priceCents: 5990, asaasSubscriptionClaimedUntil: null });
+      // Read as any payment is (BEELINK-221): paid, on a subscription no more — cancelled, with the month it paid for to run.
+      const read = await rowOf();
+      expect(read.status).toBe('CANCELED');
+      expect(read.currentPeriodEndsAt!.getTime()).toBeGreaterThan(Date.now() + 27 * 86_400_000);
     });
 
     it('ends two choices at once with one subscription: the second is turned away while the first talks to Asaas, without waiting and without writing', async () => {

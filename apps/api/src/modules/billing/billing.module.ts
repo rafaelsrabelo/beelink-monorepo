@@ -11,10 +11,12 @@ import { PlansController } from './plans.controller.js';
 import { PlatformAsaas } from './platform-asaas.client.js';
 import { platformAsaasEnvironment, platformAsaasOfThisDeployment } from './platform-asaas.config.js';
 import { StoreSubscriptions } from './store-subscriptions.service.js';
+import { SubscriptionSync } from './subscription-sync.service.js';
 
 /**
  * What a page owes bee-link (BEELINK-218): the plans, each page's subscription and trial, who is
- * charged for an account's pages, and the subscription a page's chosen cycle makes at Asaas. This is bee-link charging the shopkeeper, at bee-link's own Asaas
+ * charged for an account's pages, the subscription a page's chosen cycle makes at Asaas, and what
+ * Asaas says of its payment, read when the panel asks (BEELINK-221). This is bee-link charging the shopkeeper, at bee-link's own Asaas
  * account (`PlatformAsaas`), and it never meets a shop's own sales: not `modules/payments`, and not
  * the key a shop pasted, which `integrations/asaas` alone opens. What it has in common with those is
  * the request to Asaas itself (`shared/asaas`) and two pure functions of `integrations/asaas`.
@@ -25,7 +27,13 @@ import { StoreSubscriptions } from './store-subscriptions.service.js';
 @Module({
   imports: [StoresModule],
   controllers: [PlansController, BillingController, BillingAccountController],
-  providers: [BillingService, BillingAccounts, StoreSubscriptions, { provide: PlatformAsaas, useFactory: platformAsaasOfThisDeployment }],
+  providers: [
+    BillingService,
+    BillingAccounts,
+    StoreSubscriptions,
+    SubscriptionSync,
+    { provide: PlatformAsaas, useFactory: platformAsaasOfThisDeployment },
+  ],
 })
 export class BillingModule implements OnModuleInit {
   private readonly logger = new Logger(BillingModule.name);
