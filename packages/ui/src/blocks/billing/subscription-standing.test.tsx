@@ -29,6 +29,9 @@ describe("SubscriptionStanding (BEELINK-293)", () => {
   })
 
   it.each<[SubscriptionStandingView, string, string]>([
+    [{ status: "FREE", lastDay: "21/11/2026", daysLeft: 37 }, "Grátis", "A página está grátis até 21/11/2026: faltam 37 dias. Nada é cobrado sozinho: quando o tempo grátis acabar, a página trava e sai do ar até você assinar."],
+    [{ status: "FREE", lastDay: "21/11/2026", daysLeft: 1 }, "Grátis", "A página está grátis até amanhã, 21/11/2026. Nada é cobrado sozinho: quando o tempo grátis acabar, a página trava e sai do ar até você assinar."],
+    [{ status: "FREE", lastDay: "21/11/2026", daysLeft: 0 }, "Grátis", "O tempo grátis da página termina hoje, 21/11/2026. Nada é cobrado sozinho: quando ele acabar, a página trava e sai do ar até você assinar."],
     [{ status: "TRIALING", lastDay: "22/10/2026", daysLeft: 7 }, "Em teste", "O teste grátis vai até 22/10/2026: faltam 7 dias. Ele não pede cartão e nada é cobrado sozinho: quando acabar, a página trava e sai do ar até você assinar."],
     [{ status: "TRIALING", lastDay: "22/10/2026", daysLeft: 1 }, "Em teste", "O teste grátis vai até amanhã, 22/10/2026. Ele não pede cartão e nada é cobrado sozinho: quando acabar, a página trava e sai do ar até você assinar."],
     [{ status: "TRIALING", lastDay: "22/10/2026", daysLeft: 0 }, "Em teste", "O teste grátis termina hoje, 22/10/2026. Ele não pede cartão e nada é cobrado sozinho: quando acabar, a página trava e sai do ar até você assinar."],

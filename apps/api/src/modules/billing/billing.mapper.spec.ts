@@ -45,6 +45,7 @@ const trialing = {
   nextCheckAt: null,
   createdAt: new Date('2026-10-13T16:24:00.000Z'),
   updatedAt: new Date('2026-10-13T16:24:00.000Z'),
+  couponRedemption: null,
 } satisfies StoreSubscriptionRow;
 
 describe('a plan, as it is listed', () => {
@@ -87,6 +88,9 @@ describe('a subscription, as its page’s owner reads it', () => {
       currentPeriodEndsAt: null,
       cancelRequestedAt: null,
       freePeriodEndsAt: null,
+      freePeriodLastDay: null,
+      freePeriodDaysLeft: null,
+      couponRedeemedAt: null,
       paymentMethod: null,
       invoiceUrl: null,
       card: null,
@@ -132,6 +136,9 @@ describe('a subscription, as its page’s owner reads it', () => {
       currentPeriodEndsAt: '2027-10-14T03:00:00.000Z',
       cancelRequestedAt: '2026-12-01T12:00:00.000Z',
       freePeriodEndsAt: '2026-11-14T03:00:00.000Z',
+      // Over by then: the last day is still said, and no day is left.
+      freePeriodLastDay: '2026-11-13',
+      freePeriodDaysLeft: null,
       paymentMethod: 'PIX',
       invoiceUrl: 'https://sandbox.asaas.com/i/000000000001',
       card: null,
@@ -165,6 +172,24 @@ describe('a subscription, as its page’s owner reads it', () => {
 
     const written = { ...paid, status: 'PAST_DUE', graceEndsAt: new Date('2026-11-25T03:00:00.000Z') } satisfies StoreSubscriptionRow;
     expect(toStoreSubscription(written, new Date('2026-11-23T12:00:00.000Z'), true)).toMatchObject({ status: 'PAST_DUE', graceEndsAt: '2026-11-25T03:00:00.000Z', lock: null });
+  });
+
+  it("reads a free month as the page's own — free now, until its last day of Brasília — whatever the status says (BEELINK-224)", () => {
+    // A coupon used in the trial: free through 21/11, the month after the trial's last day, 20/10.
+    const free = { ...trialing, freePeriodEndsAt: new Date('2026-11-22T03:00:00.000Z'), couponRedemption: { createdAt: new Date('2026-10-15T12:00:00.000Z') } } satisfies StoreSubscriptionRow;
+
+    expect(toStoreSubscription(free, new Date('2026-10-15T12:00:00.000Z'), true)).toMatchObject({
+      status: 'TRIALING',
+      freePeriodEndsAt: '2026-11-22T03:00:00.000Z',
+      freePeriodLastDay: '2026-11-21',
+      freePeriodDaysLeft: 37,
+      couponRedeemedAt: '2026-10-15T12:00:00.000Z',
+      lock: null,
+    });
+    // Past the trial the status says so, and the page is free all the same.
+    expect(toStoreSubscription(free, new Date('2026-11-21T12:00:00.000Z'), true)).toMatchObject({ status: 'TRIAL_EXPIRED', freePeriodDaysLeft: 0, lock: null });
+    // The instant it ends, nothing is left, the last day is still said, and a page that never paid is locked.
+    expect(toStoreSubscription(free, new Date('2026-11-22T03:00:00.000Z'), true)).toMatchObject({ status: 'TRIAL_EXPIRED', freePeriodLastDay: '2026-11-21', freePeriodDaysLeft: null, lock: 'TRIAL_EXPIRED' });
   });
 
   it('tells of a card only its brand and its last four digits', () => {

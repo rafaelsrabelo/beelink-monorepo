@@ -13,6 +13,8 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // UI
 import { SubscriptionAwaiting } from "@harness-monorepo/ui/blocks/billing/subscription-awaiting"
 import { SubscriptionConfirmed } from "@harness-monorepo/ui/blocks/billing/subscription-confirmed"
+import { SubscriptionCoupon } from "@harness-monorepo/ui/blocks/billing/subscription-coupon"
+import { SubscriptionCouponApplied } from "@harness-monorepo/ui/blocks/billing/subscription-coupon-applied"
 import { SubscriptionDue } from "@harness-monorepo/ui/blocks/billing/subscription-due"
 import { SubscriptionPaid } from "@harness-monorepo/ui/blocks/billing/subscription-paid"
 import { SubscriptionSkeleton } from "@harness-monorepo/ui/blocks/billing/subscription-skeleton"
@@ -24,8 +26,9 @@ import { AppLink } from "@/components/app-link"
 import { IntegrationFrame } from "@/components/integrations/integration-frame"
 import { errorSentenceOf } from "@/lib/error-sentence"
 import { CONFIRMED_LINGER_MS, offersOf, subscribeViewOf, type SubscribeView } from "@/lib/subscribe-view"
+import { dayInWords } from "@/lib/subscription-dates"
 import type { WebMessages } from "@/locales"
-import { useBillingAccount, usePlanCatalog, useStoreSubscription, useSubscriptionCheck, type SubscriptionCheckMode } from "@/services/billing/billing-hooks"
+import { useBillingAccount, usePlanCatalog, useRedeemCoupon, useStoreSubscription, useSubscriptionCheck, type SubscriptionCheckMode } from "@/services/billing/billing-hooks"
 import { BillingRequestError } from "@/services/billing/billing-requests"
 import { SubscribeCheckoutLive, type OpenedInvoice } from "./subscribe-checkout-live"
 
@@ -63,6 +66,10 @@ function waitingInvoiceOf(view: SubscribeView | null, opened: OpenedInvoice | nu
  * owing nothing, or one from before subscriptions, the screen leads back to the panel and offers
  * nothing — a skeleton until the answer arrives. The amounts are the catalogue's and the days the
  * subscription's; no figure is written here.
+ *
+ * A page that never paid and used no coupon is offered one of bee-link's beside the cycles
+ * (BEELINK-224): taken, the page is free for a month, and the screen goes on to its panel as it does
+ * once a payment is confirmed.
  */
 export function SubscribeScreen({ slug, locale, back, messages, errors }: SubscribeScreenProps) {
   const text = messages.subscription
@@ -75,22 +82,25 @@ export function SubscribeScreen({ slug, locale, back, messages, errors }: Subscr
   const account = useBillingAccount(sells)
   const [opened, setOpened] = useState<OpenedInvoice | null>(null)
   const [notYet, setNotYet] = useState(false)
+  const coupon = useRedeemCoupon(slug)
 
   const waitingInvoice = waitingInvoiceOf(view, opened)
   const waiting = waitingInvoice !== null
   const confirmed = opened !== null && view?.kind === "active"
   const mode: SubscriptionCheckMode = waiting ? "watch" : invoiceOutIn(view) && !confirmed ? "once" : "off"
   const check = useSubscriptionCheck(slug, mode)
+  // Paid, or free for a month: either way the page is open, and the screen goes on to its panel.
+  const done = confirmed || coupon.isSuccess
 
   useEffect(() => {
     if (view?.kind === "leave") router.replace(back.href as Parameters<typeof router.replace>[0])
   }, [view?.kind, back.href, router])
 
   useEffect(() => {
-    if (!confirmed) return
+    if (!done) return
     const timer = setTimeout(() => router.replace(back.href as Parameters<typeof router.replace>[0]), CONFIRMED_LINGER_MS)
     return () => clearTimeout(timer)
-  }, [confirmed, back.href, router])
+  }, [done, back.href, router])
 
   // Until a title is drawn, a reader is still told which page this is.
   const untitled = <h1 className="sr-only">{text.untitled}</h1>
@@ -114,10 +124,28 @@ export function SubscribeScreen({ slug, locale, back, messages, errors }: Subscr
     setNotYet(read.data?.subscription?.status !== "ACTIVE")
   }
 
+  const freeUntil = subscription?.freePeriodLastDay ? dayInWords(subscription.freePeriodLastDay, locale) : null
+  // Only where the API would take one, and where this deployment can charge at all.
+  const couponField =
+    view.kind === "choose" && view.coupon && !account.error ? (
+      <SubscriptionCoupon
+        onSubmit={(code) => {
+          coupon.reset()
+          coupon.mutate({ code })
+        }}
+        pending={coupon.isPending}
+        error={coupon.error ? errorSentenceOf(errors, codeOf(coupon.error)) : undefined}
+        invoiceOpen={view.openInvoice !== null}
+        messages={messages}
+      />
+    ) : null
+
   return (
     <IntegrationFrame back={back} result={null}>
       <SubscriptionStanding plan={sale?.plan.name ?? null} standing={view.standing} messages={messages} />
-      {confirmed ? (
+      {coupon.isSuccess ? (
+        <SubscriptionCouponApplied freeUntil={freeUntil} {...panel} />
+      ) : confirmed ? (
         <SubscriptionConfirmed paidUntil={view.kind === "active" ? view.paid.paidUntil : null} {...panel} />
       ) : waitingInvoice !== null && opened !== null ? (
         <SubscriptionAwaiting
@@ -137,18 +165,21 @@ export function SubscribeScreen({ slug, locale, back, messages, errors }: Subscr
       ) : view.kind === "due" ? (
         <SubscriptionDue invoiceUrl={view.invoiceUrl} onOpen={() => setOpened({ priceChanged: false })} onCheck={() => void checkNow()} checking={check.isFetching} messages={messages} />
       ) : (
-        <SubscribeCheckoutLive
-          slug={slug}
-          locale={locale}
-          offers={sale?.offers ?? []}
-          openInvoice={view.openInvoice}
-          account={accountOf(account.data)}
-          loss={view.loss}
-          blocked={sale === null || account.error ? text.unavailable : undefined}
-          onOpened={setOpened}
-          messages={messages}
-          errors={errors}
-        />
+        <>
+          {couponField}
+          <SubscribeCheckoutLive
+            slug={slug}
+            locale={locale}
+            offers={sale?.offers ?? []}
+            openInvoice={view.openInvoice}
+            account={accountOf(account.data)}
+            loss={view.loss}
+            blocked={sale === null || account.error ? text.unavailable : undefined}
+            onOpened={setOpened}
+            messages={messages}
+            errors={errors}
+          />
+        </>
       )}
     </IntegrationFrame>
   )

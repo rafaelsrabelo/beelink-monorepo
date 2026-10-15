@@ -83,6 +83,20 @@ describe('a deployment with BILLING_ENFORCED off: where nothing is charged, noth
     expect(asaas.calls).toEqual([]);
   });
 
+  it('refuses a coupon with the same stable code, spends nothing, writes nothing and asks Asaas nothing (BEELINK-224)', async () => {
+    await prisma.platformCoupon.create({ data: { code: 'TESTE-DESLIGADA' } });
+    const before = await prisma.storeSubscription.findFirstOrThrow();
+    asaas.calls.length = 0;
+
+    const response = await call('POST', '/api/stores/padaria/subscription/coupon', owner, { code: 'TESTE-DESLIGADA' });
+
+    expect(response.statusCode).toBe(409);
+    expect(response.json<ApiErrorBody>()).toMatchObject({ statusCode: 409, errorCode: 'BILLING_NOT_ENFORCED' });
+    expect(asaas.calls).toEqual([]);
+    expect(await prisma.storeSubscription.findFirstOrThrow()).toEqual(before);
+    expect(await prisma.platformCoupon.findUniqueOrThrow({ where: { code: 'TESTE-DESLIGADA' } })).toMatchObject({ redemptionCount: 0 });
+  });
+
   it("leaves the page's subscription reading as it did: in trial, with nothing chosen and no invoice", async () => {
     const answer = (await call('GET', '/api/stores/padaria/subscription', owner)).json<StoreSubscriptionAnswer>();
 

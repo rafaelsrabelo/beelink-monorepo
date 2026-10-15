@@ -62,6 +62,17 @@ export function cycleOfAsaas(word: string): BillingCycle | null {
 /** The plan a page is sold, by its slug. Its row, its switch and what each cycle costs are the seed's: no price is written in code. */
 export const PLAN_ON_SALE = 'beelink';
 
+/**
+ * A coupon of bee-link's as it is typed (BEELINK-224): the shape a shop's coupon has (`COUPON_CODE`,
+ * modules/promotions), so a shopkeeper types one as the other — A–Z, 0–9, `-` and `_`, 3 to 30 of them,
+ * any case. Its own copy and not an import: what a shop's coupon may be is the shop's rule, and the
+ * database holds this one by a CHECK.
+ */
+export const PLATFORM_COUPON_CODE = /^[A-Za-z0-9][A-Za-z0-9_-]{2,29}$/;
+
+/** The most pages a coupon may be made for — the ceiling a shop's coupon has. */
+export const PLATFORM_COUPON_MAX_USES_MAX = 1_000_000;
+
 export const SUBSCRIPTION_STATUSES = Object.keys({
   TRIALING: true,
   TRIAL_EXPIRED: true,

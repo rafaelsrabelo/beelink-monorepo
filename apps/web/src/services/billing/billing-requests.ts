@@ -3,6 +3,7 @@ import type {
   BillingAccount,
   BillingAccountAnswer,
   BillingAccountPayload,
+  CouponRedemptionPayload,
   PlanCatalog,
   StoreSubscriptionAnswer,
   SubscriptionChoice,
@@ -58,4 +59,9 @@ export function chooseSubscriptionCycle(slug: string, payload: SubscriptionChoic
 /** Where the page stands once the API asked Asaas — at most once in ten seconds for a page. */
 export function checkStoreSubscription(slug: string): Promise<StoreSubscriptionAnswer> {
   return ask(`${subscriptionOf(slug)}/check`, "POST", {})
+}
+
+/** A coupon of bee-link's used on the page (BEELINK-224): the answer is the page as it then reads, free for a month. */
+export function redeemCoupon(slug: string, payload: CouponRedemptionPayload): Promise<StoreSubscriptionAnswer> {
+  return ask(`${subscriptionOf(slug)}/coupon`, "POST", payload)
 }

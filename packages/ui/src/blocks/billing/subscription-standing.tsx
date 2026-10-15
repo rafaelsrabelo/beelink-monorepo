@@ -17,6 +17,7 @@ export interface SubscriptionStandingProps {
 }
 
 const BADGE: Record<SubscriptionStandingView["status"], "success" | "outline" | "destructive"> = {
+  FREE: "outline",
   TRIALING: "outline",
   TRIAL_EXPIRED: "destructive",
   ACTIVE: "success",
@@ -25,9 +26,12 @@ const BADGE: Record<SubscriptionStandingView["status"], "success" | "outline" | 
   CANCELED: "outline",
 }
 
-/** Where the page stands, in one sentence: its trial and what is left of it, until when it is paid, or what went wrong. */
+/** Where the page stands, in one sentence: its free days and what is left of them, until when it is paid, or what went wrong. */
 export function standingSentenceOf(standing: SubscriptionStandingView, text: UiMessages["subscription"]["standing"]): string {
   switch (standing.status) {
+    case "FREE":
+      if (standing.daysLeft > 1) return format(text.freeMany, { date: standing.lastDay, days: String(standing.daysLeft) })
+      return format(standing.daysLeft === 1 ? text.freeOne : text.freeToday, { date: standing.lastDay })
     case "TRIALING":
       if (standing.daysLeft > 1) return format(text.trialingMany, { date: standing.lastDay, days: String(standing.daysLeft) })
       return format(standing.daysLeft === 1 ? text.trialingOne : text.trialingToday, { date: standing.lastDay })

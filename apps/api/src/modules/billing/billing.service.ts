@@ -9,7 +9,7 @@ import { env } from '../../shared/config/env.js';
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoresService } from '../stores/stores.service.js';
 import { TRIAL_DAYS } from './billing.constants.js';
-import { toPlan, toStoreSubscription } from './billing.mapper.js';
+import { SUBSCRIPTION_READ, toPlan, toStoreSubscription } from './billing.mapper.js';
 import { PageLocks } from './page-locks.service.js';
 
 /**
@@ -44,7 +44,7 @@ export class BillingService {
   async answerOf(storeId: string): Promise<StoreSubscriptionAnswer> {
     const row = await this.prisma.storeSubscription.findUnique({
       where: { storeId },
-      include: { plan: { select: { id: true, slug: true, name: true } } },
+      include: SUBSCRIPTION_READ,
     });
 
     return { billingEnforced: env.BILLING_ENFORCED, subscription: row ? toStoreSubscription(row, new Date(), this.locks.engaged) : null };

@@ -9,6 +9,8 @@ import { INVOICE_URL, exampleAccount, exampleOffers, offersWithOpenInvoice, paid
 import { SubscriptionAwaiting } from "./subscription-awaiting"
 import { SubscriptionCheckout } from "./subscription-checkout"
 import { SubscriptionConfirmed } from "./subscription-confirmed"
+import { SubscriptionCoupon } from "./subscription-coupon"
+import { SubscriptionCouponApplied } from "./subscription-coupon-applied"
 import { SubscriptionDue } from "./subscription-due"
 import { SubscriptionPaid } from "./subscription-paid"
 import { SubscriptionSkeleton } from "./subscription-skeleton"
@@ -53,6 +55,41 @@ export const TelaEmTeste: Story = {
   render: (args) => (
     <>
       <SubscriptionStanding plan="Beelink" standing={{ status: "TRIALING", lastDay: "22/10/2026", daysLeft: 5 }} />
+      <SubscriptionCheckout {...args} />
+    </>
+  ),
+}
+
+/** Uma página em teste com o campo do cupom acima do formulário: o cupom não escolhe ciclo, e tem o próprio botão (BEELINK-224). */
+export const TelaEmTesteComCupom: Story = {
+  args: { account: exampleAccount },
+  render: (args) => (
+    <>
+      <SubscriptionStanding plan="Beelink" standing={{ status: "TRIALING", lastDay: "22/10/2026", daysLeft: 5 }} />
+      <SubscriptionCoupon onSubmit={noop} />
+      <SubscriptionCheckout {...args} />
+    </>
+  ),
+}
+
+/** O cupom com uma fatura em aberto: o aviso de que usá-lo cancela a fatura. */
+export const CupomComFaturaEmAberto: Story = { render: () => <SubscriptionCoupon onSubmit={noop} invoiceOpen /> }
+
+/** O cupom recusado: a frase no campo, lida em voz alta. */
+export const CupomRecusado: Story = { render: () => <SubscriptionCoupon onSubmit={noop} error="Este cupom esgotou: ele já foi usado por todas as páginas que podia." /> }
+
+/** Conferindo o cupom: o campo e o botão travados. */
+export const CupomAplicando: Story = { render: () => <SubscriptionCoupon onSubmit={noop} pending /> }
+
+/** O cupom aplicado: a tela leva ao painel sozinha logo depois. */
+export const CupomAplicado: Story = { render: () => <SubscriptionCouponApplied freeUntil="21/11/2026" panelHref="#" /> }
+
+/** No tempo grátis — o teste e o mês do cupom, ou o mês das páginas que já existiam: grátis até o último dia, e assinar antes perde os dias que faltam. */
+export const TelaGratis: Story = {
+  args: { account: exampleAccount, loss: { kind: "free", daysLeft: 37 } },
+  render: (args) => (
+    <>
+      <SubscriptionStanding plan="Beelink" standing={{ status: "FREE", lastDay: "21/11/2026", daysLeft: 37 }} />
       <SubscriptionCheckout {...args} />
     </>
   ),

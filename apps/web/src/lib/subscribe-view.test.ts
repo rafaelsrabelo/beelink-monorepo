@@ -25,6 +25,9 @@ const trialing: StoreSubscription = {
   currentPeriodEndsAt: null,
   cancelRequestedAt: null,
   freePeriodEndsAt: null,
+  freePeriodLastDay: null,
+  freePeriodDaysLeft: null,
+  couponRedeemedAt: null,
   paymentMethod: null,
   invoiceUrl: null,
   card: null,
@@ -70,6 +73,7 @@ describe("subscribeViewOf (BEELINK-293)", () => {
       standing: { status: "TRIALING", lastDay: "22/10/2026", daysLeft: 7 },
       openInvoice: null,
       loss: { kind: "trial", daysLeft: 7 },
+      coupon: true,
     })
   })
 
@@ -85,6 +89,7 @@ describe("subscribeViewOf (BEELINK-293)", () => {
       standing: { status: "TRIAL_EXPIRED", lastDay: "22/10/2026" },
       openInvoice: null,
       loss: null,
+      coupon: true,
     })
   })
 
@@ -94,7 +99,45 @@ describe("subscribeViewOf (BEELINK-293)", () => {
       standing: { status: "CANCELED", until: "15/11/2026" },
       loss: { kind: "canceled" },
     })
-    expect(viewOf({ ...trialing, status: "CANCELED", currentPeriodEndsAt: "2026-10-01T03:00:00.000Z" })).toMatchObject({ standing: { status: "CANCELED", until: null }, loss: null })
+    expect(viewOf({ ...trialing, status: "CANCELED", currentPeriodEndsAt: "2026-10-01T03:00:00.000Z" })).toMatchObject({ standing: { status: "CANCELED", until: null }, loss: null, coupon: false })
+  })
+
+  describe("a free period (BEELINK-224)", () => {
+    /** A page in trial that used a coupon: free until 22/11, the month after the trial's last day. */
+    const couponed = { ...trialing, freePeriodEndsAt: "2026-11-23T03:00:00.000Z", freePeriodLastDay: "2026-11-22", freePeriodDaysLeft: 38, couponRedeemedAt: "2026-10-15T15:00:00.000Z" }
+
+    it("is said before the status, which would tell of a lock that does not come, and offers no second coupon", () => {
+      expect(viewOf(couponed)).toEqual({
+        kind: "choose",
+        standing: { status: "FREE", lastDay: "22/11/2026", daysLeft: 38 },
+        openInvoice: null,
+        loss: { kind: "free", daysLeft: 38 },
+        coupon: false,
+      })
+      // Past the trial the status says expired; the page is free all the same.
+      expect(viewOf({ ...couponed, status: "TRIAL_EXPIRED", trialDaysLeft: 0 })).toMatchObject({ standing: { status: "FREE", lastDay: "22/11/2026" }, coupon: false })
+    })
+
+    it("offers a coupon to a page in a free month it did not get by one — the month the pages that already existed are given", () => {
+      expect(viewOf({ ...trialing, status: "TRIAL_EXPIRED", freePeriodEndsAt: "2026-11-14T03:00:00.000Z", freePeriodLastDay: "2026-11-13", freePeriodDaysLeft: 29 })).toMatchObject({
+        standing: { status: "FREE", lastDay: "13/11/2026", daysLeft: 29 },
+        coupon: true,
+      })
+    })
+
+    it("is the status again once it is over, and still offers no second coupon", () => {
+      expect(viewOf({ ...couponed, status: "TRIAL_EXPIRED", freePeriodDaysLeft: null })).toMatchObject({ standing: { status: "TRIAL_EXPIRED" }, coupon: false })
+    })
+
+    it("tells a page that paid by what it paid for, free days or not", () => {
+      const active = { ...couponed, status: "ACTIVE" as const, plan, cycle: "MONTHLY" as const, priceCents: 10000, currentPeriodEndsAt: "2026-11-16T03:00:00.000Z" }
+
+      expect(viewOf(active)).toMatchObject({ kind: "active", standing: { status: "ACTIVE", paidUntil: "15/11/2026" } })
+    })
+
+    it("carries the invoice the page has open, which the coupon's field warns of", () => {
+      expect(viewOf({ ...trialing, plan, cycle: "MONTHLY" as const, priceCents: 10000, invoiceUrl: INVOICE })).toMatchObject({ coupon: true, openInvoice: { invoiceUrl: INVOICE } })
+    })
   })
 
   it("has nothing to sell a page whose paid period is running, and tells how it renews", () => {
@@ -161,7 +204,15 @@ describe("the codes and the address", () => {
     const errors = messagesFor("pt-BR").web.errors
 
     for (const code of MOVED_CODES) expect(errors[code as keyof typeof errors]).toBeTruthy()
-    expect([...MOVED_CODES].sort()).toEqual(["BILLING_NOT_ENFORCED", "BILLING_PAGE_ACTIVE", "BILLING_PAGE_EXEMPT", "BILLING_SUBSCRIPTION_MISSING", "BILLING_SUBSCRIPTION_PAID"])
+    expect([...MOVED_CODES].sort()).toEqual([
+      "BILLING_COUPON_ALREADY_USED",
+      "BILLING_COUPON_PAGE_PAID",
+      "BILLING_NOT_ENFORCED",
+      "BILLING_PAGE_ACTIVE",
+      "BILLING_PAGE_EXEMPT",
+      "BILLING_SUBSCRIPTION_MISSING",
+      "BILLING_SUBSCRIPTION_PAID",
+    ])
   })
 
   it("builds the screen's address from the slug, escaped", () => {

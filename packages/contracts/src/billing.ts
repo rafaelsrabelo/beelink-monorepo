@@ -131,8 +131,25 @@ export interface StoreSubscription {
   currentPeriodEndsAt: string | null;
   /** ISO-8601: when the shopkeeper asked to cancel. The page goes on until `currentPeriodEndsAt`. */
   cancelRequestedAt: string | null;
-  /** ISO-8601: the first instant a free period given by a coupon is over. Null with none. */
+  /**
+   * ISO-8601: the first instant a free period is over — a coupon's month (BEELINK-224), or the month
+   * the pages that existed on 13/10/2026 were given. While it is ahead the page is open, whatever
+   * `status` says. Null with none.
+   */
   freePeriodEndsAt: string | null;
+  /**
+   * `YYYY-MM-DD`, on Brasília's calendar: the last day the free period covers. Kept once it is over —
+   * a page locked after it says when it ended. Null with none.
+   */
+  freePeriodLastDay: string | null;
+  /**
+   * Days of Brasília's calendar until `freePeriodLastDay`: 0 on that day. Null when no free period
+   * covers the instant of the read — so a number here is "the page is free now", whatever `status` says:
+   * a page in trial that used a coupon is free until the coupon's month ends.
+   */
+  freePeriodDaysLeft: number | null;
+  /** ISO-8601: when the page used its one coupon (BEELINK-224). Null while it used none. */
+  couponRedeemedAt: string | null;
   /** What the money last moved by, as Asaas told it. Null until Asaas tells of a payment. */
   paymentMethod: SubscriptionPaymentMethod | null;
   /**
@@ -189,6 +206,16 @@ export interface SubscriptionChoice {
   invoiceUrl: string;
   /** The page's subscription as it now reads: the plan, the cycle and the price chosen, and the same invoice. */
   subscription: StoreSubscription;
+}
+
+/**
+ * `POST /stores/:slug/subscription/coupon`: a coupon of bee-link's for the page (BEELINK-224). It gives
+ * the page one free month — never a discount — once in the page's life, and nothing is made at Asaas
+ * for it. Answered `StoreSubscriptionAnswer`, the page as it then reads.
+ */
+export interface CouponRedemptionPayload {
+  /** As typed: its case and the spaces around it do not matter. */
+  code: string;
 }
 
 /** Which document a billing account is charged under. */
@@ -259,6 +286,20 @@ export interface BillingAccountAnswer {
  *
  * - `PAGE_LOCKED` (403): the page is locked for want of payment; why is `details` (`PageLockedDetails`).
  *   Nothing was read or written. It stays so until the page pays: asking again changes nothing.
+ *
+ * A coupon of bee-link's for a page (BEELINK-224, `POST /stores/:slug/subscription/coupon`), each
+ * refused before anything is written — and besides these, `BILLING_NOT_ENFORCED`, `BILLING_UNAVAILABLE`,
+ * `BILLING_SUBSCRIPTION_MISSING`, `BILLING_PAGE_EXEMPT`, `BILLING_PAGE_ACTIVE`, `BILLING_SUBSCRIPTION_BUSY`
+ * and, where an unpaid invoice had to be taken out of Asaas first, `BILLING_SUBSCRIPTION_PAID` and
+ * `BILLING_UNREACHABLE`, meaning what they mean above. Their own names, and not the shops' `COUPON_*`,
+ * which tell of a shop's coupon:
+ *
+ * - `BILLING_COUPON_NOT_FOUND` (409): no coupon has that code.
+ * - `BILLING_COUPON_DISABLED` (409): bee-link switched it off.
+ * - `BILLING_COUPON_EXPIRED` (409): its last day went by.
+ * - `BILLING_COUPON_EXHAUSTED` (409): as many pages used it as it allows.
+ * - `BILLING_COUPON_ALREADY_USED` (409): the page used a coupon already — one in its life.
+ * - `BILLING_COUPON_PAGE_PAID` (409): the page paid for its plan before: a coupon is for a page that never did.
  */
 export type BillingErrorCode =
   | "BILLING_UNAVAILABLE"
@@ -278,4 +319,10 @@ export type BillingErrorCode =
   | "BILLING_SUBSCRIPTION_PAID"
   | "BILLING_SUBSCRIPTION_REFUSED"
   | "BILLING_WEBHOOK_TOKEN_INVALID"
-  | "PAGE_LOCKED";
+  | "PAGE_LOCKED"
+  | "BILLING_COUPON_NOT_FOUND"
+  | "BILLING_COUPON_DISABLED"
+  | "BILLING_COUPON_EXPIRED"
+  | "BILLING_COUPON_EXHAUSTED"
+  | "BILLING_COUPON_ALREADY_USED"
+  | "BILLING_COUPON_PAGE_PAID";

@@ -138,6 +138,15 @@ gate "api/page-subscription-in-billing" \
   "storeSubscription\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\(" \
   --exclude-dir=billing --exclude-dir=generated --exclude='*.spec.ts'
 
+# bee-link's own coupons (BEELINK-224): a coupon's limit holds because one transaction alone moves its
+# count, under the page's row lock. A write anywhere else — a client call, or raw SQL naming the tables
+# — is a way around it.
+gate "api/platform-coupons-in-billing" \
+  "Only src/modules/billing writes platform_coupons and platform_coupon_redemptions: a coupon's limit and its once-a-page hold because one place writes them (apps/api/AGENTS.md rule 11, BEELINK-224)." \
+  "apps/api/src" \
+  "platformCoupon(Redemption)?\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\(|\"platform_coupon(s|_redemptions)\"" \
+  --exclude-dir=billing --exclude-dir=generated --exclude='*.spec.ts'
+
 # The same for a shop's Conversions API token (BEELINK-274), which sends events to the shop's own Meta
 # account: nothing else under integrations names the party, so nothing else can seal or open it.
 gate "api/meta-secret-in-meta-pixel" \

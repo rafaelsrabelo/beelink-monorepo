@@ -2,7 +2,7 @@
 import type { BillingCycle } from '@harness-monorepo/contracts';
 
 // App
-import { brasiliaDayOf, closeOfBrasiliaDay, daysLeft, lastDayBefore, periodEndDayOf, renewalDayOf, trialEndOf, trialLastDayOf } from './billing-dates.js';
+import { brasiliaDayOf, closeOfBrasiliaDay, daysLeft, freeMonthEndOf, lastDayBefore, periodEndDayOf, renewalDayOf, trialEndOf, trialLastDayOf } from './billing-dates.js';
 import { BILLING_CYCLES, CYCLE_MONTHS, TRIAL_DAYS } from './billing.constants.js';
 
 const HOUR = 3_600_000;
@@ -257,5 +257,28 @@ describe('the day a paid period ends', () => {
     expect(periodEndDayOf('2026-12-31', 'MONTHLY')).toBe('2027-01-31');
     expect(periodEndDayOf('2026-12-10', 'SEMIANNUAL')).toBe('2027-06-10');
     expect(periodEndDayOf('2026-12-10', 'ANNUAL')).toBe('2027-12-10');
+  });
+});
+
+describe('the end of a free month (BEELINK-224)', () => {
+  it('is the midnight in Brasília closing the same day a month later: a free month ends as a paid one does', () => {
+    expect(freeMonthEndOf('2026-10-15').toISOString()).toBe('2026-11-16T03:00:00.000Z');
+    expect(freeMonthEndOf('2026-10-15').getTime()).toBe(closeOfBrasiliaDay(periodEndDayOf('2026-10-15', 'MONTHLY')).getTime());
+  });
+
+  it("is the end of 13/11/2026 for the month the pages that existed on 13/10/2026 were given", () => {
+    expect(freeMonthEndOf('2026-10-13').toISOString()).toBe('2026-11-14T03:00:00.000Z');
+    expect(lastDayBefore(freeMonthEndOf('2026-10-13'))).toBe('2026-11-13');
+  });
+
+  it("falls on the month's last day where it lacks the day — February, a leap year, a thirty-day month", () => {
+    expect(lastDayBefore(freeMonthEndOf('2027-01-31'))).toBe('2027-02-28');
+    expect(lastDayBefore(freeMonthEndOf('2028-01-31'))).toBe('2028-02-29');
+    expect(lastDayBefore(freeMonthEndOf('2026-10-31'))).toBe('2026-11-30');
+  });
+
+  it('turns the year', () => {
+    expect(lastDayBefore(freeMonthEndOf('2026-12-31'))).toBe('2027-01-31');
+    expect(freeMonthEndOf('2026-12-31').toISOString()).toBe('2027-02-01T03:00:00.000Z');
   });
 });

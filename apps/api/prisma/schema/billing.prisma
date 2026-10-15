@@ -175,6 +175,9 @@ model StoreSubscription {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  /// The page's one coupon of bee-link's, once it used it (BEELINK-224).
+  couponRedemption PlatformCouponRedemption?
+
   @@index([planId])
   @@index([nextCheckAt])
   // The billing routine's clock moves pages by where they stand: a trial, a paid period or a grace that ended.
@@ -207,4 +210,60 @@ model BillingEvent {
 
   @@index([processedAt, nextAttemptAt])
   @@map("billing_events")
+}
+
+/// A coupon of bee-link's own (BEELINK-224): a code that gives a page one free month — never a discount
+/// — once in the page's life, while it is on, in date and under its limit. Nothing is made at Asaas for
+/// it. Made, listed and switched off by a command run in the API's container
+/// (`dist/scripts/platform-coupon.js`), so no code is ever written in this repository, which is public.
+/// Not a shop's `Coupon`, which takes money off an order.
+model PlatformCoupon {
+  id   String @id @default(uuid(7)) @db.Uuid
+  /// Stored trimmed and in upper case, so the unique index means "whatever the case": A–Z, 0–9, `-` and
+  /// `_`, 3 to 30 of them, by a CHECK — the shape a shop's coupon has, so one is typed as the other.
+  code String @unique @db.VarChar(30)
+
+  /// The first instant it gives nothing: the midnight in Brasília closing the last day it was made
+  /// for. Null never expires.
+  expiresAt       DateTime?
+  /// How many pages may use it; null is no limit. Above zero, by a CHECK.
+  maxRedemptions  Int?
+  /// How many pages used it. Moved only by the transaction that writes a use, by an UPDATE whose
+  /// condition is that the coupon still holds, so two uses at once never pass the limit together — and
+  /// never past it at all, by a CHECK. Never moved down: a use given is spent, even once its page is gone.
+  redemptionCount Int       @default(0)
+  /// When it was switched off; null while it is on. Switching it off takes back no month it gave.
+  disabledAt      DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  redemptions PlatformCouponRedemption[]
+
+  @@map("platform_coupons")
+}
+
+/// One use of a coupon of bee-link's (BEELINK-224): the page's subscription it was used on — one per
+/// page, by the unique index — and the free month it gave. Deleted with the page.
+model PlatformCouponRedemption {
+  id             String            @id @default(uuid(7)) @db.Uuid
+  /// Restrict: a coupon used is switched off, never deleted.
+  couponId       String            @db.Uuid
+  coupon         PlatformCoupon    @relation(fields: [couponId], references: [id], onDelete: Restrict)
+  subscriptionId String            @unique @db.Uuid
+  subscription   StoreSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  /// The free month it gave, as instants: from the later of the use, the trial's end and a free period
+  /// still running, to the midnight in Brasília closing the same day a month later. The page's own
+  /// `freePeriodEndsAt` is what the lock reads; these say where it came from. The end after the start,
+  /// by a CHECK.
+  freePeriodStartsAt DateTime
+  freePeriodEndsAt   DateTime
+
+  /// When the page used it.
+  createdAt DateTime @default(now())
+
+  /// A coupon's uses, the most recent first.
+  @@index([couponId, createdAt(sort: Desc)])
+  @@map("platform_coupon_redemptions")
 }

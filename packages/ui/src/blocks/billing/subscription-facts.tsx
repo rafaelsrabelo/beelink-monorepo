@@ -11,8 +11,8 @@ import { planMoney } from "@harness-monorepo/ui/lib/plan-figures"
 import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
-/** What subscribing now gives up: the trial's days left, or what is left of a cancelled page's paid period. */
-export type SubscriptionLoss = { kind: "trial"; daysLeft: number } | { kind: "canceled" }
+/** What subscribing now gives up: the trial's days left, a free period's (BEELINK-224), or what is left of a cancelled page's paid period. */
+export type SubscriptionLoss = { kind: "trial"; daysLeft: number } | { kind: "free"; daysLeft: number } | { kind: "canceled" }
 
 export interface SubscriptionFactsProps {
   /** What is paid today: the chosen cycle's whole price. */
@@ -24,7 +24,7 @@ export interface SubscriptionFactsProps {
 
 /**
  * What a shopkeeper reads before the button (BEELINK-293), in plain words: the first charge is today;
- * days still owed by the trial — or by a cancelled period — are not added; a card renews by itself
+ * days still owed by the trial, a free period or a cancelled period are not added; a card renews by itself
  * and a Pix or a boleto is a new invoice each time; the invoice opens at Asaas; and how to cancel, as
  * it is today.
  */
@@ -51,6 +51,10 @@ export function SubscriptionFacts({ chargedCents, loss, locale, messages = defau
 function lossOf(loss: SubscriptionLoss | null, text: UiMessages["subscription"]["facts"]): string | null {
   if (loss === null) return null
   if (loss.kind === "canceled") return text.canceledLoss
+  if (loss.kind === "free") {
+    if (loss.daysLeft > 1) return format(text.freeLossMany, { days: String(loss.daysLeft) })
+    return loss.daysLeft === 1 ? text.freeLossOne : text.freeLossToday
+  }
   if (loss.daysLeft > 1) return format(text.trialLossMany, { days: String(loss.daysLeft) })
   return loss.daysLeft === 1 ? text.trialLossOne : text.trialLossToday
 }
