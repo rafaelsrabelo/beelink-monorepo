@@ -1,26 +1,11 @@
 // App
-import { escapeHtml, note, type MailContent } from './mail.templates.js';
+import { escapeHtml, firstNameOf, note, type MailContent } from './mail.templates.js';
 
 export interface CourierApplicationReceivedContent {
   /** The full name as the application keeps it: only its first word is said. */
   name: string;
   /** The city's name, as bee-link writes it; null for a code that names no city any more. */
   city: string | null;
-}
-
-/** A letter, then letters, an apostrophe as a keyboard or a phone writes it, a hyphen: nothing a mail client turns into a link. */
-const SAYABLE = /^\p{L}[\p{L}'’-]*$/u;
-
-/**
- * The name to greet by, or none. The address was confirmed by nobody: whoever fills the form in
- * with somebody else's e-mail chooses what that person reads after "Olá,". A first word that is
- * anything but a name — `www.exemplo.com` becomes a link in the reader's mail client — is not said.
- */
-function firstNameOf(name: string): string | null {
-  // Composed first: an accent typed apart from its letter is a mark, and would read as no letter.
-  const first = name.normalize('NFC').trim().split(/\s+/)[0] ?? '';
-
-  return SAYABLE.test(first) ? first : null;
 }
 
 /**

@@ -1,10 +1,10 @@
 // Types
 import type { PrismaClient } from '../../generated/prisma/client.js';
-import type { SubscriptionStatus } from '../../generated/prisma/enums.js';
 
 // App
 import { optionsOf, Refusal, runSubcommands, UsageError, type CommandOutput } from './billing-command.js';
 import { brasiliaDayOf, lastDayBefore } from './billing-dates.js';
+import { isNeverPaid, NEVER_PAID_STATUSES } from './billing.constants.js';
 import { lockOf } from './page-lock.js';
 import { statusAt } from './subscription-status.js';
 
@@ -27,9 +27,6 @@ const USAGE = [
   '',
   "  --slug   the page's address, as in beelink.biz/<SLUG>",
 ];
-
-/** What a page that never paid is written as: nothing at Asaas was ever paid for it. */
-const NEVER_PAID: readonly SubscriptionStatus[] = ['TRIALING', 'TRIAL_EXPIRED'];
 
 const PAGE_ROW = {
   status: true,
@@ -63,12 +60,12 @@ async function exempt(args: readonly string[], db: ExemptionCommandDb, io: Comma
   const slug = slugOf(args);
   const page = await pageAt(db, slug);
   if (page.row.status === 'EXEMPT') return io.out(`${slug} is exempt already.`);
-  if (!NEVER_PAID.includes(page.row.status)) {
+  if (!isNeverPaid(page.row.status)) {
     throw new Refusal(`${slug} paid for its plan before (it stands ${statusAt(page.row, now)}): its subscription at Asaas goes on charging, and exempting it here would not stop that. Nothing was written.`);
   }
 
   const { count } = await db.storeSubscription.updateMany({
-    where: { storeId: page.id, status: { in: [...NEVER_PAID] }, OR: [{ asaasSubscriptionClaimedUntil: null }, { asaasSubscriptionClaimedUntil: { lte: now } }] },
+    where: { storeId: page.id, status: { in: [...NEVER_PAID_STATUSES] }, OR: [{ asaasSubscriptionClaimedUntil: null }, { asaasSubscriptionClaimedUntil: { lte: now } }] },
     data: { status: 'EXEMPT' },
   });
   if (count === 0) throw new Refusal(`${slug} changed while this ran, or its owner is choosing a plan for it right now: run it again in a minute. Nothing was written.`);

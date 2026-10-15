@@ -1,5 +1,6 @@
 // App
 import { cashbackExpiring } from './cashback-expiring.template.js';
+import { chargingNotice } from './charging-notice.template.js';
 import { courierApplicationReceived } from './courier-application-received.template.js';
 import { paymentApproved } from './payment-approved.template.js';
 import { paymentRefunded } from './payment-refunded.template.js';
@@ -333,5 +334,63 @@ describe("a courier's application, acknowledged (BEELINK-326)", () => {
     expect(nowhere.text).toContain('Recebemos o seu cadastro para fazer entregas com a Beelink.\n');
     expect(nowhere.html).toContain('Recebemos o seu cadastro para fazer entregas com a Beelink.</p>');
     expect(JSON.stringify(nowhere)).not.toMatch(/ em |null|undefined/);
+  });
+});
+
+describe('the day charging starts, told to a shopkeeper (BEELINK-297)', () => {
+  const cycles = [
+    { months: 1, priceCents: 5990 },
+    { months: 6, priceCents: 32340 },
+    { months: 12, priceCents: 57480 },
+  ];
+  const mail = chargingNotice({
+    name: 'Rafaela Souza',
+    switchOnDay: '2026-11-20',
+    cycles,
+    pages: [
+      { name: 'Doces da Rafa', address: 'beelink.biz/doces-da-rafa', freeUntil: '2026-11-13', locksOn: '2026-11-14' },
+      { name: 'Rafa Bolos', address: 'beelink.biz/rafa-bolos', freeUntil: null, locksOn: '2026-11-20' },
+    ],
+  });
+
+  it('says the day, what each cycle costs a page, and the day each page locks', () => {
+    expect(mail.subject).toBe('A cobrança das páginas na Beelink começa em 20/11/2026');
+    expect(mail.text).toBe(
+      [
+        'Olá, Rafaela.',
+        'A cobrança das páginas na Beelink começa em 20/11/2026. A partir daí, cada página precisa de um plano para continuar no ar, depois do tempo grátis que ela ainda tiver. O valor é por página:',
+        '- Mensal: R$\u00a059,90\n- 6 meses: R$\u00a0323,40 (R$\u00a053,90 por mês)\n- 1 ano: R$\u00a0574,80 (R$\u00a047,90 por mês)',
+        'Suas páginas:',
+        '- Doces da Rafa (beelink.biz/doces-da-rafa): grátis até 13/11/2026. Sem um plano, ela trava e sai do ar em 14/11/2026.\n- Rafa Bolos (beelink.biz/rafa-bolos): sem um plano, ela trava e sai do ar em 20/11/2026.',
+        'A partir de 20/11/2026, você escolhe o plano no painel de cada página e paga a fatura com cartão, Pix ou boleto. Nada é cobrado sem você escolher. Com cartão de crédito, o plano renova sozinho; com Pix ou boleto, cada renovação é uma fatura nova, que aparece no painel.',
+        'Uma página travada não perde nada do que tem: assim que o plano é pago, ela volta ao ar como estava.',
+        'Equipe Beelink',
+      ].join('\n\n'),
+    );
+  });
+
+  it('says one page as one', () => {
+    const one = chargingNotice({ name: 'Rafaela', switchOnDay: '2026-11-20', cycles, pages: [{ name: 'Rafa Bolos', address: 'beelink.biz/rafa-bolos', freeUntil: null, locksOn: '2026-11-20' }] });
+
+    expect(one.text).toContain('\n\nSua página:\n\n- Rafa Bolos');
+  });
+
+  it('says the same in the card of every other e-mail, with the names escaped', () => {
+    const escaped = chargingNotice({ name: 'Rafaela', switchOnDay: '2026-11-20', cycles, pages: [{ name: 'Bolos <b>&</b> Cia', address: 'beelink.biz/bolos', freeUntil: null, locksOn: '2026-11-20' }] });
+
+    expect(mail.html).toContain('<h1 style="margin:0 0 16px;font-size:20px">Olá, Rafaela.</h1>');
+    expect(mail.html).toContain('<li style="margin:4px 0">6 meses: R$\u00a0323,40 (R$\u00a053,90 por mês)</li>');
+    expect(mail.html).toContain('Doces da Rafa (beelink.biz/doces-da-rafa): grátis até 13/11/2026.');
+    expect(escaped.html).toContain('Bolos &lt;b&gt;&amp;&lt;/b&gt; Cia');
+    expect(escaped.html).not.toContain('<b>');
+  });
+
+  it('promises neither a way to cancel nor a channel that does not exist, and asks for no card', () => {
+    expect(mail.text).not.toMatch(/cancel|suporte|whatsapp|telefone|@/i);
+    expect(mail.html).not.toMatch(/<a\b|href/i);
+  });
+
+  it('greets nobody by name when the first word is anything but a name', () => {
+    expect(chargingNotice({ name: 'www.exemplo.com', switchOnDay: '2026-11-20', cycles, pages: [] }).text.split('\n')[0]).toBe('Olá.');
   });
 });

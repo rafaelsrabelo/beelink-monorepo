@@ -10,6 +10,7 @@ import { BillingRoutine } from './billing-routine.js';
 import { BillingWebhookController } from './billing-webhook.controller.js';
 import { BillingController } from './billing.controller.js';
 import { BillingService } from './billing.service.js';
+import { ChargingNoticeMailer } from './charging-notice-mailer.js';
 import { PageLocks } from './page-locks.service.js';
 import { PlansController } from './plans.controller.js';
 import { PlatformCoupons } from './platform-coupons.service.js';
@@ -23,7 +24,7 @@ import { SubscriptionSync } from './subscription-sync.service.js';
  * What a page owes bee-link (BEELINK-218): the plans, each page's subscription and trial, who is
  * charged for an account's pages, the subscription a page's chosen cycle makes at Asaas, and what
  * Asaas says of its payment — by bee-link's own webhook, the routine behind it, or the panel asking
- * (BEELINK-221) — and bee-link's own coupons, each a free month for a page (BEELINK-224). This is bee-link charging the shopkeeper, at bee-link's own Asaas
+ * (BEELINK-221) — bee-link's own coupons, each a free month for a page (BEELINK-224), and the e-mail that tells a shopkeeper the day charging starts (BEELINK-297), sent from the outbox a terminal's command fills. This is bee-link charging the shopkeeper, at bee-link's own Asaas
  * account (`PlatformAsaas`), and it never meets a shop's own sales: not `modules/payments`, and not
  * the key a shop pasted, which `integrations/asaas` alone opens. What it has in common with those is
  * the request to Asaas itself (`shared/asaas`) and two pure functions of `integrations/asaas`.
@@ -44,6 +45,7 @@ import { SubscriptionSync } from './subscription-sync.service.js';
     BillingRoutine,
     PageLocks,
     PlatformCoupons,
+    ChargingNoticeMailer,
     { provide: PlatformAsaas, useFactory: platformAsaasOfThisDeployment },
   ],
   // The lock is asked on every route of a page, by a guard the application registers beside the session's.

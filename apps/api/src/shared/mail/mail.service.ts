@@ -14,6 +14,7 @@ import type { AccountShop } from '../../modules/auth/account-scope.js';
 import { EMAIL_VERIFICATION_TTL_HOURS, PASSWORD_RESET_TTL_MINUTES } from '../../modules/auth/auth.constants.js';
 import { env } from '../config/env.js';
 import { cashbackExpiring, type CashbackExpiringContent } from './cashback-expiring.template.js';
+import { chargingNotice, type ChargingNoticeContent } from './charging-notice.template.js';
 import { courierApplicationReceived, type CourierApplicationReceivedContent } from './courier-application-received.template.js';
 import { paymentApproved, type PaymentApprovedContent } from './payment-approved.template.js';
 import { paymentRefunded, type PaymentRefundedContent } from './payment-refunded.template.js';
@@ -108,6 +109,14 @@ export class MailService implements OnApplicationBootstrap {
    */
   async sendCourierApplicationReceived(to: string, content: CourierApplicationReceivedContent): Promise<boolean> {
     return this.send(to, courierApplicationReceived(content));
+  }
+
+  /**
+   * A shopkeeper is told the day charging starts and the day each page locks (BEELINK-297); answers
+   * whether it went, for its outbox. From bee-link itself: it is bee-link's own charging.
+   */
+  async sendChargingNotice(to: string, content: ChargingNoticeContent): Promise<boolean> {
+    return this.send(to, chargingNotice(content));
   }
 
   /** One per lead, to the site's owner. The visitor's words travel escaped — see `leadReceived`. */

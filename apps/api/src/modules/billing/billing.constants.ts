@@ -71,6 +71,19 @@ export const PLAN_ON_SALE = 'beelink';
 export const PAGES_EXISTED_ON = '2026-10-13';
 
 /**
+ * How a page that never paid is written (BEELINK-297): in its trial, or past it. Only such a page is
+ * given the month of 13/10/2026 (the migration names the same two), made exempt, or told when it locks:
+ * one that paid has its subscription at Asaas, which goes on charging.
+ */
+export const NEVER_PAID_STATUSES = ['TRIALING', 'TRIAL_EXPIRED'] as const satisfies readonly SubscriptionStatus[];
+
+/** Whether a page written `status` never paid. */
+export const isNeverPaid = (status: SubscriptionStatus): boolean => (NEVER_PAID_STATUSES as readonly SubscriptionStatus[]).includes(status);
+
+/** How many days before charging starts every shopkeeper concerned is told of it, at the least (BEELINK-297). */
+export const CHARGING_NOTICE_DAYS = 7;
+
+/**
  * A coupon of bee-link's as it is typed (BEELINK-224): the shape a shop's coupon has (`COUPON_CODE`,
  * modules/promotions), so a shopkeeper types one as the other — A–Z, 0–9, `-` and `_`, 3 to 30 of them,
  * any case. Its own copy and not an import: what a shop's coupon may be is the shop's rule, and the

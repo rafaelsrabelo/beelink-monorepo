@@ -59,6 +59,21 @@ export function note(title: string, body: string): string {
   return card(title, body);
 }
 
+/** A letter, then letters, an apostrophe as a keyboard or a phone writes it, a hyphen: nothing a mail client turns into a link. */
+const SAYABLE = /^\p{L}[\p{L}'’-]*$/u;
+
+/**
+ * The name to greet by, or none. An address may be confirmed by nobody: whoever types a form in with
+ * somebody else's e-mail chooses what that person reads after "Olá,". A first word that is anything
+ * but a name — `www.exemplo.com` becomes a link in the reader's mail client — is not said.
+ */
+export function firstNameOf(name: string): string | null {
+  // Composed first: an accent typed apart from its letter is a mark, and would read as no letter.
+  const first = name.normalize('NFC').trim().split(/\s+/)[0] ?? '';
+
+  return SAYABLE.test(first) ? first : null;
+}
+
 /**
  * A shop's account e-mails name the shop — in the subject, atop the card and in the words — and a
  * shopkeeper's name nobody (BEELINK-149). The names are what someone typed: escaped for the HTML.

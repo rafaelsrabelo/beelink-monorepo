@@ -267,3 +267,28 @@ model PlatformCouponRedemption {
   @@index([couponId, createdAt(sort: Desc)])
   @@map("platform_coupon_redemptions")
 }
+
+/// The e-mail that tells a shopkeeper the day charging starts (BEELINK-297), seven days or more before
+/// it: one per account, ever — the unique `userId` is what keeps a second run of the command from
+/// telling anyone twice. Written by `dist/scripts/charging-notice.js send` for every owner of a page
+/// that never paid and is not exempt, and sent by the API's outbox (`ChargingNoticeMailer`), claimed and
+/// retried as every outbox is. It keeps no address and no page: who it is for, the day each page locks
+/// and what each cycle costs are read when it goes.
+model ChargingNotice {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  userId      String   @unique @db.Uuid
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// The day charging was announced to start, on Brasília's calendar: the one day every notice tells.
+  switchOnDay DateTime @db.Date
+
+  attempts      Int       @default(0)
+  nextAttemptAt DateTime  @default(now())
+  /// Sent, or done without sending because none of the account's pages is one that locks any more.
+  /// Given up is `attempts` at its ceiling with this still null.
+  sentAt        DateTime?
+  createdAt     DateTime  @default(now())
+
+  /// The dispatcher's reading, as on every outbox.
+  @@index([nextAttemptAt], where: raw("(\"sentAt\" IS NULL) AND (attempts < 5)"), map: "charging_notices_owed_idx")
+  @@map("charging_notices")
+}
