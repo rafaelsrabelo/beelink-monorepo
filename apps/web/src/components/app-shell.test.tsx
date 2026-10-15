@@ -193,16 +193,18 @@ function servePanel(subscription: StoreSubscriptionAnswer | Promise<Response>) {
 function renderPanel() {
   const client = makeQueryClient()
   client.setDefaultOptions({ queries: { ...client.getDefaultOptions().queries, retryDelay: 1 } })
-  const view = render(
+  const panel = () => (
     <QueryClientProvider client={client}>
       <AppShell user={user} ui={ui} web={web} locale="pt-BR" prefs={{ railCollapsed: false }}>
         <PageLockGate realtime={null} locale="pt-BR" messages={ui}>
           <p>página</p>
         </PageLockGate>
       </AppShell>
-    </QueryClientProvider>,
+    </QueryClientProvider>
   )
-  return { ...view, client }
+  const view = render(panel())
+  // A navigation, as the layout lives through one: the same tree, at the address `mocks.pathname` now says.
+  return { ...view, client, navigated: () => view.rerender(panel()) }
 }
 
 const railOf = (container: HTMLElement) => container.querySelector("aside")!
@@ -260,5 +262,19 @@ describe("AppShell — the plan's card (BEELINK-220)", () => {
     expect(await screen.findByRole("link", { name: "Pedidos" }, { timeout: 5_000 })).toHaveAttribute("href", "/admin/loja/orders")
     expect(container.querySelector('[data-slot="plan-card"], [data-slot="plan-card-skeleton"]')).toBeNull()
     expect(fetched.mock.calls.filter(([url]) => url.includes("/subscription") || url.startsWith("/api/billing/"))).toEqual([])
+  })
+
+  // The menu still leads to the page just left, whose answer is kept: the card is the open page's alone.
+  it("leaves the card behind on leaving the page for the dashboard", async () => {
+    const fetched = servePanel({ billingEnforced: true, subscription: trialing() })
+    const { container, navigated } = renderPanel()
+    await screen.findByRole("link", { name: "Plano Beelink, Teste grátis: 4 dias restantes" }, { timeout: 5_000 })
+
+    mocks.pathname = "/dashboard"
+    navigated()
+
+    expect(container.querySelector('[data-slot="plan-card"], [data-slot="plan-card-skeleton"]')).toBeNull()
+    expect(screen.getByRole("link", { name: "Pedidos" })).toHaveAttribute("href", "/admin/loja/orders")
+    expect(fetched.mock.calls.filter(([url]) => url === SUBSCRIPTION)).toHaveLength(1)
   })
 })
