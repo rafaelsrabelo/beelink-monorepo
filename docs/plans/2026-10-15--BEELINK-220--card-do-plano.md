@@ -150,3 +150,136 @@ O que não pode acontecer, em ordem de gravidade:
 5. **Os dias restantes envelhecem como os da faixa**: a assinatura é lida uma vez por página aberta, e de
    novo ao voltar para a aba com a cobrança ligada; um painel aberto da noite para o dia mostra os de ontem
    até a próxima leitura.
+
+---
+
+## Como ficou (acréscimo de 15/10/2026, depois do código)
+
+### O que mudou em relação ao plano acima
+
+1. **O nome acessível do card é um `aria-label` montado das duas linhas** ("Plano Beelink, Teste grátis: 4 dias
+   restantes"), e não o texto delas com uma vírgula escondida (`sr-only`), como estava no primeiro commit. Visto no
+   Chromium: a vírgula escondida é absoluta, vira um bloco, e o nome saía "Plano Beelink , Teste grátis…" — o jsdom dos
+   testes não via isso. Um teste fixa o `aria-label`.
+2. **A seta mora na linha do nome do plano**, e não numa coluna própria: na coluna, ela tirava 26 px da situação, e
+   "Teste grátis: 4 dias restantes" quebrava com "restantes" sozinho na segunda linha. Agora as frases cabem numa linha
+   (o card tem 53,5 px de altura), menos "Cancelado: acesso até 12/11/2026", que leva a data para a segunda.
+3. **Na tela Assinar, a borda do card escurece** (`border-shell-muted/50`), além do `aria-current`: só a sombra
+   (`shadow-xs`) não se distinguia do card de sempre, visto a 2x.
+4. **O teste de "nenhum card fora de uma página" ganhou a volta de uma página para o `/dashboard`**: o erro plantado de
+   passar ao card a página do menu (e não a aberta) passava, porque no `/dashboard` sozinho não há resposta guardada
+   para o card ler. Com a volta, há.
+5. Nada mais: as decisões 1 a 13 viraram código como estão escritas.
+
+### O que foi rodado
+
+Postgres 18 (`beelink-domain-db`, 5442) e Mailpit (1027/8027). Disco: 4,8 Gi livres no começo e no fim (o mínimo foi
+4,1 Gi, com o `.next` do `next dev`).
+
+1. **`packages/ui`:** `tsc --noEmit` saiu com 0; `oxlint src/` com 0 erros (os dois avisos antigos, em
+   `single-block-card.tsx` e `store-settings-form.tsx`); **a suíte inteira, 384 arquivos e 2.992 testes, verdes** (eram
+   383 e 2.959 no S14). Os novos: o card (25, com axe aberto, recolhido, neutro e com aviso) e a barra com o card (8).
+2. **`apps/web`:** `next typegen` e `tsc --noEmit` saíram com 0; `eslint` com 0 erros (os 8 avisos antigos, em arquivos
+   que este ticket não toca); **a suíte inteira, 341 arquivos e 3.075 testes, verdes** (eram 339 e 3.046). Os novos: as
+   contas do card (10), o hook (13) e o `AppShell` montado com o portão, como o `SignedInShell` monta (6).
+3. **Os e2e `e2e/page-locked.spec.ts` (3) e `e2e/subscribe.spec.ts` (3)**, que este ticket não edita mas que desenham o
+   card (as rotas de cobrança respondem "ligada" no navegador) e passam o axe na página inteira com ele: contra o `next
+   dev` na 3200 e a API compilada na 3201 com a cobrança desligada, como a do Playwright, com uma configuração temporária
+   fora do repositório: **6 de 6 verdes**.
+4. **`pnpm arch-gates` e `pnpm docs-gate`** verdes em todos os commits (`pre-commit`).
+5. **40 erros plantados nos testes**, um por vez, cada um desfeito por `git checkout` (árvore limpa conferida no fim):
+   **40 pegos** — 39 na primeira rodada e o 40º depois do item 4 acima. Entre eles: o tempo grátis dito como teste; dois
+   dias ditos como "amanhã"; amanhã e hoje trocados; o dia do acesso da cancelada e o da renovação sumidos; a trava dita
+   como atraso; a cor de aviso nunca usada; `title` com a barra aberta, ou sem ele recolhida; `aria-current` nunca; a
+   gaveta sem aviso de escolha; sem o `aria-label`; nada no lugar do esqueleto; as linhas do esqueleto na barra recolhida;
+   uma região viva; o card acima do menu; o pé embrulhado mesmo sem card; o card aceso em toda tela ou nunca; o card sem
+   saber que a barra recolheu; um card com a cobrança desligada; a trava olhada depois da situação; a trava ou a faixa sem
+   aviso; a suspensa sem a chave dita como travada; os dias do teste com um a mais; **o card pedindo a assinatura ele
+   mesmo**; **um esqueleto antes da primeira resposta**; a situação da página anterior dita para a nova; o esqueleto na
+   troca de página com a cobrança desligada; o catálogo e a conta pedidos sempre; o aviso antes da leitura da conta, ou
+   apesar do `BILLING_UNAVAILABLE`; sem esqueleto enquanto o nome do plano é lido; a página do menu no lugar da aberta;
+   o card nunca entregue à barra.
+
+### Com a cobrança desligada, como hoje (provado)
+
+- **No teste** (`app-shell.test.tsx`): o `AppShell` com o portão dentro, com a resposta `billingEnforced: false` — com a
+  linha no último dia do teste e com a linha travada —, desenha a `aside` com o mesmo `innerHTML` antes e depois de a
+  resposta chegar, sem card e sem esqueleto; a única leitura de cobrança é a da assinatura, uma vez (a do portão).
+- **Na tela, byte a byte:** a página com o teste vencido no banco, nos Pedidos, a 1920, com a API sem
+  `BILLING_ENFORCED`. O `outerHTML` da `aside` com o código desta branch e com o código de antes (`abd4bce9`: só
+  `app-shell.tsx` e `admin-sidebar.tsx` voltados por um instante e restaurados) teve o mesmo tamanho (12.320 caracteres)
+  e o mesmo SHA-256 (`7920d42b…`), e os dois arquivos salvos são idênticos (`cmp`). Para ter certeza de que o navegador
+  carregou mesmo cada versão: nenhum script tinha `usePlanCard` na de antes, um tinha na da branch. A tela abriu os
+  Pedidos como sempre, e a única leitura de cobrança foi a da assinatura. Capturas 01 e 02.
+
+### Na tela, de verdade (15/10/2026, das 07:19 às 07:40 de Brasília)
+
+A API compilada na 3201 (`node dist/main.js`, banco `harness_landing`) — com a cobrança desligada, depois ligada com a
+**chave de sandbox** só no ambiente do processo, depois ligada **sem a chave**, e por fim desligada para os e2e —; o web
+na 3200 (`next dev`). Uma conta "Teste S2 Dona" (cadastro pela API, e-mail confirmado pelo Mailpit) com sete páginas,
+cada uma numa situação posta pelo banco. **Nada foi pedido ao Asaas**: nenhuma página tinha assinatura lá. Tudo abaixo
+foi **visto**, num Chromium próprio dirigido por um script (as verificações escritas no log); as capturas estão em
+`.claude/worktrees/subscription-pr/screens-220/`.
+
+| O quê | O que aconteceu |
+|---|---|
+| Em teste, 4 dias | "Plano Beelink / Teste grátis: 4 dias restantes", neutro, acima de Configurações; leituras: a assinatura (uma) e o catálogo (captura 03, detalhe 20) |
+| Último dia… amanhã | O card âmbar "Teste grátis: termina amanhã" junto com a faixa do S14; a conta lida uma vez (04, 21) |
+| Grátis até | "Grátis até 13/11/2026" (uma página de 13/10 no mês grátis, com o teste já vencido), neutro (05, 22) |
+| Paga | "Renova em 12/11/2026", sem leitura do catálogo (o plano é o da escolha) (06, 23) |
+| Em atraso, na carência | "Pagamento em atraso", âmbar, com a faixa "Pague até 19/10/2026" (07, 24) |
+| Cancelada com acesso | "Cancelado: acesso até 12/11/2026", neutro, a data na segunda linha (08, 25) |
+| Travada | "Página travada", âmbar, com o cadeado, ao lado do aviso do S14 (09, 26) |
+| Troca de página pelo shell | O esqueleto ocupou o lugar do card enquanto a nova página era lida (visto por um `MutationObserver`), e a assinatura foi lida uma vez |
+| Barra recolhida | O ícone sozinho, 44 px, o mesmo nome e o `title` igual a ele; neutro como um item; âmbar em quadrado no aviso e na trava (10 a 12, detalhes 29 a 31) |
+| Só o teclado | De "Avaliações", um Tab chegou ao card (anel de foco visível) e Enter abriu a tela Assinar, onde o card tem `aria-current="page"` e a borda escura (13, 14, detalhe 28) |
+| 390, gaveta | O card inteiro no pé da gaveta, sem rolagem horizontal; escolher o card fechou a gaveta e abriu a tela Assinar (15 a 18) |
+| Ligada sem a chave | A página no último dia do teste: o card neutro e nenhuma faixa (a conta respondeu `503 BILLING_UNAVAILABLE`, uma vez); a página com o teste vencido não trava e o card diz "Teste grátis encerrado" (19, 27) |
+| Isenta, cobrança ligada | Nenhum card (32) |
+| O axe na barra | Nenhuma violação em nenhuma situação, aberta ou recolhida |
+
+**Limpeza:** no banco, as sete contas desta sessão (a de teste e as seis dos e2e) apagadas com as páginas e as
+assinaturas, e os três tíquetes do canal em tempo real que os e2e deixaram (vencidos, de lojas apagadas): 0 contas, 0
+páginas, nada órfão. Os sete e-mails delas apagados do Mailpit. A API e o web encerrados (`pgrep -fl "worktrees/landing"`
+vazio); o `apps/web/.next` (605 MB) apagado; os arquivos que o navegador do MCP escreveu nesta sessão removidos, um a um,
+pelo nome.
+
+**Vistos, e não deste ticket:**
+
+- **O navegador do Playwright MCP foi dirigido por outra mão durante esta sessão**: com ele aberto no painel, o web
+  registrou idas a `/admin`, `/admin/teste-s2-paga` e `/` que eu não pedi, e a página foi fechada uma vez e outra vez
+  apareceu em `about:blank`. Passei a usar um Chromium próprio, sem janela, por um script com o Playwright do repositório;
+  do MCP ficaram só a comparação byte a byte e as capturas 01 e 02, conferidas antes de salvar.
+- Em desenvolvimento, o selo "N" do Next fica no canto de baixo da barra, por cima do card e de Configurações; nas
+  capturas ele foi escondido. Não existe no app construído.
+
+### O que não foi rodado
+
+- `pnpm ci-check`, `turbo` em todos os workspaces, `next build`, o Storybook (as stories novas só foram compiladas pelo
+  `tsc` da UI) e a suíte Playwright inteira: o briefing proíbe nesta máquina. **Os e2e rodaram contra o `next dev`**,
+  não contra o app construído, que é como o CI os roda.
+- Nada da API mudou, e nenhum spec da API foi rodado.
+- **O card mudando no instante do pagamento, do cupom ou do destravamento**: coberto pelo teste do hook (a entrada
+  escrita como a tela Assinar e o cupom escrevem); na tela, nenhum pagamento foi feito neste ticket (o S14 viu o caminho
+  de ponta a ponta no sandbox, e o card lê a mesma entrada).
+- Os dias virando à meia-noite com o painel aberto; o card em inglês fora dos testes; um leitor de tela de verdade;
+  outros navegadores; homologação e produção.
+
+### O que o S17 (o roteiro para ligar) precisa saber
+
+- **O card é a entrada da tela Assinar no menu**, em toda tela do painel de uma página, com a cobrança ligada. No roteiro
+  da homologação, conferir cada situação: em teste (os dias), os 2 últimos dias do teste e do tempo grátis (âmbar, junto
+  com a faixa), grátis até (as páginas de 13/10 até 13/11/2026), paga ("Renova em"), em atraso (âmbar), cancelada com
+  acesso, travada (âmbar, cadeado); isenta e com a cobrança desligada, nenhum card.
+- **Ligar `BILLING_ENFORCED` antes da chave mostra o card a todo lojista**, neutro, levando a uma tela Assinar que diz
+  "indisponível". A ordem do deploy (a chave antes, a variável por último) evita isso.
+- **"Renova em" é o último dia pago**, o dia em que vence a renovação. Quem paga com Pix ou boleto só vê a fatura da
+  renovação na tela Assinar: o card não diz que ela saiu (fora do escopo, acima).
+- O nome do plano vem do catálogo para quem nunca escolheu (guardado 5 minutos): mudar o nome no seed chega ao card em
+  até 5 minutos depois do deploy.
+- Na primeira carga com a cobrança ligada, o card aparece um instante depois do menu (risco 1).
+
+### Riscos, além dos de cima
+
+6. **O nome acessível é um `aria-label`**: se as frases do card mudarem e o rótulo não for montado das mesmas, o nome
+   e o texto se separam. Ele é montado das duas linhas no próprio componente, e um teste o fixa.
