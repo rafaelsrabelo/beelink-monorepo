@@ -201,6 +201,8 @@
     --color-destructive: var(--destructive);
     --color-success: var(--success);
     --color-success-foreground: var(--success-foreground);
+    --color-warning: var(--warning);
+    --color-warning-foreground: var(--warning-foreground);
     --color-accent-foreground: var(--accent-foreground);
     --color-accent: var(--accent);
     --color-muted-foreground: var(--muted-foreground);
@@ -245,6 +247,11 @@
        under white text. */
     --success: oklch(0.95 0.052 157);              /* #d3fae1 */
     --success-foreground: oklch(0.42 0.105 157);   /* #005d35 */
+    /* Something about to go wrong that the shopkeeper can still stop — a page whose trial, free time or
+       grace ends in days (BEELINK-296). An amber fill and its own ink, 8.2:1 between them; not the
+       header's yellow, which it would vanish into, nor --destructive, which says it already went. */
+    --warning: oklch(0.962 0.058 95.6);            /* #fef3c7 */
+    --warning-foreground: oklch(0.414 0.105 45.9); /* #78350f */
     --border: oklch(0.922 0 0);
     --input: oklch(0.922 0 0);
     --ring: oklch(0.708 0 0);
@@ -372,6 +379,8 @@
     --destructive: oklch(0.704 0.191 22.216);
     --success: oklch(0.32 0.07 157);               /* #083d24 */
     --success-foreground: oklch(0.87 0.13 158);    /* #84eeb3 — 8.7:1 on the fill */
+    --warning: oklch(0.286 0.064 53.8);            /* #422006 */
+    --warning-foreground: oklch(0.924 0.115 95.7); /* #fde68a — 11.7:1 on the fill */
     --border: oklch(1 0 0 / 10%);
     --input: oklch(1 0 0 / 15%);
     --ring: oklch(0.556 0 0);

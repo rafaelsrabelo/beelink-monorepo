@@ -27,6 +27,12 @@ describe("shopFooterColumnsOf", () => {
     expect(contact?.id).toBe("contact")
   })
 
+  it("keeps only the legal column for a shop off the air: nothing that sells, nor the order by WhatsApp (BEELINK-296)", () => {
+    const store = { socialNetworks: { whatsapp: "5585999998888" }, unavailable: true } as unknown as PublicStore
+
+    expect(shopFooterColumnsOf(store, routes, ptBR, [{ id: "page-ofertas", label: "Ofertas", href: "/mutante/lp/ofertas" }]).map((column) => column.id)).toEqual(["legal"])
+  })
+
   it("has no contact column for a shop no one can message", () => {
     const store = { socialNetworks: { whatsapp: null } } as unknown as PublicStore
 

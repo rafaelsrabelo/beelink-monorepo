@@ -6,6 +6,7 @@ import { cookies } from "next/headers"
 
 // App
 import { AppShell } from "@/components/app-shell"
+import { PageLockGate } from "@/components/billing/page-lock-gate"
 import { PanelRealtime } from "@/components/realtime/panel-realtime"
 import { getMessages } from "@/lib/locale"
 import { PREFS_COOKIE, parsePrefs } from "@/lib/prefs"
@@ -22,8 +23,10 @@ export async function SignedInShell({ children }: { children: ReactNode }) {
 
   return (
     <AppShell user={user} ui={ui} web={web} locale={locale} prefs={prefs}>
-      <PanelRealtime messages={ui} />
-      {children}
+      {/* Inside the shell, never around it: a locked page closes its screens, never the menu, the switch to another page or the account (BEELINK-296). */}
+      <PageLockGate realtime={<PanelRealtime messages={ui} />} locale={locale} messages={ui}>
+        {children}
+      </PageLockGate>
     </AppShell>
   )
 }

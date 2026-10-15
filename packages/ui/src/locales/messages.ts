@@ -4462,8 +4462,16 @@ export interface UiMessages {
       /** `{date}`. */
       trialOne: string
       trialToday: string
-      /** Under any of the three. */
+      /** Under any of the three, and under the free time's three below. */
       trialText: string
+      /**
+       * The same three for a page's free time (BEELINK-296) — a coupon's month, or the one the pages that
+       * already existed were given — told before the trial: a page in it does not lock when its trial ends.
+       */
+      freeMany: string
+      /** `{date}`. */
+      freeOne: string
+      freeToday: string
       trialAction: string
       graceTitle: string
       /** `{date}`: the grace's last day — the day before `graceEndsAt`, in Brasília. */
