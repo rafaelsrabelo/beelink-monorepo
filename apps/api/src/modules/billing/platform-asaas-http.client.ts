@@ -1,7 +1,7 @@
 // App
 import { asaasCall, filled, gone, type AsaasEndpoint, type AsaasMethod } from '../../shared/asaas/asaas-call.js';
 import { AsaasOutcomeUnknown, AsaasThrottled, AsaasUnreachable } from '../../shared/asaas/asaas-errors.js';
-import { centsOf } from '../integrations/asaas/asaas-money.js';
+import { centsOf, reaisOf } from '../integrations/asaas/asaas-money.js';
 import {
   PlatformAsaas,
   PlatformAsaasUnconfigured,
@@ -11,6 +11,7 @@ import {
   type PlatformCustomerData,
   type PlatformCustomerRequest,
   type PlatformSubscription,
+  type PlatformSubscriptionRequest,
 } from './platform-asaas.client.js';
 
 /** Where bee-link's own account answers, and the key that opens it. */
@@ -35,6 +36,15 @@ function cardOf(raw: unknown): PlatformCard | null {
   const card = raw as { creditCardBrand?: unknown; creditCardNumber?: unknown } | null;
   if (!filled(card?.creditCardBrand) || typeof card.creditCardNumber !== 'string' || !/^\d{4}$/.test(card.creditCardNumber)) return null;
   return { brand: card.creditCardBrand, last4: card.creditCardNumber };
+}
+
+/**
+ * A request that makes something, left with no answer. Refused is an answer, and so is a 429: Asaas
+ * turned the request away before it did anything. Anything else may have been carried out.
+ */
+function unansweredIsUnknown(error: unknown): never {
+  if (error instanceof AsaasUnreachable && !(error instanceof AsaasThrottled)) throw new AsaasOutcomeUnknown(error.message);
+  throw error;
 }
 
 /** A customer read leniently; null for one with no id, and for one removed. */
@@ -131,12 +141,7 @@ export class PlatformAsaasHttpClient extends PlatformAsaas {
       externalReference: customer.externalReference,
       // bee-link tells the shopkeeper; Asaas's own e-mails and SMS would reach them from a sender they do not know.
       notificationDisabled: true,
-    }).catch((error: unknown) => {
-      // Refused is an answer, and so is a 429: Asaas turned the request away before it did anything.
-      // Anything else left a request that may have been carried out.
-      if (error instanceof AsaasUnreachable && !(error instanceof AsaasThrottled)) throw new AsaasOutcomeUnknown(error.message);
-      throw error;
-    })) as { id?: unknown } | null;
+    }).catch(unansweredIsUnknown)) as { id?: unknown } | null;
     if (!filled(answer?.id)) throw new AsaasOutcomeUnknown('Asaas answered the customer without an id');
     return answer.id;
   }
@@ -144,6 +149,46 @@ export class PlatformAsaasHttpClient extends PlatformAsaas {
   async updateCustomer(id: string, customer: PlatformCustomerData): Promise<void> {
     // Only what is sent changes: the reference and the notifications stay as the creation left them.
     await this.call('PUT', `/customers/${encodeURIComponent(id)}`, { name: customer.name, cpfCnpj: customer.document, email: customer.email });
+  }
+
+  async subscriptions(externalReference: string): Promise<PlatformSubscription[]> {
+    const answer = (await this.call('GET', `/subscriptions?externalReference=${encodeURIComponent(externalReference)}&limit=${PAGE_SIZE}`)) as { data?: unknown } | null;
+    // An answer that cannot be read must not pass for "none": a second subscription would be made.
+    if (!Array.isArray(answer?.data)) throw new AsaasUnreachable('Asaas answered the subscriptions without a list');
+
+    const found: PlatformSubscription[] = [];
+    for (const raw of answer.data) {
+      const subscription = subscriptionOf(raw);
+      // Asaas matches the reference whatever its case: only the very same one is this page's.
+      if (!subscription || subscription.deleted || subscription.externalReference !== externalReference) continue;
+      found.push(subscription);
+    }
+    return found;
+  }
+
+  async createSubscription(request: PlatformSubscriptionRequest): Promise<PlatformSubscription> {
+    const answer = await this.call('POST', '/subscriptions', {
+      customer: request.customerId,
+      // Never a method of bee-link's choosing: the shopkeeper picks a card, Pix or a boleto at Asaas's invoice.
+      billingType: 'UNDEFINED',
+      value: reaisOf(request.valueCents),
+      nextDueDate: request.firstDueDay,
+      cycle: request.cycle,
+      description: request.description,
+      externalReference: request.externalReference,
+    }).catch(unansweredIsUnknown);
+    const subscription = subscriptionOf(answer);
+    if (!subscription) throw new AsaasOutcomeUnknown('Asaas answered the subscription without an id');
+    return subscription;
+  }
+
+  async removeSubscription(id: string): Promise<void> {
+    const answer = (await this.call('DELETE', `/subscriptions/${encodeURIComponent(id)}`).catch((error: unknown) => {
+      if (gone(error)) return { deleted: true };
+      throw error;
+    })) as { deleted?: unknown } | null;
+    // Only Asaas saying so is "removed": another would be made beside one that still stands.
+    if (answer?.deleted !== true) throw new AsaasUnreachable('Asaas answered the removal without saying it was done');
   }
 
   async subscription(id: string): Promise<PlatformSubscription | null> {

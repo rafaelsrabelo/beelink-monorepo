@@ -120,6 +120,15 @@ gate "api/platform-asaas-key-in-billing" \
   "ASAAS_PLATFORM_API_KEY" \
   --exclude-dir=config --exclude-dir=generated --exclude='platform-asaas.config.ts'
 
+# A page's subscription row says what stands at bee-link's own Asaas account for it, and carries the
+# claim that lets one request at a time talk to Asaas about it. One folder writes the table: no other
+# module can name a subscription Asaas does not hold, or write over a talk in course.
+gate "api/page-subscription-in-billing" \
+  "Only src/modules/billing writes store_subscriptions: what the row says of Asaas is written by the one talk that holds its claim (apps/api/AGENTS.md rule 11, BEELINK-292)." \
+  "apps/api/src" \
+  "storeSubscription\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\(" \
+  --exclude-dir=billing --exclude-dir=generated --exclude='*.spec.ts'
+
 # The same for a shop's Conversions API token (BEELINK-274), which sends events to the shop's own Meta
 # account: nothing else under integrations names the party, so nothing else can seal or open it.
 gate "api/meta-secret-in-meta-pixel" \

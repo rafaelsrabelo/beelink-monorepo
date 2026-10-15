@@ -9,6 +9,7 @@ import type { BillingAccountModel } from '../../generated/prisma/models.js';
 import { AsaasOutcomeUnknown, AsaasRefused, AsaasUnreachable } from '../../shared/asaas/asaas-errors.js';
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { reasonWithout } from './asaas-reason.js';
+import { accountRequired, unavailable } from './billing-refusals.js';
 import { billingError, CUSTOMER_CLAIM_MS, CUSTOMER_UNKNOWN_HOLD_MS, customerReferenceOf } from './billing.constants.js';
 import { toBillingAccount } from './billing.mapper.js';
 import { PlatformAsaas, PlatformAsaasUnconfigured, type PlatformCustomer, type PlatformCustomerData } from './platform-asaas.client.js';
@@ -37,6 +38,9 @@ const holds = (standing: PlatformCustomer, customer: PlatformCustomerData): bool
  * held while Asaas answers. It always looks for what Asaas already holds under the account's reference
  * before it creates: a customer left behind by a request that died, or by a creation nobody answered,
  * is found and taken, never made twice. A second save that changes nothing asks Asaas nothing.
+ *
+ * `customerOf` is the same talk for whoever is about to charge the account (BEELINK-292): with what
+ * the row already keeps, and nothing asked of Asaas when it already holds that.
  */
 @Injectable()
 export class BillingAccounts {
@@ -61,11 +65,32 @@ export class BillingAccounts {
    */
   async save(userId: string, payload: BillingAccountPayload): Promise<BillingAccount> {
     this.available();
-    const claimed = await this.claim(userId, payload);
-    if ('standing' in claimed) return toBillingAccount(claimed.standing);
+    return toBillingAccount(await this.matched(userId, payload, null));
+  }
+
+  /**
+   * Asaas's id of the account's customer, made sure of before something is charged to it: the customer
+   * stands at Asaas with what the row keeps. An account in good standing costs no request. Refused
+   * with `BILLING_ACCOUNT_REQUIRED` for one that never gave its billing data.
+   *
+   * `doubted` is an id Asaas has just refused to charge. A row in good standing does not notice its
+   * customer was removed at Asaas, so that id is not taken on the row's word: it is forgotten and the
+   * account searched anew — which finds the same customer when it stands, and makes another when not.
+   */
+  async customerOf(userId: string, doubted: string | null = null): Promise<string> {
+    this.available();
+    const { asaasCustomerId } = await this.matched(userId, null, doubted);
+    if (!asaasCustomerId) throw new Error("A billing account's talk with Asaas settled without a customer");
+    return asaasCustomerId;
+  }
+
+  /** The row with Asaas holding what it says: as it stood when that was already so, else after the one talk that makes it so. */
+  private async matched(userId: string, payload: BillingAccountPayload | null, doubted: string | null): Promise<BillingAccountModel> {
+    const claimed = await this.claim(userId, payload, doubted);
+    if ('standing' in claimed) return claimed.standing;
 
     try {
-      return toBillingAccount(await this.converge(claimed));
+      return await this.converge(claimed);
     } catch (error) {
       // A creation nobody answered may have made the customer: nobody creates again until it had time to show.
       if (error instanceof AsaasOutcomeUnknown) await this.holdFor(claimed, CUSTOMER_UNKNOWN_HOLD_MS);
@@ -78,8 +103,9 @@ export class BillingAccounts {
    * The first step, and all that happens under a lock: the row written and the talk taken, or the row
    * answered as it is when Asaas already holds what was sent. The lock is the account's own, since a
    * first save has no row to lock; it goes with the transaction, before Asaas is asked anything.
+   * With no payload it is the row's own data that Asaas is to hold.
    */
-  private claim(userId: string, { name, document }: BillingAccountPayload): Promise<Talk | { standing: BillingAccountModel }> {
+  private claim(userId: string, payload: BillingAccountPayload | null, doubted: string | null): Promise<Talk | { standing: BillingAccountModel }> {
     return this.prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`billing-account:${userId}`}, 0))`;
 
@@ -87,19 +113,29 @@ export class BillingAccounts {
       if (!user) throw new UnauthorizedException({ errorCode: 'AUTH_UNAUTHENTICATED', message: 'Account no longer exists' });
 
       const row = await tx.billingAccount.findUnique({ where: { userId } });
+      const kept = payload ?? row;
+      if (!kept) throw accountRequired();
+      const { name, document } = kept;
       const now = new Date();
       // Before anything is written: a save that waits its turn leaves the row as the talk in course found it.
       if (row?.asaasCustomerClaimedUntil && row.asaasCustomerClaimedUntil > now) throw busy();
 
       const unchanged = row?.name === name && row.document === document;
-      if (row && unchanged && row.asaasCustomerId && row.asaasCustomerSyncedAt) return { standing: row };
+      const refused = doubted !== null && row?.asaasCustomerId === doubted;
+      if (row && unchanged && !refused && row.asaasCustomerId && row.asaasCustomerSyncedAt) return { standing: row };
 
       const until = new Date(now.getTime() + CUSTOMER_CLAIM_MS);
-      // Changed data is no longer what Asaas was told, whatever it was told before.
-      const data = { name, document, asaasCustomerClaimedUntil: until, ...(unchanged ? {} : { asaasCustomerSyncedAt: null }) };
+      const data = {
+        name,
+        document,
+        asaasCustomerClaimedUntil: until,
+        // Changed data is no longer what Asaas was told, whatever it was told before.
+        ...(unchanged && !refused ? {} : { asaasCustomerSyncedAt: null }),
+        ...(refused ? { asaasCustomerId: null } : {}),
+      };
       await tx.billingAccount.upsert({ where: { userId }, create: { userId, ...data }, update: data });
 
-      return { userId, customer: { name, document, email: user.email }, knownId: row?.asaasCustomerId ?? null, until };
+      return { userId, customer: { name, document, email: user.email }, knownId: refused ? null : (row?.asaasCustomerId ?? null), until };
     });
   }
 
@@ -181,10 +217,6 @@ export class BillingAccounts {
   private available(): void {
     if (!this.asaas.configured) throw unavailable();
   }
-}
-
-function unavailable(message = "This deployment has no Asaas account of bee-link's own to charge at"): ServiceUnavailableException {
-  return new ServiceUnavailableException(billingError('BILLING_UNAVAILABLE', message));
 }
 
 function busy(): ConflictException {

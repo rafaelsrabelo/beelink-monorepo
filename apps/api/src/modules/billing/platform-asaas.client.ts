@@ -49,6 +49,25 @@ export interface PlatformSubscription {
   card: PlatformCard | null;
 }
 
+/**
+ * A subscription to be made at bee-link's own account (BEELINK-292). No way of paying is in it: the
+ * shopkeeper chooses one at Asaas's invoice, and no card ever comes through bee-link.
+ */
+export interface PlatformSubscriptionRequest {
+  /** `cus_…`. */
+  customerId: string;
+  /** What each cycle is charged. */
+  valueCents: number;
+  /** In Asaas's own word: `MONTHLY`, `SEMIANNUALLY`, `YEARLY`. */
+  cycle: string;
+  /** `YYYY-MM-DD`: the due day of the first charge, which Asaas makes at once. */
+  firstDueDay: string;
+  /** What the shopkeeper reads on the invoice. */
+  description: string;
+  /** bee-link's name for the page's subscription: how it is found again. */
+  externalReference: string;
+}
+
 /** One charge of a subscription, as Asaas tells it. */
 export interface PlatformCharge {
   /** `pay_…`. */
@@ -80,7 +99,7 @@ export class PlatformAsaasUnconfigured extends Error {
 }
 
 /**
- * What bee-link asks of its own Asaas account (BEELINK-291) — the one a page's plan is charged at,
+ * What bee-link asks of its own Asaas account (BEELINK-291, BEELINK-292) — the one a page's plan is charged at,
  * never a shop's. A port: the module binds it to `PlatformAsaasHttpClient`, and a test stands a fake
  * Asaas in its place. No call takes a key: the implementation holds the one this deployment was
  * given, and neither answers it nor lets an error carry it. What goes wrong is told with the errors
@@ -104,6 +123,24 @@ export abstract class PlatformAsaas {
 
   /** A customer's name, document and e-mail made what these are; safe to repeat. Refused for one removed from the account. */
   abstract updateCustomer(id: string, customer: PlatformCustomerData): Promise<void>;
+
+  /**
+   * Every subscription of the account, not removed, made under exactly this reference. A list, since
+   * Asaas takes duplicates: looked at before any is created. No answer is thrown, never read as none.
+   */
+  abstract subscriptions(externalReference: string): Promise<PlatformSubscription[]>;
+
+  /**
+   * A subscription made at the account with no way of paying chosen; Asaas makes its first charge at
+   * once. No answer is `AsaasOutcomeUnknown`: it may exist.
+   */
+  abstract createSubscription(subscription: PlatformSubscriptionRequest): Promise<PlatformSubscription>;
+
+  /**
+   * A subscription removed: Asaas removes with it every charge still waiting, and keeps the paid ones.
+   * Safe to repeat, and one the account never held is removed already.
+   */
+  abstract removeSubscription(id: string): Promise<void>;
 
   /** One subscription by its id, cancelled or not; null when the account has none such. */
   abstract subscription(id: string): Promise<PlatformSubscription | null>;

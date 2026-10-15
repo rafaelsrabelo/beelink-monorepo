@@ -6,32 +6,59 @@ import {
   type PlatformCustomerData,
   type PlatformCustomerRequest,
   type PlatformSubscription,
+  type PlatformSubscriptionRequest,
 } from '../../src/modules/billing/platform-asaas.client.js';
 import { AsaasOutcomeUnknown, AsaasRefused } from '../../src/shared/asaas/asaas-errors.js';
 
-type Call = 'customers' | 'createCustomer' | 'updateCustomer' | 'subscription' | 'subscriptionCharges';
+type Call = 'customers' | 'createCustomer' | 'updateCustomer' | 'subscriptions' | 'createSubscription' | 'removeSubscription' | 'subscription' | 'subscriptionCharges';
 
 interface FakeCustomer extends PlatformCustomerRequest {
   id: string;
   deleted: boolean;
 }
 
+interface FakeCharge extends PlatformCharge {
+  deleted: boolean;
+}
+
+/** The two ways a charge only waits: what a removal takes with the subscription. */
+const WAITING = ['PENDING', 'OVERDUE'];
+
 /**
- * bee-link's own Asaas account, in memory, as far as a shopkeeper's customer goes — and as the
- * sandbox was seen to behave on 13/10/2026: it takes two customers under one reference, lists only
- * those not removed, changes one by its id, and refuses to change one that was removed (a 400) or
- * that never existed (a 404).
+ * bee-link's own Asaas account, in memory, as far as a shopkeeper's customer and a page's subscription
+ * go — and as the sandbox was seen to behave on 13/10/2026.
+ *
+ * Customers: it takes two under one reference, lists only those not removed, changes one by its id,
+ * and refuses to change one that was removed (a 400) or that never existed (a 404).
+ *
+ * Subscriptions: it takes two under one reference too, and lists only those not removed. One is made
+ * `ACTIVE`, with no way of paying, and with its first charge at once — `PENDING`, due on the day
+ * asked, with an invoice — while the `nextDueDate` it answers is already the charge after. Removing
+ * one marks it removed and `INACTIVE`, takes its waiting charges and keeps the paid ones; removing it
+ * again changes nothing. It refuses to make one for a customer that was removed, by its catch-all
+ * code, and removing a customer removes its subscriptions.
  *
  * A test steers it: `failing` makes the next call of a kind throw, `before` runs ahead of one (to
- * hold it open, or to change the world meanwhile), and `unanswered` is a creation Asaas carried out
- * and never answered. `remove` is somebody deleting the customer at Asaas's own panel.
+ * hold it open, or to change the world meanwhile), and `unanswered` / `unansweredSubscriptions` are
+ * creations Asaas carried out and never answered. `remove` is somebody deleting the customer at
+ * Asaas's own panel; `pay` is the shopkeeper paying at the invoice.
  */
 export class FakePlatformAsaas extends PlatformAsaas {
   configured = true;
   readonly calls: Call[] = [];
   readonly held: FakeCustomer[] = [];
-  /** How many creations to come are made and then not answered. */
+  readonly subscriptionsHeld: PlatformSubscription[] = [];
+  readonly charges: FakeCharge[] = [];
+  /** What `createSubscription` was asked, in order. */
+  readonly asked: PlatformSubscriptionRequest[] = [];
+  /** How many customer creations to come are made and then not answered. */
   unanswered = 0;
+  /** The same, of subscriptions. */
+  unansweredSubscriptions = 0;
+  /** How many subscriptions to come are made with their first charge not there yet. */
+  chargeless = 0;
+  /** Subscriptions the search by reference does not bring, though they stand: a list that lags. */
+  readonly unlisted = new Set<string>();
   private readonly failures = new Map<Call, unknown[]>();
   private readonly hooks = new Map<Call, () => Promise<void> | void>();
   private sequence = 0;
@@ -40,7 +67,13 @@ export class FakePlatformAsaas extends PlatformAsaas {
     this.configured = true;
     this.calls.length = 0;
     this.held.length = 0;
+    this.subscriptionsHeld.length = 0;
+    this.charges.length = 0;
+    this.asked.length = 0;
     this.unanswered = 0;
+    this.unansweredSubscriptions = 0;
+    this.chargeless = 0;
+    this.unlisted.clear();
     this.failures.clear();
     this.hooks.clear();
   }
@@ -64,6 +97,11 @@ export class FakePlatformAsaas extends PlatformAsaas {
     return this.held.filter((customer) => !customer.deleted);
   }
 
+  /** The subscriptions still standing — not removed. */
+  get standingSubscriptions(): PlatformSubscription[] {
+    return this.subscriptionsHeld.filter((subscription) => !subscription.deleted);
+  }
+
   /** A customer put there by something other than this run: a request that died after Asaas made it. */
   plant(customer: PlatformCustomerRequest): string {
     this.sequence += 1;
@@ -72,10 +110,66 @@ export class FakePlatformAsaas extends PlatformAsaas {
     return id;
   }
 
+  /** A customer removed, and its subscriptions with it. */
   remove(id: string): void {
     const found = this.held.find((customer) => customer.id === id);
     if (!found) throw new Error(`The fake Asaas holds no customer ${id}`);
     found.deleted = true;
+    for (const subscription of this.subscriptionsHeld) {
+      if (subscription.customerId === id) this.take(subscription);
+    }
+  }
+
+  /** A subscription put there as Asaas makes one, by something other than this run when a test calls it. */
+  plantSubscription(request: PlatformSubscriptionRequest, { charged = true } = {}): PlatformSubscription {
+    this.sequence += 1;
+    const subscription: PlatformSubscription = {
+      id: `sub_fake${String(this.sequence).padStart(8, '0')}`,
+      status: 'ACTIVE',
+      deleted: false,
+      customerId: request.customerId,
+      valueCents: request.valueCents,
+      cycle: request.cycle,
+      billingType: 'UNDEFINED',
+      // Already the charge after the first, as the sandbox answered: the first due day is not read from here.
+      nextDueDate: `${Number(request.firstDueDay.slice(0, 4)) + 1}${request.firstDueDay.slice(4)}`,
+      externalReference: request.externalReference,
+      card: null,
+    };
+    this.subscriptionsHeld.push(subscription);
+    if (charged) this.charge(subscription.id, request.firstDueDay);
+    return subscription;
+  }
+
+  /** A charge Asaas makes for a subscription: waiting, with its invoice. */
+  charge(subscriptionId: string, dueDate: string): FakeCharge {
+    const subscription = this.subscriptionsHeld.find((each) => each.id === subscriptionId);
+    if (!subscription) throw new Error(`The fake Asaas holds no subscription ${subscriptionId}`);
+    this.sequence += 1;
+    const code = `fake${String(this.sequence).padStart(8, '0')}`;
+    const charge: FakeCharge = {
+      id: `pay_${code}`,
+      status: 'PENDING',
+      billingType: 'UNDEFINED',
+      valueCents: subscription.valueCents,
+      dueDate,
+      paymentDate: null,
+      confirmedDate: null,
+      invoiceUrl: `https://sandbox.asaas.com/i/${code}`,
+      subscriptionId,
+      externalReference: subscription.externalReference,
+      card: null,
+      deleted: false,
+    };
+    this.charges.push(charge);
+    return charge;
+  }
+
+  /** The shopkeeper paid at the invoice: the subscription's earliest charge takes this status. */
+  pay(subscriptionId: string, status = 'CONFIRMED'): void {
+    const [first] = this.charges.filter((charge) => charge.subscriptionId === subscriptionId && !charge.deleted).sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+    if (!first) throw new Error(`The fake Asaas holds no charge of ${subscriptionId}`);
+    first.status = status;
   }
 
   async customers(externalReference: string): Promise<PlatformCustomer[]> {
@@ -101,16 +195,52 @@ export class FakePlatformAsaas extends PlatformAsaas {
     Object.assign(found, customer);
   }
 
-  async subscription(): Promise<PlatformSubscription | null> {
-    return this.unasked('subscription');
+  async subscriptions(externalReference: string): Promise<PlatformSubscription[]> {
+    await this.enter('subscriptions');
+    return this.standingSubscriptions.filter((subscription) => subscription.externalReference === externalReference && !this.unlisted.has(subscription.id)).map((subscription) => ({ ...subscription }));
   }
 
-  async subscriptionCharges(): Promise<PlatformCharge[]> {
-    return this.unasked('subscriptionCharges');
+  async createSubscription(request: PlatformSubscriptionRequest): Promise<PlatformSubscription> {
+    await this.enter('createSubscription');
+    this.asked.push(request);
+    const customer = this.held.find((each) => each.id === request.customerId);
+    if (!customer) throw new AsaasRefused(400, 'invalid_customer', 'Cliente inválido ou não informado.');
+    if (customer.deleted) throw new AsaasRefused(400, 'invalid_object', 'Não é possível criar uma cobrança para um cliente removido.');
+
+    const charged = this.chargeless === 0;
+    if (!charged) this.chargeless -= 1;
+    const subscription = this.plantSubscription(request, { charged });
+    if (this.unansweredSubscriptions > 0) {
+      this.unansweredSubscriptions -= 1;
+      throw new AsaasOutcomeUnknown('Asaas did not answer (TimeoutError)');
+    }
+    return { ...subscription };
   }
 
-  private unasked(call: Call): never {
-    throw new Error(`This suite's Asaas was not expected to be asked for ${call}`);
+  async removeSubscription(id: string): Promise<void> {
+    await this.enter('removeSubscription');
+    const found = this.subscriptionsHeld.find((each) => each.id === id);
+    // One the account never held is a 404, which the port reads as removed already.
+    if (found) this.take(found);
+  }
+
+  async subscription(id: string): Promise<PlatformSubscription | null> {
+    await this.enter('subscription');
+    const found = this.subscriptionsHeld.find((each) => each.id === id);
+    return found ? { ...found } : null;
+  }
+
+  async subscriptionCharges(id: string): Promise<PlatformCharge[]> {
+    await this.enter('subscriptionCharges');
+    return this.charges.filter((charge) => charge.subscriptionId === id && !charge.deleted).map(({ deleted: _deleted, ...charge }) => charge);
+  }
+
+  private take(subscription: PlatformSubscription): void {
+    subscription.deleted = true;
+    subscription.status = 'INACTIVE';
+    for (const charge of this.charges) {
+      if (charge.subscriptionId === subscription.id && WAITING.includes(charge.status)) charge.deleted = true;
+    }
   }
 
   private async enter(call: Call): Promise<void> {

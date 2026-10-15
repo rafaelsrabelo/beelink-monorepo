@@ -34,6 +34,7 @@ const trialing = {
   cancelRequestedAt: null,
   freePeriodEndsAt: null,
   asaasSubscriptionId: null,
+  asaasSubscriptionClaimedUntil: null,
   firstDueDate: null,
   paymentMethod: null,
   invoiceUrl: null,

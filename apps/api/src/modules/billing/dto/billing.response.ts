@@ -14,6 +14,7 @@ import type {
   StoreSubscription,
   StoreSubscriptionAnswer,
   SubscriptionCard,
+  SubscriptionChoice,
   SubscriptionPaymentMethod,
   SubscriptionPlan,
   SubscriptionStatus,
@@ -74,6 +75,11 @@ class StoreSubscriptionResponse implements StoreSubscription {
 export class StoreSubscriptionAnswerResponse implements StoreSubscriptionAnswer {
   @ApiProperty({ description: 'Whether this deployment charges and locks. False: the panel shows nothing of a plan.' }) billingEnforced!: boolean;
   @ApiProperty({ nullable: true, type: StoreSubscriptionResponse, description: 'Null for a page from before subscriptions existed.' }) subscription!: StoreSubscriptionResponse | null;
+}
+
+export class SubscriptionChoiceResponse implements SubscriptionChoice {
+  @ApiProperty({ example: 'https://www.asaas.com/i/5l0awjywsem91403', description: "Asaas's own page for the page's first charge: a card, Pix or a boleto, chosen there." }) invoiceUrl!: string;
+  @ApiProperty({ type: StoreSubscriptionResponse, description: 'The subscription as it now reads: the plan, the cycle and the price chosen. Its `status` is not changed by choosing.' }) subscription!: StoreSubscriptionResponse;
 }
 
 export class BillingAccountResponse implements BillingAccount {
