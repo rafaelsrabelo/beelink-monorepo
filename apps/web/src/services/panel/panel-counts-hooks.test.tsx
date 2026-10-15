@@ -169,6 +169,23 @@ describe("usePanelCounts", () => {
     expect(fetched).toHaveBeenCalledTimes(2)
   })
 
+  it("asks a locked page once, with no retry, and again only on its slow clock — which finds it paid (BEELINK-223)", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const locked = { status: 403, errorCode: "PAGE_LOCKED" }
+    const fetched = serve(locked, locked, COUNTS)
+    const { result } = mountBoth()
+    await waitFor(() => expect(result.current.menu.isError).toBe(true))
+    expect(fetched).toHaveBeenCalledTimes(1)
+    expect(result.current.menu.data).toBeUndefined()
+
+    await act(() => vi.advanceTimersByTimeAsync(PANEL_COUNTS_EVERY_MS + 500))
+    expect(fetched).toHaveBeenCalledTimes(2)
+
+    await act(() => vi.advanceTimersByTimeAsync(PANEL_COUNTS_EVERY_MS + 500))
+    await waitFor(() => expect(result.current.menu.data?.openOrders).toBe(2))
+    expect(fetched).toHaveBeenCalledTimes(3)
+  })
+
   it("keeps the last number through a failure that is not the session's, and recovers on the next read", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     const down = { status: 503, errorCode: "SERVICE_UNAVAILABLE" }
