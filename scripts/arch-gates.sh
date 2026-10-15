@@ -187,6 +187,50 @@ gate "web/no-bind-address-origin" \
   "(request|req)\.url([^A-Za-z_]|$)|nextUrl\.(origin|href|host|hostname)([^A-Za-z_]|$)" \
   --exclude='*.test.ts'
 
+# The landing says what a page costs from a copy of its own (apps/web/src/lib/plans.ts), kept on
+# purpose: it is drawn on the server and must not wait on the API, or fall with it. The API charges
+# what the seed writes (apps/api/prisma/seed/plans.sql) and counts the trial by TRIAL_DAYS. This reads
+# the amounts off the three files and refuses when the landing says other than the API charges — or
+# when it cannot read one of them, which would otherwise pass in silence (BEELINK-293).
+landing_prices_match_api() {
+  local name="web/landing-prices-match-api"
+  local seed="apps/api/prisma/seed/plans.sql"
+  local constants="apps/api/src/modules/billing/billing.constants.ts"
+  local landing="apps/web/src/lib/plans.ts"
+
+  if [ ! -f "$seed" ] || [ ! -f "$constants" ] || [ ! -f "$landing" ]; then
+    echo "✔ ${name} (not armed — no target yet)"
+    return
+  fi
+
+  local api web
+  api="$(sed -nE "s/.*, 'beelink', '[^']*', (true|false), ([0-9]+), ([0-9]+), ([0-9]+),.*/beelink \2 \3 \4/p" "$seed")
+$(sed -nE "s/.*, 'beelink-beelia', '[^']*', (true|false), ([0-9]+),.*/beelia \2/p" "$seed")
+$(sed -nE 's/^export const TRIAL_DAYS = ([0-9]+);.*/trial \1/p' "$constants")"
+  web="$(sed -nE 's/^[[:space:]]*beelink: \{ monthly: ([0-9]+), semiannual: ([0-9]+), annual: ([0-9]+) \},.*/beelink \1 \2 \3/p' "$landing")
+$(sed -nE 's/^[[:space:]]*withBeelia: \{ monthly: ([0-9]+) \},.*/beelia \1/p' "$landing")
+$(sed -nE 's/^[[:space:]]*trialDays: ([0-9]+),.*/trial \1/p' "$landing")"
+
+  if [ "$(printf '%s\n' "$api" | grep -c .)" -ne 3 ] || [ "$(printf '%s\n' "$web" | grep -c .)" -ne 3 ]; then
+    echo "✖ ${name}"
+    echo "  Could not read what a page costs off ${seed}, ${constants} and ${landing}: a file changed shape, and this gate has to learn it."
+    failed="${failed} ${name}"
+    return
+  fi
+
+  if [ "$api" != "$web" ]; then
+    echo "✖ ${name}"
+    echo "  The landing (${landing}) says other than the API charges (${seed}, TRIAL_DAYS in ${constants}). Change both in one commit (BEELINK-293)."
+    diff <(printf '%s\n' "$api") <(printf '%s\n' "$web") | sed 's/^/  /'
+    failed="${failed} ${name}"
+    return
+  fi
+
+  echo "✔ ${name}"
+}
+
+landing_prices_match_api
+
 echo ""
 if [ -n "$failed" ]; then
   echo "── arch-gates: FAILED →${failed}"

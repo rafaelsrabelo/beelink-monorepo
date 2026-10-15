@@ -8,8 +8,8 @@ export { planMoney, planPercent } from "@harness-monorepo/ui/lib/plan-figures"
 
 /**
  * What Beelink costs, in whole cents, and how long it is tried for free (BEELINK-318). The app holds
- * the one copy and hands it over: no block and no dictionary writes an amount, so a price changes in
- * one line and every sentence that says it follows.
+ * the landing's copy and hands it over: no block and no dictionary writes an amount, so a price
+ * changes in one line and every sentence that says it follows.
  */
 export interface LandingPlanPrices {
   /** The free trial, in days. */
