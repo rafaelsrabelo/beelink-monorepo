@@ -877,6 +877,13 @@ export interface UiMessages {
     ordersUnavailable: string
     ordersRetry: string
     /**
+     * A shop window off the air (BEELINK-223): its page is locked for want of payment, which a visitor
+     * is never told. Under the shop's name; the last is the way to a customer's own orders.
+     */
+    unavailableTitle: string
+    unavailableBody: string
+    unavailableOrders: string
+    /**
      * The heart (J15): on a card's photo and on the product's page. `{name}` is the product's. Signed
      * out it is a link to sign in, which comes back with the product liked.
      */
