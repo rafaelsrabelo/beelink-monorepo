@@ -7,7 +7,7 @@ import { en } from "../../locales/en"
 
 // Block
 import { AdminSidebar } from "./admin-sidebar"
-import { sampleAdminFooterNav, sampleAdminNav, sampleAdminNavWithCounts } from "./admin.fixtures"
+import { sampleAdminFooterNav, sampleAdminNav, sampleAdminNavWithCounts, sampleAdminPlan } from "./admin.fixtures"
 
 const icons = [<HomeIcon />, <ShoppingBagIcon />, <PackageIcon />, <UsersIcon />]
 const items = sampleAdminNav.map((item, index) => ({ ...item, icon: icons[index] }))
@@ -69,3 +69,19 @@ export const ComContagens: Story = { args: { items: itemsWithCounts, activeHref:
 
 /** Recolhido, o selo não some: vai para o canto do ícone, e o nome acessível continua o mesmo. */
 export const ContagensRecolhido: Story = { args: { items: itemsWithCounts, collapsed: true } }
+
+/**
+ * Com o card do plano (BEELINK-220): o plano da página aberta e a situação dela, no pé, acima de
+ * Configurações, levando à tela Assinar. Só com a cobrança ligada; sem ele, a barra é a de sempre.
+ */
+export const ComPlano: Story = { args: { plan: sampleAdminPlan } }
+
+/** O card nos últimos dias do teste: nas cores de aviso. */
+export const ComPlanoAcabando: Story = {
+  args: { plan: { ...sampleAdminPlan, view: { ...sampleAdminPlan.view, standing: { status: "TRIALING", daysLeft: 1 }, urgent: true } } },
+}
+
+/** Recolhido, o card vira um ícone; com aviso, o quadrado na cor de aviso continua. */
+export const ComPlanoRecolhido: Story = {
+  args: { collapsed: true, plan: { ...sampleAdminPlan, view: { ...sampleAdminPlan.view, standing: { status: "LOCKED" }, urgent: true } } },
+}

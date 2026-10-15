@@ -3,17 +3,26 @@
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
+import type { SubscriptionCardView } from "@harness-monorepo/ui/lib/subscription"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import { AdminNavBadge } from "./admin-nav-badge"
+import { AdminPlanCard } from "./admin-plan-card"
 import type { DashboardNavItem } from "../dashboard/dashboard-types"
 
 export interface AdminSidebarProps {
   items: DashboardNavItem[]
   /** Pushed to the foot of the rail — settings, and whatever joins it. */
   footerItems?: DashboardNavItem[]
+  /**
+   * The open page's plan (BEELINK-220), drawn above the foot's items and leading to its Assinar screen;
+   * `view` null is the card's skeleton. Absent wherever the panel says nothing of a plan — billing
+   * switched off, a page owing nothing, no page open — and the rail is then exactly the one it always
+   * was, element for element.
+   */
+  plan?: { view: SubscriptionCardView | null; href: string }
   activeHref?: string
   /** Below `lg` the rail is a drawer, and this is whether it is showing. */
   open?: boolean
@@ -36,8 +45,13 @@ export interface AdminSidebarProps {
  */
 function isCurrent(item: DashboardNavItem, activeHref?: string): boolean {
   if (!activeHref) return false
-  if (item.match === "prefix") return activeHref === item.href || activeHref.startsWith(`${item.href}/`)
+  if (item.match === "prefix") return isWithin(item.href, activeHref)
   return item.href === activeHref
+}
+
+/** The page at `href`, or one below it. */
+function isWithin(href: string, activeHref: string): boolean {
+  return activeHref === href || activeHref.startsWith(`${href}/`)
 }
 
 function NavList({
@@ -134,6 +148,7 @@ function NavList({
 export function AdminSidebar({
   items,
   footerItems = [],
+  plan,
   activeHref,
   open = false,
   onClose,
@@ -141,6 +156,17 @@ export function AdminSidebar({
   linkComponent: Link = AnchorLink,
   messages = defaultMessages,
 }: AdminSidebarProps) {
+  const foot =
+    footerItems.length > 0 ? (
+      <NavList
+        items={footerItems}
+        activeHref={activeHref}
+        onClose={onClose}
+        collapsed={collapsed}
+        Link={Link}
+      />
+    ) : null
+
   return (
     <>
       <div
@@ -181,15 +207,23 @@ export function AdminSidebar({
             collapsed={collapsed}
             Link={Link}
           />
-          {footerItems.length > 0 ? (
-            <NavList
-              items={footerItems}
-              activeHref={activeHref}
-              onClose={onClose}
-              collapsed={collapsed}
-              Link={Link}
-            />
-          ) : null}
+          {/* The card and the foot's items share the foot; with no card, the foot is what it always was. */}
+          {plan ? (
+            <div className="flex flex-col gap-2">
+              <AdminPlanCard
+                view={plan.view}
+                href={plan.href}
+                current={activeHref ? isWithin(plan.href, activeHref) : false}
+                collapsed={collapsed}
+                onNavigate={onClose}
+                linkComponent={Link}
+                messages={messages}
+              />
+              {foot}
+            </div>
+          ) : (
+            foot
+          )}
         </nav>
       </aside>
     </>

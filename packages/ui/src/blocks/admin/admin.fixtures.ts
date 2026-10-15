@@ -1,3 +1,6 @@
+// UI
+import type { SubscriptionCardView } from "@harness-monorepo/ui/lib/subscription"
+
 // Block
 import type { DashboardNavItem } from "../dashboard/dashboard-types"
 import type { WorkspaceOption } from "./admin-types"
@@ -28,6 +31,12 @@ export const sampleAdminNavWithCounts: DashboardNavItem[] = sampleAdminNav.map((
 export const sampleAdminFooterNav: DashboardNavItem[] = [
   { title: "Configurações da loja", href: "/admin/lessari/store" },
 ]
+
+/** The open page's plan (BEELINK-220): a page in its trial, four days to go, and where its card leads. */
+export const sampleAdminPlan: { view: SubscriptionCardView; href: string } = {
+  view: { plan: "Beelink", standing: { status: "TRIALING", daysLeft: 4 }, urgent: false },
+  href: "/admin/lessari/subscribe",
+}
 
 export const sampleWorkspaces: WorkspaceOption[] = [
   { slug: "lessari", name: "Lessari", logoUrl: null, href: "/admin/lessari" },

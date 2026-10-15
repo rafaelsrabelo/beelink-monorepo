@@ -4480,6 +4480,32 @@ export interface UiMessages {
       graceBoleto: string
       graceAction: string
     }
+    /**
+     * The plan's card in the panel's menu (BEELINK-220): under the plan's name — `title`, or `untitled`
+     * where none is known — where the open page stands, in a few words that fit the rail. `{days}` left
+     * after today and `{date}`, a day already in words, come from the page's subscription.
+     */
+    card: {
+      /** A free time covering today — a coupon's month, or the one the pages that already existed were given — told before the status. `{date}`: its last day. */
+      freeMany: string
+      freeOne: string
+      freeToday: string
+      /** `{days}`. */
+      trialMany: string
+      trialOne: string
+      trialToday: string
+      /** The trial ended and the page is not locked: only where nothing locks. */
+      trialOver: string
+      /** `{date}`: the last day paid for, which the renewal falls due on. */
+      renews: string
+      /** Paid, with no day to say. */
+      active: string
+      pastDue: string
+      /** `{date}`: the last day a cancelled page is still used. */
+      canceledUntil: string
+      canceled: string
+      locked: string
+    }
     /** The plan is not on sale, or this deployment cannot charge. */
     unavailable: string
     /** A read of the page's subscription that failed. */

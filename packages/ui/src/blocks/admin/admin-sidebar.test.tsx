@@ -9,7 +9,7 @@ import { en } from "../../locales/en"
 // Block
 import { expectNoA11yViolations } from "../../test/a11y"
 import { AdminSidebar } from "./admin-sidebar"
-import { sampleAdminFooterNav, sampleAdminNav, sampleAdminNavWithCounts } from "./admin.fixtures"
+import { sampleAdminFooterNav, sampleAdminNav, sampleAdminNavWithCounts, sampleAdminPlan } from "./admin.fixtures"
 
 function renderSidebar(overrides: Partial<Parameters<typeof AdminSidebar>[0]> = {}) {
   return render(
@@ -145,6 +145,74 @@ describe("AdminSidebar", () => {
     it("has no accessibility violations, expanded or collapsed", async () => {
       await expectNoA11yViolations(renderSidebar({ items: sampleAdminNavWithCounts }).container)
       await expectNoA11yViolations(renderSidebar({ items: sampleAdminNavWithCounts, collapsed: true }).container)
+    })
+  })
+
+  describe("the open page's plan (BEELINK-220)", () => {
+    const PLAN_NAME = "Plano Beelink, Teste grátis: 4 dias restantes"
+
+    // Billing switched off, a page owing nothing, no page open: the rail the panel always had.
+    it("draws nothing of a plan without one: the menu's list and the foot's, and nothing around them", () => {
+      const { container } = renderSidebar()
+
+      const nav = container.querySelector("nav")!
+      expect([...nav.children].map((child) => child.tagName)).toEqual(["UL", "UL"])
+      expect(container.querySelector('[data-slot="plan-card"], [data-slot="plan-card-skeleton"]')).toBeNull()
+    })
+
+    it("puts the card at the foot, under the menu and above the foot's items", () => {
+      renderSidebar({ plan: sampleAdminPlan })
+
+      const card = screen.getByRole("link", { name: PLAN_NAME })
+      expect(card).toHaveAttribute("href", "/admin/lessari/subscribe")
+      const lastItem = screen.getByRole("link", { name: "Clientes" })
+      const settings = screen.getByRole("link", { name: "Configurações da loja" })
+      expect(lastItem.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      expect(card.compareDocumentPosition(settings) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      // The card and the settings share the foot, so the two stay together at the rail's end.
+      expect(card.parentElement).toBe(settings.closest("ul")!.parentElement)
+    })
+
+    it("draws the card's skeleton in its place while the plan is read", () => {
+      const { container } = renderSidebar({ plan: { ...sampleAdminPlan, view: null } })
+
+      expect(container.querySelector('[data-slot="plan-card-skeleton"]')).toBeInTheDocument()
+      expect(screen.queryByRole("link", { name: /Plano/ })).toBeNull()
+      expect(screen.getByRole("link", { name: "Configurações da loja" })).toBeInTheDocument()
+    })
+
+    it("lights the card on the Assinar screen, and no item with it", () => {
+      renderSidebar({ plan: sampleAdminPlan, activeHref: "/admin/lessari/subscribe" })
+
+      expect(screen.getByRole("link", { name: PLAN_NAME })).toHaveAttribute("aria-current", "page")
+      expect(screen.getByRole("link", { name: "Início" })).not.toHaveAttribute("aria-current")
+    })
+
+    it("does not light the card anywhere else", () => {
+      renderSidebar({ plan: sampleAdminPlan, activeHref: "/admin/lessari/orders" })
+
+      expect(screen.getByRole("link", { name: PLAN_NAME })).not.toHaveAttribute("aria-current")
+    })
+
+    it("closes the drawer when the card is chosen", async () => {
+      const onClose = vi.fn()
+      renderSidebar({ plan: sampleAdminPlan, open: true, onClose })
+
+      await userEvent.click(screen.getByRole("link", { name: PLAN_NAME }))
+
+      expect(onClose).toHaveBeenCalled()
+    })
+
+    it("keeps the card's name when the rail is icons only", () => {
+      renderSidebar({ plan: sampleAdminPlan, collapsed: true })
+
+      expect(screen.getByRole("link", { name: PLAN_NAME })).toHaveAttribute("title", PLAN_NAME)
+    })
+
+    it("has no accessibility violations with the card, open or collapsed, quiet or warning", async () => {
+      const urgent = { ...sampleAdminPlan, view: { ...sampleAdminPlan.view, standing: { status: "LOCKED" as const }, urgent: true } }
+      await expectNoA11yViolations(renderSidebar({ plan: sampleAdminPlan }).container)
+      await expectNoA11yViolations(renderSidebar({ plan: urgent, collapsed: true }).container)
     })
   })
 
