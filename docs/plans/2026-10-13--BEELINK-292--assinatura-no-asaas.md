@@ -468,3 +468,18 @@ só para ser a estranha. **Nada foi pago.** Tudo abaixo foi visto.
    nos arquivos de rascunho.
 10. **A checagem de tipos, o lint e a suíte de unidade não rodaram no último commit** (ver "O que não
     foi rodado"). O orquestrador roda os três, e o `ci-check`, quando o disco tiver espaço.
+
+## Acréscimo de 14/10/2026: as conferências do commit final
+
+O que o item 10 dos riscos deixou para depois rodou no commit `453eb176`, neste worktree, com o
+Postgres e o Mailpit dele (`TEST_DATABASE_URL` em `:5442`, `MAILPIT_URL` em `:8027`):
+
+- `tsc --noEmit` da API e de `packages/contracts`: sem erro.
+- `oxlint` da API: 0 erros; dois avisos antigos, em arquivos que esta branch não toca.
+- Unidade da API: 133 arquivos, 1.682 testes, verdes.
+- Os dez specs e2e que a branch toca (`store-subscription`, `store-subscription-key`,
+  `store-subscription-not-enforced`, `store-subscription-without-key`, `billing`,
+  `billing-enforced`, `billing-account`, `billing-account-key`, `billing-account-without-key`,
+  `stores`): 187 testes, verdes.
+
+O `ci-check` inteiro roda no push.
