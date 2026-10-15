@@ -1,6 +1,7 @@
 // Types
 import type {
   AuthErrorCode,
+  BillingErrorCode,
   CatalogErrorCode,
   CustomerErrorCode,
   FavoriteErrorCode,
@@ -285,6 +286,8 @@ export interface WebMessages {
     /** The shop's Asaas account could not be asked, and a refusal of Asaas's that came with no words (BEELINK-208). */
     | "PAYMENT_UNAVAILABLE"
     | "REFUND_REFUSED_UNSAID"
+    /** What a page owes bee-link (BEELINK-293): its plan, its subscription and who it is charged to. */
+    | BillingErrorCode
     | PromotionErrorCode
     | ConversationErrorCode
     | CourierApplicationErrorCode

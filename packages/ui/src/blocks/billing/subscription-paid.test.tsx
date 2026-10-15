@@ -27,6 +27,13 @@ describe("SubscriptionPaid (BEELINK-293)", () => {
     await expectNoA11yViolations(container)
   })
 
+  it("says a debit card's renewal is a new invoice: only a credit card is charged again by itself", () => {
+    render(<SubscriptionPaid view={{ ...paidByCard, method: "DEBIT_CARD" }} locale="pt-BR" panelHref="/admin/loja" />)
+
+    expect(screen.getByText("Cada renovação gera uma fatura nova para pagar.")).toBeInTheDocument()
+    expect(screen.queryByText("A renovação é cobrada sozinha no cartão.")).toBeNull()
+  })
+
   it("leads a page paid by Pix to the renewal's invoice, once Asaas made it", async () => {
     const onOpenRenewal = vi.fn()
     render(<SubscriptionPaid view={paidByPix} locale="pt-BR" panelHref="/admin/loja" onOpenRenewal={onOpenRenewal} />)

@@ -31,15 +31,15 @@ export interface SubscriptionPaidProps {
 
 /**
  * A page whose paid period is running, as the Assinar screen shows it (BEELINK-293): nothing to buy.
- * The plan and its cycle, the last day paid for, and how the next one is paid — a card renews by
- * itself; a Pix or a boleto is a new invoice, whose link is here once Asaas made it. The card is
+ * The plan and its cycle, the last day paid for, and how the next one is paid — a credit card renews
+ * by itself; anything else is a new invoice, whose link is here once Asaas made it. The card is
  * named by its brand and last four digits, which is all bee-link keeps of it.
  */
 export function SubscriptionPaid({ view, locale, panelHref, onOpenRenewal, linkComponent: Link = AnchorLink, messages = defaultMessages }: SubscriptionPaidProps) {
   const text = messages.subscription
   const id = useId()
-  const byCard = view.method === "CREDIT_CARD" || view.method === "DEBIT_CARD"
-  const renewal = byCard ? text.paid.renewsByCard : view.method ? text.paid.renewsByInvoice : null
+  // Only a credit card is kept at Asaas and charged again: a debit card, a Pix and a boleto are each a new invoice.
+  const renewal = view.method === "CREDIT_CARD" ? text.paid.renewsByCard : view.method ? text.paid.renewsByInvoice : null
 
   return (
     <section aria-labelledby={`${id}-title`} className="bg-shell-surface border-shell-border flex flex-col gap-4 rounded-xl border p-4 shadow-xs sm:p-6">
