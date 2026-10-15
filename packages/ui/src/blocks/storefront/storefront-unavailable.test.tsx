@@ -25,6 +25,16 @@ describe("StorefrontUnavailable", () => {
     expect(screen.queryByRole("link")).not.toBeInTheDocument()
   })
 
+  it("says a site is a site, and nothing of orders it never took (BEELINK-290)", async () => {
+    const { container } = render(<StorefrontUnavailable name="Estúdio Lia" site />)
+
+    expect(screen.getByRole("heading", { level: 1, name: "Estúdio Lia" })).toBeInTheDocument()
+    expect(screen.getByText("Site indisponível no momento")).toBeInTheDocument()
+    expect(screen.getByText("Este site está fora do ar agora. Volte mais tarde.")).toBeInTheDocument()
+    expect(container.textContent).not.toMatch(/loja|pedido/i)
+    await expectNoA11yViolations(container)
+  })
+
   it("draws the logo as decoration beside the name it would repeat", () => {
     const { container } = render(<StorefrontUnavailable name="Padaria da Lia" logoUrl="https://res.cloudinary.com/demo/image/upload/logo.png" />)
 
@@ -32,10 +42,13 @@ describe("StorefrontUnavailable", () => {
   })
 
   it("speaks the reader's language, and never why the shop is unavailable", () => {
-    const { container } = render(<StorefrontUnavailable name="Padaria da Lia" ordersHref="/padaria/conta" messages={en} />)
+    const { container, rerender } = render(<StorefrontUnavailable name="Padaria da Lia" ordersHref="/padaria/conta" messages={en} />)
 
     expect(screen.getByText("Shop unavailable right now")).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Bought here before? See your orders" })).toBeInTheDocument()
+    expect(container.textContent).not.toMatch(/pag|pay|assinatura|subscription|teste|trial/i)
+
+    rerender(<StorefrontUnavailable name="Estúdio Lia" site />)
     expect(container.textContent).not.toMatch(/pag|pay|assinatura|subscription|teste|trial/i)
   })
 

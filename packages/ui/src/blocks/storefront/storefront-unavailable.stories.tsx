@@ -23,7 +23,7 @@ export const Padrao: Story = {}
 /** Com o logo da loja acima do nome. */
 export const ComLogo: Story = { args: { logoUrl: "https://res.cloudinary.com/demo/image/upload/v1/samples/logo.png" } }
 
-/** Um site, que não recebe pedidos: nenhum caminho para eles. */
-export const Site: Story = { args: { name: "Estúdio Lia", ordersHref: null } }
+/** Um site, que não recebe pedidos: diz que é um site, e nenhum caminho para pedidos. */
+export const Site: Story = { args: { name: "Estúdio Lia", ordersHref: null, site: true } }
 
 export const EmIngles: Story = { args: { messages: en } }

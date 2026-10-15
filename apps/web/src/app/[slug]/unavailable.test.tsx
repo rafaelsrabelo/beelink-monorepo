@@ -101,12 +101,14 @@ describe("a shop window off the air (BEELINK-223)", () => {
     expectTheNotice()
   })
 
-  it("offers a site, which takes no orders, no way to any", async () => {
+  it("says a site is a site, and offers it, which takes no orders, no way to any", async () => {
     mocks.shopAt.mockResolvedValue({ ...offTheAir, type: "INSTITUTIONAL" })
 
     render(await HomePage(at({ slug: "loja-amora" })))
 
-    expect(screen.getByText("Loja indisponível no momento")).toBeInTheDocument()
+    expect(screen.getByText("Site indisponível no momento")).toBeInTheDocument()
+    expect(screen.getByText("Este site está fora do ar agora. Volte mais tarde.")).toBeInTheDocument()
+    expect(screen.queryByText("Loja indisponível no momento")).not.toBeInTheDocument()
     expect(screen.queryByRole("link")).not.toBeInTheDocument()
   })
 

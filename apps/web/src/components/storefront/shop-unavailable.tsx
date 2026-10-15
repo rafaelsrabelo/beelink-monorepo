@@ -16,13 +16,15 @@ import { StorefrontFrame } from "./storefront-frame"
  */
 export function ShopUnavailable({ store, messages }: { store: ServedShop; messages: UiMessages }) {
   const routes = storefrontRoutes(store)
+  const site = store.type === "INSTITUTIONAL"
 
   return (
     <StorefrontFrame store={store} categories={[]} year={new Date().getFullYear()} chrome={false} messages={messages}>
       <StorefrontUnavailable
         name={store.name}
         logoUrl={store.logoUrl}
-        ordersHref={store.type === "INSTITUTIONAL" ? null : routes.accountTab("orders")}
+        ordersHref={site ? null : routes.accountTab("orders")}
+        site={site}
         linkComponent={AppLink}
         messages={messages}
       />

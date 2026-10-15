@@ -8,7 +8,7 @@ import type {
 } from "../blocks/design/design-types"
 import type { CashbackEntryKindValue } from "../lib/cashback"
 import type { CustomDomainErrorValue, CustomDomainProblemValue } from "../lib/custom-domain"
-import type { SubscriptionCycleValue, SubscriptionMethodValue, SubscriptionStandingView } from "../lib/subscription"
+import type { SubscriptionCycleValue, SubscriptionLockValue, SubscriptionMethodValue, SubscriptionStandingView } from "../lib/subscription"
 import type { CouponRefusalValue } from "../lib/order-discounts"
 import type { SectionCategory } from "../lib/section-registry"
 import type { LeadStatus } from "../blocks/leads/lead-types"
@@ -885,6 +885,9 @@ export interface UiMessages {
     unavailableTitle: string
     unavailableBody: string
     unavailableOrders: string
+    /** The same notice at a site, which takes no orders (BEELINK-290). */
+    unavailableSiteTitle: string
+    unavailableSiteBody: string
     /**
      * The heart (J15): on a card's photo and on the product's page. `{name}` is the product's. Signed
      * out it is a link to sign in, which comes back with the product liked.
@@ -4245,7 +4248,13 @@ export interface UiMessages {
   /**
    * The panel's Assinar screen (BEELINK-293): a page's plan, chosen, paid at Asaas's invoice and
    * waited for. No amount, day or count is written here: each arrives through a `{placeholder}`, from
-   * the catalogue and the page's subscription. BEELINK-290 reviews these words.
+   * the catalogue and the page's subscription.
+   *
+   * Reviewed by BEELINK-290, a proposal awaiting the product owner's yes. Wherever a rule of the plan
+   * comes up it is said whole: the price is per page; the trial asks for no card and nothing is
+   * charged by itself; a credit card renews by itself, and Pix, a boleto or a debit card is a new
+   * invoice each time; subscribing in the trial gives up the days left. Nothing promises what does not
+   * exist yet — cancelling from the panel, changing the card, an e-mail, a support address.
    */
   subscription: {
     /** `{plan}`: the plan's name, as the catalogue gives it. */
@@ -4381,6 +4390,56 @@ export interface UiMessages {
       /** No invoice is out for it. */
       missing: string
       check: string
+    }
+    /**
+     * A locked page's panel (BEELINK-296, the epic's S14), written ahead of the screen by BEELINK-290:
+     * why the page is locked, what that means, what opening it again costs, and the way to the
+     * Assinar screen. `{date}` is a day already in words: the trial's last day, the grace's last day
+     * (the day before `graceEndsAt`), the paid period's last day or the free month's last day.
+     */
+    locked: {
+      titles: Record<SubscriptionLockValue, string>
+      /** What happened and what opens the page again. `{date}`. */
+      texts: Record<SubscriptionLockValue, string>
+      /** The same where there is no day to say: a cancelled page that never had a period, a grace not kept. */
+      textsUndated: Record<SubscriptionLockValue, string>
+      /** What being locked means, for any page: the panel closed, the page off the air, and never why to a visitor. */
+      meaning: string
+      /** A shop's alone, never a site's: what a customer keeps. */
+      customers: string
+      /** Nothing was deleted, and paying opens the page as it was. */
+      kept: string
+      /** Only where the account has other pages. */
+      otherPages: string
+      /** `{plan}`: heads what each period costs, which is a page's. */
+      pricesTitle: string
+      /** The month's own line. `{cycle}` is a name of `cycles.names`; `{amount}`. */
+      priceMonthly: string
+      /** A period paid at once. `{cycle}`, `{total}`, `{months}`, and `{amount}`: what it comes to a month. */
+      priceAtOnce: string
+      /** The way to the Assinar screen: a suspended page pays the renewal due, any other chooses a period. The renewal is said by `facts.renewal`. */
+      actions: Record<SubscriptionLockValue, string>
+    }
+    /**
+     * The panel's strips over a page about to lock (BEELINK-296), written ahead of them by BEELINK-290:
+     * the trial's last days, and the grace after a renewal went unpaid. Both lead to the Assinar screen,
+     * which says the rest before anything is paid.
+     */
+    banners: {
+      /** `{days}` left after today, `{date}` the trial's last day. */
+      trialMany: string
+      /** `{date}`. */
+      trialOne: string
+      trialToday: string
+      /** Under any of the three. */
+      trialText: string
+      trialAction: string
+      graceTitle: string
+      /** `{date}`: the grace's last day — the day before `graceEndsAt`, in Brasília. */
+      graceText: string
+      /** A boleto is confirmed days after it is paid: the grace may end before. */
+      graceBoleto: string
+      graceAction: string
     }
     /** The plan is not on sale, or this deployment cannot charge. */
     unavailable: string

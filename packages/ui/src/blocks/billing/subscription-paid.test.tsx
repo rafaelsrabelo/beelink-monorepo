@@ -21,7 +21,7 @@ describe("SubscriptionPaid (BEELINK-293)", () => {
     expect(fact("Plano")).toBe("Anual · R$ 960,00")
     expect(fact("Paga até")).toBe("15/10/2027")
     expect(fact("Forma de pagamento")).toBe("Cartão VISA terminado em 4242")
-    expect(screen.getByText("A renovação é cobrada sozinha no cartão.")).toBeInTheDocument()
+    expect(screen.getByText("A renovação é cobrada sozinha neste cartão.")).toBeInTheDocument()
     expect(screen.queryByRole("link", { name: /Pagar a renovação/ })).toBeNull()
     expect(screen.getByRole("link", { name: "Voltar ao painel" })).toHaveAttribute("href", "/admin/loja")
     await expectNoA11yViolations(container)
@@ -30,8 +30,8 @@ describe("SubscriptionPaid (BEELINK-293)", () => {
   it("says a debit card's renewal is a new invoice: only a credit card is charged again by itself", () => {
     render(<SubscriptionPaid view={{ ...paidByCard, method: "DEBIT_CARD" }} locale="pt-BR" panelHref="/admin/loja" />)
 
-    expect(screen.getByText("Cada renovação gera uma fatura nova para pagar.")).toBeInTheDocument()
-    expect(screen.queryByText("A renovação é cobrada sozinha no cartão.")).toBeNull()
+    expect(screen.getByText("Cada renovação é uma fatura nova, que aparece aqui para você pagar.")).toBeInTheDocument()
+    expect(screen.queryByText("A renovação é cobrada sozinha neste cartão.")).toBeNull()
   })
 
   it("leads a page paid by Pix to the renewal's invoice, once Asaas made it", async () => {
@@ -41,7 +41,7 @@ describe("SubscriptionPaid (BEELINK-293)", () => {
     renewal.addEventListener("click", (event) => event.preventDefault())
 
     expect(fact("Forma de pagamento")).toBe("Pix")
-    expect(screen.getByText("Cada renovação gera uma fatura nova para pagar.")).toBeInTheDocument()
+    expect(screen.getByText("Cada renovação é uma fatura nova, que aparece aqui para você pagar.")).toBeInTheDocument()
     expect(renewal).toHaveAttribute("href", INVOICE_URL)
     expect(renewal).toHaveAttribute("target", "_blank")
     await userEvent.click(renewal)

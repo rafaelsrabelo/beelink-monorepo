@@ -18,7 +18,7 @@ describe("SubscriptionStanding (BEELINK-293)", () => {
     const { container } = render(<SubscriptionStanding plan="Beelink" standing={{ status: "TRIALING", lastDay: "22/10/2026", daysLeft: 7 }} />)
 
     expect(screen.getByRole("heading", { level: 1, name: "Plano Beelink" })).toBeInTheDocument()
-    expect(screen.getByText("O plano é cobrado por página: cada página tem o seu teste e a sua assinatura.")).toBeInTheDocument()
+    expect(screen.getByText("O valor é por página: cada página que você cria tem o seu teste grátis e o seu plano.")).toBeInTheDocument()
     await expectNoA11yViolations(container)
   })
 
@@ -29,17 +29,17 @@ describe("SubscriptionStanding (BEELINK-293)", () => {
   })
 
   it.each<[SubscriptionStandingView, string, string]>([
-    [{ status: "TRIALING", lastDay: "22/10/2026", daysLeft: 7 }, "Em teste", "O teste grátis vai até 22/10/2026. Faltam 7 dias."],
-    [{ status: "TRIALING", lastDay: "22/10/2026", daysLeft: 1 }, "Em teste", "O teste grátis vai até 22/10/2026. Falta um dia."],
-    [{ status: "TRIALING", lastDay: "22/10/2026", daysLeft: 0 }, "Em teste", "O teste grátis termina hoje, 22/10/2026."],
-    [{ status: "TRIAL_EXPIRED", lastDay: "22/10/2026" }, "Teste encerrado", "O teste grátis terminou em 22/10/2026. Escolha um plano para continuar."],
-    [{ status: "ACTIVE", paidUntil: "15/11/2026" }, "Em dia", "Paga até 15/11/2026."],
-    [{ status: "ACTIVE", paidUntil: null }, "Em dia", "O período pago está em curso."],
-    [{ status: "PAST_DUE", endedOn: "15/11/2026" }, "Pagamento pendente", "O período pago terminou em 15/11/2026 e a renovação ainda não foi paga."],
-    [{ status: "PAST_DUE", endedOn: null }, "Pagamento pendente", "A renovação ainda não foi paga."],
-    [{ status: "SUSPENDED" }, "Suspensa", "A página foi suspensa por falta de pagamento. Pague a fatura em aberto para reativá-la."],
-    [{ status: "CANCELED", until: "15/11/2026" }, "Cancelada", "A assinatura foi cancelada. A página funciona até 15/11/2026."],
-    [{ status: "CANCELED", until: null }, "Cancelada", "A assinatura foi cancelada."],
+    [{ status: "TRIALING", lastDay: "22/10/2026", daysLeft: 7 }, "Em teste", "O teste grátis vai até 22/10/2026: faltam 7 dias. Ele não pede cartão e nada é cobrado sozinho: quando acabar, a página trava e sai do ar até você assinar."],
+    [{ status: "TRIALING", lastDay: "22/10/2026", daysLeft: 1 }, "Em teste", "O teste grátis vai até amanhã, 22/10/2026. Ele não pede cartão e nada é cobrado sozinho: quando acabar, a página trava e sai do ar até você assinar."],
+    [{ status: "TRIALING", lastDay: "22/10/2026", daysLeft: 0 }, "Em teste", "O teste grátis termina hoje, 22/10/2026. Ele não pede cartão e nada é cobrado sozinho: quando acabar, a página trava e sai do ar até você assinar."],
+    [{ status: "TRIAL_EXPIRED", lastDay: "22/10/2026" }, "Teste encerrado", "O teste grátis terminou em 22/10/2026. Para usar a página, escolha um plano e pague."],
+    [{ status: "ACTIVE", paidUntil: "15/11/2026" }, "Em dia", "A página está paga até 15/11/2026."],
+    [{ status: "ACTIVE", paidUntil: null }, "Em dia", "A página está em dia."],
+    [{ status: "PAST_DUE", endedOn: "15/11/2026" }, "Pagamento em atraso", "A renovação venceu em 15/11/2026 e ainda não foi paga. Pague a fatura para a página não travar."],
+    [{ status: "PAST_DUE", endedOn: null }, "Pagamento em atraso", "A renovação ainda não foi paga. Pague a fatura para a página não travar."],
+    [{ status: "SUSPENDED" }, "Suspensa", "A renovação não foi paga no prazo, e a página está travada e fora do ar. Pague a fatura em aberto para ela voltar."],
+    [{ status: "CANCELED", until: "15/11/2026" }, "Cancelada", "A assinatura foi cancelada. A página funciona até 15/11/2026 e depois trava, até você assinar de novo."],
+    [{ status: "CANCELED", until: null }, "Cancelada", "A assinatura foi cancelada, e a página está travada e fora do ar. Para usá-la de novo, escolha um plano e pague."],
   ])("says %o as its badge and a sentence", (standing, badge, sentence) => {
     render(<SubscriptionStanding plan="Beelink" standing={standing} />)
 
@@ -52,14 +52,14 @@ describe("SubscriptionStanding (BEELINK-293)", () => {
     expect(screen.getByText("Em dia")).toHaveAttribute("data-variant", "success")
 
     rerender(<SubscriptionStanding plan="Beelink" standing={{ status: "PAST_DUE", endedOn: null }} />)
-    expect(screen.getByText("Pagamento pendente")).toHaveAttribute("data-variant", "destructive")
+    expect(screen.getByText("Pagamento em atraso")).toHaveAttribute("data-variant", "destructive")
   })
 
   it("speaks the reader's language", () => {
     render(<SubscriptionStanding plan="Beelink" standing={{ status: "TRIALING", lastDay: "10/22/2026", daysLeft: 3 }} messages={en} />)
 
     expect(screen.getByRole("heading", { level: 1, name: "Beelink plan" })).toBeInTheDocument()
-    expect(screen.getByText("The free trial runs until 10/22/2026. 3 days left.")).toBeInTheDocument()
+    expect(screen.getByText("The free trial runs until 10/22/2026: 3 days left. It asks for no card and nothing is charged by itself: when it ends, the page locks and goes offline until you subscribe.")).toBeInTheDocument()
   })
 })
 

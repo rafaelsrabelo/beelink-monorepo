@@ -40,6 +40,14 @@ export type SubscriptionStandingView =
   | { status: "SUSPENDED" }
   | { status: "CANCELED"; until: string | null }
 
+/**
+ * Why a page's panel is closed, as the locked page's notice tells its owner (BEELINK-296). Mirrors
+ * `PageLockReason`, and adds `FREE_PERIOD_OVER`: a page that never paid whose free month — a coupon's,
+ * or the one the pages that already existed were given — ran out. The API locks it as
+ * `TRIAL_EXPIRED`; the screen tells it apart by `freePeriodEndsAt`.
+ */
+export type SubscriptionLockValue = "TRIAL_EXPIRED" | "SUSPENDED" | "CANCELED" | "FREE_PERIOD_OVER"
+
 /** Who the page's plan is charged to: the document arrives masked, never whole. */
 export interface SubscriptionAccountView {
   name: string

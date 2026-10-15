@@ -65,3 +65,22 @@ describe("message dictionaries", () => {
     expect(ptBR.verifyEmail.verifiedTitle).not.toBe(en.verifyEmail.verifiedTitle)
   })
 })
+
+/** The `{placeholders}` a sentence asks for, in order of name. */
+function placeholdersOf(sentence: unknown): string {
+  return [...String(sentence).matchAll(/\{(\w+)\}/g)].map(([, name]) => name).sort().join()
+}
+
+describe("the words of a page's plan (BEELINK-290)", () => {
+  it.each([["pt-BR", ptBR], ["en", en]] as const)("%s writes no number by hand: an amount, a day or a count arrives through a placeholder", (_name, dictionary) => {
+    const numbered = paths(dictionary.subscription).filter((path) => /\d/.test(String(leafAt(dictionary.subscription, path)).replace(/\{\w+\}/g, "")))
+
+    expect(numbered).toEqual([])
+  })
+
+  it("asks for the same placeholders in both languages, so neither leaves a value unsaid", () => {
+    const differing = paths(ptBR.subscription).filter((path) => placeholdersOf(leafAt(ptBR.subscription, path)) !== placeholdersOf(leafAt(en.subscription, path)))
+
+    expect(differing).toEqual([])
+  })
+})

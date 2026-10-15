@@ -14,6 +14,8 @@ export interface StorefrontUnavailableProps {
   logoUrl?: string | null
   /** Where a customer who bought here reads their orders. Null for a site, which takes none. */
   ordersHref?: string | null
+  /** A site, not a shop: it is said to be a site, and nothing is said of orders it never took. */
+  site?: boolean
   linkComponent?: LinkComponent
   messages?: UiMessages
 }
@@ -23,7 +25,7 @@ export interface StorefrontUnavailableProps {
  * price, no basket — and, for a shop, the way to a customer's own orders, which still answer. Why it
  * is unavailable is the shopkeeper's business, and never said here.
  */
-export function StorefrontUnavailable({ name, logoUrl = null, ordersHref = null, linkComponent: Link = AnchorLink, messages = defaultMessages }: StorefrontUnavailableProps) {
+export function StorefrontUnavailable({ name, logoUrl = null, ordersHref = null, site = false, linkComponent: Link = AnchorLink, messages = defaultMessages }: StorefrontUnavailableProps) {
   const text = messages.storefront
 
   return (
@@ -35,8 +37,8 @@ export function StorefrontUnavailable({ name, logoUrl = null, ordersHref = null,
         <StoreIcon aria-hidden="true" className="mb-2 size-12 text-shop-muted" strokeWidth={1.5} />
       )}
       <h1 className="text-2xl font-semibold text-balance">{name}</h1>
-      <p className="text-lg font-semibold">{text.unavailableTitle}</p>
-      <p className="max-w-md text-shop-muted">{text.unavailableBody}</p>
+      <p className="text-lg font-semibold">{site ? text.unavailableSiteTitle : text.unavailableTitle}</p>
+      <p className="max-w-md text-shop-muted">{site ? text.unavailableSiteBody : text.unavailableBody}</p>
       {ordersHref ? (
         <Link href={ordersHref} className="mt-3 rounded-[10px] bg-shop-primary px-4 py-2 text-sm font-semibold text-shop-on-primary">
           {text.unavailableOrders}
