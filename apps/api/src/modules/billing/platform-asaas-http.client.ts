@@ -1,7 +1,8 @@
 // App
 import { asaasCall, filled, gone, type AsaasEndpoint, type AsaasMethod } from '../../shared/asaas/asaas-call.js';
-import { AsaasOutcomeUnknown, AsaasThrottled, AsaasUnreachable } from '../../shared/asaas/asaas-errors.js';
+import { AsaasOutcomeUnknown, AsaasRefused, AsaasThrottled, AsaasUnreachable } from '../../shared/asaas/asaas-errors.js';
 import { centsOf, reaisOf } from '../integrations/asaas/asaas-money.js';
+import { PLATFORM_WEBHOOK_EVENTS } from './billing.constants.js';
 import {
   PlatformAsaas,
   PlatformAsaasUnconfigured,
@@ -12,6 +13,8 @@ import {
   type PlatformCustomerRequest,
   type PlatformSubscription,
   type PlatformSubscriptionRequest,
+  type PlatformWebhook,
+  type PlatformWebhookRequest,
 } from './platform-asaas.client.js';
 
 /** Where bee-link's own account answers, and the key that opens it. */
@@ -37,6 +40,22 @@ function cardOf(raw: unknown): PlatformCard | null {
   if (!filled(card?.creditCardBrand) || typeof card.creditCardNumber !== 'string' || !/^\d{4}$/.test(card.creditCardNumber)) return null;
   return { brand: card.creditCardBrand, last4: card.creditCardNumber };
 }
+
+/** A webhook read leniently, as a shop's is: one Asaas does not say is off is on. Null for one with no id. */
+function webhookOf(raw: unknown): PlatformWebhook | null {
+  const body = raw as Record<string, unknown> | null;
+  if (!filled(body?.id)) return null;
+  return { id: body.id, url: filled(body.url) ? body.url : '', enabled: body.enabled !== false, interrupted: body.interrupted === true };
+}
+
+/** A refusal with the webhook's token cut out of Asaas's words, should they ever repeat what was sent: they go on to a log. */
+const tokenless =
+  (token: string) =>
+  (error: unknown): never => {
+    if (!(error instanceof AsaasRefused)) throw error;
+    const cut = (said: string): string => said.split(token).join('[token]');
+    throw new AsaasRefused(error.status, error.code === null ? null : cut(error.code), cut(error.reason));
+  };
 
 /**
  * A request that makes something, left with no answer. Refused is an answer, and so is a 429: Asaas
@@ -215,6 +234,42 @@ export class PlatformAsaasHttpClient extends PlatformAsaas {
       if (answer.hasMore !== true) break;
     }
     return found;
+  }
+
+  async webhooks(): Promise<PlatformWebhook[]> {
+    const found: PlatformWebhook[] = [];
+    for (let page = 0; page < PAGES_MAX; page += 1) {
+      const answer = (await this.call('GET', `/webhooks?limit=${PAGE_SIZE}&offset=${page * PAGE_SIZE}`)) as { data?: unknown; hasMore?: unknown } | null;
+      // An answer that cannot be read must not pass for "none": a second webhook would be registered.
+      if (!Array.isArray(answer?.data)) throw new AsaasUnreachable('Asaas answered the webhooks without a list');
+      for (const raw of answer.data) {
+        const webhook = webhookOf(raw);
+        if (webhook) found.push(webhook);
+      }
+      if (answer.hasMore !== true) break;
+    }
+    return found;
+  }
+
+  async createWebhook(webhook: PlatformWebhookRequest): Promise<string> {
+    const answer = (await this.call('POST', '/webhooks', {
+      name: webhook.name,
+      url: webhook.url,
+      email: webhook.email,
+      enabled: true,
+      interrupted: false,
+      apiVersion: 3,
+      authToken: webhook.authToken,
+      // In order: a refund must not arrive before the payment it refunds.
+      sendType: 'SEQUENTIALLY',
+      events: PLATFORM_WEBHOOK_EVENTS,
+    }).catch(tokenless(webhook.authToken))) as { id?: unknown } | null;
+    if (!filled(answer?.id)) throw new AsaasUnreachable('Asaas answered the webhook without an id');
+    return answer.id;
+  }
+
+  async resumeWebhook(id: string, authToken: string): Promise<void> {
+    await this.call('PUT', `/webhooks/${encodeURIComponent(id)}`, { enabled: true, interrupted: false, authToken }).catch(tokenless(authToken));
   }
 
   private async call(method: AsaasMethod, path: string, body?: object): Promise<unknown> {

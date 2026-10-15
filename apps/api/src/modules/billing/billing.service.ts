@@ -14,7 +14,8 @@ import { toPlan, toStoreSubscription } from './billing.mapper.js';
 /**
  * What a page owes bee-link, as it is read (BEELINK-219): the plans on sale, and one page's
  * subscription. Nothing here writes — a page's subscription is written with the page
- * (`subscription-trial.ts`) — and nothing here talks to Asaas.
+ * (`subscription-trial.ts`), by a choice of its cycle (`StoreSubscriptions`) and by what Asaas says of
+ * it (`SubscriptionSync`) — and nothing here talks to Asaas.
  */
 @Injectable()
 export class BillingService {
@@ -34,7 +35,11 @@ export class BillingService {
    * that is an answer, not an error.
    */
   async subscription(storeSlug: string, userId: string): Promise<StoreSubscriptionAnswer> {
-    const storeId = await this.stores.ownedStoreId(storeSlug, userId);
+    return this.answerOf(await this.stores.ownedStoreId(storeSlug, userId));
+  }
+
+  /** The same answer for a page whose owner was already checked: what the panel's own "has it been paid?" answers once Asaas was read (BEELINK-221). */
+  async answerOf(storeId: string): Promise<StoreSubscriptionAnswer> {
     const row = await this.prisma.storeSubscription.findUnique({
       where: { storeId },
       include: { plan: { select: { id: true, slug: true, name: true } } },

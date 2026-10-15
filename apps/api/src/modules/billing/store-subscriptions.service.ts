@@ -14,10 +14,11 @@ import { reasonWithout } from './asaas-reason.js';
 import { BillingAccounts } from './billing-accounts.service.js';
 import { brasiliaDayOf } from './billing-dates.js';
 import { accountRequired, unavailable } from './billing-refusals.js';
-import { ASAAS_CYCLES, billingError, PLAN_ON_SALE, SUBSCRIPTION_CLAIM_MS, SUBSCRIPTION_UNKNOWN_HOLD_MS, subscriptionReferenceOf } from './billing.constants.js';
+import { ASAAS_CYCLES, billingError, CHECK_FIRST_MS, PLAN_ON_SALE, SUBSCRIPTION_CLAIM_MS, SUBSCRIPTION_UNKNOWN_HOLD_MS, subscriptionReferenceOf } from './billing.constants.js';
 import { priceOf, toStoreSubscription, type StoreSubscriptionRow } from './billing.mapper.js';
 import { PlatformAsaas, PlatformAsaasUnconfigured, type PlatformCharge, type PlatformCustomerData, type PlatformSubscription } from './platform-asaas.client.js';
 import { awaitsPayment, firstChargeOf, invoiceDescriptionOf, serves, touchedByMoney } from './subscription-attempt.js';
+import { reasonOf, SubscriptionSync } from './subscription-sync.service.js';
 
 /** One choice's talk with Asaas about a page's subscription, taken and not yet settled. */
 interface Talk {
@@ -48,7 +49,16 @@ class CreationRefused extends Error {
   }
 }
 
+/** Asaas says a charge of the subscription the page has moved money: nothing is made or removed beside it. */
+class SubscriptionPaid extends ConflictException {
+  constructor() {
+    super(billingError('BILLING_SUBSCRIPTION_PAID', 'Asaas says the subscription the page has was paid: nothing was made or removed'));
+  }
+}
+
 const dateOf = (day: string): Date => new Date(`${day}T00:00:00.000Z`);
+/** When the routine first reads a subscription a choice made or kept: the shopkeeper is on its invoice. */
+const firstCheckAt = (): Date => new Date(Date.now() + CHECK_FIRST_MS);
 
 /**
  * A page's subscription at bee-link's own Asaas account (BEELINK-292): the shopkeeper chooses a cycle,
@@ -66,6 +76,9 @@ const dateOf = (day: string): Date => new Date(`${day}T00:00:00.000Z`);
  * What the row says of Asaas — the id, the plan, the cycle, the price, the first due day and the
  * invoice — tells of the subscription standing there and is written only once Asaas answered: a cycle
  * that was only asked for is never on the row.
+ *
+ * A payment it comes upon is not its to apply: once the talk is let go, the page is read through the
+ * one door a fact from Asaas comes in by (`SubscriptionSync`, BEELINK-221), and the refusal said after.
  */
 @Injectable()
 export class StoreSubscriptions {
@@ -76,6 +89,7 @@ export class StoreSubscriptions {
     private readonly stores: StoresService,
     private readonly accounts: BillingAccounts,
     private readonly asaas: PlatformAsaas,
+    private readonly payments: SubscriptionSync,
   ) {}
 
   /**
@@ -97,8 +111,20 @@ export class StoreSubscriptions {
       // A creation nobody answered may have made the subscription: nobody creates again until it had time to show.
       if (error instanceof AsaasOutcomeUnknown) await this.holdFor(talk, SUBSCRIPTION_UNKNOWN_HOLD_MS);
       else await this.letGo(talk);
+      if (error instanceof SubscriptionPaid) await this.readPaid(storeId);
       throw this.said(error, talk);
     }
+  }
+
+  /**
+   * The payment that stopped the talk, read and written as any other is — with the claim already let
+   * go, which the read waits for. Whatever comes of it, the refusal is what is answered: the page's
+   * subscription read again shows the payment.
+   */
+  private async readPaid(storeId: string): Promise<void> {
+    await this.payments.sync(storeId).catch((error: unknown) => {
+      this.logger.warn({ storeId, reason: reasonOf(error) }, 'Could not read the payment a choice of a cycle came upon');
+    });
   }
 
   /**
@@ -250,7 +276,7 @@ export class StoreSubscriptions {
   /** The subscription just made written as the page's, at once: whatever comes of reading its charge, the row names what stands at Asaas. */
   private async record(talk: Talk, asaasSubscriptionId: string, firstDueDay: string): Promise<void> {
     const { planId, cycle, priceCents } = talk.want;
-    await this.mine(talk, { asaasSubscriptionId, planId, cycle, priceCents, firstDueDate: dateOf(firstDueDay), invoiceUrl: null });
+    await this.mine(talk, { asaasSubscriptionId, planId, cycle, priceCents, firstDueDate: dateOf(firstDueDay), invoiceUrl: null, nextCheckAt: firstCheckAt() });
   }
 
   /** The row told that the subscription it named stands no more: read meanwhile, it shows no invoice that was removed. */
@@ -268,7 +294,7 @@ export class StoreSubscriptions {
     const invoiceUrl = first && awaitsPayment(first) ? first.invoiceUrl : null;
     const { planId, cycle, priceCents } = talk.want;
 
-    await this.mine(talk, { asaasSubscriptionId, planId, cycle, priceCents, ...(first ? { firstDueDate: dateOf(first.dueDate) } : {}), invoiceUrl, asaasSubscriptionClaimedUntil: null });
+    await this.mine(talk, { asaasSubscriptionId, planId, cycle, priceCents, ...(first ? { firstDueDate: dateOf(first.dueDate) } : {}), invoiceUrl, nextCheckAt: firstCheckAt(), asaasSubscriptionClaimedUntil: null });
     if (!invoiceUrl) {
       this.logger.warn({ storeId: talk.storeId, asaasSubscriptionId }, "A page's subscription stands at Asaas with no invoice to pay yet");
       throw new ServiceUnavailableException(billingError('BILLING_UNREACHABLE', 'Asaas holds the subscription and has told of no invoice yet: the same choice again reads it'));
@@ -334,7 +360,7 @@ function busy(): ConflictException {
 }
 
 function paid(): ConflictException {
-  return new ConflictException(billingError('BILLING_SUBSCRIPTION_PAID', 'Asaas says the subscription the page has was paid: nothing was made or removed'));
+  return new SubscriptionPaid();
 }
 
 function unreachable(): ServiceUnavailableException {

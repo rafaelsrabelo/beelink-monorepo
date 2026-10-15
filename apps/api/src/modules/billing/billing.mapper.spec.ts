@@ -40,6 +40,8 @@ const trialing = {
   invoiceUrl: null,
   cardBrand: null,
   cardLast4: null,
+  asaasCheckedAt: null,
+  nextCheckAt: null,
   createdAt: new Date('2026-10-13T16:24:00.000Z'),
   updatedAt: new Date('2026-10-13T16:24:00.000Z'),
 } satisfies StoreSubscriptionRow;
@@ -132,6 +134,13 @@ describe('a subscription, as its page’s owner reads it', () => {
       card: null,
     });
     expect(Object.keys(toStoreSubscription(paying, new Date()).plan ?? {}).sort()).toEqual(['id', 'name', 'slug']);
+  });
+
+  it('reads an active page as past due once its paid period is over, the row still saying ACTIVE (BEELINK-221)', () => {
+    const paid = { ...trialing, status: 'ACTIVE', currentPeriodEndsAt: new Date('2026-11-15T03:00:00.000Z') } satisfies StoreSubscriptionRow;
+
+    expect(toStoreSubscription(paid, new Date('2026-11-15T02:59:59.999Z')).status).toBe('ACTIVE');
+    expect(toStoreSubscription(paid, new Date('2026-11-15T03:00:00.000Z'))).toMatchObject({ status: 'PAST_DUE', currentPeriodEndsAt: '2026-11-15T03:00:00.000Z' });
   });
 
   it('tells of a card only its brand and its last four digits', () => {

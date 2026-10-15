@@ -35,6 +35,11 @@ export const ASAAS_CYCLES = {
   ANNUAL: 'YEARLY',
 } as const satisfies Record<BillingCycle, string>;
 
+/** A cycle from Asaas's word for it; null for a word bee-link does not sell in. */
+export function cycleOfAsaas(word: string): BillingCycle | null {
+  return BILLING_CYCLES.find((cycle) => ASAAS_CYCLES[cycle] === word) ?? null;
+}
+
 /** The plan a page is sold, by its slug. Its row, its switch and what each cycle costs are the seed's: no price is written in code. */
 export const PLAN_ON_SALE = 'beelink';
 
@@ -98,3 +103,93 @@ export const subscriptionReferenceOf = (subscriptionId: string): string => `beel
 export function billingError(errorCode: BillingErrorCode, message: string) {
   return { errorCode, message };
 }
+
+/*
+  How a page comes to know it was paid (BEELINK-221): bee-link's own webhook, the routine behind it,
+  and the panel asking now.
+*/
+
+const MINUTE_MS = 60_000;
+const HOUR_MS = 60 * MINUTE_MS;
+const DAY_MS = 24 * HOUR_MS;
+
+/**
+ * How long the routine leaves a page waiting on a charge, by how long it has waited: often at first,
+ * when a payment is likeliest, then less and less. The account's quota — 25,000 requests in twelve
+ * hours — is one for every shopkeeper, and the webhook is the way a payment is meant to be heard of.
+ */
+export const CHECK_STEPS: readonly (readonly [waitedUnder: number, step: number])[] = [
+  [HOUR_MS, 10 * MINUTE_MS],
+  [DAY_MS, HOUR_MS],
+  [7 * DAY_MS, 6 * HOUR_MS],
+  [Number.POSITIVE_INFINITY, DAY_MS],
+];
+
+/** How far the routine pushes a page's next look before it asks Asaas: one that fails is not asked again at every pass. */
+export const CHECK_PUSH_MS = 10 * MINUTE_MS;
+/** The first look after a subscription is made or kept by a choice: the shopkeeper is on the invoice. */
+export const CHECK_FIRST_MS = 10 * MINUTE_MS;
+/** Pages read per pass of the routine, the longest due first. */
+export const CHECKS_PER_PASS = 20;
+/** The panel's own "has it been paid?" asks Asaas once in this long for a page; inside it, the row is the answer. */
+export const CHECK_AGAIN_MS = 10_000;
+/** Between passes of the routine. */
+export const BILLING_ROUTINE_MS = MINUTE_MS;
+
+/** Events claimed per sweep. */
+export const BILLING_EVENT_BATCH = 10;
+/** How many times an event is tried before it is given up: the last waits two hours, some four hours in all. Losing one loses no payment — the routine reads the page anyway. */
+export const BILLING_EVENT_ATTEMPTS_MAX = 8;
+/** How long a claimed event is one sweep's: longer than a whole batch may take, each event two requests at the client's ten seconds a call. */
+export const BILLING_EVENT_LEASE_MS = 5 * MINUTE_MS;
+/** How long a done event is kept to tell a second delivery by: Asaas holds an undelivered one fourteen days. */
+export const BILLING_EVENT_KEEP_MS = 30 * DAY_MS;
+
+/** When an event that failed its `attempts`-th try is due again: after 1, 2, 4, 8… minutes — the shops' own events' rhythm. */
+export function billingEventRetryAtOf(attempts: number, now = Date.now()): Date {
+  return new Date(now + MINUTE_MS * 2 ** (Math.max(attempts, 1) - 1));
+}
+
+/** Between two looks at bee-link's own webhook at Asaas, and after one that failed. */
+export const WEBHOOK_LOOK_EVERY_MS = DAY_MS;
+export const WEBHOOK_LOOK_RETRY_MS = HOUR_MS;
+
+/** The web's route that hands bee-link's own Asaas events to the API: the same path on both. */
+export const PLATFORM_WEBHOOK_PATH = '/api/billing/asaas/webhook';
+
+/** How the webhook is named at Asaas's panel, where the shops' are `bee-link (<slug>)`. */
+export const PLATFORM_WEBHOOK_NAME = 'bee-link (assinaturas)';
+
+/**
+ * What bee-link's own webhook asks Asaas to send: every event that says a charge's money moved, that a
+ * charge was made, changed or removed — a renewal's invoice comes with its creation — and that a
+ * subscription changed or ended. Accepted, every one, by the sandbox on 14/10/2026. None is applied by
+ * what its body says: each makes bee-link read the page's subscription.
+ */
+export const PLATFORM_WEBHOOK_EVENTS = [
+  'PAYMENT_CREATED',
+  'PAYMENT_UPDATED',
+  'PAYMENT_AUTHORIZED',
+  'PAYMENT_AWAITING_RISK_ANALYSIS',
+  'PAYMENT_APPROVED_BY_RISK_ANALYSIS',
+  'PAYMENT_REPROVED_BY_RISK_ANALYSIS',
+  'PAYMENT_CREDIT_CARD_CAPTURE_REFUSED',
+  'PAYMENT_CONFIRMED',
+  'PAYMENT_RECEIVED',
+  'PAYMENT_RECEIVED_IN_CASH_UNDONE',
+  'PAYMENT_OVERDUE',
+  'PAYMENT_DELETED',
+  'PAYMENT_RESTORED',
+  'PAYMENT_REFUNDED',
+  'PAYMENT_PARTIALLY_REFUNDED',
+  'PAYMENT_REFUND_IN_PROGRESS',
+  'PAYMENT_REFUND_DENIED',
+  'PAYMENT_CHARGEBACK_REQUESTED',
+  'PAYMENT_CHARGEBACK_DISPUTE',
+  'PAYMENT_AWAITING_CHARGEBACK_REVERSAL',
+  'PAYMENT_DUNNING_RECEIVED',
+  'SUBSCRIPTION_CREATED',
+  'SUBSCRIPTION_UPDATED',
+  'SUBSCRIPTION_INACTIVATED',
+  'SUBSCRIPTION_DELETED',
+] as const;

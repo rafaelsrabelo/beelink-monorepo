@@ -8,7 +8,10 @@ import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import type { ApiErrorBody, AuthSession, StoreSubscriptionAnswer } from '@harness-monorepo/contracts';
 
 // App
+import { BillingRoutine } from '../src/modules/billing/billing-routine.js';
 import { PlatformAsaas } from '../src/modules/billing/platform-asaas.client.js';
+import { PlatformWebhookKeeper } from '../src/modules/billing/platform-webhook-keeper.js';
+import { SubscriptionSync } from '../src/modules/billing/subscription-sync.service.js';
 import { env } from '../src/shared/config/env.js';
 import { PrismaService } from '../src/shared/prisma/prisma.service.js';
 import { newEmail, signUpAndSignIn } from './support/auth-flow.js';
@@ -18,8 +21,12 @@ import { resetDatabase } from './support/reset-database.js';
 
 // Hoisted above the imports: `env.ts` reads the environment once, when it is first imported. Said
 // and not left to the default, so a developer's own `apps/api/.env` cannot switch it on here.
-vi.hoisted(() => {
+const TOKEN = vi.hoisted(() => {
   process.env.BILLING_ENFORCED = 'false';
+  // The webhook's token is right, so what turns its events away is the switch (BEELINK-221).
+  const token = 'nX0bq3l8V7mYkU2sA9cR4tE6wZ1pH5jD0fG8iK3oL2M=';
+  process.env.ASAAS_PLATFORM_WEBHOOK_TOKEN = token;
+  return token;
 });
 
 const PLANS_SEED = readFileSync(new URL('../prisma/seed/plans.sql', import.meta.url), 'utf8');
@@ -80,5 +87,62 @@ describe('a deployment with BILLING_ENFORCED off: where nothing is charged, noth
     const answer = (await call('GET', '/api/stores/padaria/subscription', owner)).json<StoreSubscriptionAnswer>();
 
     expect(answer).toMatchObject({ billingEnforced: false, subscription: { status: 'TRIALING', plan: null, cycle: null, priceCents: null, invoiceUrl: null } });
+  });
+
+  describe("and learning of a page's payment (BEELINK-221)", () => {
+    /** A page whose subscription stands at Asaas, paid there — as one chosen before the switch was turned off would. */
+    async function paidAtAsaas() {
+      const row = await prisma.storeSubscription.findFirstOrThrow();
+      const customerId = asaas.standing[0]!.id;
+      const made = asaas.plantSubscription({ customerId, valueCents: 5990, cycle: 'MONTHLY', firstDueDay: new Date(Date.now() - 3 * 3_600_000).toISOString().slice(0, 10), description: 'Plano Beelink mensal', externalReference: `beelink-subscription-${row.id}` });
+      asaas.pay(made.id);
+      await prisma.storeSubscription.updateMany({ data: { asaasSubscriptionId: made.id, nextCheckAt: new Date(Date.now() - 1_000) } });
+      asaas.calls.length = 0;
+      return { row: await prisma.storeSubscription.findFirstOrThrow(), made };
+    }
+
+    afterAll(async () => {
+      await prisma.storeSubscription.updateMany({ data: { asaasSubscriptionId: null, nextCheckAt: null } });
+    });
+
+    it('answers an event that carries the token, and writes nothing and asks nothing', async () => {
+      const { row, made } = await paidAtAsaas();
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/billing/asaas/webhook',
+        headers: { 'content-type': 'application/json', 'asaas-access-token': TOKEN },
+        payload: { id: 'evt_1', event: 'PAYMENT_CONFIRMED', payment: { id: 'pay_1', subscription: made.id, externalReference: `beelink-subscription-${row.id}` } },
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toEqual({ result: 'IGNORED' });
+      expect(await prisma.billingEvent.count()).toBe(0);
+      expect(asaas.calls).toEqual([]);
+      expect(await prisma.storeSubscription.findFirstOrThrow()).toEqual(row);
+    });
+
+    it("answers the panel's check as the read does, asking nothing", async () => {
+      const { row } = await paidAtAsaas();
+
+      const checked = await call('POST', '/api/stores/padaria/subscription/check', owner);
+
+      expect(checked.statusCode).toBe(200);
+      expect(checked.json()).toEqual((await call('GET', '/api/stores/padaria/subscription', owner)).json());
+      expect(checked.json<StoreSubscriptionAnswer>().subscription!.status).toBe('TRIALING');
+      expect(asaas.calls).toEqual([]);
+      expect(await prisma.storeSubscription.findFirstOrThrow()).toEqual(row);
+    });
+
+    it('runs no routine: a page whose turn came is not read, and no webhook is registered', async () => {
+      await paidAtAsaas();
+
+      await app.get(BillingRoutine).pass(new Date(Date.now() + 86_400_000));
+
+      expect(await app.get(SubscriptionSync).checkDue(new Date(Date.now() + 86_400_000))).toBe(0);
+      expect(await app.get(PlatformWebhookKeeper).keep()).toBe('SKIPPED');
+      expect(asaas.calls).toEqual([]);
+      expect((await prisma.storeSubscription.findFirstOrThrow()).status).toBe('TRIALING');
+    });
   });
 });

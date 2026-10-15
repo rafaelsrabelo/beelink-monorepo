@@ -6,12 +6,15 @@ import type { SubscriptionStatus } from '@harness-monorepo/contracts';
  *
  * The column holds what was last written; the clock's part is read here. A trial is over the instant
  * it ends, with no routine to run for it — and one that later writes `TRIAL_EXPIRED` says nothing
- * this did not already answer.
+ * this did not already answer. A paid period is the same (BEELINK-221): an `ACTIVE` page is past due
+ * the instant `currentPeriodEndsAt` comes with nothing written since, as the next read of Asaas would
+ * write it — unless that read finds the renewal paid.
  *
- * Only the trial is read. A free period given by a coupon (`freePeriodEndsAt`) and a paid period
- * that ran out change no answer here until the tickets that write them say what they mean.
+ * A free period given by a coupon (`freePeriodEndsAt`) changes no answer here until the ticket that
+ * writes it says what it means.
  */
-export function statusAt(row: { status: SubscriptionStatus; trialEndsAt: Date }, now: Date): SubscriptionStatus {
+export function statusAt(row: { status: SubscriptionStatus; trialEndsAt: Date; currentPeriodEndsAt?: Date | null }, now: Date): SubscriptionStatus {
   if (row.status === 'TRIALING' && now.getTime() >= row.trialEndsAt.getTime()) return 'TRIAL_EXPIRED';
+  if (row.status === 'ACTIVE' && row.currentPeriodEndsAt && now.getTime() >= row.currentPeriodEndsAt.getTime()) return 'PAST_DUE';
   return row.status;
 }

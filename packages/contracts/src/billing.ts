@@ -46,11 +46,16 @@ export interface PlanCatalog {
  *
  * - `TRIALING`: inside its free trial; nothing exists at Asaas.
  * - `TRIAL_EXPIRED`: the trial ended and the page never paid.
- * - `ACTIVE`: a paid period is running.
- * - `PAST_DUE`: the charge of the current period was not paid by its due day.
+ * - `ACTIVE`: a paid period is running — a charge Asaas holds as paid covers today.
+ * - `PAST_DUE`: it paid before, and the period paid for ended with the next charge unpaid. A page
+ *   read `ACTIVE` past `currentPeriodEndsAt` reads this, whether or not anything wrote it yet.
  * - `SUSPENDED`: stopped for want of payment, having paid before.
- * - `CANCELED`: the shopkeeper cancelled, and the period paid for is over.
- * - `EXEMPT`: owes nothing, by bee-link's own choice.
+ * - `CANCELED`: its subscription ended — removed at Asaas, or the charge of the period given back —
+ *   having paid before. What was paid is still used until `currentPeriodEndsAt`, when that is ahead.
+ * - `EXEMPT`: owes nothing, by bee-link's own choice; nothing Asaas says moves it.
+ *
+ * Only a payment moves a page out of its trial: a subscription chosen and never paid — even one
+ * removed at Asaas — leaves the page as it was.
  */
 export type SubscriptionStatus = "TRIALING" | "TRIAL_EXPIRED" | "ACTIVE" | "PAST_DUE" | "SUSPENDED" | "CANCELED" | "EXEMPT";
 
@@ -88,21 +93,32 @@ export interface StoreSubscription {
   cycle: BillingCycle | null;
   /** What the cycle costs this page, as agreed when it was chosen: the plan's price may change after. */
   priceCents: number | null;
-  /** ISO-8601: the first instant the paid period is over. Null while nothing was paid. */
+  /**
+   * ISO-8601: the first instant the paid period is over — the midnight in Brasília closing the due day
+   * of the charge after the last one paid, by Asaas's calendar. Null while nothing was paid, and after
+   * the only payment was given back.
+   */
   currentPeriodEndsAt: string | null;
   /** ISO-8601: when the shopkeeper asked to cancel. The page goes on until `currentPeriodEndsAt`. */
   cancelRequestedAt: string | null;
   /** ISO-8601: the first instant a free period given by a coupon is over. Null with none. */
   freePeriodEndsAt: string | null;
-  /** Null until Asaas tells of a payment. */
+  /** What the money last moved by, as Asaas told it. Null until Asaas tells of a payment. */
   paymentMethod: SubscriptionPaymentMethod | null;
-  /** Asaas's page for the charge waiting to be paid. Null with none waiting. */
+  /**
+   * Asaas's page for the charge waiting to be paid whose period is not over: the first charge while it
+   * is unpaid, then each renewal once Asaas makes it — which a card on file is charged by itself.
+   * Null with none waiting.
+   */
   invoiceUrl: string | null;
   /** Null unless the charge was paid with a card. */
   card: SubscriptionCard | null;
 }
 
-/** `GET /stores/:slug/subscription`, read by the page's owner. */
+/**
+ * `GET /stores/:slug/subscription`, read by the page's owner — and `POST /stores/:slug/subscription/check`,
+ * which asks Asaas first (BEELINK-221).
+ */
 export interface StoreSubscriptionAnswer {
   /**
    * Whether this deployment charges and locks. False: nothing is charged and nothing locks, and the
@@ -177,6 +193,7 @@ export interface BillingAccountAnswer {
  * - `BILLING_ACCOUNT_BUSY` (409): another save of this account is being told to Asaas; nothing was kept.
  * - `BILLING_CUSTOMER_REFUSED` (502): Asaas refused the customer. The data was kept.
  * - `BILLING_UNREACHABLE` (503): Asaas did not answer. What was kept stays kept, and asking again picks it up.
+ *   Also what `POST /stores/:slug/subscription/check` answers when Asaas could not be asked (BEELINK-221).
  *
  * The page's choice of a cycle alone (BEELINK-292) — all but the last two before Asaas is asked anything:
  *
@@ -189,7 +206,12 @@ export interface BillingAccountAnswer {
  * - `BILLING_PLAN_UNAVAILABLE` (409): the plan is not on sale, or not in that cycle.
  * - `BILLING_SUBSCRIPTION_BUSY` (409): another choice for this page is being told to Asaas; ask again in a moment.
  * - `BILLING_SUBSCRIPTION_PAID` (409): Asaas says the subscription the page has was paid; nothing was made or removed.
+ *   The payment was read before this answer (BEELINK-221): the subscription read again shows it.
  * - `BILLING_SUBSCRIPTION_REFUSED` (502): Asaas refused the subscription. Nothing was made.
+ *
+ * bee-link's own Asaas webhook (BEELINK-221), answered to Asaas and to nobody else:
+ *
+ * - `BILLING_WEBHOOK_TOKEN_INVALID` (401): the request does not carry the platform webhook's token; nothing was kept.
  */
 export type BillingErrorCode =
   | "BILLING_UNAVAILABLE"
@@ -207,4 +229,5 @@ export type BillingErrorCode =
   | "BILLING_PLAN_UNAVAILABLE"
   | "BILLING_SUBSCRIPTION_BUSY"
   | "BILLING_SUBSCRIPTION_PAID"
-  | "BILLING_SUBSCRIPTION_REFUSED";
+  | "BILLING_SUBSCRIPTION_REFUSED"
+  | "BILLING_WEBHOOK_TOKEN_INVALID";
