@@ -25,8 +25,13 @@ describe("AdminPlanCard (BEELINK-220)", () => {
   it("names the plan and where the page stands, as one link to the Assinar screen", () => {
     renderCard()
 
-    expect(screen.getByRole("link", { name: "Plano Beelink, Teste grátis: 4 dias restantes" })).toHaveAttribute("href", SUBSCRIBE)
+    const card = screen.getByRole("link", { name: "Plano Beelink, Teste grátis: 4 dias restantes" })
+    expect(card).toHaveAttribute("href", SUBSCRIBE)
     expect(screen.getAllByRole("link")).toHaveLength(1)
+    // The two lines drawn, and their name given whole: jsdom lays nothing out, and Chrome would read a
+    // comma hidden between two blocks with a space before it.
+    expect(card).toHaveAttribute("aria-label", "Plano Beelink, Teste grátis: 4 dias restantes")
+    expect(card).toHaveTextContent(/^Plano BeelinkTeste grátis: 4 dias restantes$/)
   })
 
   it.each<[string, SubscriptionCardStanding, string]>([

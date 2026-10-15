@@ -64,10 +64,13 @@ const ICONS: Record<SubscriptionCardStanding["status"], LucideIcon> = {
 /**
  * The open page's plan in the panel's menu (BEELINK-220): the plan's name, where the page stands in a few
  * words, and the way to its Assinar screen — the whole card one link, so the rail keeps one tab stop for
- * it. Its name is the two lines, read the same with the rail open or collapsed: collapsed, the words are
- * hidden from sight and not from the accessibility tree (`lg:sr-only`, as an item's), and `title` gives a
- * pointer user them back. Nothing is announced when the standing moves — a payment, a coupon, the lock —
- * as a count is not: a menu that speaks by itself is one people mute.
+ * it. Collapsed, the words are hidden from sight and not from the accessibility tree (`lg:sr-only`, as an
+ * item's), and `title` gives a pointer user them back. Nothing is announced when the standing moves — a
+ * payment, a coupon, the lock — as a count is not: a menu that speaks by itself is one people mute.
+ *
+ * Its name is the two lines said as one, with a pause between them: `aria-label`, built from the very
+ * words drawn. A comma hidden between the lines would be a block of its own to Chrome, which puts a
+ * space before it ("Plano Beelink , Teste grátis…"), and no comma runs the lines together.
  *
  * `urgent` is said in the warning's colours, which also keep their square when the rail is collapsed; a
  * card with nothing pressing collapses to an item's bare icon.
@@ -78,6 +81,7 @@ export function AdminPlanCard({ view, href, current = false, collapsed = false, 
   const text = messages.subscription
   const title = view.plan ? format(text.title, { plan: view.plan }) : text.untitled
   const sentence = cardSentenceOf(view.standing, text.card)
+  const name = `${title}, ${sentence}`
   const Icon = ICONS[view.standing.status]
   const quiet = collapsed && !view.urgent
 
@@ -85,8 +89,9 @@ export function AdminPlanCard({ view, href, current = false, collapsed = false, 
     <Link
       href={href}
       onClick={onNavigate}
+      aria-label={name}
       aria-current={current ? "page" : undefined}
-      title={collapsed ? `${title}, ${sentence}` : undefined}
+      title={collapsed ? name : undefined}
       data-slot="plan-card"
       className={cn(
         "flex items-start gap-2.5 rounded-lg border px-[7px] py-2 text-[13px] transition-colors",
@@ -94,7 +99,8 @@ export function AdminPlanCard({ view, href, current = false, collapsed = false, 
         view.urgent
           ? "bg-warning text-warning-foreground border-warning-foreground/20 hover:border-warning-foreground/45"
           : "bg-shell-surface text-shell-text border-shell-border hover:bg-nav-hover",
-        current && "shadow-xs",
+        // Already white, the card says "you are here" by its edge, where an item says it by turning white.
+        current && (view.urgent ? "border-warning-foreground/45 shadow-xs" : "border-shell-muted/50 shadow-xs"),
         collapsed && "lg:items-center lg:justify-center lg:px-0 lg:py-[7px]",
         quiet && "lg:hover:bg-nav-hover lg:border-transparent lg:bg-transparent",
         quiet && current && "lg:bg-nav-active",
@@ -104,18 +110,13 @@ export function AdminPlanCard({ view, href, current = false, collapsed = false, 
         <Icon />
       </span>
       <span className={cn("flex min-w-0 flex-1 flex-col", collapsed && "lg:sr-only")}>
-        {/*
-          The comma is heard and not seen: the two lines are one name, and a pause between them reads as
-          one. The space after it stands between the lines, where a flex box draws nothing — at the end of
-          the first line it would be trimmed from the name.
-        */}
-        <span className="truncate font-semibold">
-          {title}
-          <span className="sr-only">,</span>
-        </span>{" "}
+        {/* The arrow rides on the name's line, so the standing below has the card's whole width to fit in. */}
+        <span className="flex items-center gap-1">
+          <span className="truncate font-semibold">{title}</span>
+          <ChevronRightIcon aria-hidden="true" className="ml-auto size-4 shrink-0 opacity-70" />
+        </span>
         <span className={cn("text-xs", !view.urgent && "text-shell-muted")}>{sentence}</span>
       </span>
-      <ChevronRightIcon aria-hidden="true" className={cn("size-4 shrink-0 self-center opacity-70", collapsed && "lg:hidden")} />
     </Link>
   )
 }
