@@ -352,6 +352,33 @@ describe("a page's payment, read at bee-link's own Asaas account (BEELINK-221)",
       expect((await rowOf()).status).toBe('ACTIVE');
     });
 
+    it('reads Asaas with no lock held: a choice made while a read waits on Asaas is not kept waiting', async () => {
+      const { subscriptionId } = await choose('MONTHLY');
+      asaas.pay(subscriptionId);
+      const { storeId } = await rowOf();
+      let release!: () => void;
+      const held = new Promise<void>((go) => (release = go));
+      // The first read of the subscription waits on Asaas; every one after it is answered at once.
+      asaas.before('subscription', () => {
+        asaas.before('subscription', null);
+        return held;
+      });
+
+      const reading = payments.sync(storeId);
+      try {
+        await vi.waitFor(() => expect(asaas.count('subscription')).toBe(1));
+        // The choice takes the row's lock to write its claim: it answers while the read still waits.
+        const answered = await Promise.race([call('PUT', '/api/stores/padaria/subscription', owner, { cycle: 'MONTHLY' }), new Promise<null>((done) => setTimeout(() => done(null), 5_000))]);
+        expect(answered?.json<ApiErrorBody>().errorCode).toBe('BILLING_SUBSCRIPTION_PAID');
+      } finally {
+        release();
+      }
+
+      // The choice read the payment itself, later: the read that waited began first, and writes nothing.
+      expect(await reading).toBe('STALE');
+      expect((await rowOf()).status).toBe('ACTIVE');
+    });
+
     it('never writes an older read over a newer one, whichever finishes last', async () => {
       const { subscriptionId } = await choose('MONTHLY');
       const { storeId } = await rowOf();
