@@ -66,6 +66,9 @@ describe("SubscriptionCheckout, what is said before the button", () => {
     [{ kind: "trial", daysLeft: 5 } as const, "Assinando agora, você perde os 5 dias de teste que faltam: o plano começa a contar hoje."],
     [{ kind: "trial", daysLeft: 1 } as const, "Assinando agora, você perde o dia de teste que falta: o plano começa a contar hoje."],
     [{ kind: "trial", daysLeft: 0 } as const, "O plano começa a contar hoje, último dia do teste."],
+    [{ kind: "free", daysLeft: 20 } as const, "Assinando agora, você perde os 20 dias grátis que faltam: o plano começa a contar hoje."],
+    [{ kind: "free", daysLeft: 1 } as const, "Assinando agora, você perde o dia grátis que falta: o plano começa a contar hoje."],
+    [{ kind: "free", daysLeft: 0 } as const, "O plano começa a contar hoje, último dia grátis."],
     [{ kind: "canceled" } as const, "Assinando agora, você perde os dias que faltavam do período já pago: o plano novo começa a contar hoje."],
   ])("says the first charge is today, what is given up (%o), how it renews, where it is paid and how to cancel", (loss, given) => {
     show({ account: exampleAccount, loss })

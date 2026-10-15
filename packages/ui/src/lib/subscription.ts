@@ -31,8 +31,14 @@ export interface SubscriptionOfferView {
   renewsOn: string | null
 }
 
-/** Where the page stands, as the top of the screen says it. Every date is already in words. */
+/**
+ * Where the page stands, as the top of the screen says it. Every date is already in words. `FREE` is
+ * no status of the API's: a free period covering today — a coupon's month, the trial before it, or the
+ * month the pages that already existed were given (BEELINK-224) — which the screen tells before the
+ * status, since a page in it does not lock whatever its status says.
+ */
 export type SubscriptionStandingView =
+  | { status: "FREE"; lastDay: string; daysLeft: number }
   | { status: "TRIALING"; lastDay: string; daysLeft: number }
   | { status: "TRIAL_EXPIRED"; lastDay: string }
   | { status: "ACTIVE"; paidUntil: string | null }

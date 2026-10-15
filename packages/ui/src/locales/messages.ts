@@ -4266,6 +4266,10 @@ export interface UiMessages {
     badges: Record<SubscriptionStandingView["status"], string>
     /** Beside the badge. `{date}` is a day already in words; `{days}` how many are left after today. */
     standing: {
+      /** A free period covers today (BEELINK-224) — whatever the status, which would say a lock that does not come. `{date}` is its last day. */
+      freeMany: string
+      freeOne: string
+      freeToday: string
       trialingMany: string
       trialingOne: string
       trialingToday: string
@@ -4322,12 +4326,39 @@ export interface UiMessages {
       trialLossMany: string
       trialLossOne: string
       trialLossToday: string
+      /** In a free period, its days left are not added to the plan either (BEELINK-224). `{days}`. */
+      freeLossMany: string
+      freeLossOne: string
+      freeLossToday: string
       /** A cancelled page that still works: what is left of the period paid is not added either. */
       canceledLoss: string
       renewal: string
       invoice: string
       /** What is true of cancelling today: the panel cannot cancel yet (the epic's S12), and nothing here promises it will. */
       cancel: string
+    }
+    /**
+     * A coupon of bee-link's (BEELINK-224): one free month for a page that never paid, once in its life
+     * — never a discount. Its own form beside the checkout's, since it chooses no cycle.
+     */
+    coupon: {
+      title: string
+      /** What it gives and when the month begins: after whatever free time the page already has. */
+      lead: string
+      label: string
+      submit: string
+      submitting: string
+      /** The field sent empty. */
+      empty: string
+      /** Using it takes out the invoice the page has open, as choosing another cycle does. */
+      invoiceWarning: string
+    }
+    /** The coupon taken: the page is free until `{date}`, its last free day; the screen goes on to the panel by itself. */
+    couponApplied: {
+      title: string
+      text: string
+      textUndated: string
+      back: string
     }
     /** An invoice already open for the page. `{cycle}`, `{amount}`. */
     openInvoice: string
