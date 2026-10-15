@@ -129,6 +129,12 @@ describe("a shop window off the air (BEELINK-223)", () => {
 
   it("leaves a customer's own pages to answer as ever: the sign-in, the account and its tabs", async () => {
     expect(await sectionMetadata(at({ slug: "loja-amora", section: "entrar" }))).not.toEqual(NOINDEX)
+    expect(await sectionMetadata(at({ slug: "loja-amora", section: "conta" }))).not.toEqual(NOINDEX)
     expect(await itemMetadata(at({ slug: "loja-amora", section: "conta", item: "pedidos" }))).not.toEqual(NOINDEX)
+  })
+
+  it("sends a visitor at the account to sign in, as ever, and draws no notice there", async () => {
+    // Nobody is signed in here: the account's own page sends to its sign-in, which is how a customer reaches their orders.
+    await expect(SectionPage(at({ slug: "loja-amora", section: "conta" }))).rejects.toThrow("NEXT_REDIRECT")
   })
 })
