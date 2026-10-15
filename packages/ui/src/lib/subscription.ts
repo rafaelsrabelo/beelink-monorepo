@@ -54,6 +54,16 @@ export type SubscriptionStandingView =
  */
 export type SubscriptionLockValue = "TRIAL_EXPIRED" | "SUSPENDED" | "CANCELED" | "FREE_PERIOD_OVER"
 
+/**
+ * The strip over the panel of a page about to lock (BEELINK-296), every date already in words: the last
+ * days of its trial or of its free time — `daysLeft` counted as the API counts them, 0 on the last day —
+ * or the grace after a renewal went unpaid, `payBy` being the grace's last day.
+ */
+export type SubscriptionStripView =
+  | { kind: "trial"; daysLeft: number; lastDay: string }
+  | { kind: "free"; daysLeft: number; lastDay: string }
+  | { kind: "grace"; payBy: string }
+
 /** Who the page's plan is charged to: the document arrives masked, never whole. */
 export interface SubscriptionAccountView {
   name: string
