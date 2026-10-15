@@ -24,6 +24,7 @@ import { Public } from '../auth/auth.decorators.js';
 import { LoginDto, LogoutDto, RefreshDto } from '../auth/dto/auth.dto.js';
 import { AuthSessionResponse } from '../auth/dto/auth.response.js';
 import { SessionService } from '../auth/session.service.js';
+import { OpenWhileLocked } from '../billing/page-lock.decorators.js';
 import { CustomerAuthGuard, type AuthenticatedCustomer } from './customer-auth.guard.js';
 import { CurrentCustomer } from './customer.decorators.js';
 import { CustomersService } from './customers.service.js';
@@ -42,6 +43,8 @@ const rateLimit = { max: env.AUTH_RATE_LIMIT_MAX, timeWindow: env.AUTH_RATE_LIMI
 @ApiTags('customers')
 @ApiNotFoundResponse({ description: 'STORE_NOT_FOUND' })
 @Public()
+// A customer's account outlives a shop that stopped paying: it is how they reach their orders (BEELINK-223).
+@OpenWhileLocked()
 @Controller('stores/:storeSlug/customer')
 export class CustomersController {
   constructor(

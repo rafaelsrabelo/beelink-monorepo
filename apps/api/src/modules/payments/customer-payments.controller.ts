@@ -20,6 +20,7 @@ import type { CustomerOrderPaymentAnswer } from '@harness-monorepo/contracts';
 // App
 import { env } from '../../shared/config/env.js';
 import { Public } from '../auth/auth.decorators.js';
+import { OpenWhileLocked } from '../billing/page-lock.decorators.js';
 import { CustomerAuthGuard, type AuthenticatedCustomer } from '../customers/customer-auth.guard.js';
 import { CurrentCustomer } from '../customers/customer.decorators.js';
 import { OrderNumberPipe } from '../orders/order-number.pipe.js';
@@ -39,6 +40,8 @@ const rateLimit = { max: env.CUSTOMER_ORDER_RATE_LIMIT_MAX, timeWindow: env.CUST
 @ApiUnauthorizedResponse({ description: "AUTH_UNAUTHENTICATED — no shopper's token, a shopkeeper's, or another shop's" })
 @Public()
 @UseGuards(CustomerAuthGuard)
+// An order made before the shop stopped paying may still be paid: the money is the shop's, at its own Asaas (BEELINK-223).
+@OpenWhileLocked()
 @Controller('stores/:storeSlug/customer/orders/:number/payment')
 export class CustomerPaymentsController {
   constructor(private readonly payments: CustomerPayments) {}

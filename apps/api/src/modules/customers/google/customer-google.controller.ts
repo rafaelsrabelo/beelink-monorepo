@@ -6,6 +6,7 @@ import { ApiBadRequestResponse, ApiForbiddenResponse, ApiNotFoundResponse, ApiOk
 // App
 import { env } from '../../../shared/config/env.js';
 import { Public } from '../../auth/auth.decorators.js';
+import { OpenWhileLocked } from '../../billing/page-lock.decorators.js';
 import { CustomerGoogleService } from './customer-google.service.js';
 import {
   CustomerSignInOptionsResponse,
@@ -27,6 +28,8 @@ const rateLimit = { max: env.AUTH_RATE_LIMIT_MAX, timeWindow: env.AUTH_RATE_LIMI
  */
 @ApiTags('customers')
 @Public()
+// The same door into a customer's account, so into their orders, at a shop that stopped paying (BEELINK-223).
+@OpenWhileLocked()
 @Controller()
 export class CustomerGoogleController {
   constructor(private readonly google: CustomerGoogleService) {}

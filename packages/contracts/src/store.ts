@@ -344,7 +344,13 @@ export type StoreErrorCode =
   | "STORE_FORBIDDEN"
   | "STORE_CATEGORY_NOT_FOUND"
   /** A shop was sent without a WhatsApp. A site may go without; a shop cannot take an order. */
-  | "STORE_WHATSAPP_REQUIRED";
+  | "STORE_WHATSAPP_REQUIRED"
+  /**
+   * 403, on a shop window's routes while its page is locked for want of payment (BEELINK-223): its
+   * catalogue, its cart, its quotes and offers, and a new order. What a customer already has — the
+   * account, the orders — still answers. Why the page is locked is never said here.
+   */
+  | "STORE_UNAVAILABLE";
 
 /**
  * One option in the address box, as both apps have to agree it is.

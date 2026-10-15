@@ -18,6 +18,7 @@ import type { CustomerSavedAddress } from '@harness-monorepo/contracts';
 
 // App
 import { Public } from '../auth/auth.decorators.js';
+import { OpenWhileLocked } from '../billing/page-lock.decorators.js';
 import { CustomerAddressesService } from './customer-addresses.service.js';
 import { CustomerAuthGuard, type AuthenticatedCustomer } from './customer-auth.guard.js';
 import { CurrentCustomer } from './customer.decorators.js';
@@ -33,6 +34,8 @@ import { CustomerSavedAddressResponse, SaveCustomerAddressDto } from './dto/cust
 @ApiNotFoundResponse({ description: 'STORE_NOT_FOUND · CUSTOMER_ADDRESS_NOT_FOUND' })
 @Public()
 @UseGuards(CustomerAuthGuard)
+// A customer's own, whatever the shop owes bee-link (BEELINK-223).
+@OpenWhileLocked()
 @Controller('stores/:storeSlug/customer/addresses')
 export class CustomerAddressesController {
   constructor(private readonly addresses: CustomerAddressesService) {}

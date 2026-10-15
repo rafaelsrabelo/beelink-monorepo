@@ -4,6 +4,7 @@ import { ApiBearerAuth, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTag
 
 // App
 import { Public } from '../auth/auth.decorators.js';
+import { OpenWhileLocked } from '../billing/page-lock.decorators.js';
 import { CustomerAuthGuard, type AuthenticatedCustomer } from '../customers/customer-auth.guard.js';
 import { CurrentCustomer } from '../customers/customer.decorators.js';
 import { RealtimeTicketResponse } from './dto/realtime-ticket.response.js';
@@ -19,6 +20,8 @@ import { RealtimeTicketsService } from './realtime-tickets.service.js';
 @ApiUnauthorizedResponse({ description: "AUTH_UNAUTHENTICATED — no shopper's token, a shopkeeper's, or another shop's" })
 @Public()
 @UseGuards(CustomerAuthGuard)
+// What moves on a customer's orders reaches them at a shop that stopped paying too (BEELINK-223).
+@OpenWhileLocked()
 @Controller('stores/:storeSlug/customer/realtime')
 export class CustomerRealtimeTicketsController {
   constructor(private readonly tickets: RealtimeTicketsService) {}

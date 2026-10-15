@@ -253,6 +253,12 @@ export interface BillingAccountAnswer {
  * bee-link's own Asaas webhook (BEELINK-221), answered to Asaas and to nobody else:
  *
  * - `BILLING_WEBHOOK_TOKEN_INVALID` (401): the request does not carry the platform webhook's token; nothing was kept.
+ *
+ * Every route of a locked page's panel but its subscription's (BEELINK-223), to the page's owner alone
+ * — anybody else is answered what they are answered today (`STORE_FORBIDDEN`, `STORE_NOT_FOUND`):
+ *
+ * - `PAGE_LOCKED` (403): the page is locked for want of payment; why is `details` (`PageLockedDetails`).
+ *   Nothing was read or written. It stays so until the page pays: asking again changes nothing.
  */
 export type BillingErrorCode =
   | "BILLING_UNAVAILABLE"
@@ -271,4 +277,5 @@ export type BillingErrorCode =
   | "BILLING_SUBSCRIPTION_BUSY"
   | "BILLING_SUBSCRIPTION_PAID"
   | "BILLING_SUBSCRIPTION_REFUSED"
-  | "BILLING_WEBHOOK_TOKEN_INVALID";
+  | "BILLING_WEBHOOK_TOKEN_INVALID"
+  | "PAGE_LOCKED";

@@ -9,6 +9,7 @@ import type { CustomerDataExport } from '@harness-monorepo/contracts';
 // App
 import { env } from '../../shared/config/env.js';
 import { Public } from '../auth/auth.decorators.js';
+import { OpenWhileLocked } from '../billing/page-lock.decorators.js';
 import { CustomerAuthGuard, type AuthenticatedCustomer } from './customer-auth.guard.js';
 import { CustomerPrivacyService } from './customer-privacy.service.js';
 import { CurrentCustomer } from './customer.decorators.js';
@@ -24,6 +25,8 @@ const rateLimit = { max: env.AUTH_RATE_LIMIT_MAX, timeWindow: env.AUTH_RATE_LIMI
 @ApiUnauthorizedResponse({ description: "AUTH_UNAUTHENTICATED — no shopper's token, a shopkeeper's, or another shop's" })
 @Public()
 @UseGuards(CustomerAuthGuard)
+// A customer's data is theirs to take or erase whatever the shop owes bee-link (BEELINK-223).
+@OpenWhileLocked()
 @Controller('stores/:storeSlug/customer/me')
 export class CustomerPrivacyController {
   constructor(private readonly privacy: CustomerPrivacyService) {}

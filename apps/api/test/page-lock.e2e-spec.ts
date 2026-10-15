@@ -5,14 +5,14 @@ import { readFileSync } from 'node:fs';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 
 // Types
-import type { AuthSession, Store, StoreSubscriptionAnswer } from '@harness-monorepo/contracts';
+import type { ApiErrorBody, AuthSession, PageLockedDetails, ProductDetail, Store, StoreSubscriptionAnswer } from '@harness-monorepo/contracts';
 
 // App
 import { BillingRoutine } from '../src/modules/billing/billing-routine.js';
 import { PageLocks } from '../src/modules/billing/page-locks.service.js';
 import { PlatformAsaas } from '../src/modules/billing/platform-asaas.client.js';
 import { PrismaService } from '../src/shared/prisma/prisma.service.js';
-import { newEmail, signUpAndSignIn } from './support/auth-flow.js';
+import { PASSWORD, newEmail, signUpAndSignIn, verifyEmailOf } from './support/auth-flow.js';
 import { createTestApp } from './support/create-test-app.js';
 import { FakePlatformAsaas } from './support/fake-platform-asaas.js';
 import { clearInbox } from './support/mailpit.js';
@@ -185,6 +185,202 @@ describe('a page locked for want of payment (BEELINK-223)', () => {
       await app.get(BillingRoutine).pass(new Date());
 
       expect((await rowOf()).status).toBe('TRIAL_EXPIRED');
+    });
+  });
+
+  /** What a refusal said, as one value a test compares. */
+  const refusal = (response: { statusCode: number; json: <T>() => T }) => [response.statusCode, response.json<ApiErrorBody>().errorCode, response.json<ApiErrorBody>().details];
+
+  describe("the panel of a locked page, to its owner", () => {
+    /** One route of each kind the panel reaches a page by: reads and writes, the shell's own among them. */
+    const panelRoutes: [method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE', url: string, payload?: object][] = [
+      ['GET', '/api/stores/padaria'],
+      ['PUT', '/api/stores/padaria/colors', { background: '#ffffff', primary: '#000000', header: '#ffffff', footer: '#000000' }],
+      ['GET', '/api/stores/padaria/products'],
+      ['POST', '/api/stores/padaria/products', { name: 'Pão', priceCents: 500 }],
+      ['GET', '/api/stores/padaria/product-categories'],
+      ['GET', '/api/stores/padaria/orders?status=RECEIVED&pageSize=5'],
+      ['GET', '/api/stores/padaria/conversations?filter=UNREAD'],
+      ['GET', '/api/stores/padaria/panel-counts'],
+      ['POST', '/api/stores/padaria/realtime/ticket'],
+      ['GET', '/api/stores/padaria/customers'],
+      ['GET', '/api/stores/padaria/promotions'],
+      ['GET', '/api/stores/padaria/coupons'],
+      ['GET', '/api/stores/padaria/cashback'],
+      ['GET', '/api/stores/padaria/delivery'],
+      ['GET', '/api/stores/padaria/integrations/asaas'],
+      ['GET', '/api/stores/padaria/custom-domain'],
+      ['GET', '/api/stores/padaria/reviews'],
+      ['GET', '/api/stores/padaria/leads'],
+      ['GET', '/api/stores/padaria/pages'],
+      ['GET', '/api/stores/padaria/reports/sales-by-origin'],
+    ];
+
+    it.each(panelRoutes)('refuses %s %s with PAGE_LOCKED and why, and writes nothing', async (method, url, payload) => {
+      await setRow(trialEnded());
+      const products = await prisma.product.count();
+
+      const response = await call(method, url, owner, payload);
+
+      expect(refusal(response)).toEqual([403, 'PAGE_LOCKED', { reason: 'TRIAL_EXPIRED' } satisfies PageLockedDetails]);
+      expect(await prisma.product.count()).toBe(products);
+    });
+
+    it('answers its subscription, the plans, the billing account, the account and its pages as ever — and a new page is born open', async () => {
+      await setRow(trialEnded());
+
+      expect((await call('GET', '/api/stores/padaria/subscription', owner)).statusCode).toBe(200);
+      expect((await call('POST', '/api/stores/padaria/subscription/check', owner)).statusCode).toBe(200);
+      expect((await call('PUT', '/api/stores/padaria/subscription', owner, { cycle: 'MONTHLY' })).json<ApiErrorBody>().errorCode).toBe('BILLING_ACCOUNT_REQUIRED');
+      expect((await call('GET', '/api/billing/plans')).statusCode).toBe(200);
+      expect((await call('GET', '/api/billing/account', owner)).statusCode).toBe(200);
+      expect((await call('GET', '/api/users/me', owner)).statusCode).toBe(200);
+      expect((await call('GET', '/api/stores/mine', owner)).json<Store[]>().map((store) => store.slug)).toEqual(['padaria']);
+      expect((await call('POST', '/api/stores', owner, { name: 'Adega', slug: 'adega', type: 'ECOMMERCE', socialNetworks: { whatsapp: '(11) 99999-8888' } })).statusCode).toBe(201);
+      expect((await call('GET', '/api/stores/adega/products', owner)).statusCode).toBe(200);
+    });
+
+    it("leaves the same owner's other page open: the plan, and the lock, are each page's", async () => {
+      await openShop('adega', owner, 'Adega');
+      await setRow(trialEnded());
+
+      expect(refusal(await call('GET', '/api/stores/padaria/products', owner))[1]).toBe('PAGE_LOCKED');
+      expect((await call('GET', '/api/stores/adega/products', owner)).statusCode).toBe(200);
+    });
+
+    it('tells nobody else a page is locked: a stranger, a page nobody holds and no session are answered as ever', async () => {
+      await setRow(trialEnded());
+      const stranger = await signUpAndSignIn(app, newEmail('estranha'));
+
+      expect(refusal(await call('GET', '/api/stores/padaria/products', stranger)).slice(0, 2)).toEqual([403, 'STORE_FORBIDDEN']);
+      expect(refusal(await call('GET', '/api/stores/nenhuma/products', owner)).slice(0, 2)).toEqual([404, 'STORE_NOT_FOUND']);
+      expect(refusal(await call('GET', '/api/stores/padaria/products')).slice(0, 2)).toEqual([401, 'AUTH_UNAUTHENTICATED']);
+    });
+
+    it('is open through its grace, and locked for being suspended once it ran out', async () => {
+      await setRow({ status: 'PAST_DUE', currentPeriodEndsAt: closeOf(plusDays(today(), -3)) });
+      expect((await call('GET', '/api/stores/padaria/products', owner)).statusCode).toBe(200);
+
+      await setRow({ currentPeriodEndsAt: closeOf(plusDays(today(), -8)) });
+      expect(refusal(await call('GET', '/api/stores/padaria/products', owner))).toEqual([403, 'PAGE_LOCKED', { reason: 'SUSPENDED' }]);
+    });
+
+    it('is open while a cancelled page’s paid period runs, and locked once it is over', async () => {
+      await setRow({ status: 'CANCELED', currentPeriodEndsAt: closeOf(plusDays(today(), 2)) });
+      expect((await call('GET', '/api/stores/padaria/products', owner)).statusCode).toBe(200);
+
+      await setRow({ currentPeriodEndsAt: closeOf(plusDays(today(), -1)) });
+      expect(refusal(await call('GET', '/api/stores/padaria/products', owner))).toEqual([403, 'PAGE_LOCKED', { reason: 'CANCELED' }]);
+    });
+
+    it('opens on the very next request once the page is paid, with no routine to wait for', async () => {
+      await setRow(trialEnded());
+      expect(refusal(await call('GET', '/api/stores/padaria/products', owner))[1]).toBe('PAGE_LOCKED');
+
+      await setRow({ status: 'ACTIVE', currentPeriodEndsAt: closeOf(plusDays(today(), 30)) });
+
+      expect((await call('GET', '/api/stores/padaria/products', owner)).statusCode).toBe(200);
+    });
+
+    it('never locks an exempt page, nor one inside a free month', async () => {
+      await setRow({ ...trialEnded(40), status: 'EXEMPT' });
+      expect((await call('GET', '/api/stores/padaria/products', owner)).statusCode).toBe(200);
+
+      await setRow({ ...trialEnded(40), status: 'TRIAL_EXPIRED', freePeriodEndsAt: new Date(Date.now() + DAY) });
+      expect((await call('GET', '/api/stores/padaria/products', owner)).statusCode).toBe(200);
+
+      await setRow({ freePeriodEndsAt: new Date(Date.now() - 1) });
+      expect(refusal(await call('GET', '/api/stores/padaria/products', owner))[1]).toBe('PAGE_LOCKED');
+    });
+
+    it('never locks a page from before subscriptions existed', async () => {
+      await prisma.storeSubscription.deleteMany({});
+
+      expect((await call('GET', '/api/stores/padaria/products', owner)).statusCode).toBe(200);
+    });
+  });
+
+  describe("the shop window of a locked page", () => {
+    let shopper: AuthSession;
+    let variantId: string;
+    let ordered: number;
+
+    beforeEach(async () => {
+      variantId = (await call('POST', '/api/stores/padaria/products', owner, { name: 'Pão', priceCents: 500 })).json<ProductDetail>().variants[0]!.id;
+      const email = newEmail('cliente');
+      await call('POST', '/api/stores/padaria/customer/register', undefined, { name: 'Bia Cliente', email, password: PASSWORD });
+      await verifyEmailOf(app, email);
+      shopper = (await call('POST', '/api/stores/padaria/customer/login', undefined, { email, password: PASSWORD })).json<AuthSession>();
+      await call('PATCH', '/api/stores/padaria/customer/me', shopper, { phone: '(11) 98888-7777' });
+      const placed = await call('POST', '/api/stores/padaria/customer/orders', shopper, { items: [{ variantId, quantity: 1 }], fulfillment: 'PICKUP', paymentMethod: 'PIX' });
+      if (placed.statusCode !== 201) throw new Error(`POST customer/orders answered ${placed.statusCode}: ${placed.payload}`);
+      ordered = placed.json<{ number: number }>().number;
+    });
+
+    /** What a visitor or a customer asks a shop window for, that sells. */
+    const sellingRoutes = (): [method: 'GET' | 'POST' | 'PUT', url: string, session: 'visitor' | 'customer', payload?: object][] => [
+      ['GET', '/api/stores/padaria/catalog', 'visitor'],
+      ['GET', '/api/stores/padaria/catalog/pao', 'visitor'],
+      ['GET', `/api/stores/padaria/cart?produto=${variantId}`, 'visitor'],
+      ['POST', '/api/stores/padaria/cart/quote', 'visitor', { items: [{ variantId, quantity: 1 }] }],
+      ['GET', '/api/stores/padaria/offers', 'visitor'],
+      ['GET', '/api/stores/padaria/payment-options', 'visitor'],
+      ['GET', '/api/stores/padaria/landings/promo', 'visitor'],
+      ['POST', '/api/stores/padaria/shipping/quote', 'visitor', { zipCode: '01310-930', items: [{ variantId, quantity: 1 }] }],
+      ['POST', '/api/stores/padaria/contact', 'visitor', { name: 'Ana', whatsapp: '(11) 98888-7777' }],
+      ['POST', '/api/stores/padaria/funnel-events', 'visitor', { step: 'VISIT' }],
+      ['POST', '/api/stores/padaria/customer/cart/quote', 'customer', { items: [{ variantId, quantity: 1 }] }],
+      ['POST', '/api/stores/padaria/customer/offers', 'customer', { items: [{ variantId, quantity: 1 }] }],
+      ['POST', '/api/stores/padaria/customer/orders/quote', 'customer', { items: [{ variantId, quantity: 1 }], fulfillment: 'PICKUP', paymentMethod: 'PIX' }],
+      ['POST', '/api/stores/padaria/customer/orders', 'customer', { items: [{ variantId, quantity: 1 }], fulfillment: 'PICKUP', paymentMethod: 'PIX' }],
+      ['GET', `/api/stores/padaria/customer/orders/${ordered}/reorder`, 'customer'],
+      ['GET', '/api/stores/padaria/customer/favorites', 'customer'],
+    ];
+
+    it('refuses what sells with STORE_UNAVAILABLE, and never says why — a new order above all', async () => {
+      await setRow(trialEnded());
+      const orders = await prisma.order.count();
+
+      for (const [method, url, who, payload] of sellingRoutes()) {
+        const response = await call(method, url, who === 'customer' ? shopper : undefined, payload);
+        expect([url, response.statusCode, response.json<ApiErrorBody>().errorCode]).toEqual([url, 403, 'STORE_UNAVAILABLE']);
+        expect(response.json<ApiErrorBody>().details).toBeUndefined();
+        expect(response.payload).not.toMatch(/TRIAL_EXPIRED|SUSPENDED|CANCELED|trial|pay/i);
+      }
+      expect(await prisma.order.count()).toBe(orders);
+    });
+
+    it('keeps what a customer already has: the account, the orders, paying and talking about one, cancelling it', async () => {
+      await setRow(trialEnded());
+
+      expect((await call('GET', '/api/stores/padaria/customer/me', shopper)).statusCode).toBe(200);
+      expect((await call('GET', '/api/stores/padaria/customer/orders', shopper)).json<{ orders: unknown[] }>().orders).toHaveLength(1);
+      expect((await call('GET', `/api/stores/padaria/customer/orders/${ordered}`, shopper)).statusCode).toBe(200);
+      expect((await call('GET', `/api/stores/padaria/customer/orders/${ordered}/payment`, shopper)).statusCode).not.toBe(403);
+      expect((await call('GET', `/api/stores/padaria/customer/orders/${ordered}/conversation`, shopper)).statusCode).toBe(200);
+      expect((await call('GET', '/api/stores/padaria/customer/addresses', shopper)).statusCode).toBe(200);
+      expect((await call('GET', '/api/stores/padaria/customer/cashback', shopper)).statusCode).toBe(200);
+      expect((await call('GET', '/api/stores/padaria/customer/reviews', shopper)).statusCode).toBe(200);
+      expect((await call('GET', '/api/stores/padaria/customer/me/data', shopper)).statusCode).toBe(200);
+      expect((await call('POST', '/api/stores/padaria/customer/refresh', undefined, { refreshToken: shopper.refreshToken })).statusCode).toBe(200);
+      expect((await call('POST', `/api/stores/padaria/customer/orders/${ordered}/cancel`, shopper)).statusCode).toBe(200);
+    });
+
+    it('lets a customer sign in to reach their orders', async () => {
+      await setRow(trialEnded());
+      const email = newEmail('outra');
+      const registered = await call('POST', '/api/stores/padaria/customer/register', undefined, { name: 'Cris Cliente', email, password: PASSWORD });
+
+      expect(registered.statusCode).toBeLessThan(300);
+      await verifyEmailOf(app, email);
+      expect((await call('POST', '/api/stores/padaria/customer/login', undefined, { email, password: PASSWORD })).statusCode).toBe(200);
+    });
+
+    it('stays open through a page’s grace, a new order included', async () => {
+      await setRow({ status: 'PAST_DUE', currentPeriodEndsAt: closeOf(plusDays(today(), -3)) });
+
+      expect((await call('GET', '/api/stores/padaria/catalog')).statusCode).toBe(200);
+      expect((await call('POST', '/api/stores/padaria/customer/orders', shopper, { items: [{ variantId, quantity: 1 }], fulfillment: 'PICKUP', paymentMethod: 'PIX' })).statusCode).toBe(201);
     });
   });
 
