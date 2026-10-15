@@ -12,7 +12,7 @@ import { openTrial } from '../billing/subscription-trial.js';
 import { openingPageOf, refuseShopWithoutWhatsapp } from './store-opening.js';
 import { StoreGeocoder } from './store-geocoder.service.js';
 import type { StoreColorsDto } from './dto/store-fields.dto.js';
-import { homeSectionsOf, storeInclude, toPublicStore, toStore } from './store.mapper.js';
+import { homeSectionsOf, storeInclude, toPublicStore, toStore, toUnavailablePublicStore } from './store.mapper.js';
 import { writeBands } from '../page/page-bands-write.js';
 import { freezePage } from '../page/page-freeze.js';
 import { lookupsOf } from '../page/page-resolve.js';
@@ -217,10 +217,15 @@ export class StoresService {
     return toStore(row);
   }
 
-  /** The anonymous read. It answers the narrow shape, so nothing private can leak by forgetting a select. */
-  async publicBySlug(slug: string): Promise<PublicStore> {
+  /**
+   * The anonymous read. It answers the narrow shape, so nothing private can leak by forgetting a select.
+   * `unavailable`: the page is locked for want of payment (BEELINK-223), and the shop window is off the
+   * air — who the shop is, nothing it sells, and no showcase looked up.
+   */
+  async publicBySlug(slug: string, unavailable = false): Promise<PublicStore> {
     const row = await this.prisma.store.findUnique({ where: { slug }, include: storeInclude });
     if (!row) throw new NotFoundException(storeError('STORE_NOT_FOUND', `No shop at "${slug}"`));
+    if (unavailable) return toUnavailablePublicStore(row);
 
     const sections = homeSectionsOf(row);
     return toPublicStore(row, await lookupsOf(this.prisma, row.id, sections), sections);

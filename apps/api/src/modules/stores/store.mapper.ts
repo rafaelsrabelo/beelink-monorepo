@@ -143,6 +143,15 @@ export function toPublicStore(
   } satisfies PublicStore;
 }
 
+/**
+ * A shop window off the air (BEELINK-223): its page is locked for want of payment. Who the shop is
+ * stays — a customer's account and orders are drawn in it — and nothing it sells or measures does:
+ * no section, no landing, no cashback, no pixel, no analytics.
+ */
+export function toUnavailablePublicStore(row: StoreRow): PublicStore {
+  return { ...toPublicStore(row, NO_LOOKUPS, []), pages: [], cashback: null, metaPixelId: null, googleAnalyticsId: null, unavailable: true } satisfies PublicStore;
+}
+
 /** The shop as its owner sees it: the public shape plus what only the owner may read. */
 export function toStore(row: StoreRow): WireStore {
   return {

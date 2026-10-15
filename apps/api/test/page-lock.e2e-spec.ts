@@ -376,6 +376,36 @@ describe('a page locked for want of payment (BEELINK-223)', () => {
       expect((await call('POST', '/api/stores/padaria/customer/login', undefined, { email, password: PASSWORD })).statusCode).toBe(200);
     });
 
+    it("answers who the shop is and nothing it sells on the shop's public read, kept for a minute at most", async () => {
+      await prisma.store.update({ where: { slug: 'padaria' }, data: { logoUrl: 'https://res.cloudinary.com/demo/image/upload/logo.png' } });
+      await setRow(trialEnded());
+      const before = Date.now();
+
+      const response = await call('GET', '/api/stores/padaria/public');
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json<Store>()).toMatchObject({ slug: 'padaria', name: 'Padaria da Lia', logoUrl: 'https://res.cloudinary.com/demo/image/upload/logo.png', unavailable: true, sections: [], pages: [], cashback: null, metaPixelId: null, googleAnalyticsId: null });
+      const keptUntil = Date.parse(String(response.headers['x-lock-changes-at']));
+      expect(keptUntil).toBeGreaterThanOrEqual(before + 60_000);
+      expect(keptUntil).toBeLessThanOrEqual(Date.now() + 60_000);
+      expect(response.payload).not.toMatch(/TRIAL_EXPIRED|SUSPENDED|CANCELED/);
+    });
+
+    it("says on an open page's public read when it may lock, and nothing of being unavailable", async () => {
+      const inTrial = await call('GET', '/api/stores/padaria/public');
+      expect(inTrial.json<Record<string, unknown>>()).not.toHaveProperty('unavailable');
+      expect(inTrial.headers['x-lock-changes-at']).toBe((await rowOf()).trialEndsAt.toISOString());
+
+      const periodEnd = closeOf(plusDays(today(), -2));
+      await setRow({ status: 'PAST_DUE', currentPeriodEndsAt: periodEnd });
+      const inGrace = await call('GET', '/api/stores/padaria/public');
+      expect(inGrace.json<Record<string, unknown>>()).not.toHaveProperty('unavailable');
+      expect(inGrace.headers['x-lock-changes-at']).toBe(new Date(periodEnd.getTime() + 7 * DAY).toISOString());
+
+      await setRow({ status: 'EXEMPT' });
+      expect((await call('GET', '/api/stores/padaria/public')).headers['x-lock-changes-at']).toBeUndefined();
+    });
+
     it('stays open through a page’s grace, a new order included', async () => {
       await setRow({ status: 'PAST_DUE', currentPeriodEndsAt: closeOf(plusDays(today(), -3)) });
 

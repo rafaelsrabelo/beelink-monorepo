@@ -1,5 +1,5 @@
 // Types
-import type { BillingCycle, BillingCycleMonths, BillingDocumentType, BillingErrorCode, PageLockReason, SubscriptionPaymentMethod, SubscriptionStatus } from '@harness-monorepo/contracts';
+import type { BillingCycle, BillingCycleMonths, BillingDocumentType, BillingErrorCode, LockChangesAtHeader, PageLockReason, SubscriptionPaymentMethod, SubscriptionStatus } from '@harness-monorepo/contracts';
 import type {
   BillingCycle as BillingCycleRow,
   SubscriptionPaymentMethod as SubscriptionPaymentMethodRow,
@@ -28,6 +28,9 @@ export const GRACE_DAYS = 7;
  * windows share.
  */
 export const LOCKED_ANSWER_MS = 60_000;
+
+/** Where the shop's public read says when what it says of the lock may stop holding by the clock alone (BEELINK-223). */
+export const LOCK_CHANGES_AT_HEADER = 'x-lock-changes-at' satisfies LockChangesAtHeader;
 
 /*
   Each closed set below is written once and held to two unions at the same time: the wire's, in

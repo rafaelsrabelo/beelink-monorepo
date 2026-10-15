@@ -147,6 +147,9 @@ export class PublicStoreResponse implements PublicStore {
 
   @ApiProperty({ type: [PublicSectionResponse], description: "The blocks the landing page is made of, in order." })
   sections!: PublicSectionResponse[];
+
+  @ApiProperty({ required: false, enum: [true], description: "Only on the shop's public read, while its page is locked for want of payment: the window is off the air, and the answer keeps who the shop is and nothing it sells." })
+  unavailable?: true;
 }
 
 /** The shop as its owner edits it in the panel. */
