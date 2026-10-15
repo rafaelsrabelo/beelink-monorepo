@@ -13,6 +13,10 @@ import type { StorefrontRoutes } from "@/lib/storefront-routes"
  *
  * Built here and not in the block for the reason every href is: a block that knew "Produtos" links
  * to `routeWords.products` would be holding the very word this whole scheme keeps out of components.
+ *
+ * Off the air — its page locked for want of payment (BEELINK-296) — the shop's own column and the
+ * order by WhatsApp go: each sold, and the pages led to the notice. The legal column stays, beside the
+ * customer's pages that still answer.
  */
 export function shopFooterColumnsOf(
   store: PublicStore,
@@ -22,6 +26,7 @@ export function shopFooterColumnsOf(
 ): StorefrontFooterColumn[] {
   const text = messages.storefront
   const whatsapp = orderHrefOf(store)
+  if (store.unavailable) return [shopLegalColumnOf(store, messages)]
 
   return [
     {

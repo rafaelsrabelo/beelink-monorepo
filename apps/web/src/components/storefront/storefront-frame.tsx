@@ -14,13 +14,9 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { ctaOf, menuOf, pageLinksOf, siteFooterColumnsOf } from "./site-chrome"
 import { shopFooterColumnsOf } from "./shop-chrome"
 import { announcementOf } from "./announcement-of"
-import { StorefrontCartLinkLive } from "./storefront-cart-link-live"
-import { StorefrontDeliverToLive } from "./storefront-deliver-to-live"
-import { StorefrontSearchLive } from "./storefront-search-live"
+import { shopHeaderOf } from "./shop-header"
 import { addressLineOf, orderHrefOf, storefrontLinksOf } from "./storefront-links"
-import { headerAccountMenuOf } from "@/lib/account-menu"
 import { storefrontRoutes } from "@/lib/storefront-routes"
-import { ShopperConversationsLive } from "./conversations/shopper-conversations-live"
 
 export interface StorefrontFrameProps {
   store: PublicStore
@@ -186,39 +182,13 @@ export function StorefrontFrame({
       logoUrl={store.logoUrl}
       homeHref={routes.home}
       colors={colors ?? store.colors}
-      // The live one, which answers while someone types. It replaces the plain form rather than
-      // sitting beside it, and falls back to exactly that form when scripting is off.
       {...(site
         ? { menu: [...menuOf(drawn, anchorBase), ...pages], cta: ctaOf(drawn, anchorBase) }
-        : {
-            searchSlot: searchSlot ?? (
-              <StorefrontSearchLive
-                slug={store.slug}
-                routeWords={store.routeWords}
-                initialTerm={searchValue}
-                scopes={scopes}
-                initialScope={scope}
-                locale="pt-BR"
-                messages={messages}
-              />
-            ),
-            // The visitor's CEP, kept for the shipping quote to come. A site delivers nothing.
-            deliverTo: deliverToSlot ?? <StorefrontDeliverToLive slug={store.slug} defaultCep={shopper?.address?.zipCode ?? null} messages={messages} />,
-            searchAction: routes.search(),
-            searchScopes: scopes,
-            searchScope: scope,
-            // The basket and the shopper's own door — the shop's sign-in, never the panel's `/login`.
-            cartHref: routes.cart(),
-            cartSlot: <StorefrontCartLinkLive href={routes.cart()} messages={messages} />,
-            accountHref: shopper ? routes.account() : routes.signIn(),
-            accountName: shopper?.name ?? null,
-            // Signed in, the account opens its pages as a menu (J21) instead of leading to one.
-            accountMenu: shopper ? headerAccountMenuOf(routes, store.slug) : undefined,
-            conversationsSlot: shopper ? <ShopperConversationsLive slug={store.slug} routeWords={store.routeWords} messages={messages} /> : undefined,
-          })}
+        : shopHeaderOf(store, routes, { searchValue, scopes, scope, searchSlot, deliverToSlot, shopper, messages }))}
       {...(linkComponent ? { linkComponent } : {})}
       categories={
-        !site && topLevel.length ? (
+        // Off the air, a shop's menu would lead to the notice it is (BEELINK-296).
+        !site && !store.unavailable && topLevel.length ? (
           <StorefrontCategories
             categories={topLevel}
             active={current}
