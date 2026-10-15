@@ -120,6 +120,15 @@ gate "api/platform-asaas-key-in-billing" \
   "ASAAS_PLATFORM_API_KEY" \
   --exclude-dir=config --exclude-dir=generated --exclude='platform-asaas.config.ts'
 
+# The token Asaas sends back with every event of bee-link's own account (BEELINK-221) is read in one
+# file, which compares a delivery's with it and hands it to Asaas when the webhook is registered: no
+# other file can log it or answer it, because no other file can name it. A file, as the key's.
+gate "api/platform-webhook-token-in-billing" \
+  "Only src/modules/billing/platform-webhook.config.ts reads env.ASAAS_PLATFORM_WEBHOOK_TOKEN, the token of bee-link's own Asaas webhook; nothing else names it (apps/api/AGENTS.md rule 11, BEELINK-221)." \
+  "apps/api/src" \
+  "ASAAS_PLATFORM_WEBHOOK_TOKEN" \
+  --exclude-dir=config --exclude-dir=generated --exclude='platform-webhook.config.ts'
+
 # A page's subscription row says what stands at bee-link's own Asaas account for it, and carries the
 # claim that lets one request at a time talk to Asaas about it. One folder writes the table: no other
 # module can name a subscription Asaas does not hold, or write over a talk in course.
