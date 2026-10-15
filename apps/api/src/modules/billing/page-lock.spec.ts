@@ -3,7 +3,7 @@ import type { SubscriptionStatus } from '@harness-monorepo/contracts';
 
 // App
 import { SUBSCRIPTION_STATUSES } from './billing.constants.js';
-import { lockChangesAt, lockOf, type LockRow } from './page-lock.js';
+import { lockChangesAt, lockOf, lockStartOf, type LockRow } from './page-lock.js';
 import { graceEndOf } from './subscription-status.js';
 
 /*
@@ -176,5 +176,49 @@ describe('when what the lock answers may stop holding by the clock alone (BEELIN
 
   it('is nothing for an exempt page, which no clock moves', () => {
     expect(lockChangesAt(row('EXEMPT'), now)).toBeNull();
+  });
+});
+
+describe('the first instant a page is locked if only the clock moves (BEELINK-297)', () => {
+  /** The start of the day charging is switched on, in these cases: 20/11. */
+  const SWITCH_ON = at('2026-11-20T03:00:00.000Z');
+  /** The end of the month the pages of 13/10/2026 were given: 13/11 over. */
+  const MONTH_END = at('2026-11-14T03:00:00.000Z');
+
+  it('is the end of the free month, when charging is on before it', () => {
+    expect(lockStartOf(row('TRIALING', { freePeriodEndsAt: MONTH_END }), at('2026-11-01T03:00:00.000Z'))).toEqual(MONTH_END);
+    expect(lockStartOf(row('TRIAL_EXPIRED', { freePeriodEndsAt: MONTH_END }), at('2026-11-01T03:00:00.000Z'))).toEqual(MONTH_END);
+  });
+
+  it('is the day charging is on, for a page whose free month or trial is already over by then', () => {
+    expect(lockStartOf(row('TRIALING', { freePeriodEndsAt: MONTH_END }), SWITCH_ON)).toEqual(SWITCH_ON);
+    expect(lockStartOf(row('TRIALING'), SWITCH_ON)).toEqual(SWITCH_ON);
+    expect(lockStartOf(row('TRIAL_EXPIRED'), SWITCH_ON)).toEqual(SWITCH_ON);
+  });
+
+  it('is the end of a trial still running then, or of a free month that outlasts it', () => {
+    const lateTrial = at('2026-11-25T03:00:00.000Z');
+    expect(lockStartOf(row('TRIALING', { trialEndsAt: lateTrial }), SWITCH_ON)).toEqual(lateTrial);
+    const coupon = at('2026-11-22T03:00:00.000Z');
+    expect(lockStartOf(row('TRIALING', { freePeriodEndsAt: coupon }), SWITCH_ON)).toEqual(coupon);
+    expect(lockStartOf(row('TRIALING', { trialEndsAt: lateTrial, freePeriodEndsAt: at('2026-12-26T03:00:00.000Z') }), SWITCH_ON)).toEqual(at('2026-12-26T03:00:00.000Z'));
+  });
+
+  it('is the end of the grace for a page that paid and does not renew', () => {
+    expect(lockStartOf(row('ACTIVE', { currentPeriodEndsAt: PERIOD_END }), at('2026-11-01T03:00:00.000Z'))).toEqual(GRACE_END);
+    expect(lockStartOf(row('CANCELED', { currentPeriodEndsAt: PERIOD_END }), at('2026-11-01T03:00:00.000Z'))).toEqual(PERIOD_END);
+  });
+
+  it('is never, for an exempt page', () => {
+    expect(lockStartOf(row('EXEMPT', { freePeriodEndsAt: MONTH_END }), SWITCH_ON)).toBeNull();
+  });
+
+  it('agrees with the lock: open just before it, locked at it', () => {
+    for (const page of [row('TRIALING', { freePeriodEndsAt: MONTH_END }), row('TRIALING', { trialEndsAt: at('2026-11-25T03:00:00.000Z') }), row('ACTIVE', { currentPeriodEndsAt: PERIOD_END })]) {
+      const from = at('2026-11-01T03:00:00.000Z');
+      const locks = lockStartOf(page, from)!;
+      expect(lockOf(page, before(locks))).toBeNull();
+      expect(lockOf(page, locks)).not.toBeNull();
+    }
   });
 });

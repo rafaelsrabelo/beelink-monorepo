@@ -38,6 +38,17 @@ export function closeOfBrasiliaDay(day: string): Date {
   return new Date(countOf(day) + DAY_MS + BRASILIA_OFFSET_MS);
 }
 
+/** The midnight in Brasília that opens a day: its first instant. */
+export function openOfBrasiliaDay(day: string): Date {
+  return new Date(countOf(day) + BRASILIA_OFFSET_MS);
+}
+
+/** The day `days` days after `day` — before it, for a negative number — on the calendar alone. */
+export function daysAfter(day: string, days: number): string {
+  if (!Number.isInteger(days)) throw new RangeError(`Days are counted whole: got ${days}`);
+  return formatDay(countOf(day) + days * DAY_MS);
+}
+
 /** The last day something that ends at `endsAt` still covers. */
 export function lastDayBefore(endsAt: Date): string {
   return brasiliaDayOf(new Date(endsAt.getTime() - 1));
