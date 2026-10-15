@@ -64,6 +64,31 @@ export type SubscriptionStripView =
   | { kind: "free"; daysLeft: number; lastDay: string }
   | { kind: "grace"; payBy: string }
 
+/**
+ * Where the open page stands, as the plan's card in the panel's menu says it (BEELINK-220), every date
+ * already in words. A short form of the Assinar screen's own reading — a free time told before the
+ * status, `daysLeft` counted as the API counts it, 0 on the last day — and `LOCKED`, which no status is:
+ * the API's lock, whatever the reason. `ACTIVE`'s `renewsOn` is the last day paid for, the renewal's due
+ * day; `CANCELED`'s `until` the last day still used, null once it is over.
+ */
+export type SubscriptionCardStanding =
+  | { status: "FREE"; lastDay: string; daysLeft: number }
+  | { status: "TRIALING"; daysLeft: number }
+  | { status: "TRIAL_EXPIRED" }
+  | { status: "ACTIVE"; renewsOn: string | null }
+  | { status: "PAST_DUE" }
+  | { status: "CANCELED"; until: string | null }
+  | { status: "LOCKED" }
+
+/** The plan's card in the panel's menu (BEELINK-220): the open page's plan, and where it stands. */
+export interface SubscriptionCardView {
+  /** The plan's name, as the catalogue or the page's choice gives it; null where none is known — the card then names the page's subscription. */
+  plan: string | null
+  standing: SubscriptionCardStanding
+  /** Said in the warning's colours: the last days of a trial or a free time, a renewal unpaid, a locked page — only ever where the page can lock. */
+  urgent: boolean
+}
+
 /** Who the page's plan is charged to: the document arrives masked, never whole. */
 export interface SubscriptionAccountView {
   name: string
