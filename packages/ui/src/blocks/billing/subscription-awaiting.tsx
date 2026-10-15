@@ -8,6 +8,7 @@ import { ExternalLinkIcon } from "lucide-react"
 
 // UI
 import { Button, buttonVariants } from "@harness-monorepo/ui/components/button"
+import { cn } from "@harness-monorepo/ui/lib/utils"
 import { Skeleton } from "@harness-monorepo/ui/components/skeleton"
 import { planMoney } from "@harness-monorepo/ui/lib/plan-figures"
 import type { SubscriptionCycleValue } from "@harness-monorepo/ui/lib/subscription"
@@ -74,7 +75,7 @@ export function SubscriptionAwaiting({ invoiceUrl, cycle, priceCents, locale, pr
       <p className="text-sm">{text.awaiting.text}</p>
 
       <div className="flex flex-wrap items-center gap-3">
-        <a href={invoiceUrl} target="_blank" rel="noopener noreferrer" onClick={onOpen} className={buttonVariants({ size: "lg", className: "h-10 px-4" })}>
+        <a href={invoiceUrl} target="_blank" rel="noopener noreferrer" onClick={onOpen} className={cn(buttonVariants({ size: "lg" }), "h-10 px-4")}>
           {text.awaiting.open}
           <ExternalLinkIcon aria-hidden="true" />{" "}
           <span className="sr-only">{text.newTab}</span>

@@ -62,10 +62,11 @@ interface Handler {
   choices?: Answer[]
   saves?: Answer[]
   account?: Answer
+  plans?: Answer
 }
 
 /** The panel's billing handlers: each queue is answered in turn, its last answer for good. */
-function handler({ reads = [() => reply(200, enforced(trialing))], checks = [() => reply(200, enforced(annualOpen))], choices = [() => reply(200, { invoiceUrl: INVOICE, subscription: annualOpen })], saves = [() => reply(200, account.account)], account: accountAnswer = () => reply(200, account) }: Handler = {}) {
+function handler({ reads = [() => reply(200, enforced(trialing))], checks = [() => reply(200, enforced(annualOpen))], choices = [() => reply(200, { invoiceUrl: INVOICE, subscription: annualOpen })], saves = [() => reply(200, account.account)], account: accountAnswer = () => reply(200, account), plans = () => reply(200, catalog) }: Handler = {}) {
   const calls: string[] = []
   const next = (queue: Answer[]) => (queue.length > 1 ? queue.shift()! : queue[0]!)()
   vi.stubGlobal("fetch", async (path: string, init?: RequestInit) => {
@@ -74,7 +75,7 @@ function handler({ reads = [() => reply(200, enforced(trialing))], checks = [() 
     if (call === `GET ${ROUTE}`) return next(reads)
     if (call === `POST ${ROUTE}/check`) return next(checks)
     if (call === `PUT ${ROUTE}`) return next(choices)
-    if (call === "GET /api/billing/plans") return reply(200, catalog)
+    if (call === "GET /api/billing/plans") return plans()
     if (call === "GET /api/billing/account") return accountAnswer()
     if (call === "PUT /api/billing/account") return next(saves)
     throw new Error(`Nobody answers ${call}`)
@@ -347,6 +348,17 @@ describe("SubscribeScreen, when it cannot sell", () => {
 
     expect(screen.getByRole("status")).toHaveTextContent("A assinatura está indisponível no momento.")
     expect(screen.queryByRole("button", { name: /Assinar e pagar/ })).toBeNull()
+    expect(screen.queryByLabelText("CPF ou CNPJ")).toBeNull()
+  })
+
+  it("says the plan is unavailable where the catalogue holds none on sale", async () => {
+    handler({ plans: () => reply(200, { trialDays: 7, plans: [] }) })
+    renderScreen()
+    await settle()
+
+    expect(screen.getByRole("heading", { level: 1, name: "Assinatura da página" })).toBeInTheDocument()
+    expect(screen.getByRole("status")).toHaveTextContent("A assinatura está indisponível no momento.")
+    expect(screen.queryByRole("radio")).toBeNull()
   })
 
   it("says a read that failed as one, and asks again", async () => {

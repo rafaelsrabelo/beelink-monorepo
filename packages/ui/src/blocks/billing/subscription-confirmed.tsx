@@ -6,6 +6,7 @@ import { CircleCheckIcon } from "lucide-react"
 
 // UI
 import { buttonVariants } from "@harness-monorepo/ui/components/button"
+import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Locales
 import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
@@ -39,7 +40,7 @@ export function SubscriptionConfirmed({ paidUntil, panelHref, linkComponent: Lin
         {text.title}
       </h2>
       <p className="text-sm">{paidUntil ? format(text.text, { date: paidUntil }) : text.textUndated}</p>
-      <Link href={panelHref} className={buttonVariants({ className: "w-fit" })}>
+      <Link href={panelHref} className={cn(buttonVariants(), "w-fit")}>
         {text.back}
       </Link>
     </section>

@@ -8,6 +8,7 @@ import { ExternalLinkIcon } from "lucide-react"
 
 // UI
 import { buttonVariants } from "@harness-monorepo/ui/components/button"
+import { cn } from "@harness-monorepo/ui/lib/utils"
 import { planMoney } from "@harness-monorepo/ui/lib/plan-figures"
 import type { SubscriptionPaidView } from "@harness-monorepo/ui/lib/subscription"
 
@@ -79,7 +80,7 @@ export function SubscriptionPaid({ view, locale, panelHref, onOpenRenewal, linkC
           </a>
         </div>
       ) : null}
-      <Link href={panelHref} className={buttonVariants({ variant: "link", className: "w-fit px-0" })}>
+      <Link href={panelHref} className={cn(buttonVariants({ variant: "link" }), "w-fit px-0")}>
         {text.paid.back}
       </Link>
     </section>

@@ -192,10 +192,20 @@ describe("SubscriptionCheckout, while and after it is sent", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("O Asaas não respondeu.")
   })
 
-  it("offers no button where nothing can be bought, and says why", () => {
-    show({ account: exampleAccount, blocked: "A assinatura está indisponível no momento." })
+  it("offers no button where nothing can be bought, and says why — asking nothing of who is charged and telling nothing of paying", () => {
+    show({ blocked: "A assinatura está indisponível no momento." })
 
     expect(screen.queryByRole("button", { name: /Assinar e pagar/ })).toBeNull()
+    expect(screen.getByRole("status")).toHaveTextContent("A assinatura está indisponível no momento.")
+    expect(screen.queryByLabelText("CPF ou CNPJ")).toBeNull()
+    expect(screen.queryByRole("region", { name: "Antes de assinar" })).toBeNull()
+    expect(screen.getAllByRole("radio")).toHaveLength(3)
+  })
+
+  it("still says why where there is no cycle to offer at all", () => {
+    show({ offers: [], blocked: "A assinatura está indisponível no momento." })
+
+    expect(screen.queryByRole("radio")).toBeNull()
     expect(screen.getByRole("status")).toHaveTextContent("A assinatura está indisponível no momento.")
   })
 

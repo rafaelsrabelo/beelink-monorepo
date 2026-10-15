@@ -8,6 +8,7 @@ import { ExternalLinkIcon } from "lucide-react"
 
 // UI
 import { Button, buttonVariants } from "@harness-monorepo/ui/components/button"
+import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
@@ -40,7 +41,7 @@ export function SubscriptionDue({ invoiceUrl, onOpen, onCheck, checking = false,
       </h2>
       <p className="text-sm">{text.due.text}</p>
       {invoiceUrl ? (
-        <a href={invoiceUrl} target="_blank" rel="noopener noreferrer" onClick={onOpen} className={buttonVariants({ size: "lg", className: "h-10 w-fit px-4" })}>
+        <a href={invoiceUrl} target="_blank" rel="noopener noreferrer" onClick={onOpen} className={cn(buttonVariants({ size: "lg" }), "h-10 w-fit px-4")}>
           {text.due.pay}
           <ExternalLinkIcon aria-hidden="true" />{" "}
           <span className="sr-only">{text.newTab}</span>

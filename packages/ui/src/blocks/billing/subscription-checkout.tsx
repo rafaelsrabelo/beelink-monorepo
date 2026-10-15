@@ -80,7 +80,14 @@ export function SubscriptionCheckout({ offers, openInvoice = null, account, acco
   }, [fieldErrors.name, fieldErrors.document, form])
 
   const chosen = offers.find((offer) => offer.cycle === cycle) ?? offers[0]
-  if (!chosen) return null
+  const blockedNotice =
+    blocked !== undefined ? (
+      <p role="status" className="bg-muted rounded-lg px-3 py-3 text-sm">
+        {blocked}
+      </p>
+    ) : null
+  // No cycle to offer: what is said of it is all there is.
+  if (!chosen) return blockedNotice ? <div className="bg-shell-surface border-shell-border rounded-xl border p-4 shadow-xs sm:p-6">{blockedNotice}</div> : null
 
   const resuming = openInvoice !== null && openInvoice.cycle === chosen.cycle
   const switching = openInvoice !== null && !resuming
@@ -104,23 +111,27 @@ export function SubscriptionCheckout({ offers, openInvoice = null, account, acco
         render={({ field }) => <SubscriptionCycles offers={offers} value={field.value} onChange={field.onChange} disabled={pending || blocked !== undefined} locale={locale} messages={messages} />}
       />
 
-      <SubscriptionAccountFields
-        account={account}
-        asking={asking}
-        onChange={() => setChanging(true)}
-        onKeep={() => {
-          setChanging(false)
-          form.clearErrors(["name", "document"])
-        }}
-        name={nameField}
-        document={documentField}
-        nameError={errors.name?.message ?? fieldErrors.name}
-        documentError={errors.document?.message ?? fieldErrors.document}
-        disabled={pending}
-        messages={messages}
-      />
-
-      <SubscriptionFacts chargedCents={chosen.totalCents} loss={loss} locale={locale} messages={messages} />
+      {/* Where nothing can be bought, who would be charged and what paying means are not asked or said. */}
+      {blockedNotice ?? (
+        <>
+          <SubscriptionAccountFields
+            account={account}
+            asking={asking}
+            onChange={() => setChanging(true)}
+            onKeep={() => {
+              setChanging(false)
+              form.clearErrors(["name", "document"])
+            }}
+            name={nameField}
+            document={documentField}
+            nameError={errors.name?.message ?? fieldErrors.name}
+            documentError={errors.document?.message ?? fieldErrors.document}
+            disabled={pending}
+            messages={messages}
+          />
+          <SubscriptionFacts chargedCents={chosen.totalCents} loss={loss} locale={locale} messages={messages} />
+        </>
+      )}
 
       {switching ? (
         <p className="flex items-start gap-2 text-sm">
@@ -135,11 +146,7 @@ export function SubscriptionCheckout({ offers, openInvoice = null, account, acco
         </p>
       ) : null}
 
-      {blocked !== undefined ? (
-        <p role="status" className="bg-muted rounded-lg px-3 py-3 text-sm">
-          {blocked}
-        </p>
-      ) : (
+      {blockedNotice ? null : (
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
           <Button type="submit" size="lg" disabled={pending} className="h-10 px-4 text-base">
             {label}
