@@ -48,8 +48,10 @@ export interface PlanCatalog {
  * - `TRIAL_EXPIRED`: the trial ended and the page never paid.
  * - `ACTIVE`: a paid period is running — a charge Asaas holds as paid covers today.
  * - `PAST_DUE`: it paid before, and the period paid for ended with the next charge unpaid. A page
- *   read `ACTIVE` past `currentPeriodEndsAt` reads this, whether or not anything wrote it yet.
- * - `SUSPENDED`: stopped for want of payment, having paid before.
+ *   read `ACTIVE` past `currentPeriodEndsAt` reads this, whether or not anything wrote it yet. It is
+ *   used as ever through a grace of seven days (BEELINK-223).
+ * - `SUSPENDED`: stopped for want of payment, having paid before — a page past due whose grace ended
+ *   reads this, whether or not anything wrote it yet. Locked until it pays.
  * - `CANCELED`: its subscription ended — removed at Asaas, or the charge of the period given back —
  *   having paid before. What was paid is still used until `currentPeriodEndsAt`, when that is ahead.
  * - `EXEMPT`: owes nothing, by bee-link's own choice; nothing Asaas says moves it.
@@ -67,6 +69,34 @@ export type SubscriptionPaymentMethod = "CREDIT_CARD" | "DEBIT_CARD" | "PIX" | "
 
 /** The plan a subscription is on. */
 export type SubscriptionPlan = Pick<Plan, "id" | "slug" | "name">;
+
+/**
+ * Why a page is locked (BEELINK-223), where bee-link charges and the page can pay. A locked page's
+ * panel answers nothing but its own subscription, and its shop window sells nothing.
+ *
+ * - `TRIAL_EXPIRED`: the trial ended and the page never paid.
+ * - `SUSPENDED`: it paid before, and the grace after its period's end went by unpaid.
+ * - `CANCELED`: its subscription ended, and what it paid for is over — or there was none left.
+ *
+ * Never locked: an exempt page, one inside a free period given by a coupon, one in trial, one paid
+ * for, one past due inside its grace, one cancelled whose paid period still runs.
+ */
+export type PageLockReason = "TRIAL_EXPIRED" | "SUSPENDED" | "CANCELED";
+
+/** `details` of `PAGE_LOCKED`, which only the page's owner is ever answered. */
+export interface PageLockedDetails {
+  reason: PageLockReason;
+}
+
+/**
+ * The response header the shop's public read carries where pages lock (BEELINK-223): the instant,
+ * ISO-8601, after which the answer may no longer be true by the clock alone — for an open page, the
+ * next instant its lock could close (a trial, a paid period, a free period or a grace ending); for a
+ * locked one, a minute after it was read, since only a payment, which no clock knows, opens it.
+ * Whoever keeps the answer asks again once it has passed, as with `PricesChangeAtHeader`. Absent where
+ * nothing locks.
+ */
+export type LockChangesAtHeader = "x-lock-changes-at";
 
 /** All that is kept of a card: never its number, its holder, its validity or a token of it. */
 export interface SubscriptionCard {
@@ -113,6 +143,17 @@ export interface StoreSubscription {
   invoiceUrl: string | null;
   /** Null unless the charge was paid with a card. */
   card: SubscriptionCard | null;
+  /**
+   * ISO-8601: the first instant a page past due is locked (BEELINK-223) — seven days after its paid
+   * period ended or, with no period to count from, after the day it was found past due. The date the
+   * lock, the panel's notice and the e-mails all read. Null unless the page is past due or suspended.
+   */
+  graceEndsAt: string | null;
+  /**
+   * Why the page is locked at the instant of the read, or null while it is open (BEELINK-223). Always
+   * null where nothing locks: `billingEnforced` false, or no Asaas account of bee-link's to pay at.
+   */
+  lock: PageLockReason | null;
 }
 
 /**
@@ -212,6 +253,12 @@ export interface BillingAccountAnswer {
  * bee-link's own Asaas webhook (BEELINK-221), answered to Asaas and to nobody else:
  *
  * - `BILLING_WEBHOOK_TOKEN_INVALID` (401): the request does not carry the platform webhook's token; nothing was kept.
+ *
+ * Every route of a locked page's panel but its subscription's (BEELINK-223), to the page's owner alone
+ * — anybody else is answered what they are answered today (`STORE_FORBIDDEN`, `STORE_NOT_FOUND`):
+ *
+ * - `PAGE_LOCKED` (403): the page is locked for want of payment; why is `details` (`PageLockedDetails`).
+ *   Nothing was read or written. It stays so until the page pays: asking again changes nothing.
  */
 export type BillingErrorCode =
   | "BILLING_UNAVAILABLE"
@@ -230,4 +277,5 @@ export type BillingErrorCode =
   | "BILLING_SUBSCRIPTION_BUSY"
   | "BILLING_SUBSCRIPTION_PAID"
   | "BILLING_SUBSCRIPTION_REFUSED"
-  | "BILLING_WEBHOOK_TOKEN_INVALID";
+  | "BILLING_WEBHOOK_TOKEN_INVALID"
+  | "PAGE_LOCKED";

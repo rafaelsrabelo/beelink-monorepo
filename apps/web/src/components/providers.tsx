@@ -9,6 +9,7 @@ import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@ta
 import { ThemeProvider } from "next-themes"
 
 // App
+import { isPageLockedError } from "@/lib/page-lock"
 import { isPanelPage, isSignedOutError, sessionEndedHrefOf } from "@/lib/panel-return"
 
 /**
@@ -26,8 +27,10 @@ export function makeQueryClient(): QueryClient {
   return new QueryClient({
     queryCache: new QueryCache({ onError: signInWhenSignedOut }),
     mutationCache: new MutationCache({ onError: signInWhenSignedOut }),
-    // Asking again cannot bring an ended session back; anything else gets TanStack's three tries.
-    defaultOptions: { queries: { staleTime: 60_000, retry: (failures, error) => !isSignedOutError(error) && failures < 3 } },
+    // Asking again cannot bring an ended session back, nor open a page locked until it is paid
+    // (BEELINK-223) — the shell would ask four times for each of its reads; anything else gets
+    // TanStack's three tries.
+    defaultOptions: { queries: { staleTime: 60_000, retry: (failures, error) => !isSignedOutError(error) && !isPageLockedError(error) && failures < 3 } },
   })
 }
 

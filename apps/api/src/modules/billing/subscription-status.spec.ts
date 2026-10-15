@@ -35,10 +35,23 @@ describe('where a subscription stands at an instant', () => {
   it('reads nothing but an active page off its paid period: a cancelled one is cancelled while what it paid for runs, and after', () => {
     const currentPeriodEndsAt = new Date('2026-11-15T03:00:00.000Z');
 
-    for (const status of ['CANCELED', 'PAST_DUE', 'SUSPENDED', 'EXEMPT'] as const) {
+    for (const status of ['CANCELED', 'SUSPENDED', 'EXEMPT'] as const) {
       expect(statusAt({ status, trialEndsAt, currentPeriodEndsAt }, new Date('2026-11-01T00:00:00.000Z'))).toBe(status);
       expect(statusAt({ status, trialEndsAt, currentPeriodEndsAt }, new Date('2027-01-01T00:00:00.000Z'))).toBe(status);
     }
+  });
+
+  it('reads a page past due as suspended from the instant its grace ends, though nothing wrote it (BEELINK-223)', () => {
+    const currentPeriodEndsAt = new Date('2026-11-15T03:00:00.000Z');
+    const graceEnd = new Date('2026-11-22T03:00:00.000Z');
+
+    for (const status of ['ACTIVE', 'PAST_DUE'] as const) {
+      expect(statusAt({ status, trialEndsAt, currentPeriodEndsAt }, new Date('2026-11-22T02:59:59.999Z'))).toBe('PAST_DUE');
+      expect(statusAt({ status, trialEndsAt, currentPeriodEndsAt }, graceEnd)).toBe('SUSPENDED');
+    }
+    // With no period to count from, the grace written is the one read.
+    expect(statusAt({ status: 'PAST_DUE', trialEndsAt, currentPeriodEndsAt: null, graceEndsAt: graceEnd }, new Date('2026-11-22T02:59:59.999Z'))).toBe('PAST_DUE');
+    expect(statusAt({ status: 'PAST_DUE', trialEndsAt, currentPeriodEndsAt: null, graceEndsAt: graceEnd }, graceEnd)).toBe('SUSPENDED');
   });
 
   it('knows the seven of them', () => {

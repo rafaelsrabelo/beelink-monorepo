@@ -26,6 +26,7 @@ import { CurrentUser } from '../auth/auth.decorators.js';
 import { BillingService } from './billing.service.js';
 import { StoreSubscriptionAnswerResponse, SubscriptionChoiceResponse } from './dto/billing.response.js';
 import { SubscriptionChoiceDto } from './dto/subscription-choice.dto.js';
+import { OpenWhileLocked } from './page-lock.decorators.js';
 import { StoreSubscriptions } from './store-subscriptions.service.js';
 import { SubscriptionSync } from './subscription-sync.service.js';
 
@@ -42,6 +43,8 @@ const writeRateLimit = { max: env.STORE_WRITE_RATE_LIMIT_MAX, timeWindow: env.ST
 @ApiUnauthorizedResponse({ description: 'AUTH_UNAUTHENTICATED' })
 @ApiNotFoundResponse({ description: 'STORE_NOT_FOUND' })
 @ApiForbiddenResponse({ description: 'STORE_FORBIDDEN' })
+// What a locked page still answers its owner: the subscription that opens it again (BEELINK-223).
+@OpenWhileLocked()
 @Controller('stores/:storeSlug/subscription')
 export class BillingController {
   constructor(

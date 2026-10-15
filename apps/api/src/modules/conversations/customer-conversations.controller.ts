@@ -16,6 +16,7 @@ import {
 // App
 import { env } from '../../shared/config/env.js';
 import { Public } from '../auth/auth.decorators.js';
+import { OpenWhileLocked } from '../billing/page-lock.decorators.js';
 import { CustomerAuthGuard, type AuthenticatedCustomer } from '../customers/customer-auth.guard.js';
 import { CurrentCustomer } from '../customers/customer.decorators.js';
 import { OrderNumberPipe } from '../orders/order-number.pipe.js';
@@ -36,6 +37,8 @@ const rateLimit = { max: env.CUSTOMER_MESSAGE_RATE_LIMIT_MAX, timeWindow: env.CU
 @ApiUnauthorizedResponse({ description: "AUTH_UNAUTHENTICATED — no shopper's token, a shopkeeper's, or another shop's" })
 @Public()
 @UseGuards(CustomerAuthGuard)
+// The talk about an order already made goes on at a shop that stopped paying (BEELINK-223).
+@OpenWhileLocked()
 @Controller('stores/:storeSlug/customer')
 export class CustomerConversationsController {
   constructor(private readonly conversations: ConversationsService) {}

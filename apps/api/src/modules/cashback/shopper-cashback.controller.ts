@@ -7,6 +7,7 @@ import type { ShopperCashback } from '@harness-monorepo/contracts';
 
 // App
 import { Public } from '../auth/auth.decorators.js';
+import { OpenWhileLocked } from '../billing/page-lock.decorators.js';
 import { CustomerAuthGuard, type AuthenticatedCustomer } from '../customers/customer-auth.guard.js';
 import { CurrentCustomer } from '../customers/customer.decorators.js';
 import { CashbackService } from './cashback.service.js';
@@ -23,6 +24,8 @@ import { ShopperCashbackResponse } from './dto/cashback.response.js';
 @ApiNotFoundResponse({ description: 'STORE_NOT_FOUND' })
 @Public()
 @UseGuards(CustomerAuthGuard)
+// A customer's own balance, whatever the shop owes bee-link (BEELINK-223).
+@OpenWhileLocked()
 @Controller('stores/:storeSlug/customer/cashback')
 export class ShopperCashbackController {
   constructor(private readonly cashback: CashbackService) {}

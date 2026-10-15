@@ -3,12 +3,14 @@ import { notFound } from "next/navigation"
 import type { Metadata } from "next"
 
 // App
+import { ShopUnavailable } from "@/components/storefront/shop-unavailable"
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
 import { contactCopyOf } from "@/components/storefront/storefront-contact-copy"
 import { StorefrontSections } from "@/components/storefront/storefront-sections"
 import { orderHrefOf } from "@/components/storefront/storefront-links"
 import { getMessages } from "@/lib/locale"
 import { shopShareOf } from "@/lib/shop-share"
+import { unavailableMetadata } from "@/lib/shop-unavailable"
 import { shopperAt } from "@/lib/shopper"
 import { siteOrigin } from "@/lib/site-origin"
 import { landingAt, navigationAt, paymentOptionsAt, shopAt } from "@/lib/storefront-data"
@@ -30,6 +32,7 @@ export async function generateMetadata({ params }: PageProps<"/[slug]/lp/[page]"
   const { slug, page } = await params
   const [store, landing] = await Promise.all([shopAt(slug), landingAt(slug, page)])
 
+  if (store?.unavailable) return unavailableMetadata(store)
   if (!store || !landing) return {}
 
   // The shopkeeper's words for a search result, and the page's own name beside the shop's when they wrote none.
@@ -49,6 +52,8 @@ export default async function LandingPage({ params }: PageProps<"/[slug]/lp/[pag
   const { slug, page } = await params
   const [store, landing] = await Promise.all([shopAt(slug), landingAt(slug, page)])
 
+  // Its page stopped paying (BEELINK-223): the API refuses the landing, and the notice stands in for it.
+  if (store?.unavailable) return <ShopUnavailable store={store} messages={(await getMessages()).ui} />
   if (!store || !landing) notFound()
 
   const [{ ui, web }, { categories, onSale }, paymentOptions] = await Promise.all([

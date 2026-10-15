@@ -4,6 +4,7 @@ import type { Metadata } from "next"
 
 // UI
 // App
+import { ShopUnavailable } from "@/components/storefront/shop-unavailable"
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
 import { StorefrontOffers } from "@/components/storefront/storefront-offers"
 import { contactCopyOf } from "@/components/storefront/storefront-contact-copy"
@@ -11,6 +12,7 @@ import { StorefrontSections } from "@/components/storefront/storefront-sections"
 import { orderHrefOf } from "@/components/storefront/storefront-links"
 import { getMessages } from "@/lib/locale"
 import { shopShareOf } from "@/lib/shop-share"
+import { unavailableMetadata } from "@/lib/shop-unavailable"
 import { shopperAt } from "@/lib/shopper"
 import { siteOrigin } from "@/lib/site-origin"
 import { navigationAt, paymentOptionsAt, shopAt } from "@/lib/storefront-data"
@@ -42,6 +44,7 @@ export async function generateMetadata({ params }: PageProps<"/[slug]">): Promis
   const store = await shopAt(slug)
 
   if (!store) return {}
+  if (store.unavailable) return unavailableMetadata(store)
 
   const home = storefrontRoutes(store).home
   const description = store.description ?? undefined
@@ -62,6 +65,8 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
   // 404 and not an error page: a slug nobody claimed is a page that does not exist, and telling a
   // visitor which shop names are taken is not this page's job.
   if (!store) notFound()
+  // Its page stopped paying (BEELINK-223): nothing of the catalogue is asked for, and nothing is sold.
+  if (store.unavailable) return <ShopUnavailable store={store} messages={(await getMessages()).ui} />
 
   const [{ ui, web }, { categories, onSale }, paymentOptions] = await Promise.all([
     getMessages(),

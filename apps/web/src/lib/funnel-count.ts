@@ -73,10 +73,11 @@ export function createFunnelCounter(send: (step: CountedFunnelStep) => void): Fu
  * Where a shop's funnel is counted: its slug, or null where nothing is. A site that sells nothing
  * has no cart and no orders, so no funnel; and a browser holding a panel session is a shopkeeper
  * looking at a shop, not a visit. That is "a panel is open in this browser", not "this shop's
- * owner" — telling them apart would cost a call to the API on every page of every shop.
+ * owner" — telling them apart would cost a call to the API on every page of every shop. A shop off
+ * the air (BEELINK-223) sells nothing while it is, and the API refuses its steps.
  */
-export function funnelCountedAt(store: Pick<PublicStore, "slug" | "type"> | null, panelSession: boolean): string | null {
-  return store?.type === "ECOMMERCE" && !panelSession ? store.slug : null
+export function funnelCountedAt(store: Pick<PublicStore, "slug" | "type" | "unavailable"> | null, panelSession: boolean): string | null {
+  return store?.type === "ECOMMERCE" && !store.unavailable && !panelSession ? store.slug : null
 }
 
 /** The shop's counting route: under its own path, like everything a visitor's browser asks of a shop. */

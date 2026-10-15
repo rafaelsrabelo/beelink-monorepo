@@ -448,6 +448,8 @@ export interface UiMessages {
     checkoutSignedOut: string
     checkoutTooMany: string
     checkoutFailed: string
+    /** The shop's page stopped paying while the cart was open (BEELINK-223): no order was made, and the page is read again. */
+    checkoutShopUnavailable: string
     /** `{reason}`: a sentence of `couponRefusals`, for an order refused over its coupon. */
     checkoutCouponGone: string
     /** The shopper's cashback moved between the price on screen and the order (BEELINK-244): the cart was priced again. */
@@ -876,6 +878,13 @@ export interface UiMessages {
     /** The list could not be read: never shown as an empty list, which would say there are none. */
     ordersUnavailable: string
     ordersRetry: string
+    /**
+     * A shop window off the air (BEELINK-223): its page is locked for want of payment, which a visitor
+     * is never told. Under the shop's name; the last is the way to a customer's own orders.
+     */
+    unavailableTitle: string
+    unavailableBody: string
+    unavailableOrders: string
     /**
      * The heart (J15): on a card's photo and on the product's page. `{name}` is the product's. Signed
      * out it is a link to sign in, which comes back with the product liked.

@@ -11,6 +11,7 @@ import { StorefrontListingSkeleton } from "@harness-monorepo/ui/blocks/storefron
 import { StorefrontReorderNotice } from "@harness-monorepo/ui/blocks/storefront/storefront-reorder-notice"
 
 // App
+import { ShopUnavailable } from "@/components/storefront/shop-unavailable"
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
 import { StorefrontOffers } from "@/components/storefront/storefront-offers"
 import { StorefrontCartLive } from "@/components/storefront/storefront-cart-live"
@@ -37,9 +38,10 @@ import { ADDRESS_KEY, checkoutAddressesOf, checkoutAddressIdOf, DELIVER_TO_KEY, 
 import { cartInvitationOf, pathWithQuery } from "@/lib/offer-strip"
 import { shopBaseOf } from "@/lib/shop-address"
 import { shopShareOf } from "@/lib/shop-share"
+import { offTheAirAt, unavailableMetadata } from "@/lib/shop-unavailable"
 import { shopperAt } from "@/lib/shopper"
 import { siteOrigin } from "@/lib/site-origin"
-import { catalogueAt, offersAt, paymentOptionsAt } from "@/lib/storefront-data"
+import { catalogueAt, offersAt, paymentOptionsAt, shopAt } from "@/lib/storefront-data"
 import { installmentTermsOf } from "@/lib/storefront-installments"
 import { BACK_KEY, orderNumberOf, paramOf, REORDER_FAILED_KEY, REORDER_TRIMMED_KEY, REORDERED_KEY, storefrontRoutes } from "@/lib/storefront-routes"
 import { canonicalOf, headingOf, isShelf, listingAskOf, placeOf } from "@/lib/storefront-section"
@@ -64,6 +66,8 @@ import { filterCountOf } from "@/lib/storefront-filters"
 
 export async function generateMetadata({ params, searchParams }: PageProps<"/[slug]/[section]">): Promise<Metadata> {
   const { slug, section } = await params
+  const shop = await shopAt(slug)
+  if (shop?.unavailable && offTheAirAt(section, shop.routeWords)) return unavailableMetadata(shop)
   const place = await placeOf(slug, section, await searchParams)
 
   if (!place) return {}
@@ -91,6 +95,9 @@ export async function generateMetadata({ params, searchParams }: PageProps<"/[sl
 export default async function StorefrontSectionPage({ params, searchParams }: PageProps<"/[slug]/[section]">) {
   const { slug, section } = await params
   const query = await searchParams
+  // Its page stopped paying (BEELINK-223): every address that sells is the notice — a customer's own pages are not.
+  const shop = await shopAt(slug)
+  if (shop?.unavailable && offTheAirAt(section, shop.routeWords)) return <ShopUnavailable store={shop} messages={(await getMessages()).ui} />
   const place = await placeOf(slug, section, query)
 
   if (!place) notFound()

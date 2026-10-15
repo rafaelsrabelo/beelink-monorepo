@@ -15,10 +15,11 @@ export interface CheckoutRefusal {
 
 /**
  * The refusals after which the page reads the shop again, because what it read has moved: the
- * shopper's session or record, or the shop's payments. Not the stock: the catalogue the cart reads is
- * cached, and a refresh would draw the same cart — the refusal names the lines instead.
+ * shopper's session or record, or the shop's payments — or the shop itself, off the air since the cart
+ * was drawn (BEELINK-223), whose page read again is the notice. Not the stock: the catalogue the cart
+ * reads is cached, and a refresh would draw the same cart — the refusal names the lines instead.
  */
-const REREAD = new Set(["AUTH_UNAUTHENTICATED", "ORDER_DELIVERY_ADDRESS_MISSING", "ORDER_ADDRESS_NOT_FOUND", "ORDER_PAYMENT_NOT_ACCEPTED"])
+const REREAD = new Set(["AUTH_UNAUTHENTICATED", "ORDER_DELIVERY_ADDRESS_MISSING", "ORDER_ADDRESS_NOT_FOUND", "ORDER_PAYMENT_NOT_ACCEPTED", "STORE_UNAVAILABLE"])
 
 /**
  * The refusals after which the cart is priced again: the coupon, the delivery's fee or the credit it
@@ -116,6 +117,8 @@ export function checkoutRefusalOf({ errorCode, details }: CheckoutRefusal, rows:
       return context.online ? text.checkoutPayerDocumentIssue : text.checkoutRecipientDocumentIssue
     case "AUTH_UNAUTHENTICATED":
       return text.checkoutSignedOut
+    case "STORE_UNAVAILABLE":
+      return text.checkoutShopUnavailable
     case "RATE_LIMITED":
     case "TOO_MANY_REQUESTS":
       return text.checkoutTooMany

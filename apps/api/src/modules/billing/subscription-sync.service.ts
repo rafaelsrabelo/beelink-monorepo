@@ -83,6 +83,7 @@ export class SubscriptionSync {
         data: {
           status: facts.status,
           currentPeriodEndsAt: facts.currentPeriodEndsAt,
+          graceEndsAt: facts.graceEndsAt,
           paymentMethod: facts.paymentMethod,
           cardBrand: facts.cardBrand,
           cardLast4: facts.cardLast4,

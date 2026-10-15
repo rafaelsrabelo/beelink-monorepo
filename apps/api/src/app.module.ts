@@ -26,6 +26,7 @@ import { PanelCountsModule } from './modules/panel-counts/panel-counts.module.js
 import { PromotionsModule } from './modules/promotions/promotions.module.js';
 import { CarrierTrackingModule } from './modules/carrier-tracking/carrier-tracking.module.js';
 import { BillingModule } from './modules/billing/billing.module.js';
+import { PageLockGuard } from './modules/billing/page-lock.guard.js';
 import { CashbackModule } from './modules/cashback/cashback.module.js';
 import { RealtimeModule } from './modules/realtime/realtime.module.js';
 import { ReportsModule } from './modules/reports/reports.module.js';
@@ -93,6 +94,9 @@ export const requestLogOptions = {
   providers: [
     // Every route is closed unless it carries @Public().
     { provide: APP_GUARD, useClass: JwtAuthGuard },
+    // And a page that does not pay closes its routes but its subscription's, a customer's account and
+    // orders (BEELINK-223). After the session's, in this order: it reads who is asking.
+    { provide: APP_GUARD, useClass: PageLockGuard },
   ],
 })
 export class AppModule {}

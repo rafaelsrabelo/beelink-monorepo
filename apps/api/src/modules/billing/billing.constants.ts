@@ -1,5 +1,5 @@
 // Types
-import type { BillingCycle, BillingCycleMonths, BillingDocumentType, BillingErrorCode, SubscriptionPaymentMethod, SubscriptionStatus } from '@harness-monorepo/contracts';
+import type { BillingCycle, BillingCycleMonths, BillingDocumentType, BillingErrorCode, LockChangesAtHeader, PageLockReason, SubscriptionPaymentMethod, SubscriptionStatus } from '@harness-monorepo/contracts';
 import type {
   BillingCycle as BillingCycleRow,
   SubscriptionPaymentMethod as SubscriptionPaymentMethodRow,
@@ -13,6 +13,24 @@ import type {
  * refuses a commit where they do not.
  */
 export const TRIAL_DAYS = 7;
+
+/**
+ * The days a page past due is used as ever before it locks (BEELINK-223), counted from the end of its
+ * paid period — itself the midnight in Brasília closing the due day — so the grace ends at a midnight
+ * too. Enough for a card Asaas charges late, and for a boleto to clear.
+ */
+export const GRACE_DAYS = 7;
+
+/**
+ * How long the shop's public read of a locked page may be kept before it is asked for again
+ * (BEELINK-223): only a payment opens the page, and no clock knows when one comes. As long as the web
+ * keeps any answer: shorter, every visit to a locked shop would cost a call to a limit all the shops'
+ * windows share.
+ */
+export const LOCKED_ANSWER_MS = 60_000;
+
+/** Where the shop's public read says when what it says of the lock may stop holding by the clock alone (BEELINK-223). */
+export const LOCK_CHANGES_AT_HEADER = 'x-lock-changes-at' satisfies LockChangesAtHeader;
 
 /*
   Each closed set below is written once and held to two unions at the same time: the wire's, in
@@ -62,6 +80,8 @@ export const SUBSCRIPTION_PAYMENT_METHODS = Object.keys({
 } satisfies Record<SubscriptionPaymentMethod, true> satisfies Record<SubscriptionPaymentMethodRow, true>) as SubscriptionPaymentMethod[];
 
 export const BILLING_DOCUMENT_TYPES = Object.keys({ CPF: true, CNPJ: true } satisfies Record<BillingDocumentType, true>) as BillingDocumentType[];
+
+export const PAGE_LOCK_REASONS = Object.keys({ TRIAL_EXPIRED: true, SUSPENDED: true, CANCELED: true } satisfies Record<PageLockReason, true>) as PageLockReason[];
 
 /** A name's bounds, in characters as Postgres counts them: the column's width, and no single letter. */
 export const BILLING_NAME_MIN_LENGTH = 2;

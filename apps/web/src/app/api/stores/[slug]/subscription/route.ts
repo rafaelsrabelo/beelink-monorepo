@@ -12,9 +12,9 @@ const pathOf = (slug: string) => `/stores/${encodeURIComponent(slug)}/subscripti
  * invoice waiting to be paid — and whether this deployment charges at all. Read from the bee-link API
  * alone, which asks Asaas nothing for it.
  *
- * Nothing a visitor is served depends on it yet, so neither this nor the two below drop the shop
- * window's cache. The day a page that stops paying stops being served (BEELINK-223), a write here that
- * moves it does.
+ * A page that stops paying stops being served (BEELINK-223), and neither this nor the choice below
+ * moves that: a choice never changes where the page stands. The check does, when it reads a payment,
+ * and it is the one that drops the shop window's cache (`./check/route.ts`).
  */
 export async function GET(request: NextRequest, context: RouteContext<"/api/stores/[slug]/subscription">): Promise<NextResponse> {
   const refused = refuseCrossOrigin(request)

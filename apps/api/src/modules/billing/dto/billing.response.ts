@@ -8,6 +8,7 @@ import type {
   BillingCycle,
   BillingCycleMonths,
   BillingDocumentType,
+  PageLockReason,
   Plan,
   PlanCatalog,
   PlanCycle,
@@ -21,7 +22,7 @@ import type {
 } from '@harness-monorepo/contracts';
 
 // App
-import { BILLING_CYCLES, BILLING_DOCUMENT_TYPES, CYCLE_MONTHS, SUBSCRIPTION_PAYMENT_METHODS, SUBSCRIPTION_STATUSES } from '../billing.constants.js';
+import { BILLING_CYCLES, BILLING_DOCUMENT_TYPES, CYCLE_MONTHS, PAGE_LOCK_REASONS, SUBSCRIPTION_PAYMENT_METHODS, SUBSCRIPTION_STATUSES } from '../billing.constants.js';
 
 /** Documents the shapes for Swagger; the wire types themselves live in packages/contracts. */
 
@@ -70,6 +71,8 @@ class StoreSubscriptionResponse implements StoreSubscription {
   @ApiProperty({ enum: SUBSCRIPTION_PAYMENT_METHODS, nullable: true, type: String }) paymentMethod!: SubscriptionPaymentMethod | null;
   @ApiProperty({ nullable: true, type: String, description: "Asaas's page for the charge waiting to be paid." }) invoiceUrl!: string | null;
   @ApiProperty({ nullable: true, type: SubscriptionCardResponse, description: 'All that is kept of a card.' }) card!: SubscriptionCardResponse | null;
+  @ApiProperty({ nullable: true, type: String, format: 'date-time', description: 'The first instant a page past due is locked: seven days after its paid period. Null unless past due or suspended.' }) graceEndsAt!: string | null;
+  @ApiProperty({ enum: PAGE_LOCK_REASONS, nullable: true, type: String, description: 'Why the page is locked now, or null while it is open — always null where nothing locks.' }) lock!: PageLockReason | null;
 }
 
 export class StoreSubscriptionAnswerResponse implements StoreSubscriptionAnswer {

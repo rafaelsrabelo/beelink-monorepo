@@ -1,5 +1,5 @@
 // Nest
-import { Body, Controller, Get, Param, Post, Put, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, Res, UseInterceptors } from '@nestjs/common';
 import { RouteConfig } from '@nestjs/platform-fastify';
 import {
   ApiBearerAuth,
@@ -14,13 +14,19 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 
+// Libs
+import type { FastifyReply } from 'fastify';
+
 // Types
 import type { AuthenticatedUser } from '../auth/auth.decorators.js';
+import type { LockedPage } from '../billing/page-locks.service.js';
 
 // App
 import { PricesChangeInterceptor } from '../promotions/prices-change.interceptor.js';
 import { env } from '../../shared/config/env.js';
 import { CurrentUser, Public } from '../auth/auth.decorators.js';
+import { LOCK_CHANGES_AT_HEADER } from '../billing/billing.constants.js';
+import { AnswersLockedPage, PageLockOf } from '../billing/page-lock.decorators.js';
 import { StoreColorsDto } from './dto/store-fields.dto.js';
 import { CreateStoreDto, UpdateStoreDto } from './dto/store.dto.js';
 import { PublicStoreResponse, StoreResponse } from './dto/store.response.js';
@@ -68,16 +74,23 @@ export class StoresController {
     return this.stores.mine(current.id);
   }
 
+  /**
+   * A locked page's shop window (BEELINK-223) is answered here and not refused: a customer reaches their
+   * orders through it. `x-lock-changes-at` says, where pages lock, when this answer may stop holding by
+   * the clock alone — so a window is never served open past the instant its page locks.
+   */
   @Get(':slug/public')
   @Public()
+  @AnswersLockedPage()
   @UseInterceptors(PricesChangeInterceptor)
   @RouteConfig({ rateLimit: STOREFRONT_RATE_LIMIT })
-  @ApiOperation({ summary: 'The shop window — everything an anonymous visitor is served, and no more' })
+  @ApiOperation({ summary: 'The shop window — everything an anonymous visitor is served, and no more. A page locked for want of payment answers who the shop is and nothing it sells, with `unavailable: true`' })
   @ApiOkResponse({ type: PublicStoreResponse })
   @ApiNotFoundResponse({ description: 'STORE_NOT_FOUND' })
   @ApiTooManyRequestsResponse({ description: 'RATE_LIMITED' })
-  publicBySlug(@Param('slug') slug: string): Promise<PublicStoreResponse> {
-    return this.stores.publicBySlug(slug);
+  publicBySlug(@Param('slug') slug: string, @PageLockOf() page: LockedPage | undefined, @Res({ passthrough: true }) reply: FastifyReply): Promise<PublicStoreResponse> {
+    if (page?.changesAt) void reply.header(LOCK_CHANGES_AT_HEADER, page.changesAt.toISOString());
+    return this.stores.publicBySlug(slug, Boolean(page?.lock));
   }
 
   @Get(':slug')

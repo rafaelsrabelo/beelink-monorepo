@@ -179,6 +179,9 @@ describe("what a page owes bee-link: the plans, and each page's subscription (BE
           paymentMethod: null,
           invoiceUrl: null,
           card: null,
+          // Nothing locks where nothing is charged (BEELINK-223), and a page in trial owes no grace.
+          graceEndsAt: null,
+          lock: null,
         },
       });
     });

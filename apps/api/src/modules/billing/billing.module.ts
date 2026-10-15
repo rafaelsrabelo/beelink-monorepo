@@ -10,6 +10,7 @@ import { BillingRoutine } from './billing-routine.js';
 import { BillingWebhookController } from './billing-webhook.controller.js';
 import { BillingController } from './billing.controller.js';
 import { BillingService } from './billing.service.js';
+import { PageLocks } from './page-locks.service.js';
 import { PlansController } from './plans.controller.js';
 import { PlatformAsaas } from './platform-asaas.client.js';
 import { platformAsaasEnvironment, platformAsaasOfThisDeployment } from './platform-asaas.config.js';
@@ -40,8 +41,11 @@ import { SubscriptionSync } from './subscription-sync.service.js';
     BillingEvents,
     PlatformWebhookKeeper,
     BillingRoutine,
+    PageLocks,
     { provide: PlatformAsaas, useFactory: platformAsaasOfThisDeployment },
   ],
+  // The lock is asked on every route of a page, by a guard the application registers beside the session's.
+  exports: [PageLocks],
 })
 export class BillingModule implements OnModuleInit {
   private readonly logger = new Logger(BillingModule.name);

@@ -18,6 +18,7 @@ import type { CustomerPendingReview, CustomerReview } from '@harness-monorepo/co
 
 // App
 import { Public } from '../auth/auth.decorators.js';
+import { OpenWhileLocked } from '../billing/page-lock.decorators.js';
 import { CustomerAuthGuard, type AuthenticatedCustomer } from '../customers/customer-auth.guard.js';
 import { CurrentCustomer } from '../customers/customer.decorators.js';
 import { CustomerReviewsService } from './customer-reviews.service.js';
@@ -34,6 +35,8 @@ import { CustomerPendingReviewResponse, CustomerReviewResponse } from './dto/rev
 @ApiNotFoundResponse({ description: 'STORE_NOT_FOUND' })
 @Public()
 @UseGuards(CustomerAuthGuard)
+// A customer's word on what they received, whatever the shop owes bee-link (BEELINK-223).
+@OpenWhileLocked()
 @Controller('stores/:storeSlug/customer/reviews')
 export class CustomerReviewsController {
   constructor(private readonly reviews: CustomerReviewsService) {}

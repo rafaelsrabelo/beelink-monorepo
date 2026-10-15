@@ -41,6 +41,7 @@ const page = (change: Partial<PageStanding> = {}): PageStanding => ({
   cycle: 'MONTHLY',
   firstDueDate: new Date('2026-10-14T00:00:00.000Z'),
   currentPeriodEndsAt: null,
+  graceEndsAt: null,
   paymentMethod: null,
   cardBrand: null,
   cardLast4: null,
@@ -237,6 +238,42 @@ describe("what a read of Asaas comes to for a page's subscription (BEELINK-221)"
 
     it('offers no invoice for a charge in risk analysis: it was paid, and nobody knows yet whether it took', () => {
       expect(factsOf(page(), standing, [charge('AWAITING_RISK_ANALYSIS', '2026-10-14')], noonOf('2026-10-14'))).toMatchObject({ status: 'TRIALING', invoiceUrl: null });
+    });
+  });
+
+  describe("a page's grace, written with its standing (BEELINK-223)", () => {
+    const owing = [charge('RECEIVED', '2026-10-14'), charge('OVERDUE', '2026-11-14')];
+
+    it('is seven days after the paid period, written as the page is found past due', () => {
+      expect(factsOf(page({ status: 'ACTIVE' }), standing, owing, closeOf('2026-11-14'))).toMatchObject({ status: 'PAST_DUE', graceEndsAt: closeOf('2026-11-21') });
+    });
+
+    it('suspends the page from the instant it ends, as it is read, and keeps when it ended', () => {
+      expect(factsOf(page({ status: 'PAST_DUE' }), standing, owing, new Date(closeOf('2026-11-21').getTime() - 1))).toMatchObject({ status: 'PAST_DUE', graceEndsAt: closeOf('2026-11-21') });
+      expect(factsOf(page({ status: 'PAST_DUE' }), standing, owing, closeOf('2026-11-21'))).toMatchObject({ status: 'SUSPENDED', graceEndsAt: closeOf('2026-11-21') });
+      expect(factsOf(page({ status: 'SUSPENDED', graceEndsAt: closeOf('2026-11-21') }), standing, owing, noonOf('2026-12-01'))).toMatchObject({ status: 'SUSPENDED', graceEndsAt: closeOf('2026-11-21') });
+    });
+
+    it('with no period to count from — its only payment contested — counts from the day it was found, and keeps that day', () => {
+      const contested = [charge('CHARGEBACK_REQUESTED', '2026-10-14')];
+
+      expect(factsOf(page({ status: 'ACTIVE' }), standing, contested, noonOf('2026-10-20'))).toMatchObject({ status: 'PAST_DUE', currentPeriodEndsAt: null, graceEndsAt: closeOf('2026-10-27') });
+      expect(factsOf(page({ status: 'PAST_DUE', graceEndsAt: closeOf('2026-10-27') }), standing, contested, noonOf('2026-10-25'))).toMatchObject({ status: 'PAST_DUE', graceEndsAt: closeOf('2026-10-27') });
+    });
+
+    it('is never moved earlier once written', () => {
+      expect(factsOf(page({ status: 'PAST_DUE', graceEndsAt: closeOf('2026-11-25') }), standing, owing, noonOf('2026-11-22'))).toMatchObject({ status: 'PAST_DUE', graceEndsAt: closeOf('2026-11-25') });
+    });
+
+    it('is gone once the page pays, or its subscription ends', () => {
+      const paid = [charge('RECEIVED', '2026-10-14'), charge('RECEIVED', '2026-11-14')];
+      expect(factsOf(page({ status: 'SUSPENDED', graceEndsAt: closeOf('2026-11-21') }), standing, paid, noonOf('2026-11-30'))).toMatchObject({ status: 'ACTIVE', graceEndsAt: null });
+      expect(factsOf(page({ status: 'PAST_DUE', graceEndsAt: closeOf('2026-11-21') }), { ...standing, deleted: true }, owing, noonOf('2026-11-18'))).toMatchObject({ status: 'CANCELED', graceEndsAt: null });
+    });
+
+    it('is no part of a page in trial or paid for', () => {
+      expect(factsOf(page(), standing, [charge('PENDING', '2026-10-14')], noonOf('2026-10-14')).graceEndsAt).toBeNull();
+      expect(factsOf(page(), standing, [charge('RECEIVED', '2026-10-14')], noonOf('2026-10-14')).graceEndsAt).toBeNull();
     });
   });
 

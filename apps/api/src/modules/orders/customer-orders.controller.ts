@@ -20,6 +20,7 @@ import type { CustomerOrder, CustomerOrderPage, CustomerReorder, OrderQuote } fr
 // App
 import { env } from '../../shared/config/env.js';
 import { Public } from '../auth/auth.decorators.js';
+import { OpenWhileLocked } from '../billing/page-lock.decorators.js';
 import { CustomerAuthGuard, type AuthenticatedCustomer } from '../customers/customer-auth.guard.js';
 import { CurrentCustomer } from '../customers/customer.decorators.js';
 import { CustomerOrdersService } from './customer-orders.service.js';
@@ -42,6 +43,9 @@ const quoteRateLimit = { max: env.CUSTOMER_QUOTE_RATE_LIMIT_MAX, timeWindow: env
  * A shopper's orders at a shop — their own, including those the shop registered for them. `@Public()`
  * to the global guard, which refuses a shopper's token by design, and closed by `CustomerAuthGuard`,
  * which refuses a shopkeeper's.
+ *
+ * At a shop whose page stopped paying (BEELINK-223) the customer keeps reading and cancelling what
+ * they already ordered; pricing, reordering and ordering anew are its shop window's, which is closed.
  */
 @ApiTags('customers')
 @ApiBearerAuth()
@@ -57,6 +61,7 @@ export class CustomerOrdersController {
   ) {}
 
   @Get()
+  @OpenWhileLocked()
   @ApiOperation({ summary: "The shopper's orders at this shop, most recent first, with the count of each tab" })
   @ApiOkResponse({ type: CustomerOrderPageResponse })
   list(
@@ -68,6 +73,7 @@ export class CustomerOrdersController {
   }
 
   @Get(':number')
+  @OpenWhileLocked()
   @ApiOperation({ summary: "One of the shopper's orders: its lines, totals, address, payment and timeline" })
   @ApiOkResponse({ type: CustomerOrderResponse })
   get(
@@ -90,6 +96,7 @@ export class CustomerOrdersController {
   }
 
   @Post(':number/cancel')
+  @OpenWhileLocked()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Cancel an order the shop has not accepted yet; its stock goes back' })
   @ApiOkResponse({ type: CustomerOrderResponse })

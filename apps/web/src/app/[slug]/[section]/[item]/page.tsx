@@ -18,6 +18,7 @@ import { ORDER_VARIANT_MARK } from "@harness-monorepo/ui/lib/variant-choice"
 
 // App
 import { AccountTabPage, accountTabMetadata, isAccountSegment } from "@/components/storefront/account/account-tab-page"
+import { ShopUnavailable } from "@/components/storefront/shop-unavailable"
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
 import { StorefrontOffers } from "@/components/storefront/storefront-offers"
 import { ProductReviews } from "@/components/storefront/product-reviews"
@@ -27,6 +28,7 @@ import { getMessages } from "@/lib/locale"
 import { jsonLdText, productJsonLd } from "@/lib/product-json-ld"
 import { sharedAddressOf, sharedDescriptionOf, sharedPhotoOf, sharedVariantOf } from "@/lib/product-share"
 import { shopShareOf } from "@/lib/shop-share"
+import { unavailableMetadata } from "@/lib/shop-unavailable"
 import { shopperAt } from "@/lib/shopper"
 import { siteOrigin } from "@/lib/site-origin"
 import { finishesOnWhatsAppOf } from "@/lib/checkout-payment"
@@ -66,6 +68,7 @@ export async function generateMetadata({ params, searchParams }: PageProps<"/[sl
   const shop = await shopAt(slug)
   if (!shop) return {}
   if (isAccountSegment(section, shop.routeWords)) return accountTabMetadata(slug, section, item)
+  if (shop.unavailable) return unavailableMetadata(shop)
   const loaded = await load(shop, slug, section, item)
 
   if (!loaded) return {}
@@ -100,6 +103,8 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
   const shop = await shopAt(slug)
   if (!shop) notFound()
   if (isAccountSegment(section, shop.routeWords)) return <AccountTabPage slug={slug} section={section} item={item} query={query} />
+  // Its page stopped paying (BEELINK-223): no product is shown, nor asked for.
+  if (shop.unavailable) return <ShopUnavailable store={shop} messages={(await getMessages()).ui} />
   const loaded = await load(shop, slug, section, item)
 
   if (!loaded) notFound()

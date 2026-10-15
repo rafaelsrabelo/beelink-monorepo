@@ -10,6 +10,7 @@ import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoresService } from '../stores/stores.service.js';
 import { TRIAL_DAYS } from './billing.constants.js';
 import { toPlan, toStoreSubscription } from './billing.mapper.js';
+import { PageLocks } from './page-locks.service.js';
 
 /**
  * What a page owes bee-link, as it is read (BEELINK-219): the plans on sale, and one page's
@@ -22,6 +23,7 @@ export class BillingService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly stores: StoresService,
+    private readonly locks: PageLocks,
   ) {}
 
   /** The plans on sale, cheapest by the month first; the slug settles a tie, so the order never depends on the database's mood. */
@@ -45,6 +47,6 @@ export class BillingService {
       include: { plan: { select: { id: true, slug: true, name: true } } },
     });
 
-    return { billingEnforced: env.BILLING_ENFORCED, subscription: row ? toStoreSubscription(row, new Date()) : null };
+    return { billingEnforced: env.BILLING_ENFORCED, subscription: row ? toStoreSubscription(row, new Date(), this.locks.engaged) : null };
   }
 }
