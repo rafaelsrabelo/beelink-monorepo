@@ -229,3 +229,179 @@ O que não pode acontecer, em ordem de gravidade:
    `BILLING_SUBSCRIPTION_PAID` em toda escolha (o S3 não remove nada): a tela diz que há um pagamento
    em processamento e não tem como resolver sozinha. Precisa de alguém removendo a assinatura no Asaas
    (S12 ou à mão).
+
+---
+
+## Como ficou (acréscimo de 15/10/2026, depois do código)
+
+### O que mudou em relação ao plano acima
+
+1. **O cinza dos textos secundários.** O axe, no navegador, mediu `muted-foreground` (#737373) a 4,42:1
+   sobre o fundo do painel (#f7f7f7) e a 4,27:1 sobre o cartão do ciclo escolhido. Os textos da tela
+   que ficam sobre esses fundos usam `shell-muted` (#616161), o cinza que o shell já tinha para isso.
+   **O link "voltar" do `IntegrationFrame` também**, e por isso ele fica um pouco mais escuro nas
+   páginas de integração e na do domínio, que tinham o mesmo problema.
+2. **Onde nada pode ser comprado, o formulário não pede nem diz nada de pagamento** (visto na tela de
+   verdade com a cobrança ligada e sem a chave: ela pedia nome e CPF que não iriam a lugar nenhum).
+   Ficam os ciclos, só para informar, e a frase. Um catálogo sem o plano à venda, que antes fazia o
+   formulário sumir junto com a frase, agora mostra a frase.
+3. **O estado da tela guarda só que ela abriu uma fatura** (e se o valor mudou). Qual fatura é sempre
+   a da assinatura, como o TanStack Query a guarda: a regra de `docs/ai-rules/state-and-data.md` (nada
+   que veio da API em `useState`), achada no `delivery-check`.
+4. **Só o cartão de crédito renova sozinho.** O de débito, como Pix e boleto, gera uma fatura a cada
+   renovação: o resumo da página paga diz isso, e a fatura da renovação só é oferecida para quem não
+   paga com crédito.
+5. **A leitura da assinatura não é refeita ao voltar para a aba**; quem olha nessa hora é a
+   conferência (`POST …/check`), que pergunta ao Asaas primeiro. As duas juntas, um `GET` começado
+   antes de a conferência gravar podia chegar depois e devolver a página paga a "não paga".
+6. **Os links com cara de botão juntam as classes com `cn()`**: `buttonVariants({ className })` não
+   resolve conflito, e o padding de um deles não valia.
+7. `docs/product/README.md` ganhou a regra que a tela diz: quem paga durante o teste perde os dias que
+   faltavam.
+
+### O que foi rodado
+
+Postgres 18.6 (`beelink-domain-db`, porta 5442) e Mailpit (1027/8027).
+
+1. **`packages/ui`:** `tsc --noEmit` sem erro; `oxlint` com 0 erros (os dois avisos antigos, em
+   arquivos que este ticket não toca); a suíte de unidade inteira no último commit, **379 arquivos e
+   2.921 testes, verdes**. Os blocos novos têm 72 testes (com axe); os da landing (16 arquivos, 274
+   testes) passaram depois de a conta dos valores virar `periodFiguresOf`.
+2. **`apps/web`:** `type-check` (`next typegen` e `tsc`) sem erro; `eslint` com 0 erros (8 avisos
+   antigos em 4 arquivos que este ticket não toca); a suíte de unidade inteira no último commit,
+   **332 arquivos e 2.964 testes, verdes**. Os novos: a tela (22), os hooks (15), as contas da tela
+   (18), as datas (13) e as rotas do BFF (10).
+3. **`apps/api`** (só comentários mudaram): `tsc --noEmit` sem erro, `oxlint` com os mesmos dois avisos
+   antigos, e `test/billing.e2e-spec.ts` (o spec que executa o `plans.sql`), 18 testes, verde.
+4. **O e2e novo (`e2e/subscribe.spec.ts`), só ele**, contra o `next dev` na 3200 e a API na 3201, com
+   uma configuração do Playwright temporária (não entrou no commit): 2 testes, verdes, em três rodadas
+   (depois da correção de contraste, da do formulário bloqueado e da última refatoração). A primeira
+   rodada achou o problema de contraste do item 1.
+5. **`pnpm arch-gates` e `pnpm docs-gate`** verdes em todos os commits. A conferência nova
+   (`web/landing-prices-match-api`) ficou vermelha com cada um de cinco erros plantados — um preço da
+   landing, um do seed, `TRIAL_DAYS`, o mensal da Beelia e o arquivo da landing com outro formato — e
+   verde de novo com cada um desfeito.
+6. **Os testes postos à prova com 26 erros plantados**, um por vez, cada um desfeito em seguida (árvore
+   limpa conferida no fim): **25 pegos de primeira**. O que passou — a regra do dígito do CNPJ quando o
+   resto é menor que 2 — ganhou o teste que faltava (um CNPJ com dígito zero), que depois falhou com o
+   erro plantado. Entre os 26: oferecer compra a uma página isenta; a economia contra o ciclo errado; a
+   data de renovação no ciclo de uma fatura em aberto; a fatura de renovação de quem paga com cartão de
+   crédito; perguntar a cada 5 s; perguntar para sempre; não recuar ao último dia do mês; o dia em UTC
+   e não em Brasília; não guardar a escolha como primeira conferência; perguntar com a aba escondida;
+   seguir perguntando depois do `429`; não reler a página que mudou; abrir a fatura com o valor mudado;
+   abrir a fatura com `opener`; ignorar `BILLING_ACCOUNT_REQUIRED`; ler o catálogo onde nada se vende;
+   ir ao painel sem os 4 s; não voltar ao painel com a cobrança desligada; não conferir o documento;
+   recusar campos que não são mais pedidos; pedir dados com a compra bloqueada; não avisar a troca de
+   ciclo; não dizer os dias de teste perdidos; dizer que o débito renova sozinho; não repassar o
+   endereço do lojista à API.
+
+### Na tela, de verdade (15/10/2026, das 01:12 às 01:22 de Brasília)
+
+A API na 3201 (`nest start`, banco `harness_landing`) com `BILLING_ENFORCED=true` e a chave de sandbox só
+no ambiente do processo; o web na 3200 (`next dev`). Uma conta "Teste S11 Lojista" criada pela tela de
+cadastro (e-mail de teste, confirmado pelo Mailpit) e quatro páginas "Teste S11 …". Tudo abaixo foi
+**visto**.
+
+| Página | O que aconteceu | Como terminou |
+|---|---|---|
+| Em teste (7 dias) | Aberta a 1920, 1280 e 390 px (a 390, sem rolagem horizontal). **Só com o teclado**, a partir do "Início": Tab até o rádio marcado (Mensal), seta para a direita (Semestral), Tab para o nome, digitado, Tab para o CPF (inventado, válido; a máscara escreveu `111.444.777-35`), Tab até "Assinar e pagar R$ 323,40", Enter. A tela gravou a conta (`PUT /api/billing/account`, 1,4 s; o cliente nasceu no Asaas), escolheu o ciclo (`PUT …/subscription`, 1,5 s) e **a fatura abriu em outra aba**: R$ 323,40, vencimento 15/10/2026, `Plano Beelink semestral — página "Teste S11 Página Em Teste"`. Fechada a aba sem pagar, a tela mostrava o link da mesma fatura; recarregada, abriu com o semestral marcado, o aviso da fatura em aberto, "Renova contando do vencimento da fatura em aberto" e "Continuar o pagamento", que devolveu a mesma fatura (`PUT`, 751 ms). Paga pela ação de sandbox (`RECEIVED`, `BOLETO`): a tela achou o pagamento na conferência seguinte do relógio, disse "Pagamento confirmado" e foi ao painel da página 4 s depois | `ACTIVE`, `SEMIANNUAL`, 32340, `currentPeriodEndsAt` 2027-04-16 03:00 UTC (o fim de 15/04/2027 em Brasília), `BOLETO`, sem fatura. A tela, aberta de novo: "Em dia", "Paga até 15/04/2027", "Boleto", "Cada renovação gera uma fatura nova para pagar" |
+| Teste vencido (fim do teste posto em 13/10 no banco) | "Teste encerrado", "O teste grátis terminou em 13/10/2026", sem a frase dos dias perdidos, e a conta já com dados ("Cobrança em nome de Teste S11 Lojista, CPF ***.444.777-**"). Mensal, com o mouse: a fatura de R$ 59,90 abriu em outra aba; paga pela ação de sandbox; "Pagamento confirmado" e o painel | `ACTIVE`, `MONTHLY`, 5990, `currentPeriodEndsAt` 2026-11-16 03:00 UTC |
+| Captura | Anual, R$ 574,80, paga pela ação de sandbox: "Pagamento confirmado. Sua página está em dia até 15/10/2027." Depois, posta `EXEMPT` no banco: a rota levou ao painel da página, pedindo só a assinatura (nem o catálogo nem a conta) | `EXEMPT` |
+| Sem chave | Com a API reiniciada com `BILLING_ENFORCED=true` e **sem a chave**: "A assinatura está indisponível no momento", os ciclos só para informar, nenhum campo, nenhum botão (depois do item 2 de "O que mudou"). Com a API reiniciada com a cobrança desligada: a rota levou ao painel da página, que continua como hoje | `TRIALING` |
+
+**A fatura abriu em outra aba nas quatro escolhas** (Chromium, pelo navegador do Playwright).
+
+**Os logs**, lidos no fim: a chave 0 vezes (inteira, sem o prefixo, um pedaço do meio, o começo), o CPF
+0 vezes (com e sem pontuação), o nome e o e-mail da conta 0 vezes, `creditCardToken` 0 vezes. As
+únicas linhas de erro são as duas respostas `503 BILLING_UNAVAILABLE` da execução sem chave, que o filtro
+de exceções da API escreve como erro (risco 8 do S10).
+
+**Limpeza:** as três assinaturas criadas estão `INACTIVE` e `deleted: true` no Asaas, e o cliente
+`cus_000009487496` removido; a busca por "Teste S11" no nome responde 0. A assinatura do S8
+(`teste-s8-sub-amanha-ok`) não foi tocada. No banco: a conta de teste, as quatro páginas e as contas e
+páginas que os e2e criaram (`e2e-assinar-…`, `assinar-…`) apagadas; nenhuma linha órfã. A API e o web
+foram encerrados, `pgrep -fl "worktrees/landing"` respondeu vazio, e o `apps/web/.next` foi apagado.
+
+**Uma observação sobre as capturas:** a primeira captura depois de uma navegação, no navegador do
+Playwright, às vezes devolvia um quadro antigo (o esqueleto, ou o estado anterior), embora o texto
+esperado já estivesse na página. O log do web mostra um único pedido da página nesses casos: não houve
+recarga. As capturas entregues foram refeitas e conferidas uma a uma.
+
+### O que não foi rodado
+
+- `pnpm ci-check`, `turbo` em todos os workspaces, `next build`, o Storybook (nem `build-storybook`), a
+  suíte Playwright inteira e as suítes de unidade e e2e inteiras da API: o briefing proíbe nesta
+  máquina. Ficam para o push.
+- **O e2e novo contra o app construído** (`next start`), que é como o CI o roda. Rodou só contra o
+  `next dev`.
+- **Um pagamento de cartão na fatura do Asaas**: os três foram pela ação de sandbox, que simula um
+  boleto. O cartão (bandeira e 4 dígitos) no resumo da página paga só foi visto nos testes e na story.
+- **A renovação devida (`PAST_DUE`, `SUSPENDED`), a fatura da renovação de Pix e o valor que mudou
+  entre a tela e o clique**: só nos testes e nas stories. A cobrança na API não é avançada no tempo
+  pelo sandbox.
+- **O webhook** levando a página a `ACTIVE`: aqui não há webhook (o sandbox não alcança esta máquina);
+  foi a conferência da tela.
+- Outros navegadores (Safari, Firefox) e o bloqueio de aba de cada um; um leitor de tela de verdade;
+  a tela em inglês fora dos testes.
+- Nada em homologação nem em produção.
+
+### O que o S5 (BEELINK-223, a trava) precisa saber
+
+- **A tela chama só as rotas de cobrança:** `GET` e `PUT /stores/:slug/subscription`,
+  `POST /stores/:slug/subscription/check`, `GET /billing/plans` e `GET`/`PUT /billing/account`. Nada mais
+  da página (nem `GET /stores/:slug`): basta mantê-las abertas numa página travada, como o briefing do
+  S5 já diz.
+- **A tela mora dentro do shell do painel** (`(admin)`), e o shell pede, em toda página
+  `/admin/<slug>/…`: `GET /stores/mine`, `GET /stores/:slug/panel-counts`, as duas leituras do sino
+  (`/stores/:slug/orders?…`, `/stores/:slug/conversations?filter=UNREAD`) e
+  `POST /stores/:slug/realtime/ticket`. Numa página travada essas vão responder o erro da trava; o
+  `QueryClient` só leva à entrada com `AUTH_UNAUTHENTICATED`, então nada redireciona, mas cada leitura
+  tenta 3 vezes por padrão. Vale o S5 ou o S14 decidir o que o shell faz com elas.
+- **O que a tela já faz por situação:** `TRIAL_EXPIRED` e `CANCELED` oferecem os ciclos; `SUSPENDED` e
+  `PAST_DUE` oferecem a fatura devida (e, sem fatura, "Verificar de novo"); `ACTIVE` mostra o resumo.
+  Ao ver `ACTIVE` depois de abrir uma fatura, a tela vai ao painel da página em 4 s: **a trava precisa
+  sair na mesma leitura**, sem esperar a rotina.
+- **A vitrine:** nenhuma rota de cobrança do web derruba o cache da vitrine (`revalidateStore`), porque
+  hoje nada que o visitante vê depende da situação da página. Se a vitrine travada for servida do
+  cache, o `PUT` e o `check` que mudam a situação precisam passar a derrubá-lo (há um comentário em
+  `apps/web/src/app/api/stores/[slug]/subscription/route.ts`).
+
+### O que o S6 (BEELINK-224, o cupom) precisa saber
+
+- **O campo do cupom entra no bloco `SubscriptionCheckout`** (`packages/ui/src/blocks/billing/`), ou num
+  bloco irmão com o próprio botão, já que o cupom não escolhe ciclo. As frases vão em
+  `subscription.*` dos dois dicionários da UI; os erros, em `errors` do web, como os `BILLING_*`.
+- **A situação na tela vem de `subscribeViewOf`** (`apps/web/src/lib/subscribe-view.ts`): uma página no
+  mês grátis precisa de um caso lá (e no `SubscriptionStanding`, a frase "Grátis até …"). Hoje
+  `freePeriodEndsAt` não é lido pela tela.
+- Quando o cupom for aceito, a leitura da assinatura deve ser escrita no cache de
+  `billingKeys.subscription(slug)`, como a escolha do ciclo faz.
+
+### O que o S2 e o S14 precisam saber
+
+- **O endereço é `subscribePageOf(slug)`** (`apps/web/src/lib/subscribe-view.ts`):
+  `/admin/<slug>/subscribe`. Não há link no menu.
+- A rota leva de volta ao painel quando a cobrança está desligada, a página é isenta ou não tem
+  assinatura; um card ou aviso que só aparece com a cobrança ligada nunca leva a um lugar vazio.
+
+### O que o S16 (os textos) precisa saber
+
+- As frases da tela estão em `packages/ui/src/locales/{pt-BR,en}.ts` (`subscription.*`) e as dos erros
+  em `apps/web/src/locales/{pt-BR,en}.ts` (`errors.BILLING_*`). Nenhuma traz valor, dia ou número: os
+  valores entram por `{placeholder}`.
+- A frase de cancelar diz o que é verdade hoje ("fale com o suporte da Beelink"); muda quando o S12
+  existir.
+- **Pendência de antes de ligar a cobrança em produção: a política de privacidade não cita o CPF/CNPJ**
+  guardado para a cobrança (decisão 26).
+
+### Riscos, além dos de cima
+
+6. **O e2e do web responde as rotas de cobrança no navegador.** O caminho de verdade (BFF → API →
+   Asaas) está coberto pelos testes de unidade das rotas, pelos e2e da API e pela execução no sandbox
+   acima, não pelo Playwright do CI.
+7. **Um teste antigo do `packages/ui` é instável nesta máquina:** `customer-duplicates.test.tsx`
+   ("asks before merging…") espera o foco no "Cancelar" logo depois de abrir o diálogo. Falhou em 5
+   rodadas (inclusive com o `packages/ui/src` do commit de partida, `ddde173f`) e passou na última
+   suíte inteira. Não é deste ticket e não foi mexido; se falhar no CI, não é por este PR.
+8. **O link "voltar" das páginas de integração e de domínio ficou mais escuro** (item 1 de "O que
+   mudou").
