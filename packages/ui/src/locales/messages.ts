@@ -885,6 +885,9 @@ export interface UiMessages {
     unavailableTitle: string
     unavailableBody: string
     unavailableOrders: string
+    /** The same notice at a site, which takes no orders (BEELINK-290). */
+    unavailableSiteTitle: string
+    unavailableSiteBody: string
     /**
      * The heart (J15): on a card's photo and on the product's page. `{name}` is the product's. Signed
      * out it is a link to sign in, which comes back with the product liked.

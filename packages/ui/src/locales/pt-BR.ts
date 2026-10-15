@@ -685,6 +685,8 @@ export const ptBR: UiMessages = {
     unavailableTitle: "Loja indisponível no momento",
     unavailableBody: "Esta loja não está recebendo pedidos agora. Volte mais tarde.",
     unavailableOrders: "Já comprou aqui? Veja seus pedidos",
+    unavailableSiteTitle: "Site indisponível no momento",
+    unavailableSiteBody: "Este site está fora do ar agora. Volte mais tarde.",
     favoriteToggle: "Curtir {name}",
     favoriteSignIn: "Entre para curtir {name}",
     favoriteAddText: "Adicionar aos favoritos",

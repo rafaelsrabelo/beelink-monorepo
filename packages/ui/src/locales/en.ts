@@ -684,6 +684,8 @@ export const en: UiMessages = {
     unavailableTitle: "Shop unavailable right now",
     unavailableBody: "This shop is not taking orders right now. Come back later.",
     unavailableOrders: "Bought here before? See your orders",
+    unavailableSiteTitle: "Site unavailable right now",
+    unavailableSiteBody: "This site is offline right now. Come back later.",
     favoriteToggle: "Like {name}",
     favoriteSignIn: "Sign in to like {name}",
     favoriteAddText: "Add to favourites",
