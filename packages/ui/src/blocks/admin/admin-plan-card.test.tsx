@@ -69,8 +69,8 @@ describe("AdminPlanCard (BEELINK-220)", () => {
     expect(screen.getByRole("link")).toHaveClass("bg-shell-surface")
   })
 
-  // The whole point of `lg:sr-only`: jsdom lays nothing out, so what is asserted is the name, which a
-  // collapsed rail must not change.
+  // jsdom lays nothing out: what is asserted is the name, which a collapsed rail must not change, and the
+  // words a pointer user gets back.
   it("keeps its name when the rail is icons only, and gives a pointer user the words back on hover", () => {
     renderCard({ collapsed: true })
 

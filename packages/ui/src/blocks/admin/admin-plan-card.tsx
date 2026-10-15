@@ -64,9 +64,9 @@ const ICONS: Record<SubscriptionCardStanding["status"], LucideIcon> = {
 /**
  * The open page's plan in the panel's menu (BEELINK-220): the plan's name, where the page stands in a few
  * words, and the way to its Assinar screen — the whole card one link, so the rail keeps one tab stop for
- * it. Collapsed, the words are hidden from sight and not from the accessibility tree (`lg:sr-only`, as an
- * item's), and `title` gives a pointer user them back. Nothing is announced when the standing moves — a
- * payment, a coupon, the lock — as a count is not: a menu that speaks by itself is one people mute.
+ * it. Collapsed, the words are hidden from sight (`lg:sr-only`, as an item's), the name stays the same,
+ * and `title` gives a pointer user them back. Nothing is announced when the standing moves — a payment, a
+ * coupon, the lock — as a count is not: a menu that speaks by itself is one people mute.
  *
  * Its name is the two lines said as one, with a pause between them: `aria-label`, built from the very
  * words drawn. A comma hidden between the lines would be a block of its own to Chrome, which puts a
