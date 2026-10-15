@@ -66,15 +66,16 @@ export function SubscriptionCycles({ offers, value, onChange, disabled = false, 
                       </Badge>
                     ) : null}
                   </FieldTitle>
+                  {/* `shell-muted`: on a chosen card's tint, `muted-foreground` is under 4.5:1. */}
                   <div id={`${key}-figures`} className="flex flex-col gap-1">
                     <p className="text-xl font-semibold tabular-nums">{format(text.perMonth, { amount: money(offer.monthlyCents) })}</p>
-                    <p className="text-muted-foreground text-sm">
+                    <p className="text-shell-muted text-sm">
                       {offer.cycle === "MONTHLY" ? text.billedMonthly : format(text.billedAtOnce, { total: money(offer.totalCents), months: String(offer.months) })}
                     </p>
                     {offer.savingCents > 0 ? (
                       <p className="text-sm font-medium">{format(text.saving, { amount: money(offer.savingCents), percent: planPercent(offer.savingPercent, locale) })}</p>
                     ) : null}
-                    <p className="text-muted-foreground text-sm">{offer.renewsOn ? format(text.renewsOn, { date: offer.renewsOn }) : text.renewsFromInvoice}</p>
+                    <p className="text-shell-muted text-sm">{offer.renewsOn ? format(text.renewsOn, { date: offer.renewsOn }) : text.renewsFromInvoice}</p>
                   </div>
                 </FieldContent>
                 <RadioGroupItem id={key} value={offer.cycle} aria-labelledby={`${key}-name`} aria-describedby={`${key}-figures`} />

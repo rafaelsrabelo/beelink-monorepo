@@ -61,7 +61,8 @@ export function SubscriptionStanding({ plan, standing, messages = defaultMessage
         </Badge>
       </div>
       <p className="text-sm">{standingSentenceOf(standing, text.standing)}</p>
-      <p className="text-muted-foreground text-sm">{text.lead}</p>
+      {/* On the panel's own ground, where `muted-foreground` is under 4.5:1: the shell's muted is drawn for it. */}
+      <p className="text-shell-muted text-sm">{text.lead}</p>
     </header>
   )
 }
