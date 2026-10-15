@@ -20,6 +20,7 @@ import { usePathname } from "next/navigation"
 import { makeQueryClient } from "@/components/providers"
 import { pageSlugOf } from "@/lib/page-lock-view"
 import { billingKeys } from "@/services/billing/billing-keys"
+import { LOCKED_REREAD_MS } from "@/services/billing/page-lock-hooks"
 import { fetchPanelCounts, PanelCountsError } from "@/services/panel/panel-counts-requests"
 import { PageLockGate } from "./page-lock-gate"
 
@@ -107,11 +108,16 @@ function Ear() {
   return null
 }
 
+/** Every frame the stand-in screen drew, in order. */
+const drawn: string[] = []
+
 /** A screen of the page in the address, reading through the panel's own BFF as the screens do. */
 function Screen() {
   const slug = pageSlugOf(usePathname()) ?? ""
   const read = useQuery({ queryKey: ["screen", slug], queryFn: () => fetchPanelCounts(slug) })
-  return <p>{read.data ? `a tela de ${slug}` : read.error ? `a tela recusada: ${read.error.message}` : "a tela lendo"}</p>
+  const frame = read.data ? `a tela de ${slug}` : read.error ? `a tela recusada: ${read.error.message}` : "a tela lendo"
+  drawn.push(frame)
+  return <p>{frame}</p>
 }
 
 let client: QueryClient
@@ -249,6 +255,27 @@ describe("PageLockGate — a locked page (BEELINK-296)", () => {
   })
 })
 
+describe("PageLockGate — a payment that came another way (BEELINK-296)", () => {
+  it("reads the subscription again each minute while the notice is up, and opens the page once it reads paid", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      const counts = { openOrders: 0, unreadConversations: 0, unreadMessages: 0, unseenReviews: 0 }
+      const paid = on({ ...expired, status: "ACTIVE", lock: null, currentPeriodEndsAt: "2026-11-16T03:00:00.000Z" })
+      const { times } = serve({ [SUBSCRIPTION]: [on(expired), paid], [SCREEN_READ]: [{ status: 403, body: LOCKED }, counts], "/api/billing/plans": [CATALOG], "/api/stores": [STORES] })
+      renderGate()
+      expect(await screen.findByRole("heading", { level: 1, name: "Seu teste grátis acabou" })).toBeInTheDocument()
+      expect(times(SUBSCRIPTION)).toBe(1)
+
+      await act(() => vi.advanceTimersByTimeAsync(LOCKED_REREAD_MS))
+
+      expect(await screen.findByText("a tela de loja")).toBeInTheDocument()
+      expect(times(SUBSCRIPTION)).toBe(2)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})
+
 describe("PageLockGate — the shopkeeper's other pages (BEELINK-296)", () => {
   it("leaves another page open: moving to it from a locked one draws its screen and opens its channel", async () => {
     const counts = { openOrders: 0, unreadConversations: 0, unreadMessages: 0, unseenReviews: 0 }
@@ -281,9 +308,12 @@ describe("PageLockGate — the way back (BEELINK-296)", () => {
     const refusedReads = times(SCREEN_READ)
 
     // What the Assinar screen's check writes once Asaas says the charge was paid.
+    drawn.length = 0
     act(() => void client.setQueryData(billingKeys.subscription("loja"), on({ ...expired, status: "ACTIVE", lock: null, currentPeriodEndsAt: "2026-11-16T03:00:00.000Z" })))
 
     expect(await screen.findByText("a tela de loja")).toBeInTheDocument()
+    // Drawn from its skeleton, never from the refusal it met while the page was locked.
+    expect(drawn.filter((frame) => frame.startsWith("a tela recusada"))).toEqual([])
     expect(screen.queryByRole("heading", { name: "Seu teste grátis acabou" })).toBeNull()
     expect(times(SCREEN_READ)).toBe(refusedReads + 1)
     expect(channel.open).toBe(1)
