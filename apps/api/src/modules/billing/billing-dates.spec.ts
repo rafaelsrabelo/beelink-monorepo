@@ -2,7 +2,7 @@
 import type { BillingCycle } from '@harness-monorepo/contracts';
 
 // App
-import { brasiliaDayOf, closeOfBrasiliaDay, daysLeft, freeMonthEndOf, lastDayBefore, periodEndDayOf, renewalDayOf, trialEndOf, trialLastDayOf } from './billing-dates.js';
+import { brasiliaDayOf, closeOfBrasiliaDay, daysAfter, daysLeft, freeMonthEndOf, lastDayBefore, openOfBrasiliaDay, periodEndDayOf, renewalDayOf, trialEndOf, trialLastDayOf } from './billing-dates.js';
 import { BILLING_CYCLES, CYCLE_MONTHS, TRIAL_DAYS } from './billing.constants.js';
 
 const HOUR = 3_600_000;
@@ -41,6 +41,25 @@ describe('a day of Brasília’s calendar', () => {
       expect(() => closeOfBrasiliaDay(day)).toThrow(RangeError);
     },
   );
+
+  it('opens at its own midnight there, the instant the day before it closes (BEELINK-297)', () => {
+    expect(openOfBrasiliaDay('2026-11-20').toISOString()).toBe('2026-11-20T03:00:00.000Z');
+    expect(openOfBrasiliaDay('2027-01-01').getTime()).toBe(closeOfBrasiliaDay('2026-12-31').getTime());
+    expect(brasiliaDayOf(openOfBrasiliaDay('2028-02-29'))).toBe('2028-02-29');
+    expect(() => openOfBrasiliaDay('2027-02-29')).toThrow(RangeError);
+  });
+
+  it('counts days on the calendar alone, across a month, a year and a leap February (BEELINK-297)', () => {
+    expect(daysAfter('2026-10-15', 7)).toBe('2026-10-22');
+    expect(daysAfter('2026-10-28', 7)).toBe('2026-11-04');
+    expect(daysAfter('2026-12-28', 7)).toBe('2027-01-04');
+    expect(daysAfter('2028-02-25', 7)).toBe('2028-03-03');
+    expect(daysAfter('2027-02-25', 7)).toBe('2027-03-04');
+    expect(daysAfter('2026-10-15', 0)).toBe('2026-10-15');
+    expect(daysAfter('2026-11-01', -1)).toBe('2026-10-31');
+    expect(() => daysAfter('2026-10-15', 1.5)).toThrow(RangeError);
+    expect(() => daysAfter('2026-02-30', 1)).toThrow(RangeError);
+  });
 });
 
 describe('the day a trial ends', () => {

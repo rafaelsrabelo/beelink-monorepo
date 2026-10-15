@@ -2,9 +2,12 @@
 import type { PrismaClient } from '../../generated/prisma/client.js';
 
 // App
+import { optionsOf, Refusal, runSubcommands, UsageError, type CommandOutput } from './billing-command.js';
 import { brasiliaDayOf, closeOfBrasiliaDay, lastDayBefore } from './billing-dates.js';
 import { PLATFORM_COUPON_MAX_USES_MAX } from './billing.constants.js';
 import { couponRefusalOf, storedCouponCodeOf } from './platform-coupon-rules.js';
+
+export { COMMAND_EXIT, type CommandOutput } from './billing-command.js';
 
 /*
   bee-link's own coupons from a terminal (BEELINK-224) — made, listed and switched off by Beelink, while
@@ -13,17 +16,8 @@ import { couponRefusalOf, storedCouponCodeOf } from './platform-coupon-rules.js'
   coupon exists only once somebody types it into this command.
 */
 
-/** Where the command writes: the terminal it was run in. */
-export interface CommandOutput {
-  out: (line: string) => void;
-  err: (line: string) => void;
-}
-
 /** All the command touches. */
 export type CouponCommandDb = Pick<PrismaClient, 'platformCoupon'>;
-
-/** Done; refused (a code taken, a day gone by, a coupon nobody made); asked wrongly. */
-export const COMMAND_EXIT = { done: 0, refused: 1, usage: 2 } as const;
 
 const USAGE = [
   "bee-link's coupons: each gives a page that never paid one free month, once in the page's life.",
@@ -40,24 +34,6 @@ const USAGE = [
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const isUniqueViolation = (error: unknown): boolean => error instanceof Error && 'code' in error && error.code === 'P2002';
-
-class UsageError extends Error {}
-class Refusal extends Error {}
-
-/** `--name value` or `--name=value`, each at most once; anything else is asked wrongly. */
-function optionsOf(args: readonly string[], allowed: readonly string[]): Map<string, string> {
-  const options = new Map<string, string>();
-  for (let index = 0; index < args.length; index += 1) {
-    const arg = args[index] ?? '';
-    const match = /^--([a-z-]+)(?:=(.*))?$/.exec(arg);
-    if (!match?.[1] || !allowed.includes(match[1])) throw new UsageError(`Unknown argument: ${arg}`);
-    const value = match[2] ?? args[(index += 1)];
-    if (value === undefined || value === '') throw new UsageError(`--${match[1]} needs a value`);
-    if (options.has(match[1])) throw new UsageError(`--${match[1]} was given twice`);
-    options.set(match[1], value);
-  }
-  return options;
-}
 
 function codeOf(options: Map<string, string>): string {
   const typed = options.get('code');
@@ -131,37 +107,19 @@ async function disable(args: readonly string[], db: CouponCommandDb, io: Command
   io.out(`${code} was disabled already, on ${brasiliaDayOf(coupon.disabledAt ?? now)}.`);
 }
 
-const COMMANDS = { create, list, disable } as const;
-
 /**
  * The command, given its arguments (`process.argv` past the script) and the database. Answers its exit
  * code: `COMMAND_EXIT`. Nothing it writes is a log line: it is the terminal of whoever runs it.
  */
-export async function runPlatformCouponCommand(argv: readonly string[], db: CouponCommandDb, io: CommandOutput, now = new Date()): Promise<number> {
-  const [name, ...args] = argv;
-  if (name === undefined || name === 'help' || name === '--help' || name === '-h') {
-    for (const line of USAGE) io.out(line);
-    return name === undefined ? COMMAND_EXIT.usage : COMMAND_EXIT.done;
-  }
-  if (!Object.hasOwn(COMMANDS, name)) {
-    io.err(`Unknown command: ${name}`);
-    for (const line of USAGE) io.err(line);
-    return COMMAND_EXIT.usage;
-  }
-
-  try {
-    await COMMANDS[name as keyof typeof COMMANDS](args, db, io, now);
-    return COMMAND_EXIT.done;
-  } catch (error) {
-    if (error instanceof UsageError) {
-      io.err(error.message);
-      for (const line of USAGE) io.err(line);
-      return COMMAND_EXIT.usage;
-    }
-    if (error instanceof Refusal) {
-      io.err(error.message);
-      return COMMAND_EXIT.refused;
-    }
-    throw error;
-  }
+export function runPlatformCouponCommand(argv: readonly string[], db: CouponCommandDb, io: CommandOutput, now = new Date()): Promise<number> {
+  return runSubcommands(
+    argv,
+    USAGE,
+    {
+      create: (args) => create(args, db, io, now),
+      list: (args) => list(args, db, io, now),
+      disable: (args) => disable(args, db, io, now),
+    },
+    io,
+  );
 }

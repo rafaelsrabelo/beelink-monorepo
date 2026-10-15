@@ -62,3 +62,23 @@ export function lockChangesAt(row: LockRow, now: Date): Date | null {
   for (const end of ends) if (end && end.getTime() > now.getTime() && (!next || end.getTime() < next.getTime())) next = end;
   return next;
 }
+
+/** More than the ends a row can have — a trial, a paid period, a free one, a grace — each passed once at most. */
+const LOCK_WALK_MAX = 8;
+
+/**
+ * The first instant from `from` on at which the page is locked if only the clock moves — nothing paid,
+ * no coupon used, no exemption — or null when no clock ever locks it (an exempt page). Asks `lockOf` at
+ * `from` and then at each instant `lockChangesAt` names, so it says nothing the lock itself would not
+ * (BEELINK-297: the day each page locks, told before charging is switched on).
+ */
+export function lockStartOf(row: LockRow, from: Date): Date | null {
+  let at = from;
+  for (let step = 0; step < LOCK_WALK_MAX; step += 1) {
+    if (lockOf(row, at)) return at;
+    const next = lockChangesAt(row, at);
+    if (!next || next.getTime() <= at.getTime()) return null;
+    at = next;
+  }
+  return null;
+}
