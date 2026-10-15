@@ -20,7 +20,7 @@ function show(props: Partial<SubscriptionCheckoutProps> = {}) {
   return { ...view, onSubmit }
 }
 
-const cycles = () => screen.getByRole("radiogroup", { name: "Como você quer pagar?" })
+const cycles = () => screen.getByRole("radiogroup", { name: "Escolha o período do plano" })
 const radio = (name: string) => screen.getByRole("radio", { name })
 const button = () => screen.getByRole("button", { name: /Assinar e pagar|Continuar o pagamento|Trocar de plano|Gerando a fatura/ })
 const facts = () => within(screen.getByRole("region", { name: "Antes de assinar" })).getAllByRole("listitem").map((item) => plain(item.textContent))
@@ -48,7 +48,7 @@ describe("SubscriptionCheckout (BEELINK-293), the cycles", () => {
 
     expect(radio("Semestral")).toHaveAttribute("aria-checked", "true")
     expect(plain(button().textContent)).toBe("Assinar e pagar R$ 540,00")
-    expect(facts()[0]).toBe("Você paga hoje R$ 540,00, a primeira cobrança do plano.")
+    expect(facts()[0]).toBe("Você paga hoje R$ 540,00, por esta página. Cada página tem o seu plano.")
   })
 
   it("hands over the cycle chosen, and nothing of who is charged when it did not ask", async () => {
@@ -63,19 +63,19 @@ describe("SubscriptionCheckout (BEELINK-293), the cycles", () => {
 
 describe("SubscriptionCheckout, what is said before the button", () => {
   it.each([
-    [{ kind: "trial", daysLeft: 5 } as const, "Os 5 dias de teste que faltam não são somados ao plano: o período pago começa hoje."],
-    [{ kind: "trial", daysLeft: 1 } as const, "O dia de teste que falta não é somado ao plano: o período pago começa hoje."],
-    [{ kind: "trial", daysLeft: 0 } as const, "O que resta do teste hoje não é somado ao plano: o período pago começa hoje."],
-    [{ kind: "canceled" } as const, "Os dias que restam do período já pago não são somados: o novo período começa hoje."],
+    [{ kind: "trial", daysLeft: 5 } as const, "Assinando agora, você perde os 5 dias de teste que faltam: o plano começa a contar hoje."],
+    [{ kind: "trial", daysLeft: 1 } as const, "Assinando agora, você perde o dia de teste que falta: o plano começa a contar hoje."],
+    [{ kind: "trial", daysLeft: 0 } as const, "O plano começa a contar hoje, último dia do teste."],
+    [{ kind: "canceled" } as const, "Assinando agora, você perde os dias que faltavam do período já pago: o plano novo começa a contar hoje."],
   ])("says the first charge is today, what is given up (%o), how it renews, where it is paid and how to cancel", (loss, given) => {
     show({ account: exampleAccount, loss })
 
     expect(facts()).toEqual([
-      "Você paga hoje R$ 100,00, a primeira cobrança do plano.",
+      "Você paga hoje R$ 100,00, por esta página. Cada página tem o seu plano.",
       given,
-      "Com cartão de crédito, a assinatura renova sozinha. Com Pix ou boleto, cada renovação é uma fatura nova para pagar.",
-      "A fatura abre no Asaas, em outra aba. Lá você escolhe pagar com cartão, Pix ou boleto.",
-      "Para cancelar, fale com o suporte da Beelink. A página continua funcionando até o fim do período já pago.",
+      "Com cartão de crédito, o plano renova sozinho no mesmo cartão. Com Pix, boleto ou cartão de débito, cada renovação é uma fatura nova para pagar, que aparece aqui no painel.",
+      "A fatura abre no Asaas, em outra aba: lá você escolhe pagar com cartão, Pix ou boleto. O cartão é digitado só no Asaas.",
+      "Ainda não dá para cancelar pelo painel. Para cancelar, fale com a Beelink: a página continua funcionando até o fim do período já pago.",
     ])
   })
 
@@ -158,9 +158,9 @@ describe("SubscriptionCheckout, an invoice already open", () => {
   it("comes with its cycle chosen and carries on with it", async () => {
     const { onSubmit } = show({ account: exampleAccount, offers: offersWithOpenInvoice, openInvoice: { cycle: "SEMIANNUAL", totalCents: 54000 } })
 
-    expect(plain(screen.getByText(/Você já escolheu o plano/).textContent)).toBe("Você já escolheu o plano Semestral, de R$ 540,00, e a fatura está em aberto. Continue o pagamento na mesma fatura.")
+    expect(plain(screen.getByText(/Você já escolheu o plano/).textContent)).toBe("Você já escolheu o plano Semestral, de R$ 540,00, e a fatura dele ainda não foi paga. Continue o pagamento na mesma fatura.")
     expect(radio("Semestral")).toHaveAttribute("aria-checked", "true")
-    expect(figuresOf("Semestral")).toContain("Renova contando do vencimento da fatura em aberto.")
+    expect(figuresOf("Semestral")).toContain("Renova a contar do vencimento da fatura em aberto.")
     expect(button()).toHaveTextContent("Continuar o pagamento")
 
     await userEvent.click(button())
@@ -212,7 +212,7 @@ describe("SubscriptionCheckout, while and after it is sent", () => {
   it("speaks the reader's language", () => {
     show({ account: exampleAccount, messages: en, locale: "en" })
 
-    expect(screen.getByRole("radiogroup", { name: "How do you want to pay?" })).toBeInTheDocument()
+    expect(screen.getByRole("radiogroup", { name: "Choose the plan's period" })).toBeInTheDocument()
     expect(plain(screen.getByRole("button", { name: /Subscribe and pay/ }).textContent)).toBe("Subscribe and pay R$100.00")
   })
 })

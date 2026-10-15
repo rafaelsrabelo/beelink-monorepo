@@ -4245,7 +4245,13 @@ export interface UiMessages {
   /**
    * The panel's Assinar screen (BEELINK-293): a page's plan, chosen, paid at Asaas's invoice and
    * waited for. No amount, day or count is written here: each arrives through a `{placeholder}`, from
-   * the catalogue and the page's subscription. BEELINK-290 reviews these words.
+   * the catalogue and the page's subscription.
+   *
+   * Reviewed by BEELINK-290, a proposal awaiting the product owner's yes. Wherever a rule of the plan
+   * comes up it is said whole: the price is per page; the trial asks for no card and nothing is
+   * charged by itself; a credit card renews by itself, and Pix, a boleto or a debit card is a new
+   * invoice each time; subscribing in the trial gives up the days left. Nothing promises what does not
+   * exist yet — cancelling from the panel, changing the card, an e-mail, a support address.
    */
   subscription: {
     /** `{plan}`: the plan's name, as the catalogue gives it. */

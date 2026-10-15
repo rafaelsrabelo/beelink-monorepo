@@ -149,7 +149,7 @@ describe("SubscribeScreen, a page in trial", () => {
     await settle()
 
     expect(screen.getByRole("heading", { level: 1, name: "Plano Beelink" })).toBeInTheDocument()
-    expect(screen.getByText("O teste grátis vai até 22/10/2026. Faltam 7 dias.")).toBeInTheDocument()
+    expect(screen.getByText("O teste grátis vai até 22/10/2026: faltam 7 dias. Ele não pede cartão e nada é cobrado sozinho: quando acabar, a página trava e sai do ar até você assinar.")).toBeInTheDocument()
     expect(screen.getAllByRole("radio")).toHaveLength(3)
     expect(screen.getByLabelText("CPF ou CNPJ")).toBeInTheDocument()
     expect(plain(submit().textContent)).toBe("Assinar e pagar R$ 100,00")
