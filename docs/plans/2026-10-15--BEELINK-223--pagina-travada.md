@@ -242,3 +242,194 @@ O que não pode acontecer, em ordem de gravidade:
    assinatura, por índice único. Nenhuma com ela desligada.
 6. **O shell do painel de uma página travada** fica sem números e sem canal até o S14 decidir o que
    mostra; um lojista que paga pela tela Assinar volta ao painel com o canal parado até recarregar.
+
+## Como desfazer a migration
+
+```sql
+DROP INDEX "store_subscriptions_status_idx";
+ALTER TABLE "store_subscriptions" DROP COLUMN "graceEndsAt";
+DELETE FROM "_prisma_migrations" WHERE "migration_name" = '20261015120000_store_subscription_grace';
+```
+
+Não apaga nada do que foi contratado nem a situação das páginas: só o fim gravado das carências. A
+leitura volta a contar a carência do fim do período (ou de hoje, sem período) até a coluna voltar.
+
+---
+
+## Como ficou (acréscimo de 15/10/2026, depois do código)
+
+### O que mudou em relação ao plano acima
+
+1. **A porta do S3 grava também `SUSPENDED`**, e não só o fim da carência: uma leitura do Asaas que dá
+   `PAST_DUE` depois do fim da carência grava `SUSPENDED` (`subscription-facts.ts`), para a situação
+   gravada ser sempre a que a leitura diz. Por isso um teste do S3 mudou de propósito
+   (`test/subscription-payment.e2e-spec.ts`): "ends with the next due day…" usava uma página com o
+   período vencido há duas semanas, que agora é lida `SUSPENDED`; ele passou a usar uma vencida há 2 ou 3
+   dias (dentro da carência) e ganhou um irmão para a suspensão.
+2. **Se a trava está ligada é `PageLocks.engaged`**: `BILLING_ENFORCED` **e** `PlatformAsaas.configured`,
+   o mesmo par do `running` do S3 — o cliente injetado, não a variável lida de novo. O teste do S1 em
+   `billing-enforced.e2e-spec.ts` (cobrança ligada, sem chave) passou de "nada trava ainda" para "nada
+   trava sem chave", e confere que o relógio não escreve nada.
+3. **A leitura pública da loja recebe a situação da página pelo próprio guard** (`@AnswersLockedPage()` e
+   `@PageLockOf()`), e não por uma consulta do `StoresService`: assim `StoresModule` não importa
+   `BillingModule` (que já importa `StoresModule`), e a trava é calculada num lugar só por requisição.
+4. **O guard tem teste de unidade** (`page-lock.guard.spec.ts`), além dos e2e: é o que prova que, com a
+   trava desligada, ele não pergunta nada ao banco.
+5. **A frase da recusa de um pedido numa loja fora do ar** (`checkoutShopUnavailable`) entrou nos locales
+   da UI, e a do código no dicionário do web (`errors.STORE_UNAVAILABLE`, `errors.PAGE_LOCKED`).
+6. **As páginas da conta de uma loja fora do ar continuam com o cabeçalho e o rodapé da loja** — a busca,
+   o carrinho, "Todos os produtos", que levam ao aviso, e "Fazer pedido no WhatsApp", o canal da própria
+   loja, que mantive. Visto na tela; o S14 ou o S16 podem querer tirar.
+7. **Um teste nasceu de um erro plantado** (abaixo): a página da conta em si (`/conta`) numa loja fora do
+   ar.
+
+### O que foi rodado
+
+Postgres 18.6 (`beelink-domain-db`, porta 5442) e Mailpit (1027/8027).
+
+1. **A migration, do zero**, num banco de rascunho (`harness_landing_s5_proof`, criado e apagado):
+   `prisma migrate deploy` aplicou as 115; `prisma migrate diff --exit-code` saiu com 0 nos dois sentidos.
+   O roteiro de desfazer rodou como está escrito; depois dele o `diff` saiu com 2 (pedindo a coluna e o
+   índice), e a migration aplicou de novo (diff 0). Aplicada também nos bancos de desenvolvimento e de
+   teste.
+2. **Unidade, no último commit de código:** API 137 arquivos e 1.790 testes (eram 135 e 1.745 no S3); web
+   334 arquivos e 2.984 testes (antes do último commit, que só acrescentou um teste: o arquivo dele, 13
+   testes, rodou depois); `packages/ui` 380 arquivos e 2.926 testes. Todos verdes.
+3. **Tipos e lint:** `tsc --noEmit` na API, no web (`next typegen` e `tsc`), no `packages/ui` e em
+   `packages/contracts`, saída 0. `oxlint` na API e na UI: 0 erros (os dois avisos antigos de cada, em
+   arquivos que este ticket não toca); `eslint` nos arquivos do web tocados: 0 erros (quatro avisos
+   antigos em `funnel-count.test.ts`).
+4. **e2e da API, um arquivo por vez.** No último commit, os da cobrança e da trava: `page-lock` (45),
+   `billing-enforced` (2), `billing` (18), `subscription-payment` (33), `store-subscription` (79),
+   `store-subscription-key` (9), `store-subscription-not-enforced` (8), `store-subscription-without-key`
+   (9), `billing-webhook` (14), `billing-webhook-key` (4), `billing-account` (34), `billing-account-key` (9),
+   `billing-account-without-key` (6): 270 testes, verdes. **E 47 specs de painel e de vitrine que a
+   proteção alcança, com a cobrança desligada** (pelo menos um por controller com página no caminho):
+   `stores`, `catalog`, `orders`, `panel-counts`, `conversations`, `customers`, `customer-record`,
+   `cashback`, `promotions`, `shop-popup`, `leads`, `page`, `pages`, `page-versions`, `page-templates`,
+   `sales-by-origin`, `store-funnel`, `realtime`, `custom-domain`, `delivery-settings`, `shipping-quote`,
+   `asaas-connection`, `asaas-settings`, `melhor-envio-connection`, `order-label`, `meta-pixel`,
+   `google-analytics`, `product-reviews`, `order-payments`, `order-refunds`, `storefront-cart`,
+   `storefront-listing`, `storefront-variants`, `storefront-promotions`, `shop-offers`, `first-purchase`,
+   `customer-orders`, `order-discounts`, `customer-favorites`, `customer-addresses`, `customer-privacy`,
+   `customer-security`, `customer-google`, `shopper-cashback`, `cashback-storefront`, `restock-requests`,
+   `showcase-read`: 697 testes. **46 verdes de primeira; `custom-domain` falhou 5 de 14** porque o
+   `apps/api/.env` deste worktree tem `SHOP_DOMAIN_PROBE=false` e o `vitest.config.e2e.ts` não o
+   sobrescreve (o spec confere que é `true`); com `SHOP_DOMAIN_PROBE=true` só no shell, 14 de 14. Não é
+   deste ticket, e o `.env` não foi editado.
+5. **`pnpm arch-gates` e `pnpm docs-gate`** verdes em todos os commits (rodam no `pre-commit`).
+6. **Os testes postos à prova com 32 erros plantados**, um por vez, cada um desfeito em seguida pelo
+   `git checkout` (árvore limpa conferida no fim). **30 pegos de primeira.** Um é equivalente: tirar o
+   "isenta nunca trava" do começo de `lockOf` não muda nada, porque `statusAt` devolve `EXEMPT` e a função
+   já responde aberta. Um passou — "a página da conta em si sai do ar" — e ganhou o teste que faltava,
+   que depois falhou com o erro plantado. Entre os 32: ignorar o mês grátis; travar a cancelada com
+   período em curso; seis dias de carência; mover para trás uma carência gravada; ignorar a contagem
+   mais tarde; contar a carência de agora e não do fim do dia; nunca ler `SUSPENDED`; guardar a leitura
+   de uma loja travada sem teto; esquecer a carência no instante seguinte; a porta não gravar
+   `SUSPENDED`; a porta manter a carência numa página paga; dizer travada onde nada trava; o guard ler o
+   banco com a trava desligada; contar a um estranho; contar ao visitante o motivo; não entregar a
+   situação à leitura pública; o web servir a loja guardada depois do instante; uma página de produto
+   vender fora do ar; a página fora do ar ser indexada; a conferência derrubar o cache sem pagamento; o
+   painel repetir uma leitura travada; contar o funil fora do ar; o carrinho não ler a página de novo;
+   travar sem chave; o relógio vencer um teste em curso; suspender dentro da carência; a leitura pública
+   servir o que vende; aceitar pedido novo; travar a própria assinatura; travar os pedidos do cliente.
+
+### Na tela, de verdade (15/10/2026, das 02:43 às 02:53 de Brasília)
+
+A API na 3201 (`nest start`, banco `harness_landing`) com `BILLING_ENFORCED=true` e uma **chave inventada
+no formato de sandbox**, só no ambiente do processo — nada neste roteiro pergunta ao Asaas, e assim a
+conta de teste compartilhada não foi tocada; o web na 3200 (`next dev`). Uma dona "Teste S5 Dona" com
+duas páginas ("Teste S5 Padaria", com um produto, e "Teste S5 Outra"), uma cliente "Teste S5 Cliente" e
+um pedido feito antes da trava, tudo pela própria API. A trava, posta pelo banco (o teste vencido
+ontem). Tudo abaixo foi **visto**.
+
+| O quê | O que aconteceu |
+|---|---|
+| A vitrine travada, a 1920, 1280 e 390 px | O nome, "Loja indisponível no momento", a frase e "Já comprou aqui? Veja seus pedidos", nas cores da loja, sem cabeçalho nem rodapé. `noindex, nofollow`, título o nome da loja, nenhuma rolagem horizontal a 390. Nenhuma requisição além dos estáticos (o funil não conta), console sem erro. O botão a 5,31:1 |
+| `/produtos`, um produto, `/carrinho` | O mesmo aviso, sem preço em lugar nenhum |
+| O caminho da cliente | O botão levou à entrada da loja (`/entrar?voltar=…/conta/pedidos`); entrando, "Meus pedidos" com o pedido nº 1, "Acompanhar pedido", "Falar com a loja" e "Cancelar pedido"; a página do pedido abriu. Console sem erro |
+| A tela Assinar da página travada, no painel | "Teste encerrado", os três ciclos, os dados de cobrança. Em volta, o shell de pé: sem número no menu, sino sem contagem. `panel-counts`, as duas leituras de pedidos do sino, a de conversas e o ticket do canal responderam `403` **uma vez cada** (sem as repetições); as três leituras da tela, `200` |
+| O início do painel da página travada | Ficou no esqueleto e caiu num estado degradado (o slug no título, a lista de passos), sem quebrar: as leituras dele respondem a trava. É a tela que o S14 troca |
+| A outra página da mesma dona | Tudo `200`, console sem erro |
+| A carência | Em atraso há 2 dias: a vitrine aberta, com produto e preço, e a API dizendo `x-lock-changes-at` no fim da carência (o período mais 7 dias) |
+| **A trava pelo relógio, pelo cache do web** | O fim da carência posto 2 minutos à frente; a vitrine visitada aos 65 s (aberta) e aos 68 s (aberta, guardada de novo dizendo o instante); visitada 3 s depois do instante: **o aviso**, antes de a rotina passar — o cálculo na hora e a leitura guardada que não passa do instante |
+| **A página paga** | `ACTIVE` gravado no banco (como a porta grava): a API abriu na hora (catálogo `200`); a vitrine no web continuou com o aviso (a leitura travada guardada vale até um minuto); **a conferência pela rota do web** (`POST /api/stores/…/subscription/check`, com a sessão da dona) respondeu `ACTIVE` e, um segundo depois, a vitrine abriu |
+| A rotina | Gravou sozinha, no processo de pé, o teste vencido da página travada e, depois, o fim da carência da página em atraso (as duas linhas "The clock moved pages' standing" do log) |
+
+**O log da API**, lido no fim (409 linhas): nenhuma linha de aviso ou de erro; os e-mails, a senha e a
+chave inventada 0 vezes. **Limpeza:** as duas páginas, as duas contas e o pedido apagados do banco (0
+lojas, 0 assinaturas, 0 pedidos, 0 clientes depois), os e-mails "teste-s5" apagados do Mailpit, a API e
+o web encerrados (`pgrep -fl "worktrees/landing"` vazio) e o `apps/web/.next` apagado. Capturas em
+`.claude/worktrees/subscription-pr/screens-223/`.
+
+### O que não foi rodado
+
+- `pnpm ci-check`, `turbo` em todos os workspaces, `next build`, o Storybook (a story nova só foi
+  compilada pelo `tsc` da UI), a suíte e2e inteira da API (rodaram 60 dos 101 arquivos, um por vez) e o
+  Playwright do web (não há spec novo dele): o briefing proíbe nesta máquina. Ficam para o push.
+- **Nada no Asaas de verdade**: este ticket não pergunta nada a ele. O pagamento que destrava foi o Asaas
+  falso dos e2e e, na tela, a linha gravada como a porta grava.
+- Duas instâncias da API ao mesmo tempo; homologação e produção.
+- O aviso em inglês fora dos testes; outros navegadores; um leitor de tela de verdade.
+- As telas do painel de uma página travada além da Assinar e do início (o modo design, os pedidos…):
+  vão mostrar o erro ou o esqueleto das leituras delas até o S14.
+
+### O que o S14 (BEELINK-296, a tela de página travada e as faixas) precisa saber
+
+- **Como o web descobre a trava:** `GET /api/stores/:slug/subscription` → `subscription.lock`
+  (`TRIAL_EXPIRED`, `SUSPENDED`, `CANCELED` ou nulo — sempre nulo onde nada trava) e
+  `subscription.graceEndsAt` (o fim da carência de uma página em atraso ou suspensa: a data da faixa da
+  carência). `status` já lê `SUSPENDED` depois da carência; `trialDaysLeft` serve para a faixa dos 2
+  últimos dias do teste; `billingEnforced` para não mostrar nada onde nada se cobra.
+- **O código:** toda outra rota do painel de uma página travada responde `403 PAGE_LOCKED`, com
+  `details: { reason }` (`PageLockedDetails`), e só ao dono. No web, `isPageLockedError`
+  (`apps/web/src/lib/page-lock.ts`); a frase `errors.PAGE_LOCKED` existe, para o S16 revisar.
+- **O que fica aberto:** a assinatura (`GET`, `PUT`, `…/check`), `/billing/*`, `/users/me`,
+  `/stores/mine`, `POST /stores`. **`GET /stores/:slug` fica travado:** o nome, o logo e o slug da tela
+  de página travada vêm de `/stores/mine`, que o shell já lê (`useMyStores`).
+- **O shell numa página travada** (visto): as leituras dele respondem `PAGE_LOCKED` uma vez cada, o
+  relógio dos números continua (60 s com o canal) e os traz de volta quando a página é paga; o canal em
+  tempo real para no `403` e **não volta sozinho** depois do pagamento (o `router.replace` da tela Assinar
+  mantém o efeito): vale remontar o `PanelRealtime` quando a trava sai.
+- **Onde desenhar a tela:** em toda página `/admin/<slug>/…` de uma página travada, menos a `/subscribe`,
+  levando a `subscribePageOf(slug)`. Hoje o início fica no esqueleto e cai num estado degradado, e o
+  modo design deve dar erro.
+- **A vitrine fora do ar já existe** (`StorefrontUnavailable`, `ShopUnavailable`); as páginas da conta de
+  uma loja fora do ar mantêm o cabeçalho e o rodapé (item 6 de "O que mudou").
+
+### O que o S6 (BEELINK-224, o cupom) precisa saber
+
+- **`freePeriodEndsAt` no futuro deixa a página aberta qualquer que seja a situação** (`lockOf`); depois
+  dele, a regra de sempre. O relógio continua gravando `TRIAL_EXPIRED` ou `SUSPENDED` durante o mês
+  grátis (é o que a leitura diz): a tela e o card devem dizer "Grátis até …" por `freePeriodEndsAt`, não
+  pela situação.
+- **A rota do cupom precisa de `@OpenWhileLocked()`** (`modules/billing/page-lock.decorators.ts`): ela é
+  de uma página (`stores/:storeSlug/…`) e, sem a marca, o guard a recusa com `PAGE_LOCKED` justamente
+  para a página travada que quer o cupom.
+- **A vitrine:** `lockChangesAt` já inclui `freePeriodEndsAt`, então ela trava no instante em que o mês
+  acaba. Ao dar o mês a uma página travada, a rota do web do cupom deve chamar `revalidateStore(slug)`,
+  como a conferência faz ao ler `ACTIVE`; sem isso a vitrine abre em até um minuto.
+- `toStoreSubscription(row, now, locks)` agora recebe se a trava está ligada (`PageLocks.engaged`).
+
+### O que o S15 (BEELINK-297, as páginas que já existiam) precisa saber
+
+- **Uma página sem linha de assinatura nunca trava** (`PageLocks.pageOf`). A linha que o S15 cria (teste
+  contado da criação, já vencido, e `freePeriodEndsAt` no fim de 13/11/2026) fica aberta até lá; o
+  relógio grava `TRIAL_EXPIRED` nela na primeira volta, o que não trava nada durante o mês.
+- **O relatório** ("quantas travariam se a chave ligasse agora", "as criadas depois de 13/10 cujo teste já
+  passou") deve chamar `lockOf` (`page-lock.ts`) com o instante, e nunca refazer a regra.
+- **Ligar trava na hora:** com `BILLING_ENFORCED=true` e a chave, toda página com o teste vencido e sem
+  mês grátis trava no primeiro pedido seguinte (`docs/repo/deploy.md`). Marcar `EXEMPT` é escrever em
+  `store_subscriptions`, então o comando mora em `modules/billing` (regra `api/page-subscription-in-billing`).
+
+### O que o S7 (os e-mails) precisa saber
+
+- `graceEndsAt` é a data da carência que a trava usa; o relógio a grava em até um minuto depois de a
+  página ser vista em atraso, e a porta do S3 ao ler o Asaas. A situação de agora é `statusAt`, a trava
+  `lockOf`.
+
+### Riscos, além dos de cima
+
+7. **O `custom-domain.e2e-spec.ts` falha neste worktree** por causa do `.env` dele (item 4 de "O que foi
+   rodado"); no CI, sem esse `.env`, não deve.
+8. **`apps/web/src/app/[slug]/[section]/[item]/page.tsx` está com 244 linhas**, perto do limite de 250.
