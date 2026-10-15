@@ -63,6 +63,14 @@ export function cycleOfAsaas(word: string): BillingCycle | null {
 export const PLAN_ON_SALE = 'beelink';
 
 /**
+ * The day whose pages were given a free month counted from it (BEELINK-297): a page created before
+ * this day was over in Brasília is free until the same day a month later is over —
+ * `freeMonthEndOf(PAGES_EXISTED_ON)` — whatever the day charging is switched on. The migration
+ * `20261015170000_pages_that_existed` wrote it once, with both instants as literals: SQL imports nothing.
+ */
+export const PAGES_EXISTED_ON = '2026-10-13';
+
+/**
  * A coupon of bee-link's as it is typed (BEELINK-224): the shape a shop's coupon has (`COUPON_CODE`,
  * modules/promotions), so a shopkeeper types one as the other — A–Z, 0–9, `-` and `_`, 3 to 30 of them,
  * any case. Its own copy and not an import: what a shop's coupon may be is the shop's rule, and the
