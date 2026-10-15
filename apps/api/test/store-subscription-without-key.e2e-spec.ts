@@ -8,7 +8,10 @@ import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import type { ApiErrorBody, AuthSession } from '@harness-monorepo/contracts';
 
 // App
+import { BillingRoutine } from '../src/modules/billing/billing-routine.js';
 import { PlatformAsaas } from '../src/modules/billing/platform-asaas.client.js';
+import { PlatformWebhookKeeper } from '../src/modules/billing/platform-webhook-keeper.js';
+import { SubscriptionSync } from '../src/modules/billing/subscription-sync.service.js';
 import { PrismaService } from '../src/shared/prisma/prisma.service.js';
 import { newEmail, signUpAndSignIn } from './support/auth-flow.js';
 import { createTestApp } from './support/create-test-app.js';
@@ -17,9 +20,13 @@ import { resetDatabase } from './support/reset-database.js';
 // Hoisted above the imports: `env.ts` reads the environment once, when it is first imported. A blank
 // key here loses to one written in the developer's own `apps/api/.env`, as in the billing account's
 // suite of the same kind.
-vi.hoisted(() => {
+const TOKEN = vi.hoisted(() => {
   process.env.BILLING_ENFORCED = 'true';
   process.env.ASAAS_PLATFORM_API_KEY = '';
+  // The webhook's token is right, so what turns its events away is the missing key (BEELINK-221).
+  const token = 'nX0bq3l8V7mYkU2sA9cR4tE6wZ1pH5jD0fG8iK3oL2M=';
+  process.env.ASAAS_PLATFORM_WEBHOOK_TOKEN = token;
+  return token;
 });
 
 const PLANS_SEED = readFileSync(new URL('../prisma/seed/plans.sql', import.meta.url), 'utf8');
@@ -87,5 +94,48 @@ describe("a deployment that charges and has no key of bee-link's own Asaas accou
     expect(read.statusCode).toBe(200);
     expect(read.json()).toMatchObject({ billingEnforced: true, subscription: { status: 'TRIALING', invoiceUrl: null } });
     expect(toAsaas).toEqual([]);
+  });
+
+  describe("and learning of a page's payment (BEELINK-221)", () => {
+    beforeAll(async () => {
+      // A page whose subscription was made while the deployment had a key.
+      await prisma.storeSubscription.updateMany({ data: { asaasSubscriptionId: 'sub_made_with_a_key', nextCheckAt: new Date(Date.now() - 1_000) } });
+    });
+
+    afterAll(async () => {
+      await prisma.storeSubscription.updateMany({ data: { asaasSubscriptionId: null, nextCheckAt: null } });
+    });
+
+    it('answers an event that carries the token, and writes nothing and asks nothing', async () => {
+      const row = await prisma.storeSubscription.findFirstOrThrow();
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/billing/asaas/webhook',
+        headers: { 'content-type': 'application/json', 'asaas-access-token': TOKEN },
+        payload: { id: 'evt_1', event: 'PAYMENT_CONFIRMED', payment: { id: 'pay_1', subscription: 'sub_made_with_a_key', externalReference: `beelink-subscription-${row.id}` } },
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toEqual({ result: 'IGNORED' });
+      expect(await prisma.billingEvent.count()).toBe(0);
+      expect(toAsaas).toEqual([]);
+    });
+
+    it("answers the panel's check as the read does, asking nothing", async () => {
+      const checked = await call('POST', '/api/stores/padaria/subscription/check', owner);
+
+      expect(checked.statusCode).toBe(200);
+      expect(checked.json()).toEqual((await call('GET', '/api/stores/padaria/subscription', owner)).json());
+      expect(toAsaas).toEqual([]);
+    });
+
+    it('runs no routine, and registers no webhook', async () => {
+      await app.get(BillingRoutine).pass(new Date(Date.now() + 86_400_000));
+
+      expect(await app.get(SubscriptionSync).checkDue(new Date(Date.now() + 86_400_000))).toBe(0);
+      expect(await app.get(PlatformWebhookKeeper).keep()).toBe('SKIPPED');
+      expect(toAsaas).toEqual([]);
+    });
   });
 });
