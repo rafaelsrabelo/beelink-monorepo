@@ -192,8 +192,9 @@ const envSchema = z.object({
 
   /**
    * What Asaas sends back in `asaas-access-token` with every event of bee-link's own account: 32 to
-   * 255 characters with no space, by Asaas's rule. Declared here and read by nothing yet — the
-   * platform's webhook is BEELINK-221.
+   * 255 characters with no space, by Asaas's rule. The API registers its webhook with it and refuses a
+   * delivery without it (BEELINK-221); read in one file, `modules/billing/platform-webhook.config.ts`
+   * (gate `api/platform-webhook-token-in-billing`). Unset, no webhook is registered.
    */
   ASAAS_PLATFORM_WEBHOOK_TOKEN: blankAsAbsent(z.string().regex(/^\S{32,255}$/, 'ASAAS_PLATFORM_WEBHOOK_TOKEN must be 32 to 255 characters with no space')),
 

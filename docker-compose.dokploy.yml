@@ -168,7 +168,7 @@ services:
       # bee-link's own Asaas account, where those plans are charged (BEELINK-291) — never a shop's key.
       # Left out, charging is unavailable and nothing else changes. The key begins with `$`: see
       # docs/repo/deploy.md for how it is written in the Environment tab. The token is the platform
-      # webhook's, read by nothing yet.
+      # webhook's (BEELINK-221): the API registers that webhook with it and refuses a delivery without it.
       - ASAAS_PLATFORM_API_KEY
       - ASAAS_PLATFORM_WEBHOOK_TOKEN
 
