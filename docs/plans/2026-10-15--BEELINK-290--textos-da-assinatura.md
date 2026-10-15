@@ -300,3 +300,213 @@ O que não pode acontecer, em ordem de gravidade:
    `TRIAL_EXPIRED`: "para usar a página, escolha um plano"; `SUSPENDED` e `CANCELED`: "travada e fora do
    ar"), e uma página no mês grátis não trava, qualquer que seja a situação (S5). O S6 já precisa pôr o caso do mês grátis em `subscribeViewOf` antes de olhar a
    situação; sem isso, essas frases diriam a uma página no mês grátis que ela trava.
+
+---
+
+## Como ficou (acréscimo de 15/10/2026, depois do código)
+
+### O que mudou em relação ao plano acima
+
+1. **Cinco frases citavam o "suporte da Beelink", não quatro.** A quinta, `errors.BILLING_SUBSCRIPTION_MISSING`
+   (uma página de antes das assinaturas), deixou de mandar falar com alguém: essa página não tem nada a
+   pagar até o S15 lhe dar o mês grátis, e é isso que a frase diz agora. Ficam quatro frases com "fale
+   com a Beelink", as que precisam do canal (decisão 8).
+2. **Quatro erros da cobrança mudaram além dos previstos**, todos para dizer a regra em palavras de
+   lojista: `BILLING_CYCLE_INVALID` ("Escolha o período do plano", como a legenda), `BILLING_NOT_ENFORCED`
+   ("neste ambiente" era jargão), `BILLING_SUBSCRIPTION_MISSING` (item 1) e `BILLING_PAGE_EXEMPT`.
+3. **O teste das palavras** (decisão 2) ficou em `packages/ui/src/locales/locales.test.ts`: nenhuma frase
+   de `subscription.*` tem algarismo fora de um `{placeholder}`, nas duas línguas, e as duas línguas pedem
+   os mesmos `{placeholders}` em cada frase. Os erros do web não ganharam teste igual: nenhum dos que
+   mudaram tem número ou `{placeholder}`, e os testes da tela Assinar leem as frases deles.
+4. Nada mais: a landing, a descrição da fatura, os textos legais e a `LegalVersion` ficaram como estavam.
+
+### O que foi rodado
+
+Postgres 18.6 (`beelink-domain-db`, porta 5442) e Mailpit (1027/8027). Disco: 4,5 Gi livres do começo
+ao fim.
+
+1. **`packages/ui`:** `tsc --noEmit` saiu com 0; `oxlint src/` saiu com 0 (os dois avisos antigos, em
+   `single-block-card.tsx` e `store-settings-form.tsx`, que este ticket não toca); **a suíte de unidade
+   inteira, 380 arquivos e 2.930 testes, verdes** (eram 2.926 no S5: três do teste das palavras e um do
+   aviso do site).
+2. **`apps/web`:** `next typegen` e `tsc --noEmit` saíram com 0; `eslint` nos arquivos tocados saiu com 0;
+   **a suíte de unidade inteira, 334 arquivos e 2.985 testes, verdes**.
+3. **`pnpm arch-gates` e `pnpm docs-gate`** verdes em todos os commits (rodam no `pre-commit`).
+4. **Os testes novos postos à prova com erros plantados**, cada um desfeito em seguida (arquivos
+   conferidos com `cmp`, árvore limpa no fim): "7 dias" escrito à mão na faixa da carência (pegaram o
+   teste do número e o dos `{placeholders}`); `{days}` tirado só da faixa do teste em inglês (pegou o dos
+   `{placeholders}`); o web sem passar `site` ao bloco (pegou o teste da vitrine fora do ar). Três de três.
+   Um teste que ficaria vazio com a frase nova (`queryByText` da frase antiga do cartão, em
+   `subscription-paid.test.tsx`) foi atualizado para a frase nova, senão passaria sem conferir nada.
+
+### Na tela, de verdade (15/10/2026, das 03:31 às 03:34 de Brasília)
+
+A API na 3201 (`nest start`, banco `harness_landing`) com `BILLING_ENFORCED=true` e uma **chave inventada
+no formato de sandbox**, só no ambiente do processo — nada neste roteiro pergunta ao Asaas; o web na 3200
+(`next dev`). Uma dona "Teste S16 Dona" (cadastro pela API, e-mail confirmado pelo Mailpit), uma loja
+"Teste S16 Loja" e um site "Teste S16 Site". As situações postas pelo banco. Tudo abaixo foi **visto**; as
+capturas estão em `.claude/worktrees/subscription-pr/screens-290/`.
+
+| O quê | O que apareceu |
+|---|---|
+| Tela Assinar, em teste, a 1920, 1280 e 390 px | A frase do teste em duas linhas (quatro a 390), a de "por página", "Escolha o período do plano", os dados de cobrança com a finalidade, as cinco frases de "Antes de assinar" (os 7 dias perdidos com o número vindo da assinatura). A 390, sem rolagem horizontal (`scrollWidth` 390) |
+| Teste vencido, a 390 | "Teste encerrado" e "O teste grátis terminou em 13/10/2026. Para usar a página, escolha um plano e pague." |
+| Em dia no cartão, a 1280 | "A página está paga até 15/10/2027." e "A renovação é cobrada sozinha neste cartão." |
+| Em atraso, sem fatura, a 1280 | "Pagamento em atraso", "A renovação venceu em 12/10/2026 e ainda não foi paga. Pague a fatura para a página não travar." e o "fale com a Beelink" da fatura que falta |
+| Suspensa, a 390 | "Suspensa" e "A renovação não foi paga no prazo, e a página está travada e fora do ar. Pague a fatura em aberto para ela voltar." |
+| Pedidos de uma página travada, a 390 | "Esta página está travada até o plano dela ser pago.", a frase de `PAGE_LOCKED`, onde a lista estaria — a tela que o S14 troca |
+| A vitrine da loja travada, a 1280 | Como o S5 deixou: "Loja indisponível no momento", "Esta loja não está recebendo pedidos agora. Volte mais tarde." e o caminho para os pedidos |
+| **O site travado**, a 1280 | **"Site indisponível no momento" e "Este site está fora do ar agora. Volte mais tarde."**, sem caminho para pedidos |
+| A tela em inglês (`bl_locale=en`), em teste, faltando um dia | "The free trial runs until tomorrow, 10/16/2026. …" e "Subscribing now, you lose the trial day left …", lidos no texto da página |
+
+**Os logs:** a API sem nenhuma linha de aviso ou de erro; a chave inventada, a senha e o e-mail da conta 0
+vezes nos logs da API e do web. As únicas recusas foram os `403` das leituras do shell numa página
+travada, que o S5 já descreveu. **Limpeza:** a conta de teste apagada (as duas páginas e as assinaturas
+foram junto: 0 lojas, 0 assinaturas no banco), o e-mail de teste apagado do Mailpit, a API e o web
+encerrados (`pgrep -fl "worktrees/landing"` vazio), o `apps/web/.next` apagado (407 MB) e os arquivos
+que o navegador do Playwright escreveu nesta sessão removidos.
+
+### O que não foi rodado
+
+- `pnpm ci-check`, `turbo` em todos os workspaces, `next build`, o Storybook (a story mudada só foi
+  compilada pelo `tsc` da UI) e o Playwright do web: o briefing proíbe nesta máquina. **O e2e
+  `e2e/subscribe.spec.ts` não foi rodado:** ele acha a tela por nomes que este ticket não mudou (decisão 5),
+  e o axe dele não foi rodado com as frases novas.
+- Nada da API mudou, e nenhum spec da API foi rodado.
+- A página travada e as faixas do S14 não existem: as frases delas só foram lidas nos dicionários e
+  conferidas pelo teste das palavras.
+- Outros navegadores, um leitor de tela de verdade, homologação e produção.
+
+### Os textos, para ler de uma vez (pt-BR)
+
+**Tela Assinar — o topo.** Título "Plano {plano}" (sem o plano à venda: "Assinatura da página"). Situação:
+"Em teste", "Teste encerrado", "Em dia", "Pagamento em atraso", "Suspensa", "Cancelada". A frase de cada
+uma:
+
+- Em teste: "O teste grátis vai até {data}: faltam {dias} dias. Ele não pede cartão e nada é cobrado
+  sozinho: quando acabar, a página trava e sai do ar até você assinar." (falta um dia: "vai até amanhã,
+  {data}."; no último: "termina hoje, {data}.")
+- Teste vencido: "O teste grátis terminou em {data}. Para usar a página, escolha um plano e pague."
+- Em dia: "A página está paga até {data}." (sem data: "A página está em dia.")
+- Em atraso: "A renovação venceu em {data} e ainda não foi paga. Pague a fatura para a página não
+  travar." (sem data: "A renovação ainda não foi paga. Pague a fatura para a página não travar.")
+- Suspensa: "A renovação não foi paga no prazo, e a página está travada e fora do ar. Pague a fatura em
+  aberto para ela voltar."
+- Cancelada, ainda funcionando: "A assinatura foi cancelada. A página funciona até {data} e depois trava,
+  até você assinar de novo." Já sem período: "A assinatura foi cancelada, e a página está travada e fora
+  do ar. Para usá-la de novo, escolha um plano e pague."
+- Embaixo, sempre: "O valor é por página: cada página que você cria tem o seu teste grátis e o seu plano."
+
+**Os períodos.** "Escolha o período do plano"; "Mensal", "Semestral", "Anual"; "{valor} por mês";
+"Cobrado mês a mês." ou "{total} hoje, pelos {meses} meses."; "Economia de {valor} ({%}) em relação ao
+mensal."; "Renova em {data}." (com uma fatura em aberto: "Renova a contar do vencimento da fatura em
+aberto.").
+
+**Dados de cobrança.** "O Asaas, que faz a cobrança para a Beelink, pede o nome e o CPF ou CNPJ de quem
+paga, e recebe também o e-mail da sua conta. Os dados valem para todas as suas páginas e só são usados
+na cobrança." Os campos e as recusas ficaram como o S11 escreveu.
+
+**Antes de assinar.**
+
+1. "Você paga hoje {valor}, por esta página. Cada página tem o seu plano."
+2. No teste: "Assinando agora, você perde os {dias} dias de teste que faltam: o plano começa a contar
+   hoje." (um dia: "…perde o dia de teste que falta…"; no último: "O plano começa a contar hoje, último dia
+   do teste."). Numa cancelada que ainda funciona: "Assinando agora, você perde os dias que faltavam do
+   período já pago: o plano novo começa a contar hoje."
+3. "Com cartão de crédito, o plano renova sozinho no mesmo cartão. Com Pix, boleto ou cartão de débito,
+   cada renovação é uma fatura nova para pagar, que aparece aqui no painel."
+4. "A fatura abre no Asaas, em outra aba: lá você escolhe pagar com cartão, Pix ou boleto. O cartão é
+   digitado só no Asaas."
+5. "Ainda não dá para cancelar pelo painel. Para cancelar, fale com a Beelink: a página continua
+   funcionando até o fim do período já pago."
+
+**Fatura em aberto e botão.** "Você já escolheu o plano {período}, de {valor}, e a fatura dele ainda não foi
+paga. Continue o pagamento na mesma fatura." O botão, a troca de plano e o aviso de troca ficaram como o
+S11 escreveu.
+
+**Esperando o pagamento.** O título, o texto, "Abrir a fatura" e "Já paguei, verificar agora" ficaram;
+mudou o prazo: "Pix e cartão costumam ser confirmados em poucos minutos; boleto, em alguns dias úteis.
+Você pode fechar esta tela: quando o pagamento for confirmado, a página fica em dia sozinha."
+
+**Em dia.** "A renovação é cobrada sozinha neste cartão." ou "Cada renovação é uma fatura nova, que aparece
+aqui para você pagar."; com a fatura da renovação já gerada: "A fatura da renovação já está disponível:
+pague até o vencimento para a página continuar em dia."
+
+**Renovação devida, sem fatura ainda.** "Ainda não há uma fatura da renovação para pagar. Verifique de novo
+em instantes; se continuar assim, fale com a Beelink."
+
+**Erros da cobrança (dicionário do web).** "Escolha o período do plano."; "Por enquanto, nada é cobrado:
+não há nada a pagar."; "Esta página ainda não tem plano: não há nada a pagar agora."; "Esta página é
+isenta: não há nada a pagar."; "Há um pagamento desta página sendo processado. Espere alguns minutos; se
+continuar assim, fale com a Beelink."; "O Asaas recusou a assinatura. Tente de novo mais tarde; se
+continuar assim, fale com a Beelink."; e, em qualquer tela de uma página travada, "Esta página está
+travada até o plano dela ser pago." Os outros ficaram como estavam.
+
+**Página travada (S14).**
+
+| Motivo | Título | Texto |
+|---|---|---|
+| Teste vencido | Seu teste grátis acabou | O teste grátis desta página terminou em {data}, e nada foi cobrado. Para usá-la de novo, escolha um plano e pague a primeira fatura. |
+| Renovação não paga | A renovação não foi paga | A renovação desta página não foi paga, e o prazo para pagar terminou em {data}. Para usá-la de novo, pague a fatura em aberto. |
+| Cancelada | Sua assinatura foi cancelada | A assinatura desta página foi cancelada, e o período pago terminou em {data}. Para usá-la de novo, escolha um plano e pague. |
+| Mês grátis acabou | Seu mês grátis acabou | O mês grátis desta página terminou em {data}, e nada foi cobrado. Para usá-la de novo, escolha um plano e pague a primeira fatura. |
+
+Cada um tem a versão sem data. Depois: "Enquanto isso, o painel desta página fica fechado, e quem visita a
+página vê só um aviso de que ela está indisponível, sem o motivo."; numa loja, "Quem já comprou continua
+vendo os próprios pedidos."; "Nada foi apagado: assim que o pagamento for confirmado, a página volta como
+estava."; para quem tem outras, "Suas outras páginas continuam funcionando normalmente."; os preços, "Plano
+{plano}, por página", "Mensal: {valor} por mês", "Semestral: {total} a cada {meses} meses, {valor} por
+mês"; a frase da renovação da tela Assinar; e o botão, "Escolher um plano" ou, na renovação não paga,
+"Pagar a renovação".
+
+**Faixas (S14).** Teste: "O teste grátis desta página termina daqui a {dias} dias, em {data}." (amanhã:
+"…termina amanhã, {data}."; hoje: "…termina hoje.") + "Nada é cobrado sozinho: para a página não travar,
+escolha um plano e pague." + "Escolher um plano". Carência: "A renovação desta página não foi paga" +
+"Pague até {data} para a página não travar." + "Se for pagar com boleto, pague antes: ele leva alguns dias
+úteis para ser confirmado." + "Pagar a renovação".
+
+**Vitrine fora do ar.** Loja, como o S5 escreveu: "Loja indisponível no momento", "Esta loja não está
+recebendo pedidos agora. Volte mais tarde.", "Já comprou aqui? Veja seus pedidos". **Site:** "Site
+indisponível no momento", "Este site está fora do ar agora. Volte mais tarde."
+
+### O que o S14 (BEELINK-296) precisa saber
+
+- **As frases são `subscription.locked` e `subscription.banners`**, no dicionário da UI, e o motivo é
+  `SubscriptionLockValue` (`packages/ui/src/lib/subscription.ts`): os três de `lock` e `FREE_PERIOD_OVER`,
+  que a tela escolhe quando `lock` é `TRIAL_EXPIRED` e `freePeriodEndsAt` já passou (o campo está no fio,
+  em `StoreSubscription`, desde o S1).
+- **As datas chegam em palavras** (`{date}`), como na tela Assinar: o último dia do teste
+  (`trialLastDay`), o último dia da carência (o dia de Brasília antes de `graceEndsAt`), o último dia do
+  período pago (antes de `currentPeriodEndsAt`) e o último do mês grátis (antes de `freePeriodEndsAt`).
+  Sem a data, `textsUndated`.
+- `customers` é só de uma loja; `otherPages`, só de quem tem outras páginas (`useMyStores`). A renovação
+  é `facts.renewal`, a mesma frase da tela Assinar.
+- **A faixa do teste tem três frases** (`trialMany`, `trialOne`, `trialToday`): os dias em que ela aparece
+  são decisão do S14. Nenhuma frase das faixas tem número escrito; o teste das palavras recusa um.
+- O título da renovação não paga é "A renovação não foi paga", e não o "Não conseguimos receber a
+  renovação" do briefing (decisão 10). Mude se o Rafael preferir o outro.
+- O ícone do aviso da vitrine é uma loja também para um site. Fica para quem desenhar de novo esse aviso.
+
+### O que o S6 (BEELINK-224, o cupom) precisa saber
+
+- **As frases de situação da tela Assinar agora falam da trava** (risco 4): `TRIALING` diz que a página
+  trava quando o teste acaba, `TRIAL_EXPIRED` manda escolher um plano para usá-la, `SUSPENDED` e
+  `CANCELED` dizem "travada e fora do ar". Uma página no mês grátis não trava, qualquer que seja a
+  situação: o caso do mês grátis em `subscribeViewOf` e em `SubscriptionStanding` vem **antes** de olhar a
+  situação, ou estas frases mentem para ela.
+- As frases do cupom são do S6, no tom daqui, e entram no teste das palavras sem nada a fazer: tudo o que
+  estiver em `subscription.*` já é conferido (sem algarismo, os mesmos `{placeholders}` nas duas línguas).
+
+### O que o S2, o S15, o S7 e o S17 precisam saber
+
+- **S2 (o card do plano):** "Pagamento em atraso" é o nome da situação na tela Assinar; o card pode usar o
+  mesmo. "Página travada" é a palavra do produto para a trava.
+- **S15 e S7 (os e-mails):** o tom e as regras estão na decisão 1 e na tabela da decisão 3. Nenhum e-mail
+  pode prometer cancelar pelo painel ou um canal que não existe (decisão 8).
+- **S17 (o roteiro para ligar):** antes de ligar a cobrança, a lista "O que pede decisão" acima — em
+  especial o canal de atendimento (item 2), a política de privacidade (item 8) e a chave Pix (item 14).
+
+### Riscos, além dos de cima
+
+5. **O e2e da tela Assinar não rodou** com as frases novas (ver "O que não foi rodado"). Ele não procura
+   nenhuma frase que mudou, mas roda o axe na página inteira.
