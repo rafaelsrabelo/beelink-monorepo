@@ -1,8 +1,10 @@
+// UI
+import { periodFiguresOf, planMoney } from "@harness-monorepo/ui/lib/plan-figures"
+
 // Locales
 import type { LandingPlanPeriodValue } from "@harness-monorepo/ui/locales/messages"
 
-// Block
-import { discountPercent, formatCents } from "../storefront/storefront-price"
+export { planMoney, planPercent } from "@harness-monorepo/ui/lib/plan-figures"
 
 /**
  * What Beelink costs, in whole cents, and how long it is tried for free (BEELINK-318). The app holds
@@ -33,36 +35,11 @@ const MONTHS = { monthly: 1, semiannual: 6, annual: 12 } as const satisfies Reco
 
 export const LANDING_PLAN_PERIODS: readonly LandingPlanPeriodValue[] = ["monthly", "semiannual", "annual"]
 
-/** Reais in both languages: the plan is sold in Brazil, and only the separators follow the reader. */
-const CURRENCY = "BRL"
-
-/**
- * One period's figures, worked out from the two amounts and never written.
- *
- * The month's share is rounded up and the saving's percentage down — `discountPercent`'s own rule:
- * a claim about money is never rounded in the favour of whoever makes it.
- */
+/** One period's figures, worked out from the two amounts and never written (`periodFiguresOf`). */
 export function planOfferOf(prices: LandingPlanPrices, period: LandingPlanPeriodValue): LandingPlanOffer {
   const totalCents = prices.beelink[period]
-  const monthByMonthCents = prices.beelink.monthly * MONTHS[period]
-  const savingCents = Math.max(0, monthByMonthCents - totalCents)
 
-  return {
-    period,
-    totalCents,
-    monthlyCents: Math.ceil(totalCents / MONTHS[period]),
-    savingCents,
-    savingPercent: savingCents > 0 ? discountPercent(totalCents, monthByMonthCents) : 0,
-  }
-}
-
-export function planMoney(cents: number, locale: string): string {
-  return formatCents(cents, locale, CURRENCY)
-}
-
-/** "10%", as the reader's language writes it. */
-export function planPercent(percent: number, locale: string): string {
-  return new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 0 }).format(percent / 100)
+  return { period, totalCents, ...periodFiguresOf(totalCents, MONTHS[period], prices.beelink.monthly) }
 }
 
 /**
