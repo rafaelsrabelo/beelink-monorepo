@@ -22,6 +22,7 @@ import { pageSlugOf } from "@/lib/page-lock-view"
 import { billingKeys } from "@/services/billing/billing-keys"
 import { LOCKED_REREAD_MS } from "@/services/billing/page-lock-hooks"
 import { fetchPanelCounts, PanelCountsError } from "@/services/panel/panel-counts-requests"
+import { fetchStore } from "@/services/stores/store-requests"
 import { PageLockGate } from "./page-lock-gate"
 
 const mocks = vi.hoisted(() => ({ pathname: "/admin/loja/orders" }))
@@ -120,11 +121,18 @@ function Screen() {
   return <p>{frame}</p>
 }
 
+/** A read of the shell's, mounted beside the gate the whole time, as the menu's numbers and the bell are. */
+function ShellRead() {
+  useQuery({ queryKey: ["shell", "loja"], queryFn: () => fetchStore("loja") })
+  return null
+}
+
 let client: QueryClient
 
-function renderGate(children: ReactNode = <Screen />) {
+function renderGate(children: ReactNode = <Screen />, shell: ReactNode = null) {
   return render(
     <QueryClientProvider client={client}>
+      {shell}
       <PageLockGate realtime={<Ear />} locale="pt-BR" messages={ui}>
         {children}
       </PageLockGate>
@@ -299,11 +307,12 @@ describe("PageLockGate — the shopkeeper's other pages (BEELINK-296)", () => {
 })
 
 describe("PageLockGate — the way back (BEELINK-296)", () => {
-  it("once the page reads paid, draws the screen again from its read refused meanwhile, and opens the channel anew", async () => {
+  it("once the page reads paid, asks the shell's refused reads again at once, draws the screen again from its read refused meanwhile, and opens the channel anew", async () => {
     const counts = { openOrders: 2, unreadConversations: 0, unreadMessages: 0, unseenReviews: 0 }
-    const { times } = serve({ [SUBSCRIPTION]: [on(expired)], [SCREEN_READ]: [{ status: 403, body: LOCKED }, counts], "/api/billing/plans": [CATALOG], "/api/stores": [STORES] })
-    renderGate()
+    const { times } = serve({ [SUBSCRIPTION]: [on(expired)], [SCREEN_READ]: [{ status: 403, body: LOCKED }, counts], "/api/stores/loja": [{ status: 403, body: LOCKED }, STORES[0]!], "/api/billing/plans": [CATALOG], "/api/stores": [STORES] })
+    renderGate(<Screen />, <ShellRead />)
     expect(await screen.findByRole("heading", { level: 1, name: "Seu teste grátis acabou" })).toBeInTheDocument()
+    await waitFor(() => expect(client.getQueryState(["shell", "loja"])?.status).toBe("error"))
     expect(channel.open).toBe(0)
     const refusedReads = times(SCREEN_READ)
 
@@ -316,6 +325,9 @@ describe("PageLockGate — the way back (BEELINK-296)", () => {
     expect(drawn.filter((frame) => frame.startsWith("a tela recusada"))).toEqual([])
     expect(screen.queryByRole("heading", { name: "Seu teste grátis acabou" })).toBeNull()
     expect(times(SCREEN_READ)).toBe(refusedReads + 1)
+    // Asked again by the unlock itself, not by a clock: nothing else would ask it.
+    await waitFor(() => expect(client.getQueryState(["shell", "loja"])?.status).toBe("success"))
+    expect(times("/api/stores/loja")).toBe(2)
     expect(channel.open).toBe(1)
   })
 })
