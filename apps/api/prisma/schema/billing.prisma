@@ -127,6 +127,12 @@ model StoreSubscription {
 
   /// The paid period's end. Null while nothing was paid.
   currentPeriodEndsAt DateTime?
+  /// The first instant a page past due is locked (BEELINK-223): seven days after its paid period ended
+  /// or, with no period to count from, after the day it was found past due. Written once the page is
+  /// found past due — by a read of Asaas or by the billing routine's clock — and never moved earlier;
+  /// cleared once it pays, and kept on a suspended page, saying when its grace ran out. The lock, the
+  /// panel's notice and the e-mails read this one date.
+  graceEndsAt         DateTime?
   /// When the shopkeeper asked to cancel. Asaas removes its subscription at once and gives nothing
   /// back, so the page goes on until `currentPeriodEndsAt`, which only bee-link knows.
   cancelRequestedAt   DateTime?
@@ -171,6 +177,8 @@ model StoreSubscription {
 
   @@index([planId])
   @@index([nextCheckAt])
+  // The billing routine's clock moves pages by where they stand: a trial, a paid period or a grace that ended.
+  @@index([status])
   @@map("store_subscriptions")
 }
 

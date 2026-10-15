@@ -14,6 +14,21 @@ import type {
  */
 export const TRIAL_DAYS = 7;
 
+/**
+ * The days a page past due is used as ever before it locks (BEELINK-223), counted from the end of its
+ * paid period — itself the midnight in Brasília closing the due day — so the grace ends at a midnight
+ * too. Enough for a card Asaas charges late, and for a boleto to clear.
+ */
+export const GRACE_DAYS = 7;
+
+/**
+ * How long the shop's public read of a locked page may be kept before it is asked for again
+ * (BEELINK-223): only a payment opens the page, and no clock knows when one comes. As long as the web
+ * keeps any answer: shorter, every visit to a locked shop would cost a call to a limit all the shops'
+ * windows share.
+ */
+export const LOCKED_ANSWER_MS = 60_000;
+
 /*
   Each closed set below is written once and held to two unions at the same time: the wire's, in
   packages/contracts, and the database's, in the generated client. A word added to either alone

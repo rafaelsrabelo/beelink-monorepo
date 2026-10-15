@@ -6,6 +6,7 @@ import { brasiliaDayOf, closeOfBrasiliaDay, renewalDayOf } from './billing-dates
 import { CHECK_STEPS, CYCLE_MONTHS, cycleOfAsaas, SUBSCRIPTION_PAYMENT_METHODS } from './billing.constants.js';
 import type { PlatformCard, PlatformCharge, PlatformSubscription } from './platform-asaas.client.js';
 import { awaitsPayment } from './subscription-attempt.js';
+import { graceEndOf } from './subscription-status.js';
 
 /*
   What Asaas's word on a page's subscription comes to for the page (BEELINK-221): its standing, the
@@ -42,6 +43,8 @@ export interface PageStanding {
   /** A day of Brasília's calendar, as the DATE column hands it over: the UTC midnight that carries its name. */
   firstDueDate: Date | null;
   currentPeriodEndsAt: Date | null;
+  /** The end of the grace written when the page was found past due (BEELINK-223); null with none. */
+  graceEndsAt: Date | null;
   paymentMethod: SubscriptionPaymentMethod | null;
   cardBrand: string | null;
   cardLast4: string | null;
@@ -51,6 +54,8 @@ export interface PageStanding {
 export interface PageFacts {
   status: SubscriptionStatus;
   currentPeriodEndsAt: Date | null;
+  /** The end of a past due page's grace (BEELINK-223); null for any other standing. */
+  graceEndsAt: Date | null;
   paymentMethod: SubscriptionPaymentMethod | null;
   cardBrand: string | null;
   cardLast4: string | null;
@@ -104,8 +109,10 @@ const keptCard = (card: PlatformCard | null): PlatformCard | null => (card && ca
  * - **The charge of today's period went back:** `CANCELED`.
  * - **Nothing on this subscription says money moved:** as it was. The first charge waits, and the
  *   page goes on in trial or with its trial expired.
- * - **It paid before, and the period ended unpaid:** `PAST_DUE` — but `SUSPENDED`, which is the lock's
- *   to write, and `CANCELED`, which only a payment ends, stay.
+ * - **It paid before, and the period ended unpaid:** `PAST_DUE` — and `SUSPENDED` once its grace ran
+ *   out (BEELINK-223), as it is read; a page already suspended or cancelled stays so, as only a payment
+ *   ends either. The grace's end is written with the standing that has one, never moved earlier, and
+ *   gone with the standings that have none.
  */
 export function factsOf(row: PageStanding, subscription: PlatformSubscription | null, charges: PlatformCharge[], now: Date): PageFacts {
   const today = brasiliaDayOf(now);
@@ -139,7 +146,9 @@ export function factsOf(row: PageStanding, subscription: PlatformSubscription | 
   const givenBack = latest !== null && GIVEN_BACK.has(latest.status);
   const paying = moneySeen || PAYING.has(row.status);
 
-  const status = statusOf(row.status, { gone, covered, givenBack, paying, moneySeen });
+  const read = statusOf(row.status, { gone, covered, givenBack, paying, moneySeen });
+  const graceEndsAt = read === 'PAST_DUE' || read === 'SUSPENDED' ? graceEndOf({ currentPeriodEndsAt, graceEndsAt: row.graceEndsAt }, now) : null;
+  const status = read === 'PAST_DUE' && graceEndsAt && now.getTime() >= graceEndsAt.getTime() ? 'SUSPENDED' : read;
 
   // How the money last moved, and the card only when it moved by one.
   const moved = dated.filter(moneyMoved).sort((a, b) => b.dueDate.localeCompare(a.dueDate));
@@ -154,6 +163,7 @@ export function factsOf(row: PageStanding, subscription: PlatformSubscription | 
   return {
     status,
     currentPeriodEndsAt,
+    graceEndsAt,
     paymentMethod,
     cardBrand: card?.brand ?? null,
     cardLast4: card?.last4 ?? null,
