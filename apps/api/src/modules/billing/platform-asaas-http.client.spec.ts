@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 // App
 import { AsaasOutcomeUnknown, AsaasRefused, AsaasThrottled, AsaasUnreachable } from '../../shared/asaas/asaas-errors.js';
+import { PLATFORM_WEBHOOK_EVENTS } from './billing.constants.js';
 import { PlatformAsaasUnconfigured } from './platform-asaas.client.js';
 import { PlatformAsaasHttpClient } from './platform-asaas-http.client.js';
 
@@ -69,6 +70,13 @@ const PAGE_REFERENCE = 'beelink-subscription-0199a0f1-0000-7000-8000-0000000000c
 const wanted = { customerId: 'cus_000009459220', valueCents: 5990, cycle: 'MONTHLY', firstDueDay: '2026-10-13', description: 'Plano Beelink mensal — página "Padaria da Lia"', externalReference: PAGE_REFERENCE };
 const madeBody = { object: 'subscription', id: 'sub_cwtxq513jlpjfid1', dateCreated: '2026-10-13', customer: 'cus_000009459220', paymentLink: null, value: 59.9, nextDueDate: '2026-11-13', cycle: 'MONTHLY', description: wanted.description, billingType: 'UNDEFINED', deleted: false, status: 'ACTIVE', externalReference: PAGE_REFERENCE, checkoutSession: null, sendPaymentByPostalService: false, fine: { value: 0, type: 'FIXED' }, interest: { value: 0, type: 'PERCENTAGE' }, split: null };
 const made = { id: 'sub_cwtxq513jlpjfid1', status: 'ACTIVE', deleted: false, customerId: 'cus_000009459220', valueCents: 5990, cycle: 'MONTHLY', billingType: 'UNDEFINED', nextDueDate: '2026-11-13', externalReference: PAGE_REFERENCE, card: null };
+
+/** bee-link's own webhook (BEELINK-221): made up, in the shape `openssl rand -base64 32` gives. */
+const WEBHOOK_TOKEN = 'nX0bq3l8V7mYkU2sA9cR4tE6wZ1pH5jD0fG8iK3oL2M=';
+const WEBHOOK_URL = 'https://beelink.biz/api/billing/asaas/webhook';
+const webhookRequest = { name: 'bee-link (assinaturas)', url: WEBHOOK_URL, email: 'contato@beecoders.net', authToken: WEBHOOK_TOKEN };
+/** As the sandbox listed one on 14/10/2026: `hasAuthToken`, and never the token. */
+const webhookBody = (change: object = {}) => ({ id: '213ed7c8-aab8-4acb-88bf-4c0c4e31ef22', name: 'bee-link (assinaturas)', url: WEBHOOK_URL, email: 'contato@beecoders.net', enabled: true, interrupted: false, apiVersion: 3, sendType: 'SEQUENTIALLY', hasAuthToken: true, penalizedRequestsCount: 0, events: ['PAYMENT_RECEIVED'], ...change });
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -512,6 +520,72 @@ describe("PlatformAsaasHttpClient — bee-link's own Asaas account (BEELINK-291)
     });
   });
 
+  describe("bee-link's own webhook (BEELINK-221)", () => {
+    it('lists every webhook of the account, page after page, with what tells one off or stopped', async () => {
+      const fetched = answers(
+        [200, { object: 'list', hasMore: true, totalCount: 2, data: [webhookBody(), { id: 'other', name: 'Another product', url: 'https://other.test/hook', enabled: false }] }],
+        [200, { object: 'list', hasMore: false, totalCount: 3, data: [webhookBody({ id: 'stopped', interrupted: true }), { name: 'no id' }] }],
+      );
+
+      expect(await clientOf().webhooks()).toEqual([
+        { id: '213ed7c8-aab8-4acb-88bf-4c0c4e31ef22', url: WEBHOOK_URL, enabled: true, interrupted: false },
+        { id: 'other', url: 'https://other.test/hook', enabled: false, interrupted: false },
+        { id: 'stopped', url: WEBHOOK_URL, enabled: true, interrupted: true },
+      ]);
+      expect([sent(fetched, 0).method, sent(fetched, 0).url]).toEqual(['GET', `${BASE}/webhooks?limit=100&offset=0`]);
+      expect(sent(fetched, 1).url).toBe(`${BASE}/webhooks?limit=100&offset=100`);
+    });
+
+    it('does not take an answer it cannot read for no webhook: one more would be registered', async () => {
+      answer(200, { object: 'list' });
+      expect(await thrownBy(clientOf().webhooks())).toBeInstanceOf(AsaasUnreachable);
+    });
+
+    it('registers one on and sending in order, with the events the billing reads and the token, and reads nothing of the answer but its id', async () => {
+      // Asaas repeats the token in what it answers to a creation (seen on 14/10/2026).
+      const fetched = answer(200, { ...webhookBody(), authToken: WEBHOOK_TOKEN });
+
+      expect(await clientOf().createWebhook(webhookRequest)).toBe('213ed7c8-aab8-4acb-88bf-4c0c4e31ef22');
+      expect(sent(fetched)).toMatchObject({ method: 'POST', url: `${BASE}/webhooks` });
+      expect(sent(fetched).body).toEqual({
+        name: 'bee-link (assinaturas)',
+        url: WEBHOOK_URL,
+        email: 'contato@beecoders.net',
+        enabled: true,
+        interrupted: false,
+        apiVersion: 3,
+        authToken: WEBHOOK_TOKEN,
+        sendType: 'SEQUENTIALLY',
+        events: [...PLATFORM_WEBHOOK_EVENTS],
+      });
+      expect(PLATFORM_WEBHOOK_EVENTS).toEqual(expect.arrayContaining(['PAYMENT_CREATED', 'PAYMENT_CONFIRMED', 'PAYMENT_RECEIVED', 'PAYMENT_OVERDUE', 'PAYMENT_REFUNDED', 'PAYMENT_DELETED', 'SUBSCRIPTION_DELETED', 'SUBSCRIPTION_INACTIVATED']));
+      expect(PLATFORM_WEBHOOK_EVENTS).toHaveLength(25);
+
+      answer(200, { authToken: WEBHOOK_TOKEN });
+      expect(await thrownBy(clientOf().createWebhook(webhookRequest))).toBeInstanceOf(AsaasUnreachable);
+    });
+
+    it('sets one going again, on and its queue no longer interrupted, with the token handed anew', async () => {
+      const fetched = answer(200, webhookBody());
+
+      await clientOf().resumeWebhook('213ed7c8', WEBHOOK_TOKEN);
+
+      expect(sent(fetched)).toMatchObject({ method: 'PUT', url: `${BASE}/webhooks/213ed7c8`, body: { enabled: true, interrupted: false, authToken: WEBHOOK_TOKEN } });
+    });
+
+    it("never repeats the token in what a refusal throws, should Asaas's words echo it", async () => {
+      const printed = (error: unknown) => [String(error), JSON.stringify(error, Object.getOwnPropertyNames(error as object)), inspect(error, { depth: 10, showHidden: true })].join('\n');
+      for (const call of [() => clientOf().createWebhook(webhookRequest), () => clientOf().resumeWebhook('wh_1', WEBHOOK_TOKEN)]) {
+        answer(400, { errors: [{ code: `invalid_${WEBHOOK_TOKEN}`, description: `O token ${WEBHOOK_TOKEN} não é válido` }] });
+        const refused = await thrownBy(call());
+
+        expect(refused).toBeInstanceOf(AsaasRefused);
+        expect(refused).toMatchObject({ status: 400, code: 'invalid_[token]', reason: 'O token [token] não é válido' });
+        expect(printed(refused)).not.toContain(WEBHOOK_TOKEN);
+      }
+    });
+  });
+
   describe("bee-link's key", () => {
     const calls = (client: PlatformAsaasHttpClient): [string, () => Promise<unknown>][] => [
       ['customers', () => client.customers(REFERENCE)],
@@ -522,6 +596,9 @@ describe("PlatformAsaasHttpClient — bee-link's own Asaas account (BEELINK-291)
       ['subscriptions', () => client.subscriptions(PAGE_REFERENCE)],
       ['createSubscription', () => client.createSubscription(wanted)],
       ['removeSubscription', () => client.removeSubscription('sub_1')],
+      ['webhooks', () => client.webhooks()],
+      ['createWebhook', () => client.createWebhook(webhookRequest)],
+      ['resumeWebhook', () => client.resumeWebhook('wh_1', WEBHOOK_TOKEN)],
     ];
 
     /** Everything an error can be printed as: its text, its fields, and what a logger would walk through. */
@@ -588,6 +665,9 @@ describe("PlatformAsaasHttpClient — bee-link's own Asaas account (BEELINK-291)
         () => client.subscriptions(PAGE_REFERENCE),
         () => client.createSubscription(wanted),
         () => client.removeSubscription('sub_1'),
+        () => client.webhooks(),
+        () => client.createWebhook(webhookRequest),
+        () => client.resumeWebhook('wh_1', WEBHOOK_TOKEN),
       ]) {
         const failed = await thrownBy(call());
         expect(failed).toBeInstanceOf(PlatformAsaasUnconfigured);

@@ -91,6 +91,27 @@ export interface PlatformCharge {
   card: PlatformCard | null;
 }
 
+/** A webhook of bee-link's own account, as Asaas tells it (BEELINK-221). The token it was registered with never comes back in a read. */
+export interface PlatformWebhook {
+  id: string;
+  url: string;
+  /** Off: Asaas sends it nothing. */
+  enabled: boolean;
+  /** Asaas stopped sending after fifteen failures in a row, and holds the events meanwhile. */
+  interrupted: boolean;
+}
+
+/** bee-link's own webhook to be registered at its account (BEELINK-221). */
+export interface PlatformWebhookRequest {
+  /** How it is told apart in Asaas's panel. */
+  name: string;
+  url: string;
+  /** Who Asaas warns when the queue pauses. */
+  email: string;
+  /** Sent back in `asaas-access-token` with every event: 32 to 255 characters, no spaces. */
+  authToken: string;
+}
+
 /** This deployment was given no key of bee-link's own Asaas account: nothing can be asked of it. */
 export class PlatformAsaasUnconfigured extends Error {
   constructor() {
@@ -99,7 +120,7 @@ export class PlatformAsaasUnconfigured extends Error {
 }
 
 /**
- * What bee-link asks of its own Asaas account (BEELINK-291, BEELINK-292) — the one a page's plan is charged at,
+ * What bee-link asks of its own Asaas account (BEELINK-291, BEELINK-292, BEELINK-221) — the one a page's plan is charged at,
  * never a shop's. A port: the module binds it to `PlatformAsaasHttpClient`, and a test stands a fake
  * Asaas in its place. No call takes a key: the implementation holds the one this deployment was
  * given, and neither answers it nor lets an error carry it. What goes wrong is told with the errors
@@ -147,7 +168,24 @@ export abstract class PlatformAsaas {
 
   /**
    * Every charge of a subscription that was not removed, as Asaas lists them. Asaas answers an empty
-   * list for a subscription that does not exist: `subscription` is what says whether one does.
+   * list for a subscription that does not exist: `subscription` is what says whether one does. A
+   * removed subscription's paid charges are still listed (seen on 14/10/2026).
    */
   abstract subscriptionCharges(id: string): Promise<PlatformCharge[]>;
+
+  /** Every webhook of the account (BEELINK-221) — bee-link's and any other product's — looked at before one is registered. */
+  abstract webhooks(): Promise<PlatformWebhook[]>;
+
+  /**
+   * bee-link's own webhook registered at the account, on and sending in order the events the billing
+   * reads (`PLATFORM_WEBHOOK_EVENTS`). Answers its id. Asaas repeats the token in its answer: nothing
+   * else of it is read.
+   */
+  abstract createWebhook(webhook: PlatformWebhookRequest): Promise<string>;
+
+  /**
+   * A webhook set to send again — on, its queue no longer interrupted, so what Asaas held meanwhile is
+   * sent — with the token handed anew: one changed in this deployment's environment reaches Asaas this way.
+   */
+  abstract resumeWebhook(id: string, authToken: string): Promise<void>;
 }

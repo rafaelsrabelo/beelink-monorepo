@@ -7,10 +7,18 @@ import {
   type PlatformCustomerRequest,
   type PlatformSubscription,
   type PlatformSubscriptionRequest,
+  type PlatformWebhook,
+  type PlatformWebhookRequest,
 } from '../../src/modules/billing/platform-asaas.client.js';
 import { AsaasOutcomeUnknown, AsaasRefused } from '../../src/shared/asaas/asaas-errors.js';
 
-type Call = 'customers' | 'createCustomer' | 'updateCustomer' | 'subscriptions' | 'createSubscription' | 'removeSubscription' | 'subscription' | 'subscriptionCharges';
+type Call = 'customers' | 'createCustomer' | 'updateCustomer' | 'subscriptions' | 'createSubscription' | 'removeSubscription' | 'subscription' | 'subscriptionCharges' | 'webhooks' | 'createWebhook' | 'resumeWebhook';
+
+/** A webhook as the account keeps it: with the token it was registered with, which no read gives back. */
+interface FakeWebhook extends PlatformWebhook {
+  authToken: string;
+  name: string;
+}
 
 interface FakeCustomer extends PlatformCustomerRequest {
   id: string;
@@ -38,10 +46,14 @@ const WAITING = ['PENDING', 'OVERDUE'];
  * again changes nothing. It refuses to make one for a customer that was removed, by its catch-all
  * code, and removing a customer removes its subscriptions.
  *
+ * Webhooks (BEELINK-221): it keeps them with their token, which a read never gives back, and holds
+ * another product's beside bee-link's.
+ *
  * A test steers it: `failing` makes the next call of a kind throw, `before` runs ahead of one (to
  * hold it open, or to change the world meanwhile), and `unanswered` / `unansweredSubscriptions` are
  * creations Asaas carried out and never answered. `remove` is somebody deleting the customer at
- * Asaas's own panel; `pay` is the shopkeeper paying at the invoice.
+ * Asaas's own panel; `pay` is the shopkeeper paying at the invoice — any status Asaas gives a charge,
+ * `refund` the money given back.
  */
 export class FakePlatformAsaas extends PlatformAsaas {
   configured = true;
@@ -51,6 +63,7 @@ export class FakePlatformAsaas extends PlatformAsaas {
   readonly charges: FakeCharge[] = [];
   /** What `createSubscription` was asked, in order. */
   readonly asked: PlatformSubscriptionRequest[] = [];
+  readonly webhooksHeld: FakeWebhook[] = [];
   /** How many customer creations to come are made and then not answered. */
   unanswered = 0;
   /** The same, of subscriptions. */
@@ -60,7 +73,7 @@ export class FakePlatformAsaas extends PlatformAsaas {
   /** Subscriptions the search by reference does not bring, though they stand: a list that lags. */
   readonly unlisted = new Set<string>();
   private readonly failures = new Map<Call, unknown[]>();
-  private readonly hooks = new Map<Call, () => Promise<void> | void>();
+  private readonly hooks = new Map<Call, () => unknown>();
   private sequence = 0;
 
   reset(): void {
@@ -70,6 +83,7 @@ export class FakePlatformAsaas extends PlatformAsaas {
     this.subscriptionsHeld.length = 0;
     this.charges.length = 0;
     this.asked.length = 0;
+    this.webhooksHeld.length = 0;
     this.unanswered = 0;
     this.unansweredSubscriptions = 0;
     this.chargeless = 0;
@@ -83,7 +97,8 @@ export class FakePlatformAsaas extends PlatformAsaas {
     this.failures.set(call, [...(this.failures.get(call) ?? []), error]);
   }
 
-  before(call: Call, hook: (() => Promise<void> | void) | null): void {
+  /** What a hook answers is not read: it is awaited, so one that returns a promise holds the call until it settles. */
+  before(call: Call, hook: (() => unknown) | null): void {
     if (hook) this.hooks.set(call, hook);
     else this.hooks.delete(call);
   }
@@ -165,11 +180,39 @@ export class FakePlatformAsaas extends PlatformAsaas {
     return charge;
   }
 
-  /** The shopkeeper paid at the invoice: the subscription's earliest charge takes this status. */
-  pay(subscriptionId: string, status = 'CONFIRMED'): void {
+  /** The shopkeeper paid at the invoice: the subscription's earliest charge takes this status — and, told, how it was paid. */
+  pay(subscriptionId: string, status = 'CONFIRMED', change: Partial<PlatformCharge> = {}): FakeCharge {
     const [first] = this.charges.filter((charge) => charge.subscriptionId === subscriptionId && !charge.deleted).sort((a, b) => a.dueDate.localeCompare(b.dueDate));
     if (!first) throw new Error(`The fake Asaas holds no charge of ${subscriptionId}`);
-    first.status = status;
+    Object.assign(first, { status, ...change });
+    return first;
+  }
+
+  /** The given back: Asaas leaves the subscription standing. */
+  refund(chargeId: string, status = 'REFUNDED'): void {
+    const found = this.charges.find((charge) => charge.id === chargeId);
+    if (!found) throw new Error(`The fake Asaas holds no charge ${chargeId}`);
+    found.status = status;
+  }
+
+  async webhooks(): Promise<PlatformWebhook[]> {
+    await this.enter('webhooks');
+    return this.webhooksHeld.map(({ id, url, enabled, interrupted }) => ({ id, url, enabled, interrupted }));
+  }
+
+  async createWebhook(webhook: PlatformWebhookRequest): Promise<string> {
+    await this.enter('createWebhook');
+    this.sequence += 1;
+    const id = `wh_fake${String(this.sequence).padStart(8, '0')}`;
+    this.webhooksHeld.push({ id, url: webhook.url, name: webhook.name, authToken: webhook.authToken, enabled: true, interrupted: false });
+    return id;
+  }
+
+  async resumeWebhook(id: string, authToken: string): Promise<void> {
+    await this.enter('resumeWebhook');
+    const found = this.webhooksHeld.find((webhook) => webhook.id === id);
+    if (!found) throw new AsaasRefused(404, null, 'no reason given');
+    Object.assign(found, { enabled: true, interrupted: false, authToken });
   }
 
   async customers(externalReference: string): Promise<PlatformCustomer[]> {
