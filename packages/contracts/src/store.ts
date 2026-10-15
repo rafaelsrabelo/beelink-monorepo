@@ -232,6 +232,14 @@ export interface PublicStore {
    * before pages existed, which linked none.
    */
   pages?: PublicPageLink[];
+  /**
+   * Present, and true, on the shop's public read alone while the page is locked for want of payment
+   * (BEELINK-223): the shop window is off the air. The answer then keeps who the shop is — the name,
+   * the logo, the colours, the route words — so a customer's account and orders are still drawn in
+   * it, and nothing it sells or measures: no sections, no landings, no cashback, no pixel, no
+   * analytics. Absent on every other answer, and wherever nothing locks.
+   */
+  unavailable?: true;
 }
 
 /** The shop as its owner edits it in the panel: the public shape plus what only the owner may see. */
