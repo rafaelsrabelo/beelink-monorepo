@@ -8,6 +8,7 @@ import type {
 } from "../blocks/design/design-types"
 import type { CashbackEntryKindValue } from "../lib/cashback"
 import type { CustomDomainErrorValue, CustomDomainProblemValue } from "../lib/custom-domain"
+import type { SubscriptionCycleValue, SubscriptionMethodValue, SubscriptionStandingView } from "../lib/subscription"
 import type { CouponRefusalValue } from "../lib/order-discounts"
 import type { SectionCategory } from "../lib/section-registry"
 import type { LeadStatus } from "../blocks/leads/lead-types"
@@ -4231,6 +4232,151 @@ export interface UiMessages {
       /** How long a change takes, forwarding, the one `A` on the root, why the root takes no `CNAME`, and a provider that refuses `@` as a value. */
       notes: Record<"time" | "forwarding" | "single" | "root" | "cname", string>
     }
+  }
+  /**
+   * The panel's Assinar screen (BEELINK-293): a page's plan, chosen, paid at Asaas's invoice and
+   * waited for. No amount, day or count is written here: each arrives through a `{placeholder}`, from
+   * the catalogue and the page's subscription. BEELINK-290 reviews these words.
+   */
+  subscription: {
+    /** `{plan}`: the plan's name, as the catalogue gives it. */
+    title: string
+    /** The title where the catalogue does not hold the plan on sale. */
+    untitled: string
+    /** Under the title: what a page's plan is, wherever it stands. */
+    lead: string
+    badges: Record<SubscriptionStandingView["status"], string>
+    /** Beside the badge. `{date}` is a day already in words; `{days}` how many are left after today. */
+    standing: {
+      trialingMany: string
+      trialingOne: string
+      trialingToday: string
+      trialExpired: string
+      active: string
+      activeUndated: string
+      pastDue: string
+      pastDueUndated: string
+      suspended: string
+      canceledUntil: string
+      canceled: string
+    }
+    cycles: {
+      /** The radio group's legend. */
+      legend: string
+      names: Record<SubscriptionCycleValue, string>
+      /** `{amount}`: what the cycle comes to a month. */
+      perMonth: string
+      /** The month's own: charged month by month. */
+      billedMonthly: string
+      /** `{total}` paid today for `{months}` months. */
+      billedAtOnce: string
+      /** `{amount}`, `{percent}`: against paying the month for as long. */
+      saving: string
+      /** Drawn beside the cycle's name, never read: the figures say the saving in a sentence. `{percent}`. */
+      savingBadge: string
+      /** `{date}`. */
+      renewsOn: string
+      /** The cycle of an invoice already open: its renewal counts from that invoice's due day. */
+      renewsFromInvoice: string
+    }
+    /** Who the page's plan is charged to: the account's, once for all its pages. */
+    account: {
+      title: string
+      /** Why the name and the document are asked, and who receives them. */
+      lead: string
+      name: string
+      namePlaceholder: string
+      nameInvalid: string
+      document: string
+      documentPlaceholder: string
+      documentInvalid: string
+      /** `{name}`, `{documentType}`, `{document}` — the document masked, as the API answers it. */
+      chargedTo: string
+      change: string
+      keep: string
+    }
+    /** What is said before the button, in plain words. */
+    facts: {
+      title: string
+      /** `{amount}`. */
+      chargedToday: string
+      /** In trial, the days left are not added to the plan. `{days}`. */
+      trialLossMany: string
+      trialLossOne: string
+      trialLossToday: string
+      /** A cancelled page that still works: what is left of the period paid is not added either. */
+      canceledLoss: string
+      renewal: string
+      invoice: string
+      /** What is true of cancelling today: the panel cannot cancel yet (the epic's S12), and nothing here promises it will. */
+      cancel: string
+    }
+    /** An invoice already open for the page. `{cycle}`, `{amount}`. */
+    openInvoice: string
+    /** Another cycle chosen while that invoice is open: it stops being payable. */
+    switchWarning: string
+    /** `{amount}`. */
+    submit: string
+    resume: string
+    /** `{amount}`. */
+    switchSubmit: string
+    submitting: string
+    /** Under the button. */
+    afterSubmit: string
+    /** Read out to a screen reader after a link that opens Asaas's page in another tab. */
+    newTab: string
+    awaiting: {
+      title: string
+      /** `{cycle}`, `{amount}`. */
+      summary: string
+      text: string
+      open: string
+      check: string
+      checking: string
+      /** A check asked for by hand that found no payment yet. */
+      notYet: string
+      /** How long each way of paying takes to be confirmed. */
+      timing: string
+      choose: string
+      /** The plan's price changed between the screen's read and the choice: the invoice holds this one. `{amount}`. */
+      priceChanged: string
+    }
+    confirmed: {
+      title: string
+      /** `{date}`. */
+      text: string
+      textUndated: string
+      back: string
+    }
+    paid: {
+      title: string
+      planLabel: string
+      /** `{cycle}`, `{amount}`. */
+      plan: string
+      untilLabel: string
+      methodLabel: string
+      methods: Record<SubscriptionMethodValue, string>
+      /** `{brand}`, `{last4}`. */
+      card: string
+      renewsByCard: string
+      renewsByInvoice: string
+      renewalOut: string
+      payRenewal: string
+      back: string
+    }
+    /** A renewal past its day: the invoice due is what is paid, not another cycle chosen. */
+    due: {
+      title: string
+      text: string
+      pay: string
+      /** No invoice is out for it. */
+      missing: string
+      check: string
+    }
+    /** The plan is not on sale, or this deployment cannot charge. */
+    unavailable: string
+    /** A read of the page's subscription that failed. */
+    failed: string
   }
 }
 

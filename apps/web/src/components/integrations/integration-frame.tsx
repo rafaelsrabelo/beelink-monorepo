@@ -18,13 +18,17 @@ export interface IntegrationFrameProps {
   children: ReactNode
 }
 
-/** An integration's own page: the way back to the list over it, and its card, under that, as its title. */
+/**
+ * An integration's own page: the way back to the list over it, and its card, under that, as its title.
+ * The way back is in the shell's muted grey: on the panel's ground, `muted-foreground` reads under
+ * 4.5:1 (seen by axe on the Assinar screen, BEELINK-293).
+ */
 export function IntegrationFrame({ back, result, children }: IntegrationFrameProps) {
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 lg:px-6">
       <AppLink
         href={back.href}
-        className="text-muted-foreground hover:text-foreground focus-visible:ring-ring inline-flex w-fit items-center gap-1 rounded-sm text-sm outline-none focus-visible:ring-2"
+        className="text-shell-muted hover:text-foreground focus-visible:ring-ring inline-flex w-fit items-center gap-1 rounded-sm text-sm outline-none focus-visible:ring-2"
       >
         <ArrowLeftIcon aria-hidden="true" className="size-4" />
         {back.label}

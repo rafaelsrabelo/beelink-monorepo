@@ -12,8 +12,10 @@
 -- the value it was made with — the one `store_subscriptions.priceCents` keeps. Raising what a paying
 -- page pays is a decision of its own, and not something editing this file does.
 --
--- THE LANDING HOLDS A SECOND COPY of these amounts, in apps/web/src/lib/plans.ts, until the web reads
--- them from the API (BEELINK-293). Until then the two files change together, by hand.
+-- THE LANDING HOLDS A SECOND COPY of these amounts, in apps/web/src/lib/plans.ts, on purpose: it is
+-- drawn on the server and must not wait on the API (BEELINK-293). The two change together, in one
+-- commit, and `web/landing-prices-match-api` in scripts/arch-gates.sh refuses one where they differ —
+-- it reads the `beelink` row's three prices and the `beelink-beelia` row's month off this file.
 --
 -- Never destructive: a slug taken out of this file stays in the database, where a page may point at
 -- it. A plan no longer sold is switched off here, not removed.

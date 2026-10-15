@@ -8,8 +8,9 @@ import type {
 
 /**
  * The days a new page is used before anything is owed (BEELINK-218). The landing states the same
- * number from its own copy, `trialDays` in apps/web/src/lib/plans.ts, until the web reads it from
- * `GET /billing/plans` (BEELINK-293): the two change together.
+ * number from its own copy, `trialDays` in apps/web/src/lib/plans.ts, which it keeps on purpose
+ * (BEELINK-293): the two change together, and `web/landing-prices-match-api` in scripts/arch-gates.sh
+ * refuses a commit where they do not.
  */
 export const TRIAL_DAYS = 7;
 
