@@ -121,6 +121,13 @@ describe('the report of the pages before charging is switched on', () => {
     ]);
   });
 
+  it('reads a day as it begins: on 13/11, the last day of their month, the pages of 13/10 are still free', async () => {
+    const { out } = await run(['--on', '2026-11-13']);
+
+    expect(countOf(out, '  open, free until 2026-11-13')).toBe(4);
+    expect(out.find((line) => line.startsWith('  locked'))).toMatch(/\(trial over 2, suspended 2, cancelled 0\)$/);
+  });
+
   it('locks the pages of 13/10 once their month is over, on 14/11 — and a past due page whose grace ran out', async () => {
     const { out } = await run(['--on', '2026-11-14']);
 
