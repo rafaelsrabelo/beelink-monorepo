@@ -258,7 +258,7 @@ describe("SubscribeScreen, a page in trial", () => {
 
   it.each([
     ["BILLING_UNREACHABLE", 503, "O Asaas não respondeu. Tente de novo: a assinatura continua de onde parou."],
-    ["BILLING_SUBSCRIPTION_REFUSED", 502, "O Asaas recusou a assinatura. Tente de novo mais tarde ou fale com o suporte da Beelink."],
+    ["BILLING_SUBSCRIPTION_REFUSED", 502, "O Asaas recusou a assinatura. Tente de novo mais tarde; se continuar assim, fale com a Beelink."],
     ["BILLING_SUBSCRIPTION_BUSY", 409, "A fatura desta página já está sendo gerada. Tente de novo em instantes."],
     ["RATE_LIMITED", 429, "Muitas tentativas. Espere um minuto e tente de novo."],
   ])("says Asaas's %s in a sentence, and opens nothing", async (code, status, sentence) => {
