@@ -6,6 +6,8 @@ export const billingKeys = {
   all: ["billing"] as const,
   plans: () => [...billingKeys.all, "plans"] as const,
   account: () => [...billingKeys.all, "account"] as const,
-  subscription: (slug: string) => [...billingKeys.all, "subscription", slug] as const,
+  /** Every page's subscription: what a write refused for a page's lock asks again (BEELINK-296). */
+  subscriptions: () => [...billingKeys.all, "subscription"] as const,
+  subscription: (slug: string) => [...billingKeys.subscriptions(), slug] as const,
   check: (slug: string) => [...billingKeys.all, "check", slug] as const,
 }

@@ -11,6 +11,7 @@ import { ThemeProvider } from "next-themes"
 // App
 import { isPageLockedError } from "@/lib/page-lock"
 import { isPanelPage, isSignedOutError, sessionEndedHrefOf } from "@/lib/panel-return"
+import { billingKeys } from "@/services/billing/billing-keys"
 
 /**
  * A panel call that says the session is over sends the person to sign in, and back to this page
@@ -24,14 +25,23 @@ function signInWhenSignedOut(error: unknown): void {
 
 /** Exported for the tests of what an ended session does to a query that reads on a clock. */
 export function makeQueryClient(): QueryClient {
-  return new QueryClient({
+  const client: QueryClient = new QueryClient({
     queryCache: new QueryCache({ onError: signInWhenSignedOut }),
-    mutationCache: new MutationCache({ onError: signInWhenSignedOut }),
+    mutationCache: new MutationCache({
+      onError: (error) => {
+        signInWhenSignedOut(error)
+        // A write refused because its page locked meanwhile (BEELINK-296): the page's subscription is
+        // read again, and the panel's gate puts the locked page's notice where the screen was. A read
+        // refused so is heard by the gate itself.
+        if (isPageLockedError(error)) void client.invalidateQueries({ queryKey: billingKeys.subscriptions() }, { cancelRefetch: false })
+      },
+    }),
     // Asking again cannot bring an ended session back, nor open a page locked until it is paid
     // (BEELINK-223) — the shell would ask four times for each of its reads; anything else gets
     // TanStack's three tries.
     defaultOptions: { queries: { staleTime: 60_000, retry: (failures, error) => !isSignedOutError(error) && !isPageLockedError(error) && failures < 3 } },
   })
+  return client
 }
 
 let browserQueryClient: QueryClient | undefined
