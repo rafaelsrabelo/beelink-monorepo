@@ -415,6 +415,18 @@ describe("a page's payment, read at bee-link's own Asaas account (BEELINK-221)",
       expect(asaas.calls).toEqual(['subscription', 'subscriptionCharges']);
     });
 
+    it('gives a first turn to a subscription a choice found standing and kept, though the row had named none', async () => {
+      const row = await rowOf();
+      // What a request that died after Asaas made the subscription leaves: one standing under the page's reference, and a row naming nothing.
+      asaas.plantSubscription({ customerId: asaas.standing[0]!.id, valueCents: 5990, cycle: 'MONTHLY', firstDueDay: today(), description: 'Plano Beelink mensal — página "Padaria da Lia"', externalReference: `beelink-subscription-${row.id}` });
+      expect(row.nextCheckAt).toBeNull();
+
+      await choose('MONTHLY');
+
+      expect(asaas.subscriptionsHeld).toHaveLength(1);
+      expect((await rowOf()).nextCheckAt!.getTime()).toBeGreaterThan(Date.now() + 9 * 60_000);
+    });
+
     it('leaves a page alone before its turn', async () => {
       await choose('MONTHLY');
 

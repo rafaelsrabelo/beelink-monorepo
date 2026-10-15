@@ -193,13 +193,14 @@ describe("bee-link's own Asaas webhook (BEELINK-221)", () => {
 
   describe('what is not bee-link’s', () => {
     it("answers 200 and leaves alone an event of the account that is about no page — another product's charge, another reference, a page this deployment does not have", async () => {
-      await chosen();
+      const { reference } = await chosen();
 
       const bodies = [
         paymentEvent('evt_other_product', 'PAYMENT_RECEIVED', { id: 'pay_other', externalReference: 'pedido-4711' }),
         paymentEvent('evt_no_reference', 'PAYMENT_RECEIVED', { id: 'pay_loose' }),
         paymentEvent('evt_other_row', 'PAYMENT_RECEIVED', { id: 'pay_x', externalReference: 'beelink-subscription-0199a0f1-0000-7000-8000-00000000dead' }),
-        paymentEvent('evt_upper_case', 'PAYMENT_RECEIVED', { id: 'pay_y', externalReference: 'BEELINK-SUBSCRIPTION-0199A0F1-0000-7000-8000-00000000DEAD' }),
+        // bee-link's reference is its own, lower case: Asaas's search ignores case, and this does not.
+        paymentEvent('evt_upper_case', 'PAYMENT_RECEIVED', { id: 'pay_y', externalReference: reference.toUpperCase() }),
         subscriptionEvent('evt_other_subscription', 'SUBSCRIPTION_DELETED', { id: 'sub_someone_else' }),
         { id: 'evt_access', event: 'ACCESS_TOKEN_DISABLED' },
         'not json at all',
