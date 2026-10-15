@@ -293,7 +293,7 @@ leitura da conta sem a chave, que o filtro de exceções da API escreve como err
 
 **Limpeza:** no sandbox, a assinatura ficou `INACTIVE` e `deleted: true`, o cliente foi removido, e a busca
 por "Teste S14" responde 0; a assinatura `teste-s8-sub-amanha-ok` não foi tocada. No banco, a conta de
-teste e as dez contas que os e2e criaram (com as páginas e as assinaturas delas) apagadas: 0 contas, 0
+teste e as dezesseis contas que os e2e criaram nas duas rodadas (com as páginas e as assinaturas delas) apagadas: 0 contas, 0
 páginas, nada órfão. Os e-mails delas apagados do Mailpit. A API e o web encerrados (`pgrep -fl
 "worktrees/landing"` vazio); o `apps/web/.next` (833 MB) e o `apps/web/test-results` apagados; os arquivos
 que o navegador do Playwright escreveu nesta sessão removidos (só os desta sessão, por um marcador de
