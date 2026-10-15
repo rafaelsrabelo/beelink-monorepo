@@ -34,12 +34,14 @@ export interface OpenInvoice {
  * - `leave`: nothing is charged here — billing switched off, a page owing nothing, or one from before
  *   subscriptions — and the screen leads back to the page's panel.
  * - `choose`: never paid, or cancelled: a cycle is chosen, perhaps carrying on with an open invoice.
+ *   `coupon` says whether a coupon of bee-link's is offered beside it (BEELINK-224): to a page that
+ *   never paid and used none.
  * - `active`: a paid period is running; nothing to buy.
  * - `due`: a renewal went unpaid; the invoice due is paid, never another cycle chosen.
  */
 export type SubscribeView =
   | { kind: "leave" }
-  | { kind: "choose"; standing: SubscriptionStandingView; openInvoice: OpenInvoice | null; loss: SubscriptionLoss | null }
+  | { kind: "choose"; standing: SubscriptionStandingView; openInvoice: OpenInvoice | null; loss: SubscriptionLoss | null; coupon: boolean }
   | { kind: "active"; standing: SubscriptionStandingView; paid: SubscriptionPaidView }
   | { kind: "due"; standing: SubscriptionStandingView; invoiceUrl: string | null; cycle: BillingCycle | null; priceCents: number | null }
 
@@ -58,6 +60,22 @@ export function subscribeViewOf({ billingEnforced, subscription }: StoreSubscrip
   if (!billingEnforced || subscription === null || subscription.status === "EXEMPT") return { kind: "leave" }
 
   const lastTrialDay = dayInWords(subscription.trialLastDay, locale)
+  const neverPaid = subscription.status === "TRIALING" || subscription.status === "TRIAL_EXPIRED"
+  // A coupon is for a page that never paid, once in its life: the API refuses any other.
+  const coupon = neverPaid && subscription.couponRedeemedAt === null
+  const { freePeriodDaysLeft, freePeriodLastDay } = subscription
+  // A free period keeps the page open whatever it stands at, and the status's sentences tell of a lock
+  // that does not come: it is said first. A page that paid is told by what it paid for.
+  if (neverPaid && freePeriodDaysLeft !== null && freePeriodLastDay !== null) {
+    return {
+      kind: "choose",
+      standing: { status: "FREE", lastDay: dayInWords(freePeriodLastDay, locale), daysLeft: freePeriodDaysLeft },
+      openInvoice: openInvoiceOf(subscription),
+      loss: { kind: "free", daysLeft: freePeriodDaysLeft },
+      coupon,
+    }
+  }
+
   switch (subscription.status) {
     case "TRIALING":
       return {
@@ -65,12 +83,13 @@ export function subscribeViewOf({ billingEnforced, subscription }: StoreSubscrip
         standing: { status: "TRIALING", lastDay: lastTrialDay, daysLeft: subscription.trialDaysLeft },
         openInvoice: openInvoiceOf(subscription),
         loss: { kind: "trial", daysLeft: subscription.trialDaysLeft },
+        coupon,
       }
     case "TRIAL_EXPIRED":
-      return { kind: "choose", standing: { status: "TRIAL_EXPIRED", lastDay: lastTrialDay }, openInvoice: openInvoiceOf(subscription), loss: null }
+      return { kind: "choose", standing: { status: "TRIAL_EXPIRED", lastDay: lastTrialDay }, openInvoice: openInvoiceOf(subscription), loss: null, coupon }
     case "CANCELED": {
       const until = lastDayInWords(subscription.currentPeriodEndsAt, locale, now, true)
-      return { kind: "choose", standing: { status: "CANCELED", until }, openInvoice: openInvoiceOf(subscription), loss: until ? { kind: "canceled" } : null }
+      return { kind: "choose", standing: { status: "CANCELED", until }, openInvoice: openInvoiceOf(subscription), loss: until ? { kind: "canceled" } : null, coupon: false }
     }
     case "ACTIVE": {
       const paidUntil = lastDayInWords(subscription.currentPeriodEndsAt, locale, now)
@@ -126,9 +145,18 @@ export function offersOf(catalog: PlanCatalog, openCycle: BillingCycle | null, n
 
 /**
  * The codes that say the page moved under the screen — paid, exempted, billing switched off, no
- * subscription at all — so the subscription is read again before anything is said of them.
+ * subscription at all, a coupon used meanwhile (BEELINK-224) — so the subscription is read again before
+ * anything is said of them.
  */
-export const MOVED_CODES: ReadonlySet<string> = new Set<BillingErrorCode>(["BILLING_SUBSCRIPTION_PAID", "BILLING_PAGE_ACTIVE", "BILLING_PAGE_EXEMPT", "BILLING_NOT_ENFORCED", "BILLING_SUBSCRIPTION_MISSING"])
+export const MOVED_CODES: ReadonlySet<string> = new Set<BillingErrorCode>([
+  "BILLING_SUBSCRIPTION_PAID",
+  "BILLING_PAGE_ACTIVE",
+  "BILLING_PAGE_EXEMPT",
+  "BILLING_NOT_ENFORCED",
+  "BILLING_SUBSCRIPTION_MISSING",
+  "BILLING_COUPON_ALREADY_USED",
+  "BILLING_COUPON_PAGE_PAID",
+])
 
 /** The codes a check is not asked again after by the clock: an ended session, and the API's limit of calls. */
 export const CHECK_STOPPING_CODES: ReadonlySet<string> = new Set(["AUTH_UNAUTHENTICATED", "RATE_LIMITED"])

@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 
 // App
 import { POST as check } from "./check/route"
+import { POST as coupon } from "./coupon/route"
 import { GET, PUT } from "./route"
 
 const mocks = vi.hoisted(() => ({ revalidateStore: vi.fn() }))
@@ -96,6 +97,53 @@ describe("a page's subscription, for the panel (BEELINK-293)", () => {
 
     expect((await PUT(request("/api/stores/loja/subscription", { method: "PUT", body: { cycle: "MONTHLY" }, origin: "https://outro.site" }), shop)).status).toBe(403)
     expect((await check(request("/api/stores/loja/subscription/check", { method: "POST", origin: "https://outro.site" }), shop)).status).toBe(403)
+    expect(fetched).not.toHaveBeenCalled()
+  })
+})
+
+describe("a coupon of bee-link's, for the panel (BEELINK-224)", () => {
+  it("sends the code at the API, as the owner and from the shopkeeper's address, the slug escaped", async () => {
+    const fetched = vi.fn<Fetched>(async () => Response.json(answer))
+    vi.stubGlobal("fetch", fetched)
+
+    expect((await coupon(request("/api/stores/loja%20da%20ana/subscription/coupon", { method: "POST", body: { code: "TESTE-UM" } }), shop)).status).toBe(200)
+
+    const [url, init] = fetched.mock.calls[0]!
+    expect(`${init?.method} ${String(url).replace(/^.*\/api/, "")}`).toBe("POST /stores/loja%20da%20ana/subscription/coupon")
+    expect(JSON.parse(String(init?.body))).toEqual({ code: "TESTE-UM" })
+    expect(new Headers(init?.headers).get("authorization")).toBe("Bearer owner-access")
+    // Limited per address at the API, like a sign-in: it has to see the shopkeeper's.
+    expect(new Headers(init?.headers).get("x-forwarded-for")).toBe("203.0.113.9")
+  })
+
+  /** BEELINK-223: a page given its month may have been off the air, and is served again at once. */
+  it("drops the shop window's cache when the coupon is taken", async () => {
+    vi.stubGlobal("fetch", vi.fn<Fetched>(async () => Response.json({ billingEnforced: true, subscription: { status: "TRIAL_EXPIRED", lock: null } })))
+
+    await coupon(request("/api/stores/loja%20da%20ana/subscription/coupon", { method: "POST", body: { code: "TESTE-UM" } }), shop)
+
+    expect(mocks.revalidateStore).toHaveBeenCalledExactlyOnceWith("loja da ana")
+  })
+
+  it.each([
+    [409, "BILLING_COUPON_EXHAUSTED"],
+    [503, "BILLING_UNREACHABLE"],
+    [429, "RATE_LIMITED"],
+  ])("answers the API's %i %s as it came, and drops nothing", async (status, errorCode) => {
+    vi.stubGlobal("fetch", vi.fn<Fetched>(async () => Response.json({ statusCode: status, errorCode, message: "x" }, { status })))
+
+    const response = await coupon(request("/api/stores/loja/subscription/coupon", { method: "POST", body: { code: "TESTE-UM" } }), shop)
+
+    expect(response.status).toBe(status)
+    expect(await response.json()).toMatchObject({ errorCode })
+    expect(mocks.revalidateStore).not.toHaveBeenCalled()
+  })
+
+  it("refuses a request from another site before asking the API", async () => {
+    const fetched = vi.fn<Fetched>()
+    vi.stubGlobal("fetch", fetched)
+
+    expect((await coupon(request("/api/stores/loja/subscription/coupon", { method: "POST", body: { code: "TESTE-UM" }, origin: "https://outro.site" }), shop)).status).toBe(403)
     expect(fetched).not.toHaveBeenCalled()
   })
 })

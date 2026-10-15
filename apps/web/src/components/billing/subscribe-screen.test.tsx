@@ -55,6 +55,8 @@ const catalog: PlanCatalog = {
 const annualOpen: StoreSubscription = { ...trialing, plan, cycle: "ANNUAL", priceCents: 96000, invoiceUrl: INVOICE }
 const annualPaid: StoreSubscription = { ...annualOpen, status: "ACTIVE", invoiceUrl: null, paymentMethod: "PIX", currentPeriodEndsAt: "2027-10-16T03:00:00.000Z" }
 const account: BillingAccountAnswer = { account: { name: "Maria Souza Lima", document: "***.982.247-**", documentType: "CPF", customerReady: true } }
+/** The page in trial once a coupon was taken (BEELINK-224): free until 23/11, the month after the trial's last day. */
+const couponed: StoreSubscription = { ...trialing, freePeriodEndsAt: "2026-11-24T03:00:00.000Z", freePeriodLastDay: "2026-11-23", freePeriodDaysLeft: 39, couponRedeemedAt: "2026-10-15T15:00:00.000Z" }
 
 const enforced = (subscription: StoreSubscription | null): StoreSubscriptionAnswer => ({ billingEnforced: true, subscription })
 const reply = (status: number, body: unknown) => ({ ok: status < 400, status, json: async () => body }) as Response
@@ -68,11 +70,14 @@ interface Handler {
   saves?: Answer[]
   account?: Answer
   plans?: Answer
+  coupons?: Answer[]
 }
 
 /** The panel's billing handlers: each queue is answered in turn, its last answer for good. */
-function handler({ reads = [() => reply(200, enforced(trialing))], checks = [() => reply(200, enforced(annualOpen))], choices = [() => reply(200, { invoiceUrl: INVOICE, subscription: annualOpen })], saves = [() => reply(200, account.account)], account: accountAnswer = () => reply(200, account), plans = () => reply(200, catalog) }: Handler = {}) {
+function handler({ reads = [() => reply(200, enforced(trialing))], checks = [() => reply(200, enforced(annualOpen))], choices = [() => reply(200, { invoiceUrl: INVOICE, subscription: annualOpen })], saves = [() => reply(200, account.account)], account: accountAnswer = () => reply(200, account), plans = () => reply(200, catalog), coupons = [() => reply(200, enforced(couponed))] }: Handler = {}) {
   const calls: string[] = []
+  /** What each coupon sent said. */
+  const sent: unknown[] = []
   const next = (queue: Answer[]) => (queue.length > 1 ? queue.shift()! : queue[0]!)()
   vi.stubGlobal("fetch", async (path: string, init?: RequestInit) => {
     const call = `${init?.method ?? "GET"} ${path}`
@@ -83,9 +88,13 @@ function handler({ reads = [() => reply(200, enforced(trialing))], checks = [() 
     if (call === "GET /api/billing/plans") return plans()
     if (call === "GET /api/billing/account") return accountAnswer()
     if (call === "PUT /api/billing/account") return next(saves)
+    if (call === `POST ${ROUTE}/coupon`) {
+      sent.push(JSON.parse(String(init?.body)))
+      return next(coupons)
+    }
     throw new Error(`Nobody answers ${call}`)
   })
-  return { calls, count: (call: string) => calls.filter((each) => each === call).length }
+  return { calls, sent, count: (call: string) => calls.filter((each) => each === call).length }
 }
 
 const opened = vi.fn()
@@ -342,6 +351,79 @@ describe("SubscribeScreen, a page that paid", () => {
     const waiting = screen.getByRole("region", { name: "Aguardando a confirmação do pagamento" })
     expect(within(waiting).getByRole("link", { name: /Abrir a fatura/ })).toHaveAttribute("href", INVOICE)
     expect(within(waiting).queryByRole("button", { name: "Escolher outro plano" })).toBeNull()
+  })
+})
+
+describe("SubscribeScreen, a coupon of bee-link's (BEELINK-224)", () => {
+  const field = () => screen.getByRole("textbox", { name: "Código do cupom" })
+  const apply = () => screen.getByRole("button", { name: "Aplicar cupom" })
+
+  it("offers one to a page in trial, before the cycles, and goes on to the panel once it is taken", async () => {
+    const { sent } = handler()
+    renderScreen()
+    await settle()
+
+    const coupon = screen.getByRole("heading", { level: 2, name: "Tem um cupom da Beelink?" })
+    expect(coupon.compareDocumentPosition(screen.getByRole("radiogroup")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    await user().type(field(), "teste-um")
+    await user().click(apply())
+    await settle()
+
+    expect(sent).toEqual([{ code: "teste-um" }])
+    expect(screen.getByRole("status", { name: "Cupom aplicado" })).toHaveTextContent("Sua página está grátis até 23/11/2026. Nada é cobrado nesse tempo.")
+    expect(screen.getByText("Grátis")).toBeInTheDocument()
+    expect(screen.queryByRole("radiogroup")).toBeNull()
+    expect(router.replace).not.toHaveBeenCalled()
+    await pass(CONFIRMED_LINGER_MS)
+    expect(router.replace).toHaveBeenCalledWith("/admin/loja")
+  })
+
+  it("says on its field why a coupon was not taken, and stays", async () => {
+    handler({ coupons: [() => refusal(409, "BILLING_COUPON_EXPIRED")] })
+    renderScreen()
+    await settle()
+
+    await user().type(field(), "TESTE-VENCIDO")
+    await user().click(apply())
+    await settle()
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Este cupom venceu: o prazo para usá-lo acabou.")
+    expect(field()).toHaveAccessibleDescription("Este cupom venceu: o prazo para usá-lo acabou.")
+    await pass(CONFIRMED_LINGER_MS)
+    expect(router.replace).not.toHaveBeenCalled()
+    expect(screen.getAllByRole("radio")).toHaveLength(3)
+  })
+
+  it("tells a page in its free month so before its status, offers no second coupon, and says what subscribing now gives up", async () => {
+    handler({ reads: [() => reply(200, enforced(couponed))] })
+    renderScreen()
+    await settle()
+
+    expect(screen.getByText("Grátis")).toBeInTheDocument()
+    expect(screen.getByText("A página está grátis até 23/11/2026: faltam 39 dias. Nada é cobrado sozinho: quando o tempo grátis acabar, a página trava e sai do ar até você assinar.")).toBeInTheDocument()
+    expect(screen.queryByRole("textbox", { name: "Código do cupom" })).toBeNull()
+    expect(screen.getByText("Assinando agora, você perde os 39 dias grátis que faltam: o plano começa a contar hoje.")).toBeInTheDocument()
+  })
+
+  it("warns that a coupon takes out the invoice the page has open", async () => {
+    handler({ reads: [() => reply(200, enforced(annualOpen))] })
+    renderScreen()
+    await settle()
+
+    expect(field()).toBeInTheDocument()
+    expect(screen.getByText("Usar o cupom cancela a fatura em aberto. Se você já pagou um boleto dela, espere a confirmação antes de usar o cupom.")).toBeInTheDocument()
+  })
+
+  it.each([
+    ["where this deployment cannot charge", { account: () => refusal(503, "BILLING_UNAVAILABLE") }],
+    ["to a page that paid before", { reads: [() => reply(200, enforced({ ...trialing, status: "CANCELED", currentPeriodEndsAt: "2026-11-16T03:00:00.000Z" }))] }],
+  ])("offers none %s", async (_what, handled: Handler) => {
+    handler(handled)
+    renderScreen()
+    await settle()
+
+    expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument()
+    expect(screen.queryByRole("textbox", { name: "Código do cupom" })).toBeNull()
   })
 })
 

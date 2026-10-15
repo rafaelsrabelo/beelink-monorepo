@@ -1,5 +1,5 @@
 // Libs
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query"
 import { act, renderHook, waitFor } from "@testing-library/react"
 import type { ReactNode } from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
@@ -9,7 +9,7 @@ import type { StoreSubscription, StoreSubscriptionAnswer, SubscriptionChoice } f
 
 // App
 import { billingKeys } from "./billing-keys"
-import { useBillingAccount, useChooseCycle, useSaveBillingAccount, useStoreSubscription, useSubscriptionCheck, type SubscriptionCheckMode } from "./billing-hooks"
+import { useBillingAccount, useChooseCycle, useRedeemCoupon, useSaveBillingAccount, useStoreSubscription, useSubscriptionCheck, type SubscriptionCheckMode } from "./billing-hooks"
 
 type Fetched = (url: string, init?: RequestInit) => Promise<Response>
 
@@ -214,5 +214,73 @@ describe("the check, while the screen waits", () => {
     await pass(2 * 60_000)
 
     expect(fetched).toHaveBeenCalledOnce()
+  })
+})
+
+describe("a coupon of bee-link's used on the page (BEELINK-224)", () => {
+  const free: StoreSubscriptionAnswer = {
+    billingEnforced: true,
+    subscription: { ...trialing, freePeriodEndsAt: "2026-11-23T03:00:00.000Z", freePeriodLastDay: "2026-11-22", freePeriodDaysLeft: 38, couponRedeemedAt: "2026-10-15T15:00:00.000Z" },
+  }
+
+  it("sends the code through the panel's own route, and keeps the answer as the page's subscription and as its check", async () => {
+    const fetched = vi.fn<Fetched>(async () => Response.json(free))
+    vi.stubGlobal("fetch", fetched)
+    const { client, wrapper } = mount()
+    const { result } = renderHook(() => useRedeemCoupon("loja"), { wrapper })
+
+    await act(() => result.current.mutateAsync({ code: "TESTE-UM" }))
+
+    expect(callsOf(fetched)).toEqual([`POST ${ROUTE}/coupon`])
+    expect(JSON.parse(String(fetched.mock.calls[0]?.[1]?.body))).toEqual({ code: "TESTE-UM" })
+    expect(client.getQueryData(billingKeys.subscription("loja"))).toEqual(free)
+    expect(client.getQueryData(billingKeys.check("loja"))).toEqual(free)
+  })
+
+  it("reads again what the panel read while the page was locked, and not the subscription the answer already is", async () => {
+    const fetched = vi.fn<Fetched>(async (url, init) => (init?.method === "POST" ? Response.json(free) : url === "/api/stores/loja/panel-counts" ? Response.json({ orders: 0 }) : Response.json(read)))
+    vi.stubGlobal("fetch", fetched)
+    const { wrapper } = mount()
+    const { result } = renderHook(
+      () => ({
+        // A read of the panel's, as the shell keeps one while the screen is open.
+        counts: useQuery({ queryKey: ["panel-counts", "loja"], queryFn: async () => (await fetch("/api/stores/loja/panel-counts")).json() }),
+        read: useStoreSubscription("loja"),
+        coupon: useRedeemCoupon("loja"),
+      }),
+      { wrapper },
+    )
+    await waitFor(() => expect(result.current.counts.isSuccess && result.current.read.isSuccess).toBe(true))
+
+    await act(() => result.current.coupon.mutateAsync({ code: "TESTE-UM" }))
+
+    await waitFor(() => expect(callsOf(fetched).filter((call) => call === "GET /api/stores/loja/panel-counts")).toHaveLength(2))
+    expect(callsOf(fetched).filter((call) => call === `GET ${ROUTE}`)).toHaveLength(1)
+    expect(result.current.read.data).toEqual(free)
+  })
+
+  it.each(["BILLING_COUPON_ALREADY_USED", "BILLING_COUPON_PAGE_PAID", "BILLING_PAGE_ACTIVE"])("reads the subscription again when the coupon is refused with %s: the page moved", async (code) => {
+    const fetched = vi.fn<Fetched>(async (_url, init) => (init?.method === "POST" ? refusal(409, code) : Response.json(read)))
+    vi.stubGlobal("fetch", fetched)
+    const { wrapper } = mount()
+    const { result } = renderHook(() => ({ read: useStoreSubscription("loja"), coupon: useRedeemCoupon("loja") }), { wrapper })
+    await waitFor(() => expect(result.current.read.isSuccess).toBe(true))
+
+    await act(() => result.current.coupon.mutateAsync({ code: "TESTE-UM" }).catch(() => null))
+
+    await waitFor(() => expect(callsOf(fetched)).toEqual([`GET ${ROUTE}`, `POST ${ROUTE}/coupon`, `GET ${ROUTE}`]))
+  })
+
+  it("reads nothing again when it is the coupon that does not hold", async () => {
+    const fetched = vi.fn<Fetched>(async (_url, init) => (init?.method === "POST" ? refusal(409, "BILLING_COUPON_NOT_FOUND") : Response.json(read)))
+    vi.stubGlobal("fetch", fetched)
+    const { wrapper } = mount()
+    const { result } = renderHook(() => ({ read: useStoreSubscription("loja"), coupon: useRedeemCoupon("loja") }), { wrapper })
+    await waitFor(() => expect(result.current.read.isSuccess).toBe(true))
+
+    await act(() => result.current.coupon.mutateAsync({ code: "TESTE-NADA" }).catch(() => null))
+
+    await waitFor(() => expect(result.current.coupon.error).toMatchObject({ errorCode: "BILLING_COUPON_NOT_FOUND" }))
+    expect(callsOf(fetched)).toEqual([`GET ${ROUTE}`, `POST ${ROUTE}/coupon`])
   })
 })

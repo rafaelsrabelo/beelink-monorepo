@@ -7,12 +7,12 @@ import { useEffect, useRef } from "react"
 import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from "@tanstack/react-query"
 
 // Types
-import type { BillingAccount, BillingAccountAnswer, BillingAccountPayload, PlanCatalog, StoreSubscriptionAnswer, SubscriptionChoice, SubscriptionChoicePayload } from "@harness-monorepo/contracts"
+import type { BillingAccount, BillingAccountAnswer, BillingAccountPayload, CouponRedemptionPayload, PlanCatalog, StoreSubscriptionAnswer, SubscriptionChoice, SubscriptionChoicePayload } from "@harness-monorepo/contracts"
 
 // App
 import { CHECK_STOPPING_CODES, MOVED_CODES, subscriptionCheckDelayOf } from "@/lib/subscribe-view"
 import { billingKeys } from "./billing-keys"
-import { BillingRequestError, checkStoreSubscription, chooseSubscriptionCycle, fetchBillingAccount, fetchPlanCatalog, fetchStoreSubscription, saveBillingAccount } from "./billing-requests"
+import { BillingRequestError, checkStoreSubscription, chooseSubscriptionCycle, fetchBillingAccount, fetchPlanCatalog, fetchStoreSubscription, redeemCoupon, saveBillingAccount } from "./billing-requests"
 
 /** The plans change by a deploy, never under a screen: read once in a while. */
 const PLANS_STALE_MS = 5 * 60_000
@@ -75,6 +75,29 @@ export function useChooseCycle(slug: string): UseMutationResult<SubscriptionChoi
       const code = codeOf(error)
       if (MOVED_CODES.has(code)) return queryClient.invalidateQueries({ queryKey: billingKeys.subscription(slug) })
       if (code === "BILLING_ACCOUNT_REQUIRED") return queryClient.invalidateQueries({ queryKey: billingKeys.account() })
+    },
+  })
+}
+
+/**
+ * A coupon of bee-link's used on the page (BEELINK-224). The answer is the page as it now reads,
+ * written where the screen reads it, as a choice's is. The page may have been locked a moment ago, and
+ * its panel then answered nothing: what the panel read is read again — the billing's own reads aside,
+ * which the answer is — so it is whole by the time the screen leads to it. A refusal that means the
+ * page moved has the subscription read again.
+ */
+export function useRedeemCoupon(slug: string): UseMutationResult<StoreSubscriptionAnswer, Error, CouponRedemptionPayload> {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: CouponRedemptionPayload) => redeemCoupon(slug, payload),
+    onSuccess: (answer) => {
+      queryClient.setQueryData(billingKeys.subscription(slug), answer)
+      queryClient.setQueryData(billingKeys.check(slug), answer)
+      // Not awaited: the coupon is said taken at once, and the panel's reads follow on their own.
+      void queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] !== billingKeys.all[0] })
+    },
+    onError: (error) => {
+      if (MOVED_CODES.has(codeOf(error))) return queryClient.invalidateQueries({ queryKey: billingKeys.subscription(slug) })
     },
   })
 }
