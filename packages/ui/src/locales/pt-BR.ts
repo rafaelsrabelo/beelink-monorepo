@@ -317,6 +317,7 @@ export const ptBR: UiMessages = {
     checkoutSignedOut: "Sua sessão terminou. Entre de novo para fazer o pedido — o carrinho fica guardado.",
     checkoutTooMany: "Muitos pedidos em pouco tempo. Espere alguns minutos e tente de novo.",
     checkoutFailed: "Não foi possível fazer o pedido agora. Tente de novo.",
+    checkoutShopUnavailable: "Esta loja não está recebendo pedidos agora. Seu pedido não foi feito.",
     checkoutCouponGone: "O cupom não entrou no pedido. {reason} Confira o total e faça o pedido de novo.",
     checkoutCashbackGone: "Seu saldo de cashback mudou e o pedido não foi feito. Atualizamos o valor: confira o total e faça o pedido de novo.",
     checkoutPayNow: "Pagar agora",

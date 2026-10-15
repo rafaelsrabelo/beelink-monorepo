@@ -1,5 +1,5 @@
 // Types
-import type { PricesChangeAtHeader } from "@harness-monorepo/contracts"
+import type { LockChangesAtHeader, PricesChangeAtHeader } from "@harness-monorepo/contracts"
 
 // App
 import { serverEnv } from "./server-env"
@@ -13,6 +13,7 @@ export interface PublicApiCall {
 }
 
 const PRICES_CHANGE_AT_HEADER = "x-prices-change-at" satisfies PricesChangeAtHeader
+const LOCK_CHANGES_AT_HEADER = "x-lock-changes-at" satisfies LockChangesAtHeader
 
 /**
  * The anonymous read path of the public storefront: a Server Component calls this directly, and
@@ -32,13 +33,17 @@ const PRICES_CHANGE_AT_HEADER = "x-prices-change-at" satisfies PricesChangeAtHea
  * write drops the tag. A promotion starting or ending is no write: the API says on the answer when
  * its prices next change by themselves, and an answer kept past that instant is not served — it is
  * asked for again, uncached, for this one request, while the cache catches up behind it.
+ *
+ * A page that stops paying is the same (BEELINK-223): the shop's own read says when its lock may
+ * close by the clock — a trial, a paid period, a grace ending — and, once it is locked, that it is
+ * worth no more than a minute, since only a payment opens it. Whichever instant comes first counts.
  */
 export async function callPublicApi({ path, revalidate = 60, tags }: PublicApiCall): Promise<Response> {
   const url = `${serverEnv.API_URL}${path}`
   const headers = { accept: "application/json" }
   const kept = await fetch(url, { method: "GET", headers, next: { revalidate, tags } })
 
-  const pricesChangeAt = Date.parse(kept.headers.get(PRICES_CHANGE_AT_HEADER) ?? "")
-  if (Number.isNaN(pricesChangeAt) || pricesChangeAt > Date.now()) return kept
+  const changes = [kept.headers.get(PRICES_CHANGE_AT_HEADER), kept.headers.get(LOCK_CHANGES_AT_HEADER)].map((instant) => Date.parse(instant ?? "")).filter((instant) => !Number.isNaN(instant))
+  if (changes.every((instant) => instant > Date.now())) return kept
   return fetch(url, { method: "GET", headers, cache: "no-store" })
 }

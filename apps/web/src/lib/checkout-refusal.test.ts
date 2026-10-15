@@ -83,4 +83,9 @@ describe("checkoutRefusalOf", () => {
     expect(["AUTH_UNAUTHENTICATED", "ORDER_DELIVERY_ADDRESS_MISSING", "ORDER_ADDRESS_NOT_FOUND", "ORDER_PAYMENT_NOT_ACCEPTED"].every(rereadsTheCart)).toBe(true)
     expect(rereadsTheCart("ORDER_STOCK_INSUFFICIENT")).toBe(false)
   })
+
+  it("says no order was made at a shop gone off the air since the cart was drawn, and reads the page again — which is the notice (BEELINK-223)", () => {
+    expect(checkoutRefusalOf({ errorCode: "STORE_UNAVAILABLE" }, rows, text, context)).toBe(text.checkoutShopUnavailable)
+    expect(rereadsTheCart("STORE_UNAVAILABLE")).toBe(true)
+  })
 })

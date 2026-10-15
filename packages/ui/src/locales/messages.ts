@@ -448,6 +448,8 @@ export interface UiMessages {
     checkoutSignedOut: string
     checkoutTooMany: string
     checkoutFailed: string
+    /** The shop's page stopped paying while the cart was open (BEELINK-223): no order was made, and the page is read again. */
+    checkoutShopUnavailable: string
     /** `{reason}`: a sentence of `couponRefusals`, for an order refused over its coupon. */
     checkoutCouponGone: string
     /** The shopper's cashback moved between the price on screen and the order (BEELINK-244): the cart was priced again. */

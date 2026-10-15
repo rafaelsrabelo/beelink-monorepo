@@ -225,4 +225,8 @@ describe("where a funnel is counted", () => {
     expect(funnelCountedAt({ slug: "loja", type: "ECOMMERCE" }, true)).toBeNull()
     expect(funnelCountedAt(null, false)).toBeNull()
   })
+
+  it("is nowhere for a shop off the air, whose page stopped paying (BEELINK-223)", () => {
+    expect(funnelCountedAt({ slug: "loja", type: "ECOMMERCE", unavailable: true }, false)).toBeNull()
+  })
 })

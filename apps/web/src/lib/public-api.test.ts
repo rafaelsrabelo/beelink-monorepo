@@ -45,6 +45,35 @@ describe("the storefront's public read", () => {
     expect(fetched.mock.calls[1]?.[1]).not.toHaveProperty("next")
   })
 
+  it("does not serve a shop kept past the instant its page's lock may have closed: it asks again, uncached (BEELINK-223)", async () => {
+    // The trial ended at midnight; the kept answer still has the shop window open.
+    const fetched = vi.fn<Fetched>(async (_url, init) => (init?.cache === "no-store" ? Response.json({ unavailable: true }) : Response.json({ name: "Loja" }, { headers: { "x-lock-changes-at": minutesFromNow(-5) } })))
+    vi.stubGlobal("fetch", fetched)
+
+    expect(await (await callPublicApi({ path: "/stores/loja/public", tags: ["store:loja"] })).json()).toEqual({ unavailable: true })
+    expect(fetched).toHaveBeenCalledTimes(2)
+    expect(fetched.mock.calls[1]?.[1]).toMatchObject({ method: "GET", cache: "no-store" })
+  })
+
+  it("serves a shop kept while neither its prices nor its lock may have moved, and asks again once the first of the two has", async () => {
+    const both = (prices: number, lock: number) => vi.fn<Fetched>(async () => Response.json({ name: "Loja" }, { headers: { "x-prices-change-at": minutesFromNow(prices), "x-lock-changes-at": minutesFromNow(lock) } }))
+
+    const holding = both(30, 10)
+    vi.stubGlobal("fetch", holding)
+    await callPublicApi({ path: "/stores/loja/public" })
+    expect(holding).toHaveBeenCalledOnce()
+
+    const locked = both(30, -1)
+    vi.stubGlobal("fetch", locked)
+    await callPublicApi({ path: "/stores/loja/public" })
+    expect(locked).toHaveBeenCalledTimes(2)
+
+    const repriced = both(-1, 10)
+    vi.stubGlobal("fetch", repriced)
+    await callPublicApi({ path: "/stores/loja/public" })
+    expect(repriced).toHaveBeenCalledTimes(2)
+  })
+
   it("takes an instant it cannot read as none", async () => {
     const fetched = vi.fn<Fetched>(async () => answer({ ok: true }, "amanhã"))
     vi.stubGlobal("fetch", fetched)

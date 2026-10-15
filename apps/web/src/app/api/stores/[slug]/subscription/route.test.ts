@@ -49,11 +49,29 @@ describe("a page's subscription, for the panel (BEELINK-293)", () => {
     }
   })
 
-  /** Nothing a visitor is served reads where a page stands with bee-link yet. */
-  it("drops nothing the shop window kept", async () => {
-    vi.stubGlobal("fetch", vi.fn<Fetched>(async () => Response.json(answer)))
+  /** A choice never moves where a page stands, and a check that reads it unpaid moves nothing a visitor is served. */
+  it("drops nothing the shop window kept while the page is not read paid", async () => {
+    vi.stubGlobal("fetch", vi.fn<Fetched>(async () => Response.json({ billingEnforced: true, subscription: { status: "TRIAL_EXPIRED", lock: "TRIAL_EXPIRED" } })))
 
+    await GET(request("/api/stores/loja/subscription"), shop)
     await PUT(request("/api/stores/loja/subscription", { method: "PUT", body: { cycle: "MONTHLY" } }), shop)
+    await check(request("/api/stores/loja/subscription/check", { method: "POST" }), shop)
+
+    expect(mocks.revalidateStore).not.toHaveBeenCalled()
+  })
+
+  /** BEELINK-223: a page off the air a moment ago is served again at once to the shopkeeper who just paid. */
+  it("drops the shop window's cache when a check reads the page paid", async () => {
+    vi.stubGlobal("fetch", vi.fn<Fetched>(async () => Response.json({ billingEnforced: true, subscription: { status: "ACTIVE", lock: null } })))
+
+    await check(request("/api/stores/loja%20da%20ana/subscription/check", { method: "POST" }), shop)
+
+    expect(mocks.revalidateStore).toHaveBeenCalledExactlyOnceWith("loja da ana")
+  })
+
+  it("drops nothing when the check could not be made", async () => {
+    vi.stubGlobal("fetch", vi.fn<Fetched>(async () => Response.json({ statusCode: 503, errorCode: "BILLING_UNREACHABLE", message: "x" }, { status: 503 })))
+
     await check(request("/api/stores/loja/subscription/check", { method: "POST" }), shop)
 
     expect(mocks.revalidateStore).not.toHaveBeenCalled()
