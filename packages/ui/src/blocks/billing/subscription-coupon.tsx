@@ -73,7 +73,8 @@ export function SubscriptionCoupon({ onSubmit, pending = false, error, invoiceOp
               className="sm:max-w-xs"
               {...field}
             />
-            <Button type="submit" variant="outline" disabled={pending} className="shrink-0">
+            {/* The field's group draws everything in it in red once the code is refused; the button was not. */}
+            <Button type="submit" variant="outline" disabled={pending} className="text-foreground shrink-0">
               {pending ? text.submitting : text.submit}
             </Button>
           </div>
