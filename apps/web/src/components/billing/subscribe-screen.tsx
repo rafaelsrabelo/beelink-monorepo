@@ -47,9 +47,11 @@ function invoiceOutIn(view: SubscribeView | null): boolean {
   return view?.kind === "active" && view.paid.renewalInvoiceUrl !== null
 }
 
-/** The screen waits on an invoice it opened while the page still owes it: an attempt still out, or a renewal still due. */
-function waitingOn(view: SubscribeView | null, opened: OpenedInvoice | null): boolean {
-  return opened !== null && (view?.kind === "due" || (view?.kind === "choose" && view.openInvoice !== null))
+/** The invoice the screen waits on: one it opened that the page still owes — an attempt still out, or a renewal still due. */
+function waitingInvoiceOf(view: SubscribeView | null, opened: OpenedInvoice | null): string | null {
+  if (opened === null) return null
+  if (view?.kind === "choose") return view.openInvoice?.invoiceUrl ?? null
+  return view?.kind === "due" ? view.invoiceUrl : null
 }
 
 /**
@@ -74,7 +76,8 @@ export function SubscribeScreen({ slug, locale, back, messages, errors }: Subscr
   const [opened, setOpened] = useState<OpenedInvoice | null>(null)
   const [notYet, setNotYet] = useState(false)
 
-  const waiting = waitingOn(view, opened)
+  const waitingInvoice = waitingInvoiceOf(view, opened)
+  const waiting = waitingInvoice !== null
   const confirmed = opened !== null && view?.kind === "active"
   const mode: SubscriptionCheckMode = waiting ? "watch" : invoiceOutIn(view) && !confirmed ? "once" : "off"
   const check = useSubscriptionCheck(slug, mode)
@@ -116,9 +119,9 @@ export function SubscribeScreen({ slug, locale, back, messages, errors }: Subscr
       <SubscriptionStanding plan={sale?.plan.name ?? null} standing={view.standing} messages={messages} />
       {confirmed ? (
         <SubscriptionConfirmed paidUntil={view.kind === "active" ? view.paid.paidUntil : null} {...panel} />
-      ) : waiting && opened ? (
+      ) : waitingInvoice !== null && opened !== null ? (
         <SubscriptionAwaiting
-          invoiceUrl={(view.kind === "choose" ? view.openInvoice?.invoiceUrl : view.kind === "due" ? view.invoiceUrl : null) ?? opened.invoiceUrl}
+          invoiceUrl={waitingInvoice}
           cycle={subscription?.cycle ?? null}
           priceCents={subscription?.priceCents ?? null}
           locale={locale}
@@ -132,7 +135,7 @@ export function SubscribeScreen({ slug, locale, back, messages, errors }: Subscr
       ) : view.kind === "active" ? (
         <SubscriptionPaid view={view.paid} locale={locale} {...panel} />
       ) : view.kind === "due" ? (
-        <SubscriptionDue invoiceUrl={view.invoiceUrl} onOpen={() => view.invoiceUrl && setOpened({ invoiceUrl: view.invoiceUrl, priceChanged: false })} onCheck={() => void checkNow()} checking={check.isFetching} messages={messages} />
+        <SubscriptionDue invoiceUrl={view.invoiceUrl} onOpen={() => setOpened({ priceChanged: false })} onCheck={() => void checkNow()} checking={check.isFetching} messages={messages} />
       ) : (
         <SubscribeCheckoutLive
           slug={slug}

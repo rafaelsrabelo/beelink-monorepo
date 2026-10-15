@@ -18,9 +18,11 @@ import type { WebMessages } from "@/locales"
 import { useChooseCycle, useSaveBillingAccount } from "@/services/billing/billing-hooks"
 import { BillingRequestError } from "@/services/billing/billing-requests"
 
-/** An invoice the screen sent the shopkeeper to, and whether it charges other than the button said. */
+/**
+ * That the screen sent the shopkeeper to the page's invoice, and whether it charges other than the
+ * button said. The invoice itself is the subscription's, read where the screen reads it.
+ */
 export interface OpenedInvoice {
-  invoiceUrl: string
   priceChanged: boolean
 }
 
@@ -80,7 +82,7 @@ export function SubscribeCheckoutLive({ slug, locale, offers, openInvoice, accou
     const shown = offers.find((offer) => offer.cycle === values.cycle)?.totalCents
     const priceChanged = choice.subscription.priceCents !== shown
     if (!priceChanged) window.open(choice.invoiceUrl, "_blank", "noopener,noreferrer")
-    onOpened({ invoiceUrl: choice.invoiceUrl, priceChanged })
+    onOpened({ priceChanged })
   }
 
   const saveCode = save.error ? codeOf(save.error) : null
