@@ -23,14 +23,15 @@ export interface PageStripLiveProps {
  * comes, and lead to a screen saying subscribing is unavailable. Nothing is drawn until that read has
  * answered once.
  *
- * In the measure most of the panel's screens take, so its edges line up with theirs.
+ * As wide as the panel's column: the strip is about the page, not about the screen under it, whose own
+ * measure varies from screen to screen.
  */
 export function PageStripLive({ slug, view, messages }: PageStripLiveProps) {
   const account = useBillingAccount()
   if (account.data === undefined) return null
 
   return (
-    <div className="mx-auto mb-5 w-full max-w-6xl px-4 lg:px-6">
+    <div className="mb-5">
       <SubscriptionStrip view={view} subscribeHref={subscribePageOf(slug)} linkComponent={AppLink} messages={messages} />
     </div>
   )
