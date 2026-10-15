@@ -209,4 +209,36 @@ test.describe("a page's Assinar screen", () => {
     await expect(page.getByRole("status").filter({ hasText: "Pagamento confirmado" })).toBeVisible()
     await expect(page).toHaveURL(new RegExp(`/admin/${slug}$`), { timeout: 10_000 })
   })
+
+  test("takes a coupon of bee-link's: a code refused is said on its field, and one taken gives the page a free month and goes on to its panel (BEELINK-224)", async ({ page, context, request }) => {
+    await signedUpAndIn(page, request)
+    const slug = await shopOf(page)
+    await standInForBilling(page, context, slug, () => false)
+    const lastFreeDay = new Date(Date.now() + 38 * 86_400_000).toISOString().slice(0, 10)
+    const free: StoreSubscription = { ...trialing(), freePeriodEndsAt: `${lastFreeDay}T23:59:59.000Z`, freePeriodLastDay: lastFreeDay, freePeriodDaysLeft: 38, couponRedeemedAt: new Date().toISOString() }
+    const sent: unknown[] = []
+    // What the API answers is its own e2e's (apps/api/test/platform-coupon.e2e-spec.ts): here, a code no coupon has, then one taken.
+    await page.route(`**/api/stores/${slug}/subscription/coupon`, async (route) => {
+      sent.push(route.request().postDataJSON())
+      if (sent.length === 1) return route.fulfill({ status: 409, contentType: "application/json", body: JSON.stringify({ statusCode: 409, errorCode: "BILLING_COUPON_NOT_FOUND", message: "x" }) })
+      return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ billingEnforced: true, subscription: free }) })
+    })
+
+    await page.goto(`/admin/${slug}/subscribe`)
+    const field = page.getByRole("textbox", { name: "Código do cupom" })
+    await field.fill("TESTE-NADA")
+    await field.press("Enter")
+
+    await expect(page.getByRole("alert").filter({ hasText: "Cupom não encontrado. Confira o código digitado." })).toBeVisible()
+    await expect(field).toBeFocused()
+    const { violations } = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze()
+    expect(violations.map((violation) => `${violation.id}: ${violation.help}`)).toEqual([])
+
+    await field.fill("teste-mes")
+    await page.getByRole("button", { name: "Aplicar cupom" }).click()
+
+    await expect(page.getByRole("status").filter({ hasText: "Cupom aplicado" })).toBeVisible()
+    expect(sent).toEqual([{ code: "TESTE-NADA" }, { code: "teste-mes" }])
+    await expect(page).toHaveURL(new RegExp(`/admin/${slug}$`), { timeout: 10_000 })
+  })
 })
