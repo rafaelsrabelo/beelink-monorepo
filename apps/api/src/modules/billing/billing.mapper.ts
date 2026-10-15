@@ -6,7 +6,8 @@ import type { BillingAccountModel, PlanModel, StoreSubscriptionModel } from '../
 import { maskedDocumentOf } from '../integrations/asaas/masked-document.js';
 import { daysLeft, lastDayBefore } from './billing-dates.js';
 import { BILLING_CYCLES, CYCLE_MONTHS } from './billing.constants.js';
-import { statusAt } from './subscription-status.js';
+import { lockOf } from './page-lock.js';
+import { graceEndOf, statusAt } from './subscription-status.js';
 
 type PlanPrices = Pick<PlanModel, 'monthlyPriceCents' | 'semiannualPriceCents' | 'annualPriceCents'>;
 
@@ -34,12 +35,14 @@ export type StoreSubscriptionRow = StoreSubscriptionModel & { plan: Pick<PlanMod
 
 /**
  * A subscription as its page's owner reads it at `now`. Asaas's ids stay behind: the panel has no
- * use for them.
+ * use for them. `locks` is whether this deployment locks pages at all (`PageLocks.engaged`): where it
+ * does not, no page is said to be locked, whatever its row says.
  */
-export function toStoreSubscription(row: StoreSubscriptionRow, now: Date): StoreSubscription {
+export function toStoreSubscription(row: StoreSubscriptionRow, now: Date, locks: boolean): StoreSubscription {
+  const status = statusAt(row, now);
   return {
     id: row.id,
-    status: statusAt(row, now),
+    status,
     trialStartedAt: row.trialStartedAt.toISOString(),
     trialEndsAt: row.trialEndsAt.toISOString(),
     trialLastDay: lastDayBefore(row.trialEndsAt),
@@ -54,6 +57,9 @@ export function toStoreSubscription(row: StoreSubscriptionRow, now: Date): Store
     invoiceUrl: row.invoiceUrl,
     // The two columns are set together, by the table's CHECK.
     card: row.cardBrand !== null && row.cardLast4 !== null ? { brand: row.cardBrand, last4: row.cardLast4 } : null,
+    // As the lock counts it, written or not yet: the one date the panel's notice and the lock share.
+    graceEndsAt: status === 'PAST_DUE' || status === 'SUSPENDED' ? graceEndOf(row, now).toISOString() : null,
+    lock: locks ? lockOf(row, now) : null,
   };
 }
 

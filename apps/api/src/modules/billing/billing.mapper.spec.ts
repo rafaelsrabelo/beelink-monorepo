@@ -74,7 +74,7 @@ describe('a plan, as it is listed', () => {
 
 describe('a subscription, as its page’s owner reads it', () => {
   it('reads a page in trial: the last day and the days left on Brasília’s calendar, and nothing chosen', () => {
-    expect(toStoreSubscription(trialing, new Date('2026-10-15T12:00:00.000Z'))).toEqual({
+    expect(toStoreSubscription(trialing, new Date('2026-10-15T12:00:00.000Z'), false)).toEqual({
       id: trialing.id,
       status: 'TRIALING',
       trialStartedAt: '2026-10-13T16:24:00.000Z',
@@ -90,18 +90,20 @@ describe('a subscription, as its page’s owner reads it', () => {
       paymentMethod: null,
       invoiceUrl: null,
       card: null,
+      graceEndsAt: null,
+      lock: null,
     });
   });
 
   it('reads the trial as expired from the instant it ends, the row still saying TRIALING', () => {
-    expect(toStoreSubscription(trialing, new Date('2026-10-21T02:59:59.999Z'))).toMatchObject({ status: 'TRIALING', trialDaysLeft: 0 });
-    expect(toStoreSubscription(trialing, new Date('2026-10-21T03:00:00.000Z'))).toMatchObject({ status: 'TRIAL_EXPIRED', trialDaysLeft: 0 });
+    expect(toStoreSubscription(trialing, new Date('2026-10-21T02:59:59.999Z'), false)).toMatchObject({ status: 'TRIALING', trialDaysLeft: 0 });
+    expect(toStoreSubscription(trialing, new Date('2026-10-21T03:00:00.000Z'), false)).toMatchObject({ status: 'TRIAL_EXPIRED', trialDaysLeft: 0 });
   });
 
   it('carries no id of Asaas’s, nor the store’s, nor the first due day', () => {
     const paying = { ...trialing, status: 'ACTIVE', asaasSubscriptionId: 'sub_000000000001', firstDueDate: new Date('2026-10-13T00:00:00.000Z') } satisfies StoreSubscriptionRow;
 
-    const read = toStoreSubscription(paying, new Date('2026-10-15T12:00:00.000Z'));
+    const read = toStoreSubscription(paying, new Date('2026-10-15T12:00:00.000Z'), false);
 
     expect(JSON.stringify(read)).not.toMatch(/sub_000000000001|asaas|firstDueDate|storeId/);
   });
@@ -121,7 +123,7 @@ describe('a subscription, as its page’s owner reads it', () => {
       invoiceUrl: 'https://sandbox.asaas.com/i/000000000001',
     } satisfies StoreSubscriptionRow;
 
-    expect(toStoreSubscription(paying, new Date('2026-12-02T12:00:00.000Z'))).toMatchObject({
+    expect(toStoreSubscription(paying, new Date('2026-12-02T12:00:00.000Z'), false)).toMatchObject({
       status: 'ACTIVE',
       // The plan's reference alone: its prices are the catalogue's to say, and `priceCents` this page's.
       plan: { id: beelink.id, slug: 'beelink', name: 'Beelink' },
@@ -134,20 +136,41 @@ describe('a subscription, as its page’s owner reads it', () => {
       invoiceUrl: 'https://sandbox.asaas.com/i/000000000001',
       card: null,
     });
-    expect(Object.keys(toStoreSubscription(paying, new Date()).plan ?? {}).sort()).toEqual(['id', 'name', 'slug']);
+    expect(Object.keys(toStoreSubscription(paying, new Date(), false).plan ?? {}).sort()).toEqual(['id', 'name', 'slug']);
   });
 
   it('reads an active page as past due once its paid period is over, the row still saying ACTIVE (BEELINK-221)', () => {
     const paid = { ...trialing, status: 'ACTIVE', currentPeriodEndsAt: new Date('2026-11-15T03:00:00.000Z') } satisfies StoreSubscriptionRow;
 
-    expect(toStoreSubscription(paid, new Date('2026-11-15T02:59:59.999Z')).status).toBe('ACTIVE');
-    expect(toStoreSubscription(paid, new Date('2026-11-15T03:00:00.000Z'))).toMatchObject({ status: 'PAST_DUE', currentPeriodEndsAt: '2026-11-15T03:00:00.000Z' });
+    expect(toStoreSubscription(paid, new Date('2026-11-15T02:59:59.999Z'), false).status).toBe('ACTIVE');
+    expect(toStoreSubscription(paid, new Date('2026-11-15T03:00:00.000Z'), false)).toMatchObject({ status: 'PAST_DUE', currentPeriodEndsAt: '2026-11-15T03:00:00.000Z' });
+  });
+
+  it('says why a page is locked where pages lock, and never where they do not (BEELINK-223)', () => {
+    const ended = new Date('2026-10-21T03:00:00.000Z');
+
+    expect(toStoreSubscription(trialing, new Date(ended.getTime() - 1), true).lock).toBeNull();
+    expect(toStoreSubscription(trialing, ended, true)).toMatchObject({ status: 'TRIAL_EXPIRED', lock: 'TRIAL_EXPIRED' });
+    expect(toStoreSubscription(trialing, ended, false)).toMatchObject({ status: 'TRIAL_EXPIRED', lock: null });
+    expect(toStoreSubscription({ ...trialing, status: 'EXEMPT' }, ended, true).lock).toBeNull();
+    expect(toStoreSubscription({ ...trialing, freePeriodEndsAt: new Date('2026-11-14T03:00:00.000Z') }, ended, true).lock).toBeNull();
+  });
+
+  it("says when a page past due locks — as the lock counts it, written or not — and suspends it then (BEELINK-223)", () => {
+    const paid = { ...trialing, status: 'ACTIVE', currentPeriodEndsAt: new Date('2026-11-15T03:00:00.000Z') } satisfies StoreSubscriptionRow;
+
+    expect(toStoreSubscription(paid, new Date('2026-11-10T12:00:00.000Z'), true)).toMatchObject({ status: 'ACTIVE', graceEndsAt: null, lock: null });
+    expect(toStoreSubscription(paid, new Date('2026-11-18T12:00:00.000Z'), true)).toMatchObject({ status: 'PAST_DUE', graceEndsAt: '2026-11-22T03:00:00.000Z', lock: null });
+    expect(toStoreSubscription(paid, new Date('2026-11-22T03:00:00.000Z'), true)).toMatchObject({ status: 'SUSPENDED', graceEndsAt: '2026-11-22T03:00:00.000Z', lock: 'SUSPENDED' });
+
+    const written = { ...paid, status: 'PAST_DUE', graceEndsAt: new Date('2026-11-25T03:00:00.000Z') } satisfies StoreSubscriptionRow;
+    expect(toStoreSubscription(written, new Date('2026-11-23T12:00:00.000Z'), true)).toMatchObject({ status: 'PAST_DUE', graceEndsAt: '2026-11-25T03:00:00.000Z', lock: null });
   });
 
   it('tells of a card only its brand and its last four digits', () => {
     const card = { ...trialing, status: 'ACTIVE', paymentMethod: 'CREDIT_CARD', cardBrand: 'MASTERCARD', cardLast4: '8829' } satisfies StoreSubscriptionRow;
 
-    expect(toStoreSubscription(card, new Date()).card).toEqual({ brand: 'MASTERCARD', last4: '8829' });
+    expect(toStoreSubscription(card, new Date(), false).card).toEqual({ brand: 'MASTERCARD', last4: '8829' });
   });
 });
 

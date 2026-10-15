@@ -143,6 +143,17 @@ export interface StoreSubscription {
   invoiceUrl: string | null;
   /** Null unless the charge was paid with a card. */
   card: SubscriptionCard | null;
+  /**
+   * ISO-8601: the first instant a page past due is locked (BEELINK-223) — seven days after its paid
+   * period ended or, with no period to count from, after the day it was found past due. The date the
+   * lock, the panel's notice and the e-mails all read. Null unless the page is past due or suspended.
+   */
+  graceEndsAt: string | null;
+  /**
+   * Why the page is locked at the instant of the read, or null while it is open (BEELINK-223). Always
+   * null where nothing locks: `billingEnforced` false, or no Asaas account of bee-link's to pay at.
+   */
+  lock: PageLockReason | null;
 }
 
 /**

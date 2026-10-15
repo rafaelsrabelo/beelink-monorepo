@@ -32,6 +32,8 @@ const trialing: StoreSubscription = {
   paymentMethod: null,
   invoiceUrl: null,
   card: null,
+  graceEndsAt: null,
+  lock: null,
 }
 const chosen: StoreSubscription = { ...trialing, plan: { id: "p", slug: "beelink", name: "Beelink" }, cycle: "MONTHLY", priceCents: 10000, invoiceUrl: INVOICE }
 const read: StoreSubscriptionAnswer = { billingEnforced: true, subscription: trialing }

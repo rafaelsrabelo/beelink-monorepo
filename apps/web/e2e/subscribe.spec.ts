@@ -63,6 +63,8 @@ function trialing(): StoreSubscription {
     paymentMethod: null,
     invoiceUrl: null,
     card: null,
+    graceEndsAt: null,
+    lock: null,
   }
 }
 

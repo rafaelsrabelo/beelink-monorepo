@@ -92,10 +92,14 @@ describe("a page's payment, read at bee-link's own Asaas account (BEELINK-221)",
     expect([response.statusCode, response.json<ApiErrorBody>().errorCode]).toEqual([statusCode, errorCode]);
   };
 
-  /** A page that chose the monthly plan 45 days ago and paid its first charge; Asaas has made the second, which waits. */
-  async function paidAMonthAgo() {
+  /**
+   * A page that chose the monthly plan 45 days ago and paid its first charge; Asaas has made the second,
+   * which waits. Its period ended two weeks ago; `daysAgo` of 33 ends it inside the week of grace a page
+   * past due keeps (BEELINK-223).
+   */
+  async function paidAMonthAgo(daysAgo = 45) {
     const { subscriptionId } = await choose('MONTHLY');
-    const first = plusDays(today(), -45);
+    const first = plusDays(today(), -daysAgo);
     asaas.charges[0]!.dueDate = first;
     asaas.pay(subscriptionId, 'RECEIVED', { billingType: 'PIX' });
     const second = asaas.charge(subscriptionId, monthsAfter(first, 1));
@@ -223,11 +227,21 @@ describe("a page's payment, read at bee-link's own Asaas account (BEELINK-221)",
 
   describe('the period a payment pays for', () => {
     it('ends with the next due day: past it, unpaid, the page is past due — with the invoice of the charge it owes', async () => {
-      const { first, second } = await paidAMonthAgo();
+      const { first, second } = await paidAMonthAgo(33);
 
       const answer = (await check()).json<StoreSubscriptionAnswer>().subscription!;
 
       expect(answer).toMatchObject({ status: 'PAST_DUE', currentPeriodEndsAt: closeOf(monthsAfter(first, 1)), invoiceUrl: second.invoiceUrl, paymentMethod: 'PIX' });
+    });
+
+    it('is written suspended once the week of grace after it went by unpaid, with when that ended (BEELINK-223)', async () => {
+      const { first, second } = await paidAMonthAgo();
+      const periodEnd = closeOf(monthsAfter(first, 1));
+
+      const answer = (await check()).json<StoreSubscriptionAnswer>().subscription!;
+
+      expect(answer).toMatchObject({ status: 'SUSPENDED', currentPeriodEndsAt: periodEnd, graceEndsAt: new Date(Date.parse(periodEnd) + 7 * 86_400_000).toISOString(), invoiceUrl: second.invoiceUrl, lock: 'SUSPENDED' });
+      expect((await rowOf()).status).toBe('SUSPENDED');
     });
 
     it('brings a page past due back to active once the charge it owes is paid', async () => {

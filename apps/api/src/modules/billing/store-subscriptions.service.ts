@@ -16,6 +16,7 @@ import { brasiliaDayOf } from './billing-dates.js';
 import { accountRequired, unavailable } from './billing-refusals.js';
 import { ASAAS_CYCLES, billingError, CHECK_FIRST_MS, PLAN_ON_SALE, SUBSCRIPTION_CLAIM_MS, SUBSCRIPTION_UNKNOWN_HOLD_MS, subscriptionReferenceOf } from './billing.constants.js';
 import { priceOf, toStoreSubscription, type StoreSubscriptionRow } from './billing.mapper.js';
+import { PageLocks } from './page-locks.service.js';
 import { PlatformAsaas, PlatformAsaasUnconfigured, type PlatformCharge, type PlatformCustomerData, type PlatformSubscription } from './platform-asaas.client.js';
 import { awaitsPayment, firstChargeOf, invoiceDescriptionOf, serves, touchedByMoney } from './subscription-attempt.js';
 import { reasonOf, SubscriptionSync } from './subscription-sync.service.js';
@@ -90,6 +91,7 @@ export class StoreSubscriptions {
     private readonly accounts: BillingAccounts,
     private readonly asaas: PlatformAsaas,
     private readonly payments: SubscriptionSync,
+    private readonly locks: PageLocks,
   ) {}
 
   /**
@@ -106,7 +108,7 @@ export class StoreSubscriptions {
     const talk = await this.claim(storeId, userId, cycle);
     try {
       const { row, invoiceUrl } = await this.converge(talk);
-      return { invoiceUrl, subscription: toStoreSubscription(row, new Date()) };
+      return { invoiceUrl, subscription: toStoreSubscription(row, new Date(), this.locks.engaged) };
     } catch (error) {
       // A creation nobody answered may have made the subscription: nobody creates again until it had time to show.
       if (error instanceof AsaasOutcomeUnknown) await this.holdFor(talk, SUBSCRIPTION_UNKNOWN_HOLD_MS);

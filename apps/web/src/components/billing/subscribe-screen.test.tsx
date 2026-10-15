@@ -40,6 +40,8 @@ const trialing: StoreSubscription = {
   paymentMethod: null,
   invoiceUrl: null,
   card: null,
+  graceEndsAt: null,
+  lock: null,
 }
 const plan = { id: "plan-1", slug: "beelink", name: "Beelink" }
 /** Example prices, not Beelink's: the screen holds no figure of its own. */

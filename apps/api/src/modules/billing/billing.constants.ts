@@ -1,5 +1,5 @@
 // Types
-import type { BillingCycle, BillingCycleMonths, BillingDocumentType, BillingErrorCode, SubscriptionPaymentMethod, SubscriptionStatus } from '@harness-monorepo/contracts';
+import type { BillingCycle, BillingCycleMonths, BillingDocumentType, BillingErrorCode, PageLockReason, SubscriptionPaymentMethod, SubscriptionStatus } from '@harness-monorepo/contracts';
 import type {
   BillingCycle as BillingCycleRow,
   SubscriptionPaymentMethod as SubscriptionPaymentMethodRow,
@@ -77,6 +77,8 @@ export const SUBSCRIPTION_PAYMENT_METHODS = Object.keys({
 } satisfies Record<SubscriptionPaymentMethod, true> satisfies Record<SubscriptionPaymentMethodRow, true>) as SubscriptionPaymentMethod[];
 
 export const BILLING_DOCUMENT_TYPES = Object.keys({ CPF: true, CNPJ: true } satisfies Record<BillingDocumentType, true>) as BillingDocumentType[];
+
+export const PAGE_LOCK_REASONS = Object.keys({ TRIAL_EXPIRED: true, SUSPENDED: true, CANCELED: true } satisfies Record<PageLockReason, true>) as PageLockReason[];
 
 /** A name's bounds, in characters as Postgres counts them: the column's width, and no single letter. */
 export const BILLING_NAME_MIN_LENGTH = 2;
