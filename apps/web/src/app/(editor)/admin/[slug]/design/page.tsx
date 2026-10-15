@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation"
 // App
 import { DesignScreen } from "@/components/design/design-screen"
 import { figtree, shopFontStyle } from "@/components/storefront/shop-font"
-import { pagePreviewAt } from "@/lib/editor-data"
+import { pagePreviewAt, PREVIEW_LOCKED } from "@/lib/editor-data"
 import { getMessages } from "@/lib/locale"
 import { categoriesAt, shopAt } from "@/lib/storefront-data"
 
@@ -23,6 +23,10 @@ import { categoriesAt, shopAt } from "@/lib/storefront-data"
  * is the draft, which the public read never serves. A landing is `?page=<id>`; an id that names no
  * landing of this shop — gone, another shop's, the home's own — opens the home instead of an error,
  * which is where the switcher would have gone anyway.
+ *
+ * A page locked for want of payment (BEELINK-296) leads to its panel's home, which says why and how to
+ * pay: the editor has no shell to say it in. Either read may say it first — the shop's is kept up to a
+ * minute (BEELINK-223), the owner's preview is refused at once.
  */
 export default async function DesignPage({ params, searchParams }: PageProps<"/admin/[slug]/design">) {
   const { slug } = await params
@@ -31,6 +35,7 @@ export default async function DesignPage({ params, searchParams }: PageProps<"/a
   const [store, { ui, web }, preview] = await Promise.all([shopAt(slug), getMessages(), pagePreviewAt(slug, pageId ?? "home")])
 
   if (!store) notFound()
+  if (store.unavailable || preview === PREVIEW_LOCKED) redirect(`/admin/${slug}`)
   if (pageId && preview?.page.kind !== "LANDING") redirect(`/admin/${slug}/design`)
   // The shop is there and its home's draft could not be read: an outage, not a page that is missing.
   if (!preview) throw new Error(`The draft of ${slug}'s home could not be read`)

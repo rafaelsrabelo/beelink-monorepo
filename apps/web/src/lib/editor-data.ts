@@ -6,7 +6,11 @@ import type { PagePreview } from "@harness-monorepo/contracts"
 
 // App
 import { callApi } from "./api"
+import { isPageLockedError } from "./page-lock"
 import { ACCESS_COOKIE } from "./session-cookies"
+
+/** The owner's preview refused because the page is locked for want of payment (BEELINK-223). */
+export const PREVIEW_LOCKED = "PAGE_LOCKED"
 
 /**
  * A page as its owner previews it — its draft, whatever its status — for design mode's canvas: the
@@ -16,9 +20,10 @@ import { ACCESS_COOKIE } from "./session-cookies"
  * The owner's read and not the storefront's, because a draft is served to nobody else — so it is
  * never cached (`callApi` is `no-store`) and it carries the session's own token, read here on the
  * server where the page JavaScript never holds it. Null for an id that is not a page of this shop,
- * which the page answers by going back to the home.
+ * which the page answers by going back to the home; `PREVIEW_LOCKED` for a page locked for want of
+ * payment, whose editor has nothing to draw (BEELINK-296).
  */
-export async function pagePreviewAt(slug: string, pageId: string | "home"): Promise<PagePreview | null> {
+export async function pagePreviewAt(slug: string, pageId: string | "home"): Promise<PagePreview | typeof PREVIEW_LOCKED | null> {
   const accessToken = (await cookies()).get(ACCESS_COOKIE)?.value
   if (!accessToken) return null
 
@@ -28,7 +33,8 @@ export async function pagePreviewAt(slug: string, pageId: string | "home"): Prom
     accessToken,
   }).catch(() => null)
 
-  if (!response?.ok) return null
+  if (!response) return null
+  if (!response.ok) return isPageLockedError(await response.json().catch(() => null)) ? PREVIEW_LOCKED : null
 
   return (await response.json()) as PagePreview
 }
