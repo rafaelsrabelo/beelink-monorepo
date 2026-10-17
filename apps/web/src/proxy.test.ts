@@ -20,6 +20,16 @@ vi.mock("@/lib/shop-hosts", async (original) => ({
   },
 }))
 
+/** Which address a page left (BEELINK-331), as the proxy is told: none unless a test says so. Its copy has its own suite. */
+const moves = vi.hoisted(() => ({ left: {} as Record<string, string>, asked: 0 }))
+vi.mock("@/lib/shop-moves", async (original) => ({
+  ...(await original<typeof import("@/lib/shop-moves")>()),
+  shopMoves: async () => {
+    moves.asked += 1
+    return { currentOf: (slug: string) => moves.left[slug] ?? null }
+  },
+}))
+
 // App
 import { config, proxy } from "./proxy"
 import { wasHandedOver } from "@/lib/proxy-scope"
@@ -49,6 +59,8 @@ afterEach(() => {
   vi.unstubAllGlobals()
   table.domains = {}
   table.asked = 0
+  moves.left = {}
+  moves.asked = 0
 })
 
 describe("proxy", () => {
@@ -559,6 +571,61 @@ describe("a shop with an active domain, asked for on the platform's host", () =>
   })
 })
 
+describe("an address a page left (BEELINK-331), asked for on the platform's host", () => {
+  const at = async (path: string, init: Parameters<typeof arriving>[2] = {}) => {
+    const response = await proxy(arriving("beelink.biz", path, { url: "https://0.0.0.0:3000", ...init }))
+    return [response.status, response.headers.get("location")]
+  }
+
+  it("leads the shop window to the address the page has now, for good, path and query kept", async () => {
+    moves.left = { "padaria-do-bairo": "padaria-do-bairro" }
+
+    expect(await at("/padaria-do-bairo")).toEqual([308, "https://0.0.0.0:3000/padaria-do-bairro"])
+    expect(await at("/padaria-do-bairo?curtir=p-1")).toEqual([308, "https://0.0.0.0:3000/padaria-do-bairro?curtir=p-1"])
+    expect(await at("/padaria-do-bairo/produtos/pao?variant=v1")).toEqual([308, "https://0.0.0.0:3000/padaria-do-bairro/produtos/pao?variant=v1"])
+    expect(await at("/padaria-do-bairo/carrinho?cupom=BEMVINDO")).toEqual([308, "https://0.0.0.0:3000/padaria-do-bairro/carrinho?cupom=BEMVINDO"])
+    expect(await at("/padaria-do-bairo/conta/pedidos/14")).toEqual([308, "https://0.0.0.0:3000/padaria-do-bairro/conta/pedidos/14"])
+    expect(await at("/padaria-do-bairo/confirmar-email?token=t&voltar=%2Fpadaria-do-bairo%2Fcarrinho")).toEqual([308, "https://0.0.0.0:3000/padaria-do-bairro/confirmar-email?token=t&voltar=%2Fpadaria-do-bairo%2Fcarrinho"])
+  })
+
+  it("leads it there whoever asks — a signed-in shopper too, renewing nothing on the old path", async () => {
+    moves.left = { "padaria-do-bairo": "padaria-do-bairro" }
+    const fetched = vi.fn(async () => Response.json(SESSION, { status: 200 }))
+    vi.stubGlobal("fetch", fetched)
+
+    const response = await proxy(arriving("beelink.biz", "/padaria-do-bairo/conta", { cookie: "bl_shopper_refresh=old" }))
+
+    expect(response.status).toBe(308)
+    expect(response.headers.getSetCookie()).toEqual([])
+    expect(fetched).not.toHaveBeenCalled()
+  })
+
+  it("leads the panel of that page to the same screen at the new address", async () => {
+    moves.left = { "padaria-do-bairo": "padaria-do-bairro" }
+
+    expect(await at("/admin/padaria-do-bairo")).toEqual([308, "https://0.0.0.0:3000/admin/padaria-do-bairro"])
+    expect(await at("/admin/padaria-do-bairo/orders/14?aba=itens")).toEqual([308, "https://0.0.0.0:3000/admin/padaria-do-bairro/orders/14?aba=itens"])
+    expect(await at("/admin/padaria-do-bairo/design", { cookie: "bl_access=token" })).toEqual([308, "https://0.0.0.0:3000/admin/padaria-do-bairro/design"])
+  })
+
+  it("goes straight to the page's own domain, in one step, where it has an active one", async () => {
+    moves.left = { "padaria-do-bairo": "padaria-do-bairro" }
+    table.domains = { "padaria.com.br": "padaria-do-bairro" }
+
+    expect(await at("/padaria-do-bairo/produtos?pagina=2")).toEqual([308, "https://padaria.com.br/produtos?pagina=2"])
+  })
+
+  /** A handler answers JSON to a script already under way: the API says `STORE_MOVED` there. */
+  it("never redirects a handler, nor touches an address no page left, nor the doorway", async () => {
+    moves.left = { "padaria-do-bairo": "padaria-do-bairro" }
+
+    for (const path of ["/padaria-do-bairo/api/orders", "/api/stores/padaria-do-bairo", "/api/storefront/padaria-do-bairo/search", "/padaria-do-bairro/produtos", "/outra-loja"]) {
+      expect(untouched(await proxy(arriving("beelink.biz", path))), path).toBe(true)
+    }
+    expect((await proxy(arriving("beelink.biz", "/admin", { cookie: "bl_access=token" }))).headers.get("location")).toBeNull()
+  })
+})
+
 describe("a request that arrived by a shop's own domain", () => {
   const HOST = "minhaloja.com.br"
   const own = (pathname: string, init: Parameters<typeof arriving>[2] = {}) => arriving(HOST, pathname, init)
@@ -765,6 +832,17 @@ describe("a request that arrived by a shop's own domain", () => {
   })
 
   /** A pending domain is not in the table: to the proxy it is any host it does not know. */
+  /** For up to a minute after a change of address, the table of hosts still names the old one. */
+  it("is shown the page at the address it has now, when the table of hosts still names the one it left (BEELINK-331)", async () => {
+    table.domains = { [HOST]: "loja-antiga" }
+    moves.left = { "loja-antiga": "loja" }
+
+    const response = await proxy(own("/produtos"))
+
+    expect(rewrittenTo(response)).toBe("/loja/produtos")
+    expect(stampOf(response)).toBe("loja")
+  })
+
   it("is the platform's, as before, while the domain is pending or is nobody's", async () => {
     const fetched = vi.fn(async () => Response.json(SESSION, { status: 200 }))
     vi.stubGlobal("fetch", fetched)

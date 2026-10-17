@@ -8,12 +8,13 @@ import { CUSTOMER_ACCESS_COOKIE, CUSTOMER_REFRESH_COOKIE, clearCustomerSessionCo
 import { LEGAL_ROUTES } from "@/lib/legal-routes"
 import { refreshCustomerSession } from "@/lib/refresh-customer-session"
 import { panelReturnOf, RETURN_KEY, signInHrefOf } from "@/lib/panel-return"
-import { isAuthPath, isFilePath, isPanelPath, shopPageOf, wasHandedOver } from "@/lib/proxy-scope"
+import { isAuthPath, isFilePath, isPanelPath, panelShopOf, shopPageOf, wasHandedOver } from "@/lib/proxy-scope"
 import { refreshSession } from "@/lib/refresh-session"
 import { serverEnv } from "@/lib/server-env"
 import { ACCESS_COOKIE, REFRESH_COOKIE, clearSessionCookies, setSessionCookies } from "@/lib/session-cookies"
 import { SHOP_DOMAIN_HEADER, type ShopAddress } from "@/lib/shop-address"
 import { hostNameOf, shopHosts } from "@/lib/shop-hosts"
+import { shopMoves } from "@/lib/shop-moves"
 import { hostAskedOf, shopOriginOf } from "@/lib/shop-origin"
 
 /**
@@ -183,13 +184,21 @@ async function onShopDomain(request: NextRequest, slug: string): Promise<NextRes
  * cannot.
  */
 async function onPlatform(request: NextRequest): Promise<NextResponse> {
-  const { pathname } = request.nextUrl
+  const { pathname, search } = request.nextUrl
 
   // A shop with an active domain has one address: its pages here lead there, path and query kept,
-  // which is what keeps a link already shared, or written into an e-mail, alive.
+  // which is what keeps a link already shared, or written into an e-mail, alive. So does an address
+  // a page left (BEELINK-331): it leads to the one the page has now — or, with a domain, straight there.
   const page = shopPageOf(pathname)
-  const domain = page ? (await shopHosts()).hostOf(page.slug) : null
-  if (page && domain) return NextResponse.redirect(`${shopOriginOf(request, domain)}${page.rest}${request.nextUrl.search}`, 308)
+  const moved = page ? (await shopMoves()).currentOf(page.slug) : null
+  const domain = page ? (await shopHosts()).hostOf(moved ?? page.slug) : null
+  if (page && domain) return NextResponse.redirect(`${shopOriginOf(request, domain)}${page.rest}${search}`, 308)
+  if (page && moved) return NextResponse.redirect(new URL(`/${moved}${page.rest === "/" ? "" : page.rest}${search}`, request.url), 308)
+
+  // The panel of a page that changed its address, at the old one: the same page, at the new one.
+  const panel = panelShopOf(pathname)
+  const panelMoved = panel ? (await shopMoves()).currentOf(panel.slug) : null
+  if (panel && panelMoved) return NextResponse.redirect(new URL(`/admin/${panelMoved}${panel.rest}${search}`, request.url), 308)
 
   // Everything else is public on purpose, and passes as it did when the matcher never called the
   // proxy for it: `lib/proxy-scope.ts`.
@@ -254,7 +263,9 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 
   const hosts = await shopHosts()
   const slug = hosts.slugOf(host)
-  if (slug) return onShopDomain(request, slug)
+  // The table of hosts names the address the page had for up to a minute after it changed: the
+  // table of addresses left may know already (BEELINK-331).
+  if (slug) return onShopDomain(request, (await shopMoves()).currentOf(slug) ?? slug)
 
   // `www.` in front of a shop's domain is the same shop, at its one address.
   if (host.startsWith("www.") && hosts.slugOf(host.slice(4))) {
