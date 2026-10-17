@@ -41,6 +41,7 @@ const STORE: Store = {
   latitude: null,
   longitude: null,
   category: null,
+  slugChangeableOn: null,
   createdAt: "2026-09-20T12:00:00.000Z",
   updatedAt: "2026-09-20T12:00:00.000Z",
 }
