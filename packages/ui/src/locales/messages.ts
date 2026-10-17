@@ -8,6 +8,7 @@ import type {
 } from "../blocks/design/design-types"
 import type { CashbackEntryKindValue } from "../lib/cashback"
 import type { CustomDomainErrorValue, CustomDomainProblemValue } from "../lib/custom-domain"
+import type { StoreAddressReasonValue } from "../lib/store-address"
 import type { SubscriptionCycleValue, SubscriptionLockValue, SubscriptionMethodValue, SubscriptionStandingView } from "../lib/subscription"
 import type { CouponRefusalValue } from "../lib/order-discounts"
 import type { SectionCategory } from "../lib/section-registry"
@@ -3368,6 +3369,8 @@ export interface UiMessages {
       slugLabel: string
       slugHint: string
       slugEditableHint: string
+      /** The way from the read-only address to the screen that changes it (BEELINK-331). */
+      slugChange: string
       descriptionLabel: string
       descriptionPlaceholder: string
       descriptionHint: string
@@ -3378,6 +3381,44 @@ export interface UiMessages {
       logoPlaceholder: string
       logoHint: string
       logoAlt: string
+    }
+    /** The screen that changes a page's address (BEELINK-331). */
+    addressChange: {
+      title: string
+      /** `{address}`: the address the page has, `beelink.biz/minha-loja`. */
+      lead: string
+      label: string
+      hint: string
+      /** `{address}`: the new one as it would be stored. */
+      preview: string
+      available: string
+      checking: string
+      reasons: Record<StoreAddressReasonValue, string>
+      consequencesTitle: string
+      consequences: {
+        oldLink: string
+        reserved: string
+        customers: string
+        interval: string
+      }
+      /** `{domain}`: the page's own domain, which does not change. */
+      customDomain: string
+      submit: string
+      saving: string
+      /** `{address}`: the new address. */
+      confirmTitle: string
+      /** `{current}`: the address left. */
+      confirmBody: string
+      confirmCancel: string
+      confirmAction: string
+      /** `{date}`: the first day another change is accepted. */
+      lockedUntil: string
+      /** `{address}`: the address the page has now. */
+      changed: string
+      /** `{date}`: as `lockedUntil`, for a refusal of the change itself. */
+      tooSoon: string
+      failed: string
+      saveFailed: string
     }
     address: {
       legend: string

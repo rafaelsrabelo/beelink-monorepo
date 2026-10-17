@@ -1,5 +1,8 @@
 "use client"
 
+// React
+import type { ReactNode } from "react"
+
 // UI
 import {
   Field,
@@ -36,11 +39,13 @@ export interface StoreIdentityFieldsProps {
   /** The shop's URL segment, read-only unless `onSlugChange` is given. */
   slug: string
   /**
-   * Set exactly once, at creation: the create form passes this and the settings form does not, so
-   * the same block shows an address that can still be chosen and one that can no longer change.
+   * The create form passes this and the settings form does not: there the address is read-only,
+   * and it changes on a screen of its own (BEELINK-331), which `slugAction` leads to.
    */
   onSlugChange?: (slug: string) => void
   slugError?: FieldIssue
+  /** Beside the read-only address: the way to the screen that changes it, a link the screen builds. */
+  slugAction?: ReactNode
   categories: StoreCategoryOption[]
   errors?: FieldIssues<StoreIdentityValues>
   /** Hands the logo to whoever keeps bytes. Absent leaves the address field alone — see the field. */
@@ -62,6 +67,7 @@ export function StoreIdentityFields({
   slug,
   onSlugChange,
   slugError,
+  slugAction,
   categories,
   errors,
   onLogoUpload,
@@ -78,9 +84,9 @@ export function StoreIdentityFields({
   return (
     <FieldGroup>
       {/*
-        Chosen once, at creation, like the slug: the control appears only where the slug can still
-        change. A shop turned into a site would orphan its products, so the settings form does not
-        offer the switch — and a site that wants to sell is a new shop.
+        Chosen once, at creation: the control appears only on the create form. A shop turned into a
+        site would orphan its products, so the settings form does not offer the switch — and a site
+        that wants to sell is a new shop.
       */}
       {onSlugChange ? (
         <FieldSet>
@@ -134,6 +140,7 @@ export function StoreIdentityFields({
         <FieldDescription id="store-slug-hint">
           {onSlugChange ? text.slugEditableHint : text.slugHint}
         </FieldDescription>
+        {onSlugChange || !slugAction ? null : <div className="text-sm">{slugAction}</div>}
         <FieldError errors={[slugError]} />
       </Field>
 

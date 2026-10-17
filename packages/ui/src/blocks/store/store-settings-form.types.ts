@@ -14,8 +14,10 @@ import type {
 } from "./store-types"
 
 export interface StoreSettingsFormProps {
-  /** The shop's URL segment. Shown by the identity tab, never edited. */
+  /** The shop's URL segment. Shown by the identity tab, never edited here. */
   slug: string
+  /** Beside the address on the identity tab: the way to the screen that changes it (BEELINK-331). */
+  slugAction?: ReactNode
   defaultValues: StoreSettingsValues
   onSubmit: (values: StoreSettingsValues) => void | Promise<void>
   categories: StoreCategoryOption[]
