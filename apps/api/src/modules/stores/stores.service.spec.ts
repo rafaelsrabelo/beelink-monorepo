@@ -89,6 +89,10 @@ interface Fakes {
   freeze: ReturnType<typeof vi.fn>;
   /** What it owes bee-link: its subscription, opened in trial. */
   trial: ReturnType<typeof vi.fn>;
+  /** Whether an address is taken — held now, or left by a page (BEELINK-331). */
+  taken: ReturnType<typeof vi.fn>;
+  /** The address's lock, taken before it is claimed. */
+  lock: ReturnType<typeof vi.fn>;
 }
 
 /** Collaborators by hand, the way jwt-auth.guard.spec.ts builds them — no Nest testing module. */
@@ -104,6 +108,8 @@ function build(stored: StoreRow | null = row): { service: StoresService; fakes: 
     home: vi.fn().mockResolvedValue({ id: HOME }),
     freeze: vi.fn().mockResolvedValue({ id: 'v1', number: 1, note: null, createdAt: new Date(), author: null }),
     trial: vi.fn().mockResolvedValue({}),
+    taken: vi.fn().mockResolvedValue([{ taken: stored !== null }]),
+    lock: vi.fn().mockResolvedValue(1),
   };
 
   const prisma = {
@@ -122,6 +128,9 @@ function build(stored: StoreRow | null = row): { service: StoresService; fakes: 
       findFirst: vi.fn().mockResolvedValue(null),
       create: fakes.freeze,
     },
+    storeSlugHistory: { findUnique: vi.fn().mockResolvedValue(null) },
+    $queryRaw: fakes.taken,
+    $executeRaw: fakes.lock,
     // The callback form, handed the same client: what is asserted is the writes, not the boundary.
     $transaction: vi.fn().mockImplementation((run: (tx: unknown) => unknown) => run(prisma)),
   } as unknown as PrismaService;
@@ -166,6 +175,7 @@ describe('StoresService.create', () => {
       expect(error.getResponse()).toMatchObject({ errorCode: 'STORE_SLUG_RESERVED' });
     });
     expect(fakes.findUnique).not.toHaveBeenCalled();
+    expect(fakes.taken).not.toHaveBeenCalled();
   });
 
   it('reserves `mine`, so no shop can shadow GET /stores/mine', async () => {
@@ -177,6 +187,18 @@ describe('StoresService.create', () => {
     const { service } = build();
 
     await expect(service.create(OWNER, createDto)).rejects.toThrow(ConflictException);
+  });
+
+  it('claims the address under its lock and asks again inside, so an address left meanwhile is not taken (BEELINK-331)', async () => {
+    const { service, fakes } = build(null);
+    fakes.taken.mockResolvedValueOnce([{ taken: false }]).mockResolvedValueOnce([{ taken: true }]);
+
+    await service.create(OWNER, createDto).catch((error: ConflictException) => {
+      expect(error.getResponse()).toMatchObject({ errorCode: 'STORE_SLUG_TAKEN' });
+    });
+    expect((fakes.lock.mock.calls[0]![0] as readonly string[]).join('')).toMatch(/pg_advisory_xact_lock\(hashtextextended\(/);
+    expect(fakes.lock.mock.calls[0]![1]).toBe('store-slug:padaria-do-bairro');
+    expect(fakes.create).not.toHaveBeenCalled();
   });
 
   it('takes the owner from the session, never from the body', async () => {

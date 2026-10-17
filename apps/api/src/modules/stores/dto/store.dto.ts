@@ -2,7 +2,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 // Libs
-import { Transform, Type } from 'class-transformer';
+import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
   ArrayUnique,
@@ -12,7 +12,6 @@ import {
   IsOptional,
   IsString,
   IsUUID,
-  Matches,
   Max,
   MaxLength,
   Min,
@@ -41,10 +40,10 @@ import {
   PAYMENT_METHODS,
   SLUG_MAX_LENGTH,
   SLUG_MIN_LENGTH,
-  SLUG_PATTERN,
   STORE_LAYOUT_TYPES,
   STORE_TYPES,
 } from '../stores.constants.js';
+import { storeSlugField } from './store-slug.dto.js';
 import {
   StoreAddressDto,
   StoreColorsDto,
@@ -53,18 +52,6 @@ import {
   imageUrl,
   trim,
 } from './store-fields.dto.js';
-
-/** The legacy `generateSlug()`, plus trimming the hyphens it could leave at either end. */
-const normaliseSlug = Transform(({ value }: { value: unknown }) =>
-  typeof value === 'string'
-    ? value
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[̀-ͯ]/g, '')
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '')
-    : value,
-);
 
 export class CreateStoreDto implements CreateStorePayload {
   @ApiProperty({ example: 'Padaria do Bairro', minLength: 2, maxLength: 120 })
@@ -75,11 +62,7 @@ export class CreateStoreDto implements CreateStorePayload {
   name!: string;
 
   @ApiProperty({ example: 'padaria-do-bairro', minLength: SLUG_MIN_LENGTH, maxLength: SLUG_MAX_LENGTH })
-  @IsString()
-  @Matches(SLUG_PATTERN)
-  @MinLength(SLUG_MIN_LENGTH)
-  @MaxLength(SLUG_MAX_LENGTH)
-  @normaliseSlug
+  @storeSlugField()
   slug!: string;
 
   @ApiProperty({ enum: STORE_TYPES })
@@ -139,9 +122,10 @@ export class CreateStoreDto implements CreateStorePayload {
 
 /**
  * A full replacement, not a patch: the panel posts every field it edits, so an omitted optional key
- * clears what is stored. `slug`, `latitude` and `longitude` are absent on purpose — the slug is
- * immutable and the coordinates are the API's to compute — and `forbidNonWhitelisted` turns sending
- * one into a 400 rather than a silent no-op.
+ * clears what is stored. `slug`, `latitude` and `longitude` are absent on purpose — the slug changes
+ * by its own route alone (`ChangeStoreSlugDto`, BEELINK-331), which keeps its old address, and the
+ * coordinates are the API's to compute — and `forbidNonWhitelisted` turns sending one into a 400
+ * rather than a silent no-op.
  */
 export class UpdateStoreDto implements UpdateStorePayload {
   @ApiProperty({ minLength: 2, maxLength: 120 })

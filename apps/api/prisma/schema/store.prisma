@@ -20,9 +20,9 @@ enum StoreLayoutType {
 /// could type would become a reserved word, so a product word of `blusas` would shadow a category
 /// of that name. Adding a value is a migration, on purpose.
 ///
-/// Unlike `Store.slug` this one may be changed. That is safe only because the storefront resolver
-/// accepts the words of every vocabulary and answers a canonical path, so the previous word keeps
-/// resolving and redirects permanently instead of 404ing a link already printed on a card.
+/// It may be changed, like `Store.slug` since BEELINK-331. That is safe only because the storefront
+/// resolver accepts the words of every vocabulary and answers a canonical path, so the previous word
+/// keeps resolving instead of 404ing a link already printed on a card.
 enum RouteVocabulary {
   PT_BR
   EN
@@ -73,10 +73,22 @@ model Store {
 
   /// The public URL segment: /<slug> is the shop window and /admin/<slug> the panel. Unique across
   /// the platform and stored already normalised to lower-case [a-z0-9-], so the unique index means
-  /// what it says without a case-insensitive collation. It is never updated: printed links, shared
-  /// links and every order placed through one point at this exact string, and the API also refuses a
-  /// slug that would shadow a route of the app itself, such as `admin` or `api`.
+  /// what it says without a case-insensitive collation; the API also refuses a slug that would shadow
+  /// a route of the app itself, such as `admin` or `api`.
+  ///
+  /// It changes by one route alone, `PUT /stores/:slug/slug` (BEELINK-331), at most once every 30
+  /// days, and never by `UpdateStoreDto`. Printed links, shared links and e-mails point at the old
+  /// string, so the one it leaves goes to `StoreSlugHistory` in the same transaction: reserved for
+  /// this page for good, and led to the address it has now. What keeps two pages off one address is a
+  /// claim (`store-slugs.ts`) that holds the address's advisory lock while it looks at both tables —
+  /// creating a page and changing an address both take it — with this index and the history's key
+  /// behind it.
   slug String    @unique @db.VarChar(40)
+  /// When the slug last changed (BEELINK-331); the next change is accepted 30 days on, by Brasília's
+  /// calendar. Null: it never changed.
+  slugChangedAt DateTime?
+  /// The addresses it left: still its own, and leading here.
+  slugHistory   StoreSlugHistory[]
   name String    @db.VarChar(120)
   type StoreType @default(ECOMMERCE)
 
@@ -218,6 +230,21 @@ model Store {
   @@index([ownerId])
   @@index([categoryId])
   @@map("stores")
+}
+
+/// An address a page left (BEELINK-331). It stays that page's: no other page may take it — not by a
+/// change, not by being created with it — and the web leads it, path and query kept, to the address
+/// the page has now. The page may take it back, and then the row goes.
+model StoreSlugHistory {
+  /// The address left, spelled as `Store.slug` is. The key: an address is left by one page only,
+  /// since no other could have taken it.
+  slug    String   @id @db.VarChar(40)
+  storeId String   @db.Uuid
+  store   Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  leftAt  DateTime @default(now())
+
+  @@index([storeId])
+  @@map("store_slug_history")
 }
 
 /// A step of a shop's funnel that the shop window counts (BEELINK-276). The purchase is no row here:

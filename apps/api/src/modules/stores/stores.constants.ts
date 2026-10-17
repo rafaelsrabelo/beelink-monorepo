@@ -55,6 +55,9 @@ export const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 export const SLUG_MIN_LENGTH = 3;
 export const SLUG_MAX_LENGTH = 40;
 
+/** A page's address changes at most once in this many days, by Brasília's calendar (BEELINK-331). */
+export const SLUG_CHANGE_INTERVAL_DAYS = 30;
+
 /**
  * The one bound on a shop's description, stated on `PublicStore.description` in the contract and
  * enforced here. The column is unbounded `text`: this number exists so a storefront page and an
