@@ -194,3 +194,52 @@ muda esse pressuposto num lugar só e confere cada coisa que dependia dele (list
 - Avisar os clientes da loja por e-mail da troca; trocar o domínio próprio; disponibilidade ao vivo na tela de
   criação.
 - A exclusão de página (BEELINK-330), que vai precisar olhar o histórico também.
+
+---
+
+## Como ficou (acréscimo de 22/10/2026)
+
+A sessão foi interrompida em 17/10 pelo limite de uso e retomada em 22/10; nada se perdeu (os commits
+estavam na branch). As decisões acima valeram como escritas; o que o código acrescentou:
+
+- **Um ponto só de resolução:** `stores/store-slugs.ts` — `lockSlug` (trava de aviso por endereço,
+  `hashtextextended('store-slug:<endereço>', 0)`), `slugTaken` (as duas tabelas numa consulta só),
+  `movedTo`, `missingStore` (o `404 STORE_MOVED` com `details.slug`, ou `STORE_NOT_FOUND`), `slugMoves`,
+  `slugProblemOf`, `slugChangeableOn` e `normaliseSlugText`. As cinco buscas por endereço de
+  `StoresService` lançam `missingStore`. Nova regra 13 em `apps/api/AGENTS.md`.
+- **A normalização e as regras do endereço** viraram um decorador só, `storeSlugField()`
+  (`dto/store-slug.dto.ts`), usado pela criação (sem código próprio, como antes) e pela troca
+  (`STORE_SLUG_INVALID`).
+- **30 dias:** `slugChangeableOn` — dia de Brasília da troca + 30, a partir da 0h desse dia. Trocado em
+  22/10 → de novo a partir de 21/11 (visto na tela e na recusa da API).
+- **Web:** a parte do proxy que guarda a cópia saiu de `shop-hosts.ts` para `lib/kept-copy.ts`; a cópia dos
+  endereços deixados é `lib/shop-moves.ts`. O `308` mantém caminho e busca; um endereço antigo de página com
+  domínio ativo vai direto ao domínio. A tela é `/admin/<slug>/store/address`, com esqueleto próprio
+  (`loading.tsx`), e "Trocar endereço" mora sob o campo de endereço da aba Informações básicas.
+- **O texto da tela** (bloco `StoreAddressChange`, `store.addressChange` nos dicionários da UI) diz o minuto
+  da decisão 18 e o carrinho da decisão 19, além do combinado (link antigo, reservado, entrar de novo, 30
+  dias, domínio próprio igual). Os textos de criação e de configurações que diziam "não pode ser alterado"
+  mudaram.
+
+### O que foi visto
+
+- e2e da API `test/store-slug-change.e2e-spec.ts` (16 casos, com a corrida de duas páginas, de uma troca e
+  uma criação, de uma criação e um endereço sendo deixado, e de duas trocas da mesma página), e os specs
+  `stores`, `store-opening-template` e `page-lock` — verdes.
+- e2e do web `e2e/store-address.spec.ts`, rodado contra `next dev` na 3200 e a API na 3201 (não contra o
+  build, que este worktree não pode fazer): verde em 1,2 min; a cópia do proxy aprendeu a troca dentro do
+  minuto.
+- Na tela, a 1920 e a 390 px (capturas em `.claude/worktrees/subscription-pr/screens-331/`): a troca pelo
+  mouse a 1920 e só pelo teclado a 390 (Tab até o campo, Tab até o botão, Enter, o foco abre em "Manter
+  endereço", Tab, Enter); `/<antigo>`, produto, carrinho e `/admin/<antigo>/orders` levando ao novo; o cliente
+  logado no endereço antigo levado ao novo e à tela Entrar; outra conta recusada ao criar com o antigo
+  (`409 STORE_SLUG_TAKEN`); a segunda troca recusada com o dia (`409 STORE_SLUG_CHANGE_TOO_SOON`,
+  `changeableOn: 2026-11-21`).
+
+### O que não foi visto
+
+- O `next build` e a suíte Playwright inteira (proibidos neste worktree pelo disco); o `ci-check` fica para o
+  push.
+- Um domínio próprio de verdade trocando de endereço (o caso está nos testes do proxy, não na tela).
+- As duas capturas do diálogo de confirmação saíram no meio da animação de entrada; o texto e o foco foram
+  conferidos pelo teste, não pela imagem.
