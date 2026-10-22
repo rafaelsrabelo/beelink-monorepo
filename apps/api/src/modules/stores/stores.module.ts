@@ -6,11 +6,12 @@ import { StoreCategoriesController } from './store-categories.controller.js';
 import { StoreCategoriesService } from './store-categories.service.js';
 import { StoreColorPresetsController } from './store-color-presets.controller.js';
 import { StoreGeocoder } from './store-geocoder.service.js';
+import { StoreSlugMovesController } from './store-slug-moves.controller.js';
 import { StoresController } from './stores.controller.js';
 import { StoresService } from './stores.service.js';
 
 @Module({
-  controllers: [StoresController, StoreCategoriesController, StoreColorPresetsController],
+  controllers: [StoresController, StoreCategoriesController, StoreColorPresetsController, StoreSlugMovesController],
   providers: [StoresService, StoreCategoriesService, StoreGeocoder],
   exports: [StoresService, StoreGeocoder],
 })

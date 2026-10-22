@@ -171,6 +171,9 @@ export class StoreResponse extends PublicStoreResponse implements Store {
   @ApiProperty({ nullable: true, type: StoreCategoryResponse })
   category!: StoreCategoryResponse | null;
 
+  @ApiProperty({ nullable: true, type: String, example: '2026-11-16', description: "YYYY-MM-DD, Brasília's calendar: the first day the address may change again — once every 30 days. Null when it may change now." })
+  slugChangeableOn!: string | null;
+
   @ApiProperty({ format: 'date-time' }) createdAt!: string;
   @ApiProperty({ format: 'date-time' }) updatedAt!: string;
 }

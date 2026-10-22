@@ -6,22 +6,26 @@ import type { UseMutationResult, UseQueryResult } from "@tanstack/react-query"
 
 // Types
 import type {
+  ChangeStoreSlugPayload,
   CreateStorePayload,
   Store,
   StoreCategory,
   StoreColorPreset,
   StoreColors,
+  StoreSlugAvailability,
   UpdateStorePayload,
 } from "@harness-monorepo/contracts"
 
 // App
 import { customerKeys } from "../customers/customer-hooks"
 import {
+  changeStoreSlug,
   createStore,
   fetchMyStores,
   fetchStore,
   fetchStoreCategories,
   fetchStoreColorPresets,
+  fetchStoreSlugAvailability,
   updateStore,
   updateStoreColors,
 } from "./store-requests"
@@ -37,7 +41,11 @@ export const storeKeys = {
   detail: (slug: string) => [...storeKeys.all, "detail", slug] as const,
   categories: () => [...storeKeys.all, "categories"] as const,
   colorPresets: () => [...storeKeys.all, "color-presets"] as const,
+  slugAvailability: (slug: string, candidate: string) => [...storeKeys.all, "slug-availability", slug, candidate] as const,
 }
+
+/** An address asked about a moment ago is not asked again while it is typed back and forth. */
+const SLUG_AVAILABILITY_STALE_TIME = 10 * 1000
 
 /** Reference data both forms need before they can render: the taxonomy and the palettes. */
 const REFERENCE_DATA_STALE_TIME = 5 * 60 * 1000
@@ -94,8 +102,9 @@ export function useCreateStore(): UseMutationResult<Store, Error, CreateStorePay
 }
 
 /**
- * The slug is bound here and not sent as a variable: it cannot change, so a form that could carry
- * a different one would be offering an edit the API refuses.
+ * The slug is bound here and not sent as a variable: a page's address changes by its own route
+ * alone (`useChangeStoreSlug`), so a form that could carry a different one would be offering an edit
+ * the API refuses.
  */
 export function useUpdateStoreColors(slug: string): UseMutationResult<Store, Error, StoreColors> {
   const queryClient = useQueryClient()
@@ -124,6 +133,37 @@ export function useUpdateStore(slug: string): UseMutationResult<Store, Error, Up
         queryClient.invalidateQueries({ queryKey: storeKeys.mine() }),
         queryClient.invalidateQueries({ queryKey: customerKeys.store(slug) }),
       ])
+    },
+  })
+}
+
+/**
+ * Whether an address may be the page's new one (BEELINK-331): asked once it is typed — the screen
+ * waits for a pause — and never for nothing. A warning only: the change asks again.
+ */
+export function useStoreSlugAvailability(slug: string, candidate: string): UseQueryResult<StoreSlugAvailability, Error> {
+  return useQuery({
+    queryKey: storeKeys.slugAvailability(slug, candidate),
+    queryFn: () => fetchStoreSlugAvailability(slug, candidate),
+    enabled: slug !== "" && candidate !== "",
+    staleTime: SLUG_AVAILABILITY_STALE_TIME,
+    retry: false,
+  })
+}
+
+/**
+ * The page's new address (BEELINK-331). The page is kept under the new address's key, and the list
+ * of pages is read again — the switch names the page by its address. What was kept under the old one
+ * is left to go stale: the screen leaves that address at once.
+ */
+export function useChangeStoreSlug(slug: string): UseMutationResult<Store, Error, ChangeStoreSlugPayload> {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (payload: ChangeStoreSlugPayload) => changeStoreSlug(slug, payload),
+    onSuccess: async (store) => {
+      queryClient.setQueryData(storeKeys.detail(store.slug), store)
+      await queryClient.invalidateQueries({ queryKey: storeKeys.mine() })
     },
   })
 }

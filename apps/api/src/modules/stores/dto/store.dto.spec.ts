@@ -95,7 +95,7 @@ describe('CreateStoreDto', () => {
 });
 
 describe('UpdateStoreDto', () => {
-  it('refuses the slug, which is immutable, and the coordinates, which are the API’s to compute', async () => {
+  it('refuses the slug, which changes by its own route alone, and the coordinates, which are the API’s to compute', async () => {
     await expect(update({ ...updateBody, slug: 'outra' })).rejects.toThrow(BadRequestException);
     await expect(update({ ...updateBody, latitude: -23.5 })).rejects.toThrow(BadRequestException);
     await expect(update({ ...updateBody, longitude: -46.6 })).rejects.toThrow(BadRequestException);

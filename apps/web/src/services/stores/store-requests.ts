@@ -1,10 +1,12 @@
 // Types
 import type {
+  ChangeStoreSlugPayload,
   CreateStorePayload,
   Store,
   StoreCategory,
   StoreColorPreset,
   StoreColors,
+  StoreSlugAvailability,
   UpdateStorePayload,
 } from "@harness-monorepo/contracts"
 
@@ -13,7 +15,11 @@ import type {
  * into copy in the reader's language (apps/web/AGENTS.md), through ./store-error-copy.
  */
 export class StoreRequestError extends Error {
-  constructor(readonly errorCode: string) {
+  constructor(
+    readonly errorCode: string,
+    /** What a refusal names beside its code — the day a change of address is accepted again, where it moved. */
+    readonly details: unknown = undefined,
+  ) {
     super(errorCode)
     this.name = "StoreRequestError"
   }
@@ -40,7 +46,8 @@ async function call<T>(path: string, init: RequestInit): Promise<T> {
   const response = await fetch(path, { headers: JSON_HEADERS, ...init })
 
   if (!response.ok) {
-    throw new StoreRequestError(errorCodeOf(await response.json().catch(() => null)))
+    const body: unknown = await response.json().catch(() => null)
+    throw new StoreRequestError(errorCodeOf(body), typeof body === "object" && body !== null && "details" in body ? body.details : undefined)
   }
 
   return (await response.json()) as T
@@ -94,4 +101,18 @@ export function updateStore(slug: string, payload: UpdateStorePayload): Promise<
     method: "PUT",
     body: JSON.stringify(payload),
   })
+}
+
+/**
+ * The page's new address (BEELINK-331). The answer is the page at it: the screen goes there, and the
+ * address it left leads to it.
+ */
+export function changeStoreSlug(slug: string, payload: ChangeStoreSlugPayload): Promise<Store> {
+  return call<Store>(`/api/stores/${encodeURIComponent(slug)}/slug`, { method: "PUT", body: JSON.stringify(payload) })
+}
+
+/** Whether an address may be the page's new one, as the API would normalise it. */
+export function fetchStoreSlugAvailability(slug: string, candidate: string): Promise<StoreSlugAvailability> {
+  const query = new URLSearchParams({ slug: candidate })
+  return call<StoreSlugAvailability>(`/api/stores/${encodeURIComponent(slug)}/slug-availability?${query.toString()}`, { method: "GET" })
 }

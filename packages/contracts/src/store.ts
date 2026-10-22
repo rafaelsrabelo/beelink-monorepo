@@ -255,6 +255,11 @@ export interface Store extends PublicStore {
   latitude: number | null;
   longitude: number | null;
   category: StoreCategory | null;
+  /**
+   * `YYYY-MM-DD`, on Brasília's calendar: the first day the page's address may be changed again
+   * (BEELINK-331) — once every 30 days, counted from the last change. Null when it may be changed now.
+   */
+  slugChangeableOn: string | null;
   /** ISO-8601. */
   createdAt: string;
   /** ISO-8601. */
@@ -286,8 +291,9 @@ export interface CreateStorePayload {
   name: string;
   /**
    * Lower case, `a-z`, `0-9` and single hyphens, 3 to 40 characters, already normalised by the
-   * caller. It is unique across the platform and cannot be changed afterwards, so the API refuses
-   * one that is taken and one that would shadow a route of the app itself, such as `admin`.
+   * caller. It is unique across the platform — an address another page left is taken too, since it
+   * leads there (BEELINK-331) — so the API refuses one that is taken and one that would shadow a
+   * route of the app itself, such as `admin`. It changes afterwards only by `ChangeStoreSlugPayload`.
    */
   slug: string;
   type: StoreType;
@@ -311,9 +317,10 @@ export interface CreateStorePayload {
 
 /**
  * A full replacement of what the panel edits — PUT, not PATCH: the form posts every field, so an
- * omitted optional key clears it rather than leaving it. `slug` is absent because it cannot change,
- * and `latitude`/`longitude` are absent because the API geocodes the address itself; the legacy
- * panel asked the browser to call Nominatim and sent whatever came back.
+ * omitted optional key clears it rather than leaving it. `slug` is absent because it changes by its
+ * own route alone (`ChangeStoreSlugPayload`), and `latitude`/`longitude` are absent because the API
+ * geocodes the address itself; the legacy panel asked the browser to call Nominatim and sent
+ * whatever came back.
  */
 export interface UpdateStorePayload {
   name: string;
@@ -350,7 +357,65 @@ export type StoreErrorCode =
    * catalogue, its cart, its quotes and offers, and a new order. What a customer already has — the
    * account, the orders — still answers. Why the page is locked is never said here.
    */
-  | "STORE_UNAVAILABLE";
+  | "STORE_UNAVAILABLE"
+  /**
+   * 404, for an address a page left (BEELINK-331): it is that page's no more, and leads to the one it
+   * has now, in `details` (`StoreMovedDetails`). Answered by every route that finds a page by its
+   * address, to anybody — an old address is public, and its visitors are led on anyway. Nothing is
+   * read or written through one.
+   */
+  | "STORE_MOVED"
+  /** 400, on a change of address: not one once normalised — 3 to 40 of `a-z`, `0-9` and single hyphens. */
+  | "STORE_SLUG_INVALID"
+  /** 400, on a change of address: it is the address the page has. */
+  | "STORE_SLUG_UNCHANGED"
+  /**
+   * 409, on a change of address within 30 days of the last one; the first day it may be changed again
+   * is in `details` (`StoreSlugChangeTooSoonDetails`).
+   */
+  | "STORE_SLUG_CHANGE_TOO_SOON";
+
+/** `details` of `STORE_MOVED`: the address the page has now. */
+export interface StoreMovedDetails {
+  slug: string;
+}
+
+/** `details` of `STORE_SLUG_CHANGE_TOO_SOON`. */
+export interface StoreSlugChangeTooSoonDetails {
+  /** `YYYY-MM-DD`, on Brasília's calendar: the first day the address may be changed again. */
+  changeableOn: string;
+}
+
+/**
+ * A page's new address (BEELINK-331), normalised by the API as `CreateStorePayload.slug` is and held
+ * to the same rules. The address it leaves stays the page's, reserved, and leads to the new one.
+ */
+export interface ChangeStoreSlugPayload {
+  slug: string;
+}
+
+/** Why an address cannot be the page's new one. */
+export type StoreSlugUnavailableReason = "INVALID" | "RESERVED" | "TAKEN" | "UNCHANGED";
+
+/**
+ * Whether an address is free to be the page's new one, as the API would normalise it — a warning to
+ * the screen and nothing more: the change itself checks it all again. An address the page itself
+ * left is free for it.
+ */
+export interface StoreSlugAvailability {
+  slug: string;
+  available: boolean;
+  reason: StoreSlugUnavailableReason | null;
+}
+
+/**
+ * An address a page left and the one it has now (BEELINK-331), for the web to lead the old one to
+ * the new. Every left address, as one list: the web keeps a copy and reads it again once a minute.
+ */
+export interface StoreSlugMove {
+  from: string;
+  to: string;
+}
 
 /**
  * One option in the address box, as both apps have to agree it is.

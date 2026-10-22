@@ -13,6 +13,7 @@ import { readPageDocument, servedSectionsOf, type SectionShape } from '../page/p
 import { NO_LOOKUPS, toPublicSection, type PageLookups } from '../page/page-public.mapper.js';
 import { ROUTE_WORDS } from '../catalog/catalog.constants.js';
 import { parseLayoutSettings } from './store-layout-settings.schema.js';
+import { slugChangeableOn } from './store-slugs.js';
 
 /**
  * Every read that becomes a `Store` or a `PublicStore` asks for the taxonomy row and the banners.
@@ -153,7 +154,7 @@ export function toUnavailablePublicStore(row: StoreRow): PublicStore {
 }
 
 /** The shop as its owner sees it: the public shape plus what only the owner may read. */
-export function toStore(row: StoreRow): WireStore {
+export function toStore(row: StoreRow, now: Date = new Date()): WireStore {
   return {
     ...toPublicStore(row),
     ownerId: row.ownerId,
@@ -172,6 +173,7 @@ export function toStore(row: StoreRow): WireStore {
     latitude: row.latitude === null ? null : row.latitude.toNumber(),
     longitude: row.longitude === null ? null : row.longitude.toNumber(),
     category: row.category === null ? null : toStoreCategory(row.category),
+    slugChangeableOn: slugChangeableOn(row.slugChangedAt, now),
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   } satisfies WireStore;

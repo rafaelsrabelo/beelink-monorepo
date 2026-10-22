@@ -88,3 +88,13 @@ export function shopPageOf(pathname: string): { slug: string; rest: string } | n
 
   return { slug, rest: pathname.slice(slug.length + 1) || "/" }
 }
+
+/**
+ * The page a panel's address names — `/admin/<slug>` and what is under it, with `rest` the address
+ * past the slug — or null for the doorway, `/admin`, and every other path (BEELINK-331).
+ */
+export function panelShopOf(pathname: string): { slug: string; rest: string } | null {
+  const match = /^\/admin\/([a-z0-9-]+)(\/.*)?$/.exec(pathname)
+
+  return match?.[1] ? { slug: match[1], rest: match[2] ?? "" } : null
+}

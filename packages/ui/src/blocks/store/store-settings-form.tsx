@@ -48,6 +48,7 @@ export type { StoreSettingsExtraTab, StoreSettingsFormProps } from "./store-sett
  */
 export function StoreSettingsForm({
   slug,
+  slugAction,
   defaultValues,
   onSubmit,
   categories,
@@ -136,6 +137,7 @@ export function StoreSettingsForm({
                     value={field.value}
                     onChange={field.onChange}
                     slug={slug}
+                    slugAction={slugAction}
                     categories={categories}
                     errors={errors.identity}
                     onLogoUpload={onImageUpload}

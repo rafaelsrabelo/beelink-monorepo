@@ -18,6 +18,7 @@ import { StoreErrorAlert } from "@/components/store/store-error-alert"
 import { firstStoreErrorCopy, storeErrorCopy } from "@/components/store/store-error-copy"
 import { toSettingsValues, toUpdatePayload } from "@/components/store/store-payloads"
 import { customDomainPageOf } from "@/lib/custom-domain-form"
+import { storeAddressPageOf } from "@/lib/store-address"
 import { useAddressSearch, DEBOUNCE_MS } from "@/services/addresses/address-hooks"
 import { mapTileUrl, pointOf } from "@/services/addresses/map-tiles"
 import type { Point } from "@/services/addresses/map-tiles"
@@ -74,6 +75,12 @@ export function StoreSettingsScreen({ slug, locale, ui, web }: StoreSettingsScre
       ) : null}
       <StoreSettingsForm
         slug={current.slug}
+        // The address changes on a screen of its own, once every 30 days (BEELINK-331).
+        slugAction={
+          <AppLink href={storeAddressPageOf(current.slug)} className="text-foreground underline underline-offset-4">
+            {ui.store.identity.slugChange}
+          </AppLink>
+        }
         defaultValues={toSettingsValues(current)}
         categories={categories.data ?? []}
         onZipCodeLookup={zipCode.lookup}

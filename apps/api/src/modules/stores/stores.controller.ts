@@ -1,7 +1,8 @@
 // Nest
-import { Body, Controller, Get, Param, Post, Put, Res, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, Query, Res, UseInterceptors } from '@nestjs/common';
 import { RouteConfig } from '@nestjs/platform-fastify';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
@@ -29,6 +30,7 @@ import { LOCK_CHANGES_AT_HEADER } from '../billing/billing.constants.js';
 import { AnswersLockedPage, PageLockOf } from '../billing/page-lock.decorators.js';
 import { StoreColorsDto } from './dto/store-fields.dto.js';
 import { CreateStoreDto, UpdateStoreDto } from './dto/store.dto.js';
+import { ChangeStoreSlugDto, StoreSlugAvailabilityQueryDto, StoreSlugAvailabilityResponse } from './dto/store-slug.dto.js';
 import { PublicStoreResponse, StoreResponse } from './dto/store.response.js';
 import { STOREFRONT_RATE_LIMIT } from './stores.constants.js';
 import { StoresService } from './stores.service.js';
@@ -53,10 +55,10 @@ export class StoresController {
   @Post()
   @ApiBearerAuth()
   @RouteConfig({ rateLimit: writeRateLimit })
-  @ApiOperation({ summary: 'Open a shop — the slug is claimed here and never changes' })
+  @ApiOperation({ summary: 'Open a shop — the slug is claimed here, and changes afterwards by `PUT /stores/:slug/slug` alone' })
   @ApiCreatedResponse({ type: StoreResponse })
   @ApiUnauthorizedResponse({ description: 'AUTH_UNAUTHENTICATED' })
-  @ApiConflictResponse({ description: 'STORE_SLUG_TAKEN' })
+  @ApiConflictResponse({ description: 'STORE_SLUG_TAKEN — held by a page, or left by one' })
   @ApiNotFoundResponse({ description: 'STORE_CATEGORY_NOT_FOUND' })
   @ApiTooManyRequestsResponse({ description: 'RATE_LIMITED — too many writes from this address' })
   create(@CurrentUser() current: AuthenticatedUser, @Body() dto: CreateStoreDto): Promise<StoreResponse> {
@@ -102,6 +104,44 @@ export class StoresController {
   @ApiForbiddenResponse({ description: 'STORE_FORBIDDEN' })
   bySlug(@Param('slug') slug: string, @CurrentUser() current: AuthenticatedUser): Promise<StoreResponse> {
     return this.stores.bySlug(slug, current.id);
+  }
+
+  /**
+   * The page's new address (BEELINK-331). Under `stores/:slug`, so a page locked for want of payment is
+   * refused it (`PAGE_LOCKED`) like every route of a page that does not say otherwise.
+   */
+  @Put(':slug/slug')
+  @ApiBearerAuth()
+  @RouteConfig({ rateLimit: writeRateLimit })
+  @ApiOperation({ summary: "A new address for the page, at most once every 30 days: the old one stays the page's and leads to the new" })
+  @ApiOkResponse({ type: StoreResponse })
+  @ApiBadRequestResponse({ description: 'STORE_SLUG_INVALID · STORE_SLUG_RESERVED · STORE_SLUG_UNCHANGED' })
+  @ApiUnauthorizedResponse({ description: 'AUTH_UNAUTHENTICATED' })
+  @ApiNotFoundResponse({ description: 'STORE_NOT_FOUND · STORE_MOVED' })
+  @ApiForbiddenResponse({ description: 'STORE_FORBIDDEN · PAGE_LOCKED' })
+  @ApiConflictResponse({ description: 'STORE_SLUG_TAKEN · STORE_SLUG_CHANGE_TOO_SOON (with `details.changeableOn`)' })
+  @ApiTooManyRequestsResponse({ description: 'RATE_LIMITED — too many writes from this address' })
+  changeSlug(
+    @Param('slug') slug: string,
+    @CurrentUser() current: AuthenticatedUser,
+    @Body() dto: ChangeStoreSlugDto,
+  ): Promise<StoreResponse> {
+    return this.stores.changeSlug(slug, current.id, dto.slug);
+  }
+
+  @Get(':slug/slug-availability')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Whether an address may be the page's new one, normalised as it would be stored" })
+  @ApiOkResponse({ type: StoreSlugAvailabilityResponse })
+  @ApiUnauthorizedResponse({ description: 'AUTH_UNAUTHENTICATED' })
+  @ApiNotFoundResponse({ description: 'STORE_NOT_FOUND · STORE_MOVED' })
+  @ApiForbiddenResponse({ description: 'STORE_FORBIDDEN · PAGE_LOCKED' })
+  slugAvailability(
+    @Param('slug') slug: string,
+    @CurrentUser() current: AuthenticatedUser,
+    @Query() query: StoreSlugAvailabilityQueryDto,
+  ): Promise<StoreSlugAvailabilityResponse> {
+    return this.stores.slugAvailability(slug, current.id, query.slug);
   }
 
   @Put(':slug/colors')
