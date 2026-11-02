@@ -3096,6 +3096,35 @@ export interface UiMessages {
         noResults: string
         noResultsHint: string
       }
+      /** The screen that chooses the order the shop window shows the products in. */
+      order: {
+        /** The way to it, beside "Novo produto" on the list. */
+        open: string
+        back: string
+        title: string
+        description: string
+        /** Where the order does not reach, so a shelf that keeps its own is not taken for a fault. */
+        scope: string
+        /** The two ways of drawing the same order. */
+        viewLabel: string
+        viewList: string
+        viewShelf: string
+        empty: string
+        emptyHint: string
+        /** Each takes `{name}`: a column of arrows called "Subir" names nothing to a screen reader. */
+        moveTop: string
+        moveUp: string
+        moveDown: string
+        save: string
+        saving: string
+        undo: string
+        unsaved: string
+        saved: string
+        leaveTitle: string
+        leaveBody: string
+        leaveStay: string
+        leaveGo: string
+      }
       pager: {
         previous: string
         next: string

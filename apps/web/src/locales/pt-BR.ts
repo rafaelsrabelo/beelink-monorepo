@@ -158,6 +158,7 @@ export const ptBR: WebMessages = {
     PRODUCT_OPTION_DUPLICATE: "Duas opções, ou dois valores de uma opção, estão com o mesmo nome.",
     PRODUCT_OPTION_NOT_FOUND: "As variações mudaram em outra aba. Recarregue a página e edite de novo.",
     PRODUCT_VARIANTS_LIMIT: "São combinações demais: o limite é 100. Tire alguns valores.",
+    CATALOG_REORDER_MISMATCH: "Um produto entrou ou saiu da loja enquanto você ordenava. A lista já foi ajustada: confira e salve de novo.",
     PRODUCT_VARIANT_NOT_FOUND: "As variações mudaram em outra aba. Recarregue a página e edite de novo.",
     CATALOG_PRICE_INVALID: "O preço \"de\" precisa ser maior que o preço.",
     CATALOG_PARCEL_INCOMPLETE: "Informe as três medidas da caixa, ou nenhuma.",

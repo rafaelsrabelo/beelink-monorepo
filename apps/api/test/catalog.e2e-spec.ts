@@ -8,6 +8,7 @@ import type {
   Product,
   ProductCategory,
   ProductPage,
+  StorefrontCatalog,
   Store,
 } from '@harness-monorepo/contracts';
 
@@ -247,6 +248,45 @@ describe('catalog', () => {
 
       expect(refused.statusCode).toBe(409);
       expect(refused.json<ApiErrorBody>().errorCode).toBe('CATALOG_REORDER_MISMATCH');
+    });
+  });
+
+  describe('the order the shopkeeper chose for the products', () => {
+    it('is the order the shop window lists them in, with what is off the shelf holding its place', async () => {
+      const first = await addProduct({ name: 'Blusa', priceCents: 4990 });
+      const second = await addProduct({ name: 'Calça', priceCents: 7990 });
+      const draft = await addProduct({ name: 'Saia', priceCents: 5990, status: 'DRAFT' });
+
+      const reordered = await call('PUT', '/api/stores/lessari/products/reorder', owner, {
+        ids: [second.id, draft.id, first.id],
+      });
+
+      expect(reordered.statusCode).toBe(200);
+      expect(reordered.json<Product[]>().map((p) => p.name)).toEqual(['Calça', 'Saia', 'Blusa']);
+
+      const mine = await call('GET', '/api/stores/lessari/products', owner);
+      expect(mine.json<ProductPage>().products.map((p) => p.name)).toEqual(['Calça', 'Saia', 'Blusa']);
+
+      const shelf = await call('GET', '/api/stores/lessari/catalog');
+      expect(shelf.json<StorefrontCatalog>().products.map((p) => p.name)).toEqual(['Calça', 'Blusa']);
+    });
+
+    it('refuses a list that leaves a product out', async () => {
+      const first = await addProduct({ name: 'Blusa', priceCents: 4990 });
+      await addProduct({ name: 'Calça', priceCents: 7990 });
+
+      const refused = await call('PUT', '/api/stores/lessari/products/reorder', owner, { ids: [first.id] });
+
+      expect(refused.statusCode).toBe(409);
+      expect(refused.json<ApiErrorBody>().errorCode).toBe('CATALOG_REORDER_MISMATCH');
+    });
+
+    it('refuses a stranger', async () => {
+      const first = await addProduct({ name: 'Blusa', priceCents: 4990 });
+
+      const refused = await call('PUT', '/api/stores/lessari/products/reorder', stranger, { ids: [first.id] });
+
+      expect(refused.statusCode).toBe(403);
     });
   });
 

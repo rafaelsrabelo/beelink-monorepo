@@ -2,10 +2,12 @@
 import type {
   CreateProductCategoryPayload,
   CreateProductPayload,
+  Product,
   ProductCategory,
   ProductDetail,
   ProductListQuery,
   ProductPage,
+  ReorderPayload,
   ReplaceProductOptionsPayload,
   UpdateProductCategoryPayload,
   UpdateProductPayload,
@@ -109,6 +111,35 @@ export function fetchProducts(slug: string, query: ProductListQuery = {}): Promi
   const search = params.toString()
 
   return call<ProductPage>(`${productsPath(slug)}${search ? `?${search}` : ""}`, { method: "GET" })
+}
+
+/** The most the API serves in one page (`PRODUCTS_PAGE_SIZE_MAX`). It echoes what it applied, and the walk reads that. */
+const WHOLE_LIST_PAGE_SIZE = 96
+
+/**
+ * Every product of the shop, drafts included, in the order the shopkeeper chose: the one read that
+ * is not a page, because reordering sends all of them or is refused.
+ *
+ * Keyed by id, since a write landing between two pages can show one product on both. One that slips
+ * past the walk the same way is what `CATALOG_REORDER_MISMATCH` answers when the order is saved.
+ */
+export async function fetchAllProducts(slug: string): Promise<Product[]> {
+  const products = new Map<string, Product>()
+
+  for (let page = 1; ; page += 1) {
+    const answer = await fetchProducts(slug, { page, pageSize: WHOLE_LIST_PAGE_SIZE })
+    for (const product of answer.products) products.set(product.id, product)
+
+    if (answer.products.length === 0 || page * answer.pageSize >= answer.total) return [...products.values()]
+  }
+}
+
+/** The whole list in its new order, which the shop window then follows. */
+export function reorderProducts(slug: string, ids: readonly string[]): Promise<Product[]> {
+  return call<Product[]>(`${productsPath(slug)}/reorder`, {
+    method: "PUT",
+    body: JSON.stringify({ ids: [...ids] } satisfies ReorderPayload),
+  })
 }
 
 export function fetchProduct(slug: string, productId: string): Promise<ProductDetail> {

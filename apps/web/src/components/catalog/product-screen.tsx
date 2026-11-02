@@ -165,9 +165,10 @@ export function ProductScreen({ slug, messages }: ProductScreenProps) {
           A link and not a button: writing a product is a place, and a place has an address that
           can be opened in a tab, bookmarked and returned to.
         */}
-        <AppLink href={`/admin/${slug}/products/new`} className={buttonVariants()}>
-          {text.create}
-        </AppLink>
+        <div className="flex flex-wrap gap-2">
+          <AppLink href={`/admin/${slug}/products/order`} className={buttonVariants({ variant: "outline" })}>{text.order.open}</AppLink>
+          <AppLink href={`/admin/${slug}/products/new`} className={buttonVariants()}>{text.create}</AppLink>
+        </div>
       </header>
 
       <div className="flex flex-col gap-3">
