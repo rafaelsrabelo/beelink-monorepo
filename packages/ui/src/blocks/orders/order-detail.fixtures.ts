@@ -53,7 +53,7 @@ export const discountedOrder: OrderDetailView = {
 export const cashbackOrder: OrderDetailView = {
   ...discountedOrder,
   status: "DELIVERED",
-  cashback: { earnedCents: 1218, rateBps: 500, status: "AVAILABLE", remainingCents: 1218, availableAt: "2026-09-26T10:00:00.000Z", expiresAt: "2026-10-26T10:00:00.000Z", unrecoveredCents: 0 },
+  cashback: { earnedCents: 1218, rateBps: 500, status: "AVAILABLE", remainingCents: 1218, availableAt: "2026-09-26T10:00:00.000Z", expiresAt: "2126-10-26T10:00:00.000Z", unrecoveredCents: 0 },
 }
 
 /** Charged online and paid by Pix (BEELINK-207). */
