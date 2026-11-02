@@ -158,6 +158,7 @@ export const en: WebMessages = {
     PRODUCT_OPTION_DUPLICATE: "Two options, or two values of one option, have the same name.",
     PRODUCT_OPTION_NOT_FOUND: "The variations changed in another tab. Reload the page and edit again.",
     PRODUCT_VARIANTS_LIMIT: "Too many combinations: the limit is 100. Remove some values.",
+    CATALOG_REORDER_MISMATCH: "A product joined or left the shop while you were ordering. The list has been adjusted: check it and save again.",
     PRODUCT_VARIANT_NOT_FOUND: "The variations changed in another tab. Reload the page and edit again.",
     CATALOG_PRICE_INVALID: "The \"was\" price must be above the price.",
     CATALOG_PARCEL_INCOMPLETE: "Enter all three sides of the box, or none.",

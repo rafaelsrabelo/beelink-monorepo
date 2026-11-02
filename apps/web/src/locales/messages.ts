@@ -113,6 +113,7 @@ type PanelCatalogErrorCode = Extract<
   | "PRODUCT_VARIANT_NOT_FOUND"
   | "CATALOG_PRICE_INVALID"
   | "CATALOG_PARCEL_INCOMPLETE"
+  | "CATALOG_REORDER_MISMATCH"
 >
 
 /** The catalogue codes a visitor can meet on a product page. */

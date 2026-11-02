@@ -23,9 +23,11 @@ import {
   createProductCategory,
   deleteProduct,
   deleteProductCategory,
+  fetchAllProducts,
   fetchProduct,
   fetchProductCategories,
   fetchProducts,
+  reorderProducts,
   updateProduct,
   updateProductCategory,
 } from "./catalog-requests"
@@ -46,6 +48,8 @@ export const catalogKeys = {
    */
   productList: (slug: string, query: ProductListQuery) =>
     [...catalogKeys.products(slug), "list", query] as const,
+  /** Every product of the shop, unpaged. Nested too, so the same writes reach it. */
+  wholeProductList: (slug: string) => [...catalogKeys.products(slug), "whole"] as const,
   product: (slug: string, productId: string) =>
     [...catalogKeys.products(slug), productId] as const,
 }
@@ -114,6 +118,29 @@ export function useProducts(
     queryFn: () => fetchProducts(slug, query),
     enabled: slug !== "",
     placeholderData: (previous) => previous,
+  })
+}
+
+/** Every product of the shop in its order, for the screen that changes that order. */
+export function useWholeProductList(slug: string): UseQueryResult<Product[], Error> {
+  return useQuery({
+    queryKey: catalogKeys.wholeProductList(slug),
+    queryFn: () => fetchAllProducts(slug),
+    enabled: slug !== "",
+  })
+}
+
+/**
+ * Saves the shop's order. The invalidation is returned, so the mutation stays pending until the
+ * list is read again: a screen that drops its draft on success then never draws the old order for
+ * a beat. On a refusal too, since a refusal says the list on screen is not the shop's any more.
+ */
+export function useReorderProducts(slug: string): UseMutationResult<Product[], Error, readonly string[]> {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (ids: readonly string[]) => reorderProducts(slug, ids),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: catalogKeys.products(slug) }),
   })
 }
 
