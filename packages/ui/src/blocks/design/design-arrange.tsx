@@ -126,6 +126,11 @@ export interface ArrangeHandle {
   setNodeRef: (node: HTMLElement | null) => void
   /** Spread onto the grab handle. Both together — dnd-kit puts the role and the tab stop here. */
   handleProps: Record<string, unknown>
+  /**
+   * The drag alone, with no role or tab stop, for a surface beside the handle that a pointer may also
+   * grab. Never on an ancestor of the handle: one press would start the drag twice.
+   */
+  pointerProps: Record<string, unknown>
   style: CSSProperties
   isDragging: boolean
 }
@@ -145,6 +150,7 @@ export function useArrangeItem(id: string): ArrangeHandle {
   return {
     setNodeRef,
     handleProps: { ...attributes, ...listeners },
+    pointerProps: { ...listeners },
     style: {
       // Written out rather than `CSS.Transform.toString`, which cannot divide. Tailwind 4 uses the
       // `translate` property, so this one has to be `transform` explicitly or the two fight.
