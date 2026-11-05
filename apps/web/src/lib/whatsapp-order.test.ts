@@ -145,6 +145,11 @@ describe("shopOrderMessageOf", () => {
     )
   })
 
+  it("tells a pick-up that is ready as ready, not as out for delivery", () => {
+    const ready = { ...order, fulfillment: "PICKUP" as const, status: "OUT_FOR_DELIVERY" as const }
+    expect(shopOrderMessageOf({ shopName: "Loja", order: ready, locale: "pt-BR", messages: ptBR }).split("\n").at(-1)).toBe("Status: Pronto para retirar")
+  })
+
   it("breaks the discount into the promotion, the coupon by its code and what the shop typed", () => {
     const discounted = { ...order, discountCents: 2496, promotionDiscountCents: 998, couponDiscountCents: 998, coupon: { code: "BEMVINDO10", kind: "PERCENT" as const }, totalCents: 8484 }
     const message = shopOrderMessageOf({ shopName: "Loja", order: discounted, locale: "pt-BR", messages: ptBR }).replace(/\u00a0/g, " ")

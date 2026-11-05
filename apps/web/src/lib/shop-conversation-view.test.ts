@@ -102,6 +102,21 @@ describe("the conversations' tab", () => {
     expect(shopConversationRowsOf(page, { filter: "ALL", q: "", order: null, page: 1 }, "loja", context)[0]?.preview).toBe("Pagamento aprovado")
   })
 
+  it("calls a ready pick-up ready, in its row and in its notice", () => {
+    const ready = {
+      order: { number: 18, status: "OUT_FOR_DELIVERY", fulfillment: "PICKUP", open: true },
+      customer: { id: "c", name: "Carla", hasAccount: true },
+      unread: 0,
+      messages: [{ kind: "STATUS", id: "1", status: "OUT_FOR_DELIVERY", cashbackCents: null, createdAt: at, readAt: null }],
+    } as ShopConversation
+    const page = { total: 1, page: 1, pageSize: 20, conversations: [{ order: ready.order, customer: ready.customer, lastMessage: { kind: "STATUS", status: "OUT_FOR_DELIVERY", createdAt: at }, unread: 0 }] } as ShopConversationPage
+    const [row] = shopConversationRowsOf(page, { filter: "ALL", q: "", order: null, page: 1 }, "loja", context)
+
+    expect(row?.order).toBe("Pedido nº 18 · Pronto para retirar")
+    expect(row?.preview).toBe("Pedido pronto para retirar")
+    expect(shopConversationLinesOf(ready, context)[0]?.body).toBe("Pedido pronto para retirar")
+  })
+
   it("tells the cashback a delivery made usable after its notice", () => {
     const delivered = {
       order: { number: 18, status: "DELIVERED", fulfillment: "PICKUP", open: false },

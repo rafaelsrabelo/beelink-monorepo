@@ -1,14 +1,19 @@
 // Types
 import type { ConversationLastMessage, ConversationMessage, OrderFulfillment, OrderStatus } from "@harness-monorepo/contracts"
 
-/** Which words tell of a status in a conversation (BEELINK-236): a pick-up's end is "picked up", not "delivered". */
-export type StatusNoticeKey = OrderStatus | "PICKED_UP"
+/**
+ * Which words tell of a status in a conversation (BEELINK-236): a pick-up's end is "picked up", not
+ * "delivered", and the step before it is the order ready at the shop, not "out for delivery".
+ */
+export type StatusNoticeKey = OrderStatus | "PICKED_UP" | "READY_FOR_PICKUP"
 
 /** Every notice a conversation tells (BEELINK-207): a status, a payment approved, a cancellation for want of payment, or money given back (BEELINK-208). */
 export type NoticeKey = StatusNoticeKey | "PAYMENT_APPROVED" | "CANCELLED_UNPAID" | "PAYMENT_REFUNDED"
 
 export function statusNoticeKeyOf(status: OrderStatus, fulfillment: OrderFulfillment): StatusNoticeKey {
-  return status === "DELIVERED" && fulfillment === "PICKUP" ? "PICKED_UP" : status
+  if (fulfillment !== "PICKUP") return status
+  if (status === "DELIVERED") return "PICKED_UP"
+  return status === "OUT_FOR_DELIVERY" ? "READY_FOR_PICKUP" : status
 }
 
 type Notice = Exclude<ConversationMessage, { kind: "MESSAGE" }> | Exclude<ConversationLastMessage, { kind: "MESSAGE" }>
