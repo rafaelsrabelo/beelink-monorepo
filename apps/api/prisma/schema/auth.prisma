@@ -21,6 +21,8 @@ model User {
 
   sessions    Session[]
   emailTokens EmailToken[]
+  /// The six-digit codes a shop's checkout e-mailed this account, to sign in without a password.
+  signInCodes SignInCode[]
   /// The shops a bee-link account owns. A shop's account never owns one.
   stores      Store[]   @relation("StoreOwner")
   /// A shop account's record at its shop, which the shop owns and never reads this account through.
@@ -166,4 +168,26 @@ model EmailToken {
 
   @@index([userId, purpose])
   @@map("email_tokens")
+}
+
+/// A six-digit code a shop's checkout e-mailed to an account it found by its e-mail: signing in
+/// without a password. Apart from `EmailToken`, whose hash is unique in the whole table and looked up
+/// alone — six digits would collide between people. This one is found by its account and checked
+/// against it. Kept as an HMAC under the API's secret, never as the digits, and with its tries
+/// counted: a million codes are guessed by trying, and each gets five. Asking for another spends the
+/// one standing.
+model SignInCode {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  userId    String    @db.Uuid
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// HMAC-SHA256 of the account's id and the digits, under `JWT_SECRET`, hex.
+  codeHash  String
+  /// Wrong digits typed against it; at the cap it stops holding, right or wrong.
+  attempts  Int       @default(0)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, createdAt])
+  @@map("sign_in_codes")
 }
