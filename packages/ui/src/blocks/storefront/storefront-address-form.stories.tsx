@@ -25,7 +25,7 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** Um endereço novo: "Buscar CEP" preenche rua, bairro, cidade e UF. */
+/** Um endereço novo: o 8º número do CEP preenche rua, bairro, cidade e UF. */
 export const Novo: Story = {}
 
 /** Editando o padrão: não há o que tornar padrão. */
@@ -44,3 +44,6 @@ export const SemBusca: Story = { args: { onZipCodeLookup: undefined } }
 
 /** Recusado pela loja. */
 export const Recusado: Story = { args: { error: "Confira o endereço: o CEP com 8 números, a rua, a cidade e a UF com 2 letras." } }
+
+/** O do checkout: o CEP primeiro, só o que a entrega pede, e "Cancelar" fecha ali mesmo. */
+export const NoCheckout: Story = { args: { compact: true, cancelHref: undefined, onCancel: () => {}, offerDefault: false } }

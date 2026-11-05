@@ -42,8 +42,8 @@ export function useZipCodeLookup(): ZipCodeLookupHandle {
 
 /**
  * The shopper's lookup at a shop, for its address form: through the shop's own lane, answered as the
- * form takes it. A postcode that is not one reads as unknown, which the shopper can fix; anything
- * else as the service being down, which they cannot.
+ * form takes it. A postcode that is not one, and one nobody knows, each read as what the shopper can
+ * fix; anything else as the service being down, which they cannot.
  */
 export function useShopperZipCodeLookup(slug: string): (zipCode: string) => Promise<StorefrontZipCodeLookup> {
   const mutation = useMutation({ mutationFn: (zipCode: string) => fetchZipCodeAddress(zipCode, `/${slug}/api/cep`) })
@@ -52,6 +52,6 @@ export function useShopperZipCodeLookup(slug: string): (zipCode: string) => Prom
     mutation.mutateAsync(zipCode).then(
       ({ street, neighborhood, city, state }): StorefrontZipCodeLookup => ({ status: "found", street, neighborhood, city, state }),
       (error: unknown): StorefrontZipCodeLookup =>
-        error instanceof CepRequestError && (error.errorCode === "CEP_NOT_FOUND" || error.errorCode === "CEP_INVALID") ? { status: "not-found" } : { status: "unavailable" },
+        error instanceof CepRequestError && error.errorCode === "CEP_INVALID" ? { status: "invalid" } : error instanceof CepRequestError && error.errorCode === "CEP_NOT_FOUND" ? { status: "not-found" } : { status: "unavailable" },
     )
 }

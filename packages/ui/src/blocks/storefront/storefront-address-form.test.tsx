@@ -63,14 +63,14 @@ describe("StorefrontAddressForm", () => {
     expect(screen.queryByLabelText("Usar como endereço padrão")).toBeNull()
   })
 
-  it("fills the street, neighbourhood, city and state from the ZIP code, then moves on to the number", async () => {
+  it("fills the street, neighbourhood, city and state from the ZIP code as it is typed, then moves on to the number", async () => {
     const onZipCodeLookup = vi.fn(async () => ({ status: "found" as const, street: "Rua Tibúrcio Cavalcante", neighborhood: "Meireles", city: "Fortaleza", state: "CE" }))
     render(form({ onZipCodeLookup }))
 
+    // The eighth digit asks: no button to find on a phone.
     await userEvent.type(screen.getByLabelText("CEP"), "60160230")
-    await userEvent.click(screen.getByRole("button", { name: "Buscar CEP" }))
 
-    expect(onZipCodeLookup).toHaveBeenCalledWith("60160230")
+    expect(onZipCodeLookup).toHaveBeenCalledExactlyOnceWith("60160230")
     expect(screen.getByLabelText("Rua")).toHaveValue("Rua Tibúrcio Cavalcante")
     expect(screen.getByLabelText("Bairro")).toHaveValue("Meireles")
     expect(screen.getByLabelText("UF")).toHaveValue("CE")
@@ -81,7 +81,7 @@ describe("StorefrontAddressForm", () => {
     const onZipCodeLookup = vi.fn().mockResolvedValueOnce({ status: "not-found" }).mockResolvedValueOnce({ status: "unavailable" })
     render(form({ onZipCodeLookup }))
 
-    await userEvent.click(screen.getByRole("button", { name: "Buscar CEP" }))
+    await userEvent.type(screen.getByLabelText("CEP"), "99999999")
     expect(screen.getByRole("status")).toHaveTextContent("Não achamos esse CEP.")
     expect(screen.getByLabelText("CEP")).toHaveFocus()
     await userEvent.click(screen.getByRole("button", { name: "Buscar CEP" }))
@@ -93,11 +93,38 @@ describe("StorefrontAddressForm", () => {
   it("moves on to the street when the ZIP code names none, and states the formats it asks for", async () => {
     render(form({ onZipCodeLookup: async () => ({ status: "found", street: null, neighborhood: null, city: "Maracanaú", state: "CE" }) }))
 
-    await userEvent.click(screen.getByRole("button", { name: "Buscar CEP" }))
+    await userEvent.type(screen.getByLabelText("CEP"), "61900000")
     expect(screen.getByLabelText("Cidade")).toHaveValue("Maracanaú")
     expect(screen.getByLabelText("Rua")).toHaveFocus()
     expect(screen.getByLabelText("CEP")).toHaveAttribute("title", "8 números, como 60160-230")
     expect(screen.getByLabelText("UF")).toHaveAttribute("title", "2 letras, como CE")
+  })
+
+  it("leaves what the lookup wrote to be corrected, as any field", async () => {
+    render(form({ onZipCodeLookup: async () => ({ status: "found", street: "Rua Tibúrcio Cavalcante", neighborhood: "Meireles", city: "Fortaleza", state: "CE" }) }))
+
+    await userEvent.type(screen.getByLabelText("CEP"), "60160230")
+    await userEvent.clear(screen.getByLabelText("Bairro"))
+    await userEvent.type(screen.getByLabelText("Bairro"), "Aldeota")
+    expect(screen.getByLabelText("Bairro")).toHaveValue("Aldeota")
+  })
+
+  /** The checkout's form: the CEP first, only what a delivery needs, closed in place. */
+  it("asks only what a delivery needs in the checkout, the CEP first, and closes in place", async () => {
+    const onCancel = vi.fn()
+    const { container } = render(form({ compact: true, cancelHref: undefined, onCancel, autoFocus: true }))
+
+    expect(screen.getByRole("heading", { name: "Onde entregar" })).toBeInTheDocument()
+    expect(screen.queryByLabelText(/^Apelido/)).toBeNull()
+    expect(screen.queryByLabelText(/^Quem recebe/)).toBeNull()
+    expect(screen.queryByLabelText("Usar como endereço padrão")).toBeNull()
+    expect(container.querySelector("input:not([type=hidden])")).toHaveAttribute("name", "zipCode")
+    expect(screen.getByLabelText("CEP")).toHaveFocus()
+    expect(screen.getByRole("button", { name: "Usar este endereço" })).toHaveAttribute("type", "submit")
+    expect(screen.queryByRole("link", { name: "Cancelar" })).toBeNull()
+
+    await userEvent.click(screen.getByRole("button", { name: "Cancelar" }))
+    expect(onCancel).toHaveBeenCalledOnce()
   })
 
   it("has no accessibility violations", async () => {

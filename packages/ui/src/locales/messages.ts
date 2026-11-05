@@ -713,6 +713,8 @@ export interface UiMessages {
     addressLookupPending: string
     addressLookupNotFound: string
     addressLookupFailed: string
+    /** A CEP that is not eight digits, said before anything is asked. */
+    addressLookupInvalid: string
     addressMakeDefault: string
     addressSave: string
     addressCancel: string
@@ -722,6 +724,10 @@ export interface UiMessages {
     checkoutAddressChoose: string
     checkoutAddAddress: string
     checkoutAddAnotherAddress: string
+    /** The address form inside the checkout: its heading, its button, and what stops an order with no address. */
+    checkoutAddressFormTitle: string
+    checkoutAddressUse: string
+    checkoutAddressMissing: string
     /** The product page (5b). `{name}` — the shop, over the title. */
     visitShop: string
     /** The buy column's landmark name. */
