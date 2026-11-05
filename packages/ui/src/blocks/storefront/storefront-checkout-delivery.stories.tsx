@@ -9,18 +9,20 @@ import { StorefrontCheckoutDelivery, type StorefrontCheckoutAddressForm } from "
 const blank = { id: null, label: null, recipientName: null, zipCode: null, street: null, number: null, complement: null, neighborhood: null, city: null, state: null }
 
 /** The compact form, as the cart draws it: the CEP first, and filled on its eighth digit. */
-const addressForm: StorefrontCheckoutAddressForm = ({ autoFocus, onCancel }) => (
-  <StorefrontAddressForm
-    address={blank}
-    shopperName="Bia Cliente"
-    action="#"
-    compact
-    autoFocus={autoFocus}
-    {...(onCancel ? { onCancel } : {})}
-    offerDefault={false}
-    onZipCodeLookup={async (): Promise<StorefrontZipCodeLookup> => ({ status: "found", street: "Rua Tibúrcio Cavalcante", neighborhood: "Meireles", city: "Fortaleza", state: "CE" })}
-  />
-)
+const addressForm: StorefrontCheckoutAddressForm = {
+  draw: ({ autoFocus, onCancel }) => (
+    <StorefrontAddressForm
+      address={blank}
+      shopperName="Bia Cliente"
+      action="#"
+      compact
+      autoFocus={autoFocus}
+      {...(onCancel ? { onCancel } : {})}
+      offerDefault={false}
+      onZipCodeLookup={async (): Promise<StorefrontZipCodeLookup> => ({ status: "found", street: "Rua Tibúrcio Cavalcante", neighborhood: "Meireles", city: "Fortaleza", state: "CE" })}
+    />
+  ),
+}
 
 const meta = {
   title: "Blocos/Vitrine/Entrega no checkout",

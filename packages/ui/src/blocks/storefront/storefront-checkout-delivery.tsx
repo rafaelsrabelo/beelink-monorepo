@@ -11,11 +11,16 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import type { StorefrontCheckoutAddress, StorefrontCheckoutChoice, StorefrontCheckoutShipping } from "./storefront-checkout-choices"
 
-/**
- * The address form as the checkout opens it, drawn by the screen that knows where it posts. `autoFocus`
- * when the shopper's own tap opened it; `onCancel` null when there is no other address to go back to.
- */
-export type StorefrontCheckoutAddressForm = (open: { autoFocus: boolean; onCancel: (() => void) | null }) => ReactNode
+/** The address form as the checkout opens it. */
+export interface StorefrontCheckoutAddressForm {
+  /**
+   * Drawn by the screen that knows where it posts. `autoFocus` when the shopper's own tap opened it;
+   * `onCancel` null when there is no other address to go back to.
+   */
+  draw: (open: { autoFocus: boolean; onCancel: (() => void) | null }) => ReactNode
+  /** Open on arrival: an address refused comes back to its form, with what was wrong. */
+  startOpen?: boolean
+}
 
 export interface StorefrontCheckoutDeliveryProps {
   value: StorefrontCheckoutChoice
@@ -61,7 +66,7 @@ export function StorefrontCheckoutDelivery({
   const text = messages.storefront
   const id = useId()
   // Opened by a tap — choosing a delivery with no address, or asking for another — and so focused.
-  const [adding, setAdding] = useState(false)
+  const [adding, setAdding] = useState(addressForm?.startOpen ?? false)
   const [tapped, setTapped] = useState(false)
   const chosen = addresses.find((address) => address.id === value.addressId) ?? addresses[0] ?? null
   const delivering = value.fulfillment === "DELIVERY"
@@ -107,7 +112,7 @@ export function StorefrontCheckoutDelivery({
         </fieldset>
       ) : null}
       {formOpen && addressForm ? (
-        addressForm({ autoFocus: tapped || adding, onCancel: chosen ? () => setAdding(false) : null })
+        addressForm.draw({ autoFocus: tapped || (adding && !addressForm.startOpen), onCancel: chosen ? () => setAdding(false) : null })
       ) : chosen && !delivering ? null : addressForm ? (
         chosen ? (
           <button type="button" onClick={() => setAdding(true)} className={ADD}>

@@ -14,15 +14,17 @@ import { StorefrontCheckoutDelivery, type StorefrontCheckoutAddressForm, type St
 const home = { id: "a1", heading: "Casa · Bia Cliente", line: "Av. Paulista, 1000 — São Paulo/SP" }
 
 /** A stand-in for the screen's form: what the block asked of it, in plain sight. */
-const addressForm: StorefrontCheckoutAddressForm = ({ autoFocus, onCancel }) => (
-  <section aria-label="Formulário de endereço" data-autofocus={autoFocus}>
-    {onCancel ? (
-      <button type="button" onClick={onCancel}>
-        Cancelar
-      </button>
-    ) : null}
-  </section>
-)
+const addressForm: StorefrontCheckoutAddressForm = {
+  draw: ({ autoFocus, onCancel }) => (
+    <section aria-label="Formulário de endereço" data-autofocus={autoFocus}>
+      {onCancel ? (
+        <button type="button" onClick={onCancel}>
+          Cancelar
+        </button>
+      ) : null}
+    </section>
+  ),
+}
 
 /** The block under its parent's state, as the cart holds the choice. */
 function Delivery({ start, onChange = () => {}, ...props }: Partial<StorefrontCheckoutDeliveryProps> & { start: StorefrontCheckoutChoice }) {
@@ -95,6 +97,14 @@ describe("StorefrontCheckoutDelivery", () => {
     await userEvent.click(screen.getByRole("button", { name: "Cancelar" }))
     expect(screen.queryByRole("region", { name: "Formulário de endereço" })).toBeNull()
     expect(screen.getByRole("button", { name: "Entregar em outro endereço" })).toBeInTheDocument()
+  })
+
+  /** A refused address lands back on the cart: its form open again, the error in it, no keyboard pulled up. */
+  it("starts with the form open beside the saved addresses when asked to", () => {
+    render(<Delivery start={{ fulfillment: "DELIVERY", addressId: "a1", paymentMethod: null, wayId: null }} addressForm={{ ...addressForm, startOpen: true }} />)
+
+    expect(screen.getByRole("region", { name: "Formulário de endereço" })).toHaveAttribute("data-autofocus", "false")
+    expect(screen.getByRole("button", { name: "Cancelar" })).toBeInTheDocument()
   })
 
   it("offers no other address while the order is picked up", () => {
