@@ -1,9 +1,11 @@
-/// Where an account took bee-link's terms (BEELINK-171): a sign-up form, "Continuar com Google", or
-/// setting a password from an e-mailed link — see `LegalAcceptanceChannel` in the contracts.
+/// Where an account took bee-link's terms (BEELINK-171): a sign-up form, "Continuar com Google",
+/// setting a password from an e-mailed link, or buying at a shop's checkout with a name, an e-mail and
+/// a WhatsApp — see `LegalAcceptanceChannel` in the contracts.
 enum LegalAcceptanceChannel {
   SIGN_UP
   GOOGLE
   PASSWORD_RESET
+  CHECKOUT
 }
 
 /// Each time an account accepted bee-link's terms of use and read its privacy policy (BEELINK-171):

@@ -22,6 +22,7 @@ import { useCart } from "./cart-provider"
 import { useCartCheckout } from "./use-cart-checkout"
 import { useCartOrder } from "./use-cart-order"
 import { CHECKOUT_ANCHOR, useCheckoutAddressForm } from "./use-checkout-address-form"
+import { useCheckoutIdentity } from "./use-checkout-identity"
 import { useCheckoutTracking } from "./use-checkout-tracking"
 import { waysBackWithCoupon } from "@/lib/cart-coupon"
 import { cartViewOf, orderItemsOf, rowKeyOf } from "@/lib/cart-view"
@@ -63,6 +64,7 @@ export function StorefrontCartLive({
   identityHrefs,
   deliverTo = null,
   addressError = null,
+  identity = null,
   arrival,
   served = null,
   servedOffers = null,
@@ -88,6 +90,7 @@ export function StorefrontCartLive({
   // Each way out of the cart that comes back to it — to sign in, to change details, to add an address — takes the coupon along.
   const ways = useMemo(() => waysBackWithCoupon(identityHrefs, pricing.carried), [identityHrefs, pricing.carried])
   const addressForm = useCheckoutAddressForm({ slug, shopper, cartHref: identityHrefs.cartHref, coupon: pricing.carried, error: addressError, messages })
+  const whoIsBuying = useCheckoutIdentity({ slug, identity: shopper ? null : identity, cartHref: identityHrefs.cartHref, coupon: pricing.carried, signInHref: ways.signInHref, signUpHref: ways.signUpHref, messages })
 
   // A line the shop no longer sells is taken out of the cookie once, rather than asked for forever.
   useEffect(() => {
@@ -186,6 +189,7 @@ export function StorefrontCartLive({
                   : null
               }
               signIn={ways}
+              identity={whoIsBuying}
               paymentMethods={offlineMethods}
               online={online}
               nothingToPay={nothingToPay}

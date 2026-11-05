@@ -122,7 +122,7 @@ describe("StorefrontCoupon", () => {
   it("tells a visitor where the code goes, and offers no field", () => {
     render(<StorefrontCoupon applied={null} signedOut />)
 
-    expect(screen.getByText("Tem um cupom de desconto? Você aplica depois de entrar na sua conta.")).toBeInTheDocument()
+    expect(screen.getByText("Tem um cupom de desconto? Você aplica depois de informar seus dados.")).toBeInTheDocument()
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument()
   })
 
@@ -132,7 +132,7 @@ describe("StorefrontCoupon", () => {
       render(<StorefrontCoupon applied={null} signedOut signedOutBenefit="Crie sua conta e ganhe 15% de desconto no primeiro pedido." />)
 
       const benefit = screen.getByText("Crie sua conta e ganhe 15% de desconto no primeiro pedido.")
-      const where = screen.getByText("Tem um cupom de desconto? Você aplica depois de entrar na sua conta.")
+      const where = screen.getByText("Tem um cupom de desconto? Você aplica depois de informar seus dados.")
       expect(benefit.compareDocumentPosition(where) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
       expect(screen.queryByRole("textbox")).not.toBeInTheDocument()
       expect(screen.queryByRole("button")).not.toBeInTheDocument()

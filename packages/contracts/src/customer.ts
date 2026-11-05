@@ -73,6 +73,33 @@ export interface CustomerEmailPayload extends EmailPayload {
   returnTo?: string;
 }
 
+/**
+ * Who is buying, asked at the checkout in place of a sign-up: a name, an e-mail and the WhatsApp the
+ * shop answers on. An e-mail the shop does not know becomes its account at once — no password, the
+ * e-mail still to confirm, the WhatsApp on its record (or claimed, when another record has it). Sending
+ * it is taking bee-link's terms, which the checkout says beside its button.
+ */
+export interface CustomerCheckoutPayload {
+  name: string;
+  email: string;
+  /** Digits, the mask allowed; 55 is put in front of 10 or 11 of them. */
+  phone: string;
+}
+
+/**
+ * The checkout's answer: signed in, or a code on its way to an e-mail that already has an account at
+ * this shop. The one answer of the product that says whether an e-mail is a shop's customer — the
+ * price of a new customer not having to open their e-mail before buying.
+ */
+export type CustomerCheckoutAnswer = { kind: "SESSION"; session: AuthSession } | { kind: "CODE_SENT" };
+
+/** The six digits e-mailed to the account the checkout found, for its session. */
+export interface CustomerCheckoutCodePayload {
+  email: string;
+  /** Six digits, spaces allowed. */
+  code: string;
+}
+
 /** What a signed-in shopper sees of themselves at one shop: that shop's record, and the account's e-mail. */
 export interface CustomerProfile {
   id: string;
@@ -355,6 +382,8 @@ export interface GoogleHandoffSession {
 /** What a shopper's door answers besides the account's own codes (`AuthErrorCode`). */
 export type CustomerErrorCode =
   | "CUSTOMER_PHONE_TAKEN"
+  /** The checkout's code: wrong, spent, past its ten minutes, or tried five times — one word for all, so none is told apart. */
+  | "CUSTOMER_CODE_INVALID"
   /** Not eleven digits, all one digit, or check digits that do not hold. */
   | "CUSTOMER_CPF_INVALID"
   /** A day that does not exist, one in the future, or one before 1900. */

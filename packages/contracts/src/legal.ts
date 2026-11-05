@@ -9,8 +9,9 @@
 export type LegalVersion = "2026-10-15";
 
 /**
- * Where an account took the terms: a sign-up form, "Continuar com Google" at a shop, or setting a
+ * Where an account took the terms: a sign-up form, "Continuar com Google" at a shop, setting a
  * password from an e-mailed link — the first screen of an account that had none, or of an owner
- * taking back an address someone else signed up with.
+ * taking back an address someone else signed up with — or a shop's checkout, where buying with a
+ * name, an e-mail and a WhatsApp opens the account.
  */
-export type LegalAcceptanceChannel = "SIGN_UP" | "GOOGLE" | "PASSWORD_RESET";
+export type LegalAcceptanceChannel = "SIGN_UP" | "GOOGLE" | "PASSWORD_RESET" | "CHECKOUT";

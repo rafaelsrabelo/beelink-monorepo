@@ -1,5 +1,8 @@
 "use client"
 
+// React
+import type { ReactNode } from "react"
+
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
@@ -55,6 +58,8 @@ export interface StorefrontCheckoutProps {
   customer: StorefrontCheckoutCustomer | null
   /** Where a visitor signs in or signs up to order. The cart is a cookie, so it waits for them. */
   signIn: { signInHref: string; signUpHref: string }
+  /** Who is buying, asked here in place of a sign-in (`StorefrontCheckoutIdentity`); absent, the visitor is sent to sign in, as before. */
+  identity?: ReactNode
   /** The methods the shop settles by on delivery or at pickup; none when it turned that off. */
   paymentMethods: readonly PaymentMethod[]
   /** What the shop charges online for this cart; null when it charges nothing online. */
@@ -95,6 +100,7 @@ export function StorefrontCheckout({
   channel,
   customer,
   signIn,
+  identity = null,
   paymentMethods,
   online = null,
   nothingToPay = null,
@@ -116,6 +122,15 @@ export function StorefrontCheckout({
       {error}
     </p>
   ) : null
+
+  if (!customer && identity) {
+    return (
+      <div id={id} className="flex scroll-mt-24 flex-col gap-3">
+        {alert}
+        {identity}
+      </div>
+    )
+  }
 
   if (!customer) {
     return (
