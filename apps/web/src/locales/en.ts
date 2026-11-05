@@ -216,6 +216,8 @@ export const en: WebMessages = {
     COUPON_DISCOUNT_INVALID: "Check the discount: the value does not match the type chosen.",
     COUPON_PERIOD_INVALID: "Check the validity: the end has to come after the start.",
     CUSTOMER_PHONE_TAKEN: "That mobile is already on another customer's record at this shop.",
+    CUSTOMER_CODE_INVALID: "Wrong or expired code. Check the latest e-mail or ask for another.",
+    CUSTOMER_CHECKOUT_INVALID: "Check the name, the e-mail and the WhatsApp with its area code.",
     CUSTOMER_CPF_INVALID: "That CPF does not add up. Check the numbers and save again.",
     CUSTOMER_BIRTH_DATE_INVALID: "That date of birth does not add up. Check the day, the month and the year and save again.",
     CUSTOMER_NOT_FOUND: "That customer is not this shop's. Search for or register the customer.",

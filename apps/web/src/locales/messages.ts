@@ -49,6 +49,8 @@ export type WebErrorCode =
   // A shopper's form refused as a whole (400): the handler names which, so the sentence can say what to fix.
   | "CUSTOMER_SIGN_UP_INVALID"
   | "CUSTOMER_FIELDS_INVALID"
+  /** The checkout's "who is buying" refused as a whole (400): a name, an e-mail or a WhatsApp that is not one. */
+  | "CUSTOMER_CHECKOUT_INVALID"
   /** A saved address the API refused as a whole: a 400 from the addresses' save. */
   | "CUSTOMER_ADDRESS_FIELDS_INVALID"
   /** A form of the shopper's area sent after their session had ended elsewhere: nothing was done. */

@@ -216,6 +216,8 @@ export const ptBR: WebMessages = {
     COUPON_DISCOUNT_INVALID: "Confira o desconto: o valor não combina com o tipo escolhido.",
     COUPON_PERIOD_INVALID: "Confira a validade: o fim precisa ser depois do início.",
     CUSTOMER_PHONE_TAKEN: "Esse celular já está no cadastro de outro cliente desta loja.",
+    CUSTOMER_CODE_INVALID: "Código errado ou vencido. Confira o e-mail mais recente ou peça outro.",
+    CUSTOMER_CHECKOUT_INVALID: "Confira o nome, o e-mail e o WhatsApp com DDD.",
     CUSTOMER_CPF_INVALID: "Esse CPF não confere. Confira os números e salve de novo.",
     CUSTOMER_BIRTH_DATE_INVALID: "Essa data de nascimento não confere. Confira o dia, o mês e o ano e salve de novo.",
     CUSTOMER_NOT_FOUND: "Esse cliente não é desta loja. Busque ou cadastre o cliente.",

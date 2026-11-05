@@ -43,6 +43,7 @@ import { shopperAt } from "@/lib/shopper"
 import { siteOrigin } from "@/lib/site-origin"
 import { catalogueAt, offersAt, paymentOptionsAt, shopAt } from "@/lib/storefront-data"
 import { installmentTermsOf } from "@/lib/storefront-installments"
+import { checkoutIdentityOf } from "@/lib/checkout-identity"
 import { errorSentenceOf } from "@/lib/error-sentence"
 import { BACK_KEY, orderNumberOf, paramOf, REORDER_FAILED_KEY, REORDER_TRIMMED_KEY, REORDERED_KEY, storefrontRoutes } from "@/lib/storefront-routes"
 import { canonicalOf, headingOf, isShelf, listingAskOf, placeOf } from "@/lib/storefront-section"
@@ -120,6 +121,8 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
   const deliverTo = paramOf(query[DELIVER_TO_KEY]) ?? null
   // An address the checkout sent and the shop refused: the code it came back with, said in its form.
   const addressRefusal = cart && shopper ? (paramOf(query[ADDRESS_ERROR_KEY]) ?? null) : null
+  // A visitor's "who is buying": the step, the e-mail and what to say, as the checkout's forms left them.
+  const identity = cart && !shopper ? checkoutIdentityOf(query, (await getMessages()).web.errors, ui) : null
   const asked = cart ? cartQuoteOf(cartViewOf(cart.lines, cart.products).rows, firstFulfillmentOf(shopper), null, { addressId: shopper ? checkoutAddressIdOf(checkoutAddressesOf(shopper), deliverTo) : null }) : null
   // With it, for a shopper: the shop's shown coupons that same cart may take, so the list is in the HTML as well.
   // And for a visitor, what the shop's first-purchase coupon gives (BEELINK-311): the kept public read, never a code.
@@ -217,6 +220,7 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
           }}
           deliverTo={deliverTo}
           addressError={addressRefusal ? errorSentenceOf((await getMessages()).web.errors, addressRefusal) : null}
+          identity={identity}
           arrival={reorderNotice ? <StorefrontReorderNotice {...reorderNotice} messages={ui} /> : undefined}
           served={served}
           servedOffers={servedOffers}

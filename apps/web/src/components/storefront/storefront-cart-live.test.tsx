@@ -656,7 +656,7 @@ describe("the cart's price and its coupon", () => {
     renderCart(false, null, { served: servedFor(false, null, { ...promotion, deliveryFeeCents: 0 }) })
 
     expect(screen.queryByLabelText("Cupom de desconto")).toBeNull()
-    expect(screen.getByText("Tem um cupom de desconto? Você aplica depois de entrar na sua conta.")).toBeInTheDocument()
+    expect(screen.getByText("Tem um cupom de desconto? Você aplica depois de informar seus dados.")).toBeInTheDocument()
     expect(summaryRows()).toEqual([
       ["Subtotal (2 itens)", "R$ 119,80"],
       ["Promoção: Semana da Blusa", "− R$ 11,98"],
@@ -713,12 +713,42 @@ describe("the cart's price and its coupon", () => {
     expect(backOf("Alterar dados")).toBe("/loja/carrinho")
   })
 
+  /** Buying with no sign-up: a visitor says who is buying right in the checkout, the coupon carried through the form. */
+  it("asks a visitor who is buying in place of the sign-in, posting back to the checkout with the coupon", () => {
+    network()
+    const { container } = renderCart(false, null, { coupon: "BEMVINDO10", identity: { step: "form", email: null, error: null, notice: null } })
+
+    expect(screen.getByRole("heading", { name: "Seus dados" })).toBeInTheDocument()
+    expect(screen.queryByRole("link", { name: "Entrar para fazer o pedido" })).toBeNull()
+    const form = container.querySelector('form[action="/loja/api/customer/checkout/identificar"]')
+    expect(form?.querySelector<HTMLInputElement>('input[name="retorno"]')?.value).toBe("/loja/carrinho?cupom=BEMVINDO10#finalizar")
+    // Signing in stays, coming back to this cart with the coupon.
+    expect(new URL(screen.getByRole("link", { name: "Entrar" }).getAttribute("href")!, "http://x").searchParams.get("voltar")).toBe("/loja/carrinho?cupom=BEMVINDO10")
+  })
+
+  it("asks a visitor whose e-mail has an account for the code sent to it", () => {
+    network()
+    renderCart(false, null, { identity: { step: "code", email: "bia@exemplo.com", error: null, notice: null } })
+
+    expect(screen.getByText("Você já tem conta nesta loja. Enviamos um código de 6 dígitos para bia@exemplo.com.")).toBeInTheDocument()
+    expect(screen.getByLabelText("Código")).toHaveAttribute("autocomplete", "one-time-code")
+  })
+
+  /** Once signed in by the code or the form, nobody is asked again: the checkout of a shopper. */
+  it("asks a signed-in shopper nothing about who they are", () => {
+    network()
+    renderCart(false, bia, { identity: { step: "form", email: null, error: null, notice: null } })
+
+    expect(screen.queryByRole("heading", { name: "Seus dados" })).toBeNull()
+    expect(screen.getByText("Pedido em nome de")).toBeInTheDocument()
+  })
+
   it("leaves a visitor's coupon unchecked, and takes it along to the sign-in: it is checked once they are back", () => {
     const fetched = network()
     renderCart(false, null, { coupon: "BEMVINDO10" })
 
     expect(screen.queryByRole("button", { name: "Remover o cupom BEMVINDO10" })).toBeNull()
-    expect(screen.getByText("Tem um cupom de desconto? Você aplica depois de entrar na sua conta.")).toBeInTheDocument()
+    expect(screen.getByText("Tem um cupom de desconto? Você aplica depois de informar seus dados.")).toBeInTheDocument()
     expect(fetched).not.toHaveBeenCalled()
     expect(new URL(screen.getByRole("link", { name: "Entrar para fazer o pedido" }).getAttribute("href")!, "http://x").searchParams.get("voltar")).toBe("/loja/carrinho?cupom=BEMVINDO10")
   })
@@ -1452,7 +1482,7 @@ describe("the cart's call to a coupon not yet applied", () => {
       renderCart(false, null, { signedOutBenefit: "Crie sua conta e ganhe 15% de desconto no primeiro pedido." })
 
       const benefit = screen.getByText("Crie sua conta e ganhe 15% de desconto no primeiro pedido.")
-      const where = screen.getByText("Tem um cupom de desconto? Você aplica depois de entrar na sua conta.")
+      const where = screen.getByText("Tem um cupom de desconto? Você aplica depois de informar seus dados.")
       expect(benefit.compareDocumentPosition(where) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
       expect(callButton()).toBeNull()
     })
