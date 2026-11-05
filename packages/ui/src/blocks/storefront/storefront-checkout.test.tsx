@@ -40,6 +40,15 @@ describe("StorefrontCheckout", () => {
     expect(screen.getByRole("link", { name: "Criar conta" })).toHaveAttribute("href", signIn.signUpHref)
   })
 
+  /** Buying with no sign-up: who is buying is asked here, and "sign in to order" is gone. */
+  it("asks a visitor who is buying in place of a sign-in when given the form, saying a refusal over it", () => {
+    render(checkout({ customer: null, identity: <section aria-label="Seus dados" />, error: "Sua sessão terminou." }))
+
+    expect(screen.getByRole("region", { name: "Seus dados" })).toBeInTheDocument()
+    expect(screen.getByRole("alert")).toHaveTextContent("Sua sessão terminou.")
+    expect(screen.queryByRole("link", { name: "Entrar para fazer o pedido" })).toBeNull()
+  })
+
   it("shows a signed-in shopper their details and where a delivery goes, and places the order on a press", () => {
     const onPlace = vi.fn()
     render(checkout({ onPlace }))

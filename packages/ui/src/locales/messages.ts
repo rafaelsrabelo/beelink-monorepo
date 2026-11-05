@@ -557,6 +557,26 @@ export interface UiMessages {
     checkoutSignInPrompt: string
     checkoutSignIn: string
     checkoutSignUp: string
+    /** The checkout's "who is buying" in place of a sign-up (2026-11-05). `{signIn}` and `{signUp}` are links. */
+    checkoutIdentityTitle: string
+    checkoutIdentityLead: string
+    checkoutIdentityName: string
+    checkoutIdentityEmail: string
+    checkoutIdentityPhone: string
+    checkoutIdentityPhoneHint: string
+    checkoutIdentityContinue: string
+    checkoutIdentityHasAccount: string
+    checkoutIdentitySignIn: string
+    checkoutIdentityWithPassword: string
+    /** The code e-mailed to an e-mail that already has an account at the shop. `{email}`: where it went. */
+    checkoutCodeTitle: string
+    checkoutCodeSent: string
+    checkoutCodeLabel: string
+    checkoutCodeHint: string
+    checkoutCodeConfirm: string
+    checkoutCodeResend: string
+    checkoutCodeResent: string
+    checkoutCodeOtherEmail: string
     /** Over the shopper's details, as the shop keeps them. */
     checkoutFor: string
     checkoutEdit: string
@@ -3235,6 +3255,8 @@ export interface UiMessages {
     googleNotice: string
     /** Beside setting a password from an e-mailed link: the first screen of an imported account, or its owner's. */
     resetNotice: string
+    /** Beside the checkout's "Continuar", which opens an account with a name, an e-mail and a WhatsApp. */
+    checkoutNotice: string
     /** The two links side by side, where nothing is being accepted. */
     links: string
     footerTitle: string
