@@ -274,7 +274,7 @@ export const ptBR: UiMessages = {
     checkoutDelivery: "Receber em casa",
     checkoutDeliverTo: "Entregar em {address}",
     checkoutPickup: "Retirar na loja",
-    checkoutNoAddress: "Para receber em casa, cadastre seu endereço.",
+    checkoutNoAddress: "Para receber em casa, informe seu endereço.",
     checkoutFeeLater: "Frete a combinar com a loja: ela informa o valor ao confirmar o pedido.",
     checkoutDeliveryArrives: "{fee} · chega em {window} depois de sair da loja",
     checkoutDeliveryFree: "Entrega grátis",

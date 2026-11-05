@@ -60,7 +60,7 @@ describe("StorefrontCheckoutChoices", () => {
     render(choices({ addresses: [], value: { fulfillment: "PICKUP", addressId: null, paymentMethod: "PIX", wayId: null } }))
 
     expect(screen.getByRole("radio", { name: /Receber em casa/ })).toBeDisabled()
-    expect(screen.getByText("Para receber em casa, cadastre seu endereço.")).toBeInTheDocument()
+    expect(screen.getByText("Para receber em casa, informe seu endereço.")).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Adicionar endereço" })).toHaveAttribute("href", "/loja/conta/perfil?endereco=novo")
     expect(screen.queryByText(/taxa de entrega/)).toBeNull()
   })

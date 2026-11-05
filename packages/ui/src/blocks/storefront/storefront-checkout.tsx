@@ -8,9 +8,26 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import { WhatsAppIcon } from "../store/store-brand-icons"
 import type { PaymentMethod } from "../store/store-types"
-import { StorefrontCheckoutChoices, type StorefrontCheckoutAddress, type StorefrontCheckoutChoice, type StorefrontCheckoutChoicesProps, type StorefrontCheckoutShipping } from "./storefront-checkout-choices"
+import {
+  StorefrontCheckoutChoices,
+  type StorefrontCheckoutAddress,
+  type StorefrontCheckoutAddressForm,
+  type StorefrontCheckoutChoice,
+  type StorefrontCheckoutChoicesProps,
+  type StorefrontCheckoutShipping,
+} from "./storefront-checkout-choices"
 
-export type { CheckoutFulfillment, CheckoutOnlineMethod, CheckoutPaymentChannel, StorefrontCheckoutAddress, StorefrontCheckoutChoice, StorefrontCheckoutOnline, StorefrontCheckoutShipping, StorefrontCheckoutWay } from "./storefront-checkout-choices"
+export type {
+  CheckoutFulfillment,
+  CheckoutOnlineMethod,
+  CheckoutPaymentChannel,
+  StorefrontCheckoutAddress,
+  StorefrontCheckoutAddressForm,
+  StorefrontCheckoutChoice,
+  StorefrontCheckoutOnline,
+  StorefrontCheckoutShipping,
+  StorefrontCheckoutWay,
+} from "./storefront-checkout-choices"
 
 export interface StorefrontCheckoutCustomer {
   /** Name and phone, a line each — only the ones on file; the addresses are `addresses`. */
@@ -21,8 +38,10 @@ export interface StorefrontCheckoutCustomer {
   editHref: string
   /** Their saved addresses a delivery can go to, the default first. */
   addresses: readonly StorefrontCheckoutAddress[]
-  /** Where they add an address, coming back here after. */
+  /** Where they add an address, coming back here after: what stands without `addressForm`. */
   addAddressHref: string
+  /** The address form, opened here in the checkout; absent, adding one is `addAddressHref`. */
+  addressForm?: StorefrontCheckoutAddressForm | null
 }
 
 export interface StorefrontCheckoutProps {
@@ -56,6 +75,8 @@ export interface StorefrontCheckoutProps {
   error?: string | null
   /** Nothing in the cart can be ordered now: the button stays, and does nothing until it can. */
   disabled?: boolean
+  /** The checkout's anchor, which a way back to the cart lands on rather than the page's top. */
+  id?: string
   linkComponent?: LinkComponent
   messages?: UiMessages
 }
@@ -85,6 +106,7 @@ export function StorefrontCheckout({
   pending = false,
   error,
   disabled = false,
+  id,
   linkComponent: Link = AnchorLink,
   messages = defaultMessages,
 }: StorefrontCheckoutProps) {
@@ -97,7 +119,7 @@ export function StorefrontCheckout({
 
   if (!customer) {
     return (
-      <div className="flex flex-col gap-3">
+      <div id={id} className="flex scroll-mt-24 flex-col gap-3">
         {/* A session that ended while ordering lands here, and says so rather than only asking again. */}
         {alert}
         <p className="text-sm text-shop-muted">{text.checkoutSignInPrompt}</p>
@@ -114,7 +136,7 @@ export function StorefrontCheckout({
   const label = pending ? text.checkoutPlacing : channel === "whatsapp" ? text.checkoutWhatsApp : channel === "pay" ? text.checkoutPayOnline : text.checkoutPlace
 
   return (
-    <div className="flex flex-col gap-4">
+    <div id={id} className="flex scroll-mt-24 flex-col gap-4">
       <div className="flex flex-col gap-1 rounded-[10px] border border-shop-line bg-shop-fill px-4 py-3 text-sm">
         <p className="text-xs text-shop-muted">{text.checkoutFor}</p>
         {customer.lines.map((line) => (
@@ -131,6 +153,7 @@ export function StorefrontCheckout({
         onChange={onChoiceChange}
         addresses={customer.addresses}
         addHref={customer.addAddressHref}
+        addressForm={customer.addressForm ?? null}
         paymentMethods={paymentMethods}
         online={online}
         nothingToPay={nothingToPay}
