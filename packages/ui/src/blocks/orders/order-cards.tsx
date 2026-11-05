@@ -30,7 +30,7 @@ export function OrderCards({ orders, hrefOf, money, when, linkComponent: Link, m
             >
               #{order.number}
             </Link>
-            <OrderStatusBadge status={order.status} messages={messages} />
+            <OrderStatusBadge status={order.status} fulfillment={order.fulfillment} messages={messages} />
           </span>
           <span className="flex items-baseline justify-between gap-2">
             <span className="flex min-w-0 flex-col">

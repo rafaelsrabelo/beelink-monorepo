@@ -99,7 +99,7 @@ export function CustomerOrders({
               </span>
               <span className="flex items-center gap-3">
                 <span className="font-medium tabular-nums">{orderTotalText(money(order.totalCents), order, messages.orders.totalPlusFee)}</span>
-                <OrderStatusBadge status={order.status} messages={messages} />
+                <OrderStatusBadge status={order.status} fulfillment={order.fulfillment} messages={messages} />
               </span>
             </li>
           ))}

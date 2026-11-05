@@ -5,6 +5,7 @@ import type { ConversationListRow } from "@harness-monorepo/ui/blocks/conversati
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // UI
+import { orderStatusLabelOf } from "@harness-monorepo/ui/lib/order-status-label"
 import { format } from "@harness-monorepo/ui/locales/index"
 
 // App
@@ -61,7 +62,7 @@ export function shopConversationRowsOf(page: ShopConversationPage, address: Shop
     return {
       number: order.number,
       customer: customer.name,
-      order: `${format(text.orderLine, { number: String(order.number) })} · ${messages.orders.statuses[order.status]}`,
+      order: `${format(text.orderLine, { number: String(order.number) })} · ${orderStatusLabelOf(order.status, order.fulfillment, messages)}`,
       preview:
         lastMessage.kind !== "MESSAGE"
           ? noticeTextOf(lastMessage, order.fulfillment, text.notices, locale)

@@ -26,6 +26,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@harness-monorepo/ui/components/dropdown-menu"
+import { markAsLabelOf, orderStatusLabelOf } from "@harness-monorepo/ui/lib/order-status-label"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Locales
@@ -37,27 +38,22 @@ import type { OrderFulfillmentValue, OrderStatusValue } from "./order-types"
 
 type OpenStatus = Exclude<OrderStatusValue, "CANCELLED">
 
-/** The order a sale moves through. A pick-up never goes out for delivery. */
+/**
+ * The order a sale moves through, a pick-up's too: its `OUT_FOR_DELIVERY` is the order ready at the
+ * shop, the step that tells its customer to come. Only the words differ (`orderStatusLabelOf`).
+ */
 const FLOW = ["RECEIVED", "ACCEPTED", "PREPARING", "OUT_FOR_DELIVERY", "DELIVERED"] as const satisfies readonly OpenStatus[]
 
-function flowOf(fulfillment: OrderFulfillmentValue): OpenStatus[] {
-  return fulfillment === "PICKUP" ? FLOW.filter((status) => status !== "OUT_FOR_DELIVERY") : [...FLOW]
-}
-
-/**
- * The step after this one. Read by position, not by neighbour, so a pick-up that was marked out for
- * delivery anyway still has "delivered" ahead of it.
- */
-export function nextStatusOf(status: OrderStatusValue, fulfillment: OrderFulfillmentValue): OpenStatus | null {
+/** The step after this one. */
+export function nextStatusOf(status: OrderStatusValue): OpenStatus | null {
   if (status === "CANCELLED") return null
-  const rank = FLOW.indexOf(status)
-  return flowOf(fulfillment).find((candidate) => FLOW.indexOf(candidate) > rank) ?? null
+  return FLOW[FLOW.indexOf(status) + 1] ?? null
 }
 
 /** Every other status the order can be moved to by hand — the API lets one marked by mistake go back. */
-export function otherStatusesOf(status: OrderStatusValue, fulfillment: OrderFulfillmentValue): OpenStatus[] {
-  const next = nextStatusOf(status, fulfillment)
-  return flowOf(fulfillment).filter((candidate) => candidate !== status && candidate !== next)
+export function otherStatusesOf(status: OrderStatusValue): OpenStatus[] {
+  const next = nextStatusOf(status)
+  return FLOW.filter((candidate) => candidate !== status && candidate !== next)
 }
 
 export interface OrderStatusActionsProps {
@@ -99,12 +95,12 @@ export function OrderStatusActions({ number, status, fulfillment, onChange, onCa
   useEffect(() => {
     if (!pressed.current) return
     pressed.current = false
-    setSaid(`${text.statusLabel}: ${messages.orders.statuses[status]}`)
+    setSaid(`${text.statusLabel}: ${orderStatusLabelOf(status, fulfillment, messages)}`)
     if (!box.current?.contains(document.activeElement)) box.current?.focus()
-  }, [status, text.statusLabel, messages.orders.statuses])
+  }, [status, fulfillment, text.statusLabel, messages])
 
-  const next = nextStatusOf(status, fulfillment)
-  const others = otherStatusesOf(status, fulfillment)
+  const next = nextStatusOf(status)
+  const others = otherStatusesOf(status)
 
   return (
     <div ref={box} tabIndex={-1} className="outline-none">
@@ -117,7 +113,7 @@ export function OrderStatusActions({ number, status, fulfillment, onChange, onCa
         <div role="group" aria-label={text.statusLabel} className="flex flex-wrap items-center gap-2">
           {next ? (
             <Button type="button" onClick={() => move(next)} disabled={pending} focusableWhenDisabled>
-              {text.markAs[next]}
+              {markAsLabelOf(next, fulfillment, messages)}
             </Button>
           ) : null}
 
@@ -131,7 +127,7 @@ export function OrderStatusActions({ number, status, fulfillment, onChange, onCa
                 <DropdownMenuGroup>
                   {others.map((option) => (
                     <DropdownMenuItem key={option} onClick={() => move(option)}>
-                      {text.markAs[option]}
+                      {markAsLabelOf(option, fulfillment, messages)}
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuGroup>

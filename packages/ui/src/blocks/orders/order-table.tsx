@@ -75,7 +75,7 @@ export function OrderTable({ orders, hrefOf, money, when, linkComponent: Link, m
                 <OrderPaymentCell order={order} messages={messages} />
               </TableCell>
               <TableCell>
-                <OrderStatusBadge status={order.status} messages={messages} />
+                <OrderStatusBadge status={order.status} fulfillment={order.fulfillment} messages={messages} />
               </TableCell>
             </TableRow>
           ))}

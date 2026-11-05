@@ -1078,7 +1078,7 @@ export interface UiMessages {
     conversationRead: string
     conversationFromShop: string
     /** A status notice in the conversation (BEELINK-236), by status — PICKED_UP is a pick-up's DELIVERED. */
-    conversationNotices: { RECEIVED: string; ACCEPTED: string; PREPARING: string; OUT_FOR_DELIVERY: string; DELIVERED: string; PICKED_UP: string; CANCELLED: string; PAYMENT_APPROVED: string; CANCELLED_UNPAID: string; /** "{amount}". */ PAYMENT_REFUNDED: string }
+    conversationNotices: { RECEIVED: string; ACCEPTED: string; PREPARING: string; OUT_FOR_DELIVERY: string; DELIVERED: string; PICKED_UP: string; READY_FOR_PICKUP: string; CANCELLED: string; PAYMENT_APPROVED: string; CANCELLED_UNPAID: string; /** "{amount}". */ PAYMENT_REFUNDED: string }
     /** A delivery's notice with the cashback it made usable (BEELINK-239): "{notice}", then "{amount}" — the punctuation between them is the copy's. */
     conversationCashback: string
     /** The buy box (BEELINK-243): `{amount}`, the most the chosen price and quantity earn — the cart's discounts can only lower it. */
@@ -2135,6 +2135,10 @@ export interface UiMessages {
     }
     /** Keyed by the wire's status, spelled out: this package imports no contracts. */
     statuses: Record<"RECEIVED" | "ACCEPTED" | "PREPARING" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLED", string>
+    /** A pick-up's last two steps, as its customer already reads them: ready at the shop, picked up. */
+    pickupStatuses: Record<"OUT_FOR_DELIVERY" | "DELIVERED", string>
+    /** The list's filter on `OUT_FOR_DELIVERY`, which holds a delivery on its way and a pick-up ready alike. */
+    outOrReadyFilter: string
     payments: Record<"MONEY" | "PIX" | "CREDIT_CARD" | "DEBIT_CARD", string>
     fulfillments: Record<"DELIVERY" | "PICKUP", string>
     number: string
@@ -2358,6 +2362,7 @@ export interface UiMessages {
         nothing: string
       }
       markAs: Record<"RECEIVED" | "ACCEPTED" | "PREPARING" | "OUT_FOR_DELIVERY" | "DELIVERED", string>
+      markAsPickup: Record<"OUT_FOR_DELIVERY" | "DELIVERED", string>
       statusLabel: string
       moreStatuses: string
       cancel: string
@@ -2677,7 +2682,7 @@ export interface UiMessages {
     read: string
     fromCustomer: string
     /** A status notice, as the shop reads what its customer was told (BEELINK-236). */
-    notices: { RECEIVED: string; ACCEPTED: string; PREPARING: string; OUT_FOR_DELIVERY: string; DELIVERED: string; PICKED_UP: string; CANCELLED: string; PAYMENT_APPROVED: string; CANCELLED_UNPAID: string; /** "{amount}". */ PAYMENT_REFUNDED: string }
+    notices: { RECEIVED: string; ACCEPTED: string; PREPARING: string; OUT_FOR_DELIVERY: string; DELIVERED: string; PICKED_UP: string; READY_FOR_PICKUP: string; CANCELLED: string; PAYMENT_APPROVED: string; CANCELLED_UNPAID: string; /** "{amount}". */ PAYMENT_REFUNDED: string }
     /** A delivery's notice with the cashback its customer was told they earned: "{notice}", "{amount}". The shop's notices end with no full stop. */
     noticeCashback: string
     fromShop: string

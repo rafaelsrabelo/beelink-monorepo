@@ -55,6 +55,16 @@ describe("a conversation's lines", () => {
     ])
   })
 
+  it("tell the shopper a pick-up is ready at the shop, where a delivery would be on its way", () => {
+    const at = "2026-11-05T13:00:00.000Z"
+    const ready = { kind: "STATUS" as const, id: "1", status: "OUT_FOR_DELIVERY" as const, unpaid: false, cashbackCents: null, createdAt: at, readAt: null }
+    const linesOf = (fulfillment: "PICKUP" | "DELIVERY") =>
+      conversationLinesOf({ order: { number: 18, status: "OUT_FOR_DELIVERY", fulfillment, open: true }, unread: 1, messages: [ready] }, context)
+
+    expect(linesOf("PICKUP")[0]?.body).toBe("Seu pedido está pronto para retirar na loja.")
+    expect(linesOf("DELIVERY")[0]?.body).toBe("Seu pedido saiu para entrega.")
+  })
+
   /** BEELINK-236: the order's moves, worded for the shopper; a pick-up's end is "picked up". */
   it("word the order's moves as notices, and keep the sent mark on the shopper's last message", () => {
     const at = "2026-09-29T13:00:00.000Z"

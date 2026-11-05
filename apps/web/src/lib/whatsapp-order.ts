@@ -1,5 +1,6 @@
 // UI
 import { discountLinesOf, type DiscountParts } from "@harness-monorepo/ui/lib/order-discounts"
+import { orderStatusLabelOf } from "@harness-monorepo/ui/lib/order-status-label"
 import { customerTotalText, feeLineOf } from "@harness-monorepo/ui/lib/order-total"
 import { formatCents } from "@harness-monorepo/ui/blocks/storefront/storefront-price"
 import { format } from "@harness-monorepo/ui/locales/index"
@@ -110,7 +111,7 @@ export function shopOrderMessageOf({ shopName, order, locale, messages }: ShopOr
     // To the customer: a free-delivery coupon makes the total final, whatever fee is agreed.
     format(text.whatsappTotal, { value: customerTotalText(money(order.totalCents), order, messages.orders.totalPlusFee) }),
     format(text.whatsappPayment, { value: messages.orders.payments[order.paymentMethod] }),
-    format(text.whatsappStatus, { value: messages.orders.statuses[order.status] }),
+    format(text.whatsappStatus, { value: orderStatusLabelOf(order.status, order.fulfillment, messages) }),
   ].join("\n")
 }
 

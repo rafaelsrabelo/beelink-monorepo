@@ -148,7 +148,7 @@ export function OrdersScreen({ slug, messages, web }: OrdersScreenProps) {
           </ToggleGroupItem>
           {STATUSES.map((option) => (
             <ToggleGroupItem key={option} value={option} variant="outline" className={PRESSED}>
-              {text.statuses[option]}
+              {option === "OUT_FOR_DELIVERY" ? text.outOrReadyFilter : text.statuses[option]}
             </ToggleGroupItem>
           ))}
         </ToggleGroup>

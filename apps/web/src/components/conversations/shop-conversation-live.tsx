@@ -78,7 +78,7 @@ export function ShopConversationLive({ slug, number, locale, headed = true, back
       order={
         <>
           {format(text.orderLine, { number: String(number) })}
-          <OrderStatusBadge status={data.order.status} messages={messages} />
+          <OrderStatusBadge status={data.order.status} fulfillment={data.order.fulfillment} messages={messages} />
         </>
       }
       orderHref={`/admin/${slug}/orders/${number}`}
