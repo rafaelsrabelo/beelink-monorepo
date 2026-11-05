@@ -188,7 +188,7 @@ export class CustomersService {
    * This shop's accounts, and what their e-mails carry: the shop's name, its own pages for the links,
    * in its own route words, and where the shopper goes back to. 404 for a shop that does not exist.
    */
-  private async scopeOf(storeSlug: string, returnTo?: string): Promise<AccountScope & { storeId: string; shop: AccountShop }> {
+  async scopeOf(storeSlug: string, returnTo?: string): Promise<AccountScope & { storeId: string; shop: AccountShop }> {
     const store = await this.stores.publicStoreNaming(storeSlug);
     const words = ROUTE_WORDS[store.routeVocabulary];
     return {

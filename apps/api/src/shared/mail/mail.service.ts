@@ -18,6 +18,7 @@ import { chargingNotice, type ChargingNoticeContent } from './charging-notice.te
 import { courierApplicationReceived, type CourierApplicationReceivedContent } from './courier-application-received.template.js';
 import { paymentApproved, type PaymentApprovedContent } from './payment-approved.template.js';
 import { paymentRefunded, type PaymentRefundedContent } from './payment-refunded.template.js';
+import { signInCode, type SignInCodeContent } from './sign-in-code.template.js';
 import { emailVerification, favoriteNotice, leadReceived, orderStatusChanged, passwordReset, type FavoriteNoticeContent, type OrderStatusContent } from './mail.templates.js';
 
 /** What a lead's e-mail needs beyond the lead: who to greet, and which site's panel to point at. */
@@ -73,6 +74,11 @@ export class MailService implements OnApplicationBootstrap {
   async sendPasswordReset(to: string, name: string, token: string, shop?: AccountShop): Promise<void> {
     const url = shop ? shopLinkOf(shop.resetPath, token, shop.returnTo) : `${env.WEB_URL}/reset-password?token=${encodeURIComponent(token)}`;
     await this.send(to, passwordReset(name, url, PASSWORD_RESET_TTL_MINUTES, shop?.name), shop?.name);
+  }
+
+  /** The checkout's code (2026-11-05), from the shop by name; answers whether it went. */
+  async sendSignInCode(to: string, content: SignInCodeContent): Promise<boolean> {
+    return this.send(to, signInCode(content), content.shopName);
   }
 
   /**
