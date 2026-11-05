@@ -27,21 +27,23 @@ export interface StorefrontConsentGateProps {
 
 /**
  * Whether a shop asks its visitor about tracking at all (BEELINK-271): only one that connected a
- * Meta Pixel does. Such a shop gets the strip above its pages and the visitor's answer around them;
- * any other gets its pages and nothing else — no strip, no state, and so no cookie ever written.
+ * Meta Pixel does. Such a shop gets the notice after its pages and the visitor's answer around them;
+ * any other gets its pages and nothing else — no notice, no state, and so no cookie ever written.
  *
- * It sits in the shop's layout, outside the element that carries the shop's `--shop-*` variables,
- * so the strip is handed them here, with the shop's typeface.
+ * After the pages, because the notice is sticky to the foot of the screen and must rest, at the
+ * page's end, in its own place under the footer. Its wrapper is `display: contents`: it carries the
+ * shop's `--shop-*` variables and typeface — the layout is outside the element that sets them — but
+ * draws no box, so the notice sticks within the whole shop and not within a wrapper its own height.
  */
 export function StorefrontConsentGate({ slug, store, choice, messages, children }: StorefrontConsentGateProps) {
   if (!store?.metaPixelId) return children
 
   return (
     <ConsentProvider slug={slug} choice={choice}>
-      <div style={{ ...shopPaletteVariables(store.colors), fontFamily: "var(--font-shop, inherit)" }}>
+      {children}
+      <div className="contents" style={{ ...shopPaletteVariables(store.colors), fontFamily: "var(--font-shop, inherit)" }}>
         <StorefrontConsentLive privacyHref={LEGAL_ROUTES.privacy} messages={messages} />
       </div>
-      {children}
     </ConsentProvider>
   )
 }

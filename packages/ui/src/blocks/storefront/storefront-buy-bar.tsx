@@ -1,7 +1,10 @@
+"use client"
+
 // React
-import type { ReactNode } from "react"
+import { useRef, type ReactNode } from "react"
 
 // UI
+import { useHeightProperty } from "@harness-monorepo/ui/hooks/use-height-property"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Locales
@@ -36,9 +39,14 @@ export interface StorefrontBuyBarProps {
  */
 export function StorefrontBuyBar({ shown, price, label, onAct, cartHref, added = false, messages = defaultMessages }: StorefrontBuyBarProps) {
   const text = messages.storefront
+  const bar = useRef<HTMLDivElement>(null)
+
+  // Said while it is up: a shop's cookie notice stands on it, and "Adicionado · Ver carrinho" makes it taller.
+  useHeightProperty(bar, "--shop-buy-bar-height", shown)
 
   return (
     <div
+      ref={bar}
       inert={!shown}
       aria-hidden={!shown}
       className={cn(

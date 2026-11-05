@@ -42,13 +42,16 @@ afterEach(() => {
 
 /** BEELINK-271: the strip is a shop with a pixel's, and nobody else's. */
 describe("StorefrontConsentGate", () => {
-  it("asks at a shop that connected a Meta Pixel, above its pages and in its colours", () => {
+  it("asks at a shop that connected a Meta Pixel, after its pages and in its colours", () => {
     renderGate(withPixel)
 
     const region = strip()!
     expect(region).toBeInTheDocument()
-    expect(region.compareDocumentPosition(screen.getByRole("main")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    // The layout is outside the shop's window, so the palette is set where the strip is.
+    // Last, so the sticky notice rests under the footer at the page's end and covers nothing there.
+    expect(region.compareDocumentPosition(screen.getByRole("main")) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy()
+    // The layout is outside the shop's window, so the palette is set where the notice is — on a
+    // wrapper that draws no box, or the notice would stick within a wrapper its own height.
+    expect(region.parentElement).toHaveClass("contents")
     expect(region.parentElement!.style.getPropertyValue("--shop-background")).toBe("white")
     expect(region.parentElement!.style.getPropertyValue("--shop-primary")).toBe("rebeccapurple")
   })
