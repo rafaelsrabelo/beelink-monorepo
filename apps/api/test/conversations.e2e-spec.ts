@@ -142,6 +142,18 @@ describe("an order's conversation", () => {
     expect(closed.unread).toBe(2);
   });
 
+  it('tells a pick-up ready at the shop as news to the shopper, and keeps the conversation open for the way there', async () => {
+    await place();
+    expect((await call('PATCH', '/api/stores/lessari/orders/1/status', owner, { status: 'OUT_FOR_DELIVERY' })).statusCode).toBe(200);
+
+    const read = (await call('GET', mine(), shopper)).json<CustomerConversation>();
+    // The web words this line "pronto para retirar" from the order's fulfillment (`status-notice.ts`).
+    expect(read.order).toEqual({ number: 1, status: 'OUT_FOR_DELIVERY', fulfillment: 'PICKUP', open: true });
+    expect(read.messages.at(-1)).toMatchObject({ kind: 'STATUS', status: 'OUT_FOR_DELIVERY', readAt: null });
+    expect(read.unread).toBe(1);
+    expect((await call('POST', `${mine()}/messages`, shopper, { body: 'Passo aí às 18h' })).statusCode).toBe(201);
+  });
+
   it('tells nothing to a customer with no account, and gives an older order its conversation at its next move', async () => {
     const registered = await call('POST', '/api/stores/lessari/orders', owner, {
       customer: { name: 'Caio Balcão', phone: '11977776666' },
