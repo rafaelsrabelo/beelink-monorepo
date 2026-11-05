@@ -68,6 +68,17 @@ export class CustomerCheckoutService {
   }
 
   /**
+   * Another code, asked from the code's own step: for an account here, as the first went — not within
+   * the minute of the last. An e-mail with no account gets nothing and the same silence: this route
+   * says nothing the checkout's answer did not already.
+   */
+  async resendCode(storeSlug: string, email: string): Promise<void> {
+    const scope = await this.customers.scopeOf(storeSlug);
+    const known = await this.prisma.user.findFirst({ where: { email, storeId: scope.storeId } });
+    if (known) await this.codeSentTo(known, scope.shop);
+  }
+
+  /**
    * The code's session. Every way it fails — no such account, no code standing, past its minutes, the
    * tries spent, the wrong digits — is the one `CUSTOMER_CODE_INVALID`: none is told apart.
    */

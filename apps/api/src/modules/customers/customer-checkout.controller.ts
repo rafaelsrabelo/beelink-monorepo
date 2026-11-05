@@ -1,7 +1,7 @@
 // Nest
 import { Body, Controller, Headers, HttpCode, HttpStatus, Param, Post } from '@nestjs/common';
 import { RouteConfig } from '@nestjs/platform-fastify';
-import { ApiBadRequestResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags, ApiTooManyRequestsResponse } from '@nestjs/swagger';
+import { ApiAcceptedResponse, ApiBadRequestResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags, ApiTooManyRequestsResponse } from '@nestjs/swagger';
 
 // Types
 import type { AuthSession, CustomerCheckoutAnswer } from '@harness-monorepo/contracts';
@@ -9,6 +9,7 @@ import type { AuthSession, CustomerCheckoutAnswer } from '@harness-monorepo/cont
 // App
 import { env } from '../../shared/config/env.js';
 import { Public } from '../auth/auth.decorators.js';
+import { EmailDto } from '../auth/dto/auth.dto.js';
 import { AuthSessionResponse } from '../auth/dto/auth.response.js';
 import { CustomerCheckoutService } from './customer-checkout.service.js';
 import { CustomerCheckoutAnswerResponse, CustomerCheckoutCodeDto, CustomerCheckoutDto } from './dto/customer-checkout.dto.js';
@@ -37,6 +38,15 @@ export class CustomerCheckoutController {
   @ApiBadRequestResponse({ description: 'A name, an e-mail or a WhatsApp that is not one' })
   identify(@Param('storeSlug') storeSlug: string, @Body() dto: CustomerCheckoutDto, @Headers('user-agent') userAgent?: string): Promise<CustomerCheckoutAnswer> {
     return this.checkout.identify(storeSlug, dto, userAgent);
+  }
+
+  @Post('code/resend')
+  @HttpCode(HttpStatus.ACCEPTED)
+  @RouteConfig({ rateLimit })
+  @ApiOperation({ summary: 'Another code for the account the checkout found; the same 202 for any e-mail' })
+  @ApiAcceptedResponse({ description: 'Sent, unless one went within the minute — or no account, and nothing said' })
+  async resend(@Param('storeSlug') storeSlug: string, @Body() dto: EmailDto): Promise<void> {
+    await this.checkout.resendCode(storeSlug, dto.email);
   }
 
   @Post('code')

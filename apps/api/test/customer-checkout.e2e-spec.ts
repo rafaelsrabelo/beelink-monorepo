@@ -126,6 +126,24 @@ describe("the checkout's door: buying with no sign-up", () => {
     expect((await withCode('lessari', { email, code: codeOf(first.Subject) })).statusCode).toBe(200);
   });
 
+  it('sends another code from the code step once the minute passed, and answers the same for an e-mail with no account', async () => {
+    const email = newEmail('reenvio');
+    await identify('lessari', { name: 'Bia', email, phone: '11987654321' });
+    await identify('lessari', { name: 'Bia', email, phone: '11987654321' });
+    // The minute passes for the code standing.
+    await prisma.signInCode.updateMany({ where: { user: { email } }, data: { createdAt: new Date(Date.now() - 61_000) } });
+    await clearInbox();
+
+    const resend = (address: string) => app.inject({ method: 'POST', url: '/api/stores/lessari/customer/checkout/code/resend', payload: { email: address } });
+    expect((await resend(email)).statusCode).toBe(202);
+    const second = await waitForMessage(email);
+    expect((await resend(newEmail('ninguem'))).statusCode).toBe(202);
+
+    // Only the last code holds.
+    expect(await prisma.signInCode.count({ where: { user: { email }, usedAt: null } })).toBe(1);
+    expect((await withCode('lessari', { email, code: codeOf(second.Subject) })).statusCode).toBe(200);
+  });
+
   /** A shop's account is the shop's alone: the same e-mail is a new customer at another shop. */
   it('opens a second account for the same e-mail at another shop, and keeps a WhatsApp another record has as claimed', async () => {
     const email = newEmail('duas-lojas');
