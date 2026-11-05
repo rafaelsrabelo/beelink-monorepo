@@ -34,7 +34,7 @@ import { pendingReviewsAt } from "@/lib/customer-reviews"
 import { OVERVIEW_FAVORITES } from "@/lib/overview-parts"
 import { customerOrdersAt, customerReorderAt } from "@/lib/customer-orders"
 import { reorderNoticeOf } from "@/lib/reorder-view"
-import { ADDRESS_KEY, checkoutAddressesOf, checkoutAddressIdOf, DELIVER_TO_KEY, NEW_ADDRESS } from "@/lib/saved-address"
+import { ADDRESS_ERROR_KEY, ADDRESS_KEY, checkoutAddressesOf, checkoutAddressIdOf, DELIVER_TO_KEY, NEW_ADDRESS } from "@/lib/saved-address"
 import { cartInvitationOf, pathWithQuery } from "@/lib/offer-strip"
 import { shopBaseOf } from "@/lib/shop-address"
 import { shopShareOf } from "@/lib/shop-share"
@@ -43,6 +43,7 @@ import { shopperAt } from "@/lib/shopper"
 import { siteOrigin } from "@/lib/site-origin"
 import { catalogueAt, offersAt, paymentOptionsAt, shopAt } from "@/lib/storefront-data"
 import { installmentTermsOf } from "@/lib/storefront-installments"
+import { errorSentenceOf } from "@/lib/error-sentence"
 import { BACK_KEY, orderNumberOf, paramOf, REORDER_FAILED_KEY, REORDER_TRIMMED_KEY, REORDERED_KEY, storefrontRoutes } from "@/lib/storefront-routes"
 import { canonicalOf, headingOf, isShelf, listingAskOf, placeOf } from "@/lib/storefront-section"
 import { filterCountOf } from "@/lib/storefront-filters"
@@ -117,6 +118,8 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
   // (BEELINK-245): the promotions' rows are in the HTML too — and to the address a delivery would go
   // to (BEELINK-178), so the fee is as well.
   const deliverTo = paramOf(query[DELIVER_TO_KEY]) ?? null
+  // An address the checkout sent and the shop refused: the code it came back with, said in its form.
+  const addressRefusal = cart && shopper ? (paramOf(query[ADDRESS_ERROR_KEY]) ?? null) : null
   const asked = cart ? cartQuoteOf(cartViewOf(cart.lines, cart.products).rows, firstFulfillmentOf(shopper), null, { addressId: shopper ? checkoutAddressIdOf(checkoutAddressesOf(shopper), deliverTo) : null }) : null
   // With it, for a shopper: the shop's shown coupons that same cart may take, so the list is in the HTML as well.
   // And for a visitor, what the shop's first-purchase coupon gives (BEELINK-311): the kept public read, never a code.
@@ -210,8 +213,10 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
             signUpHref: routes.signIn({ mode: "criar", back: routes.cart() }),
             editHref: `${routes.accountTab("profile")}?${BACK_KEY}=${encodeURIComponent(routes.cart())}`,
             addAddressHref: `${routes.accountTab("profile")}?${new URLSearchParams({ [ADDRESS_KEY]: NEW_ADDRESS, [BACK_KEY]: routes.cart() }).toString()}`,
+            cartHref: routes.cart(),
           }}
           deliverTo={deliverTo}
+          addressError={addressRefusal ? errorSentenceOf((await getMessages()).web.errors, addressRefusal) : null}
           arrival={reorderNotice ? <StorefrontReorderNotice {...reorderNotice} messages={ui} /> : undefined}
           served={served}
           servedOffers={servedOffers}

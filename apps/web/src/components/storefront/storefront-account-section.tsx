@@ -10,7 +10,7 @@ import type { WebMessages } from "@/locales"
 import { phoneLineOf } from "@/lib/account-menu"
 import { brazilTodayOf, cpfLineOf } from "@/lib/customer-identity"
 import { errorSentenceOf } from "@/lib/error-sentence"
-import { ADDRESS_ERROR_KEY, ADDRESS_KEY, ADDRESSES_MAX, DELIVER_TO_KEY, NEW_ADDRESS } from "@/lib/saved-address"
+import { ADDRESS_ERROR_KEY, ADDRESS_KEY, ADDRESSES_MAX, BLANK_ADDRESS, DELIVER_TO_KEY, NEW_ADDRESS } from "@/lib/saved-address"
 import { BACK_KEY, paramOf, safeBackOf } from "@/lib/storefront-routes"
 import type { SectionQuery } from "@/lib/storefront-section"
 import { StorefrontAddressEditor } from "./storefront-address-editor"
@@ -48,19 +48,6 @@ const INVALID_FIELD_OF: Readonly<Record<string, StorefrontAccountFormProps["inva
 function errorOf(code: string, errors: WebMessages["errors"], messages: UiMessages): string {
   if (code === "CUSTOMER_PHONE_TAKEN") return messages.storefront.accountPhoneTaken
   return errorSentenceOf(errors, code)
-}
-
-const BLANK_ADDRESS = {
-  id: null,
-  label: null,
-  recipientName: null,
-  zipCode: null,
-  street: null,
-  number: null,
-  complement: null,
-  neighborhood: null,
-  city: null,
-  state: null,
 }
 
 /**

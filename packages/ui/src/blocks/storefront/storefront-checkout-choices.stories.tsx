@@ -35,7 +35,7 @@ export const VariosEnderecos: Story = {
   },
 }
 
-/** Sem endereço salvo: a entrega fica indisponível, com o caminho para cadastrar. */
+/** Sem endereço salvo e sem formulário no checkout: a entrega fica indisponível, com o caminho para cadastrar. */
 export const SemEndereco: Story = { args: { addresses: [], value: { fulfillment: "PICKUP", addressId: null, paymentMethod: null, wayId: null } } }
 
 /** A loja tem faixas de entrega: o frete e a janela aparecem sob o endereço (BEELINK-178). */

@@ -82,6 +82,26 @@ describe("the shopper's address forms", () => {
     expect(locationOf(made).searchParams.get("aviso")).toBe("endereco-padrao")
   })
 
+  /** The checkout's own form: saved or refused, it lands back on the checkout — not the page's top — with the coupon. */
+  it("lands the checkout's form back on the checkout, saved or refused, its coupon kept", async () => {
+    const back = "/loja/carrinho?cupom=BEMVINDO10#finalizar"
+    const fields = { ...address, label: "", entregar: "1", retorno: back, formulario: back }
+
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json(saved, { status: 201 })))
+    const landed = locationOf(await post("salvar", fields))
+    expect(landed.pathname).toBe("/loja/carrinho")
+    expect(landed.hash).toBe("#finalizar")
+    expect(landed.searchParams.get("cupom")).toBe("BEMVINDO10")
+    expect(landed.searchParams.get("entregar")).toBe(saved.id)
+
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ errorCode: "BAD_REQUEST" }, { status: 400 })))
+    const refused = locationOf(await post("salvar", fields))
+    expect(refused.pathname).toBe("/loja/carrinho")
+    expect(refused.hash).toBe("#finalizar")
+    expect(refused.searchParams.get("cupom")).toBe("BEMVINDO10")
+    expect(refused.searchParams.get("erro-endereco")).toBe("CUSTOMER_ADDRESS_FIELDS_INVALID")
+  })
+
   it("comes back to the cards themselves, where what it did is said", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(null, { status: 204 })))
 
