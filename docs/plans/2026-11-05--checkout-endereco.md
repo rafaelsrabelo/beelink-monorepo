@@ -79,3 +79,17 @@ Nenhuma forma nova na rede, nenhuma migration: `packages/contracts`, a API e o s
 - **Funil da compra no painel** — o PR 3.
 - **Endereço para quem não está logado.** A busca de CEP segue fechada à sessão do cliente; o PR 2
   cria a sessão antes do endereço.
+
+## Adendo — 05/11/2026, na checagem de cobertura
+
+**O item 1 do DoD vale pela metade.** Escolher a entrega sem endereço abre o formulário no checkout,
+como planejado. Mas "numa loja que só entrega, o formulário já vem aberto" só acontece no bloco: no
+carrinho, o cliente sem endereço nunca fica sabendo se a loja aceita retirada. A cotação sem endereço
+volta sem `shipping`, e o `pickupEnabled` da loja só existe no contrato do painel (`delivery.ts`), não
+nos dados públicos da loja. Então ele começa na retirada e toca em "Receber em casa", como já fazia —
+um toque, não uma página. Levar o `pickupEnabled` à vitrine é uma forma nova na rede, fora deste PR;
+cabe no PR 2, que já mexe no começo do checkout.
+
+**O mapa de superfícies da UI** ganhou as linhas dos dois blocos novos (`storefront-checkout-delivery`,
+`storefront-zip-code-field`), como o `storefront-checkout-payment` ganhou a sua quando saiu do mesmo
+`storefront-checkout-choices`.
