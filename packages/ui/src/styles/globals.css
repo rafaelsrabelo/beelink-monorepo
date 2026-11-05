@@ -416,7 +416,19 @@
   @media (width < 64rem) {
     html[data-buy-bar] {
       scroll-padding-bottom: 6rem;
+      /* A shop's cookie notice stands on the bar, by the height the bar says it has. */
+      --shop-notice-lift: var(--shop-buy-bar-height, 0px);
     }
+    html[data-buy-bar]:has([data-shop-notice]:not(:focus-within)) {
+      scroll-padding-bottom: calc(var(--shop-buy-bar-height, 6rem) + var(--shop-notice-height, 0px));
+    }
+  }
+  /*
+   * A shop's cookie notice is up at the foot of the screen (BEELINK-271): the same room the landing's
+   * keeps, for the same reason, and not while the focus is inside it.
+   */
+  html:has([data-shop-notice]:not(:focus-within)) {
+    scroll-padding-bottom: var(--shop-notice-height, 0px);
   }
 }
 /**
