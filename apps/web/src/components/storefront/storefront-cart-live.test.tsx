@@ -55,6 +55,7 @@ const identityHrefs = {
   signUpHref: "/loja/entrar?modo=criar",
   editHref: "/loja/conta?voltar=%2Floja%2Fcarrinho",
   addAddressHref: "/loja/conta/perfil?endereco=novo&voltar=%2Floja%2Fcarrinho",
+  cartHref: "/loja/carrinho",
 }
 
 function cookieLines() {
@@ -321,20 +322,72 @@ describe("StorefrontCartLive", () => {
     expect(screen.queryByText("Os itens do pedido nº 11 estão no carrinho.")).toBeNull()
   })
 
-  it("never keeps a delivery chosen once the address is gone from the page", () => {
+  /** The address gone, the delivery stays the choice — and asks for an address in place, never sending to the old one. */
+  it("never sends a delivery to an address gone from the page: it asks for one in the checkout", async () => {
+    const fetched = network()
     const view = renderCart()
     expect(screen.getByRole("radio", { name: /Receber em casa/ })).toBeChecked()
 
     view.redraw({ ...bia, addresses: [] })
-    expect(screen.getByRole("radio", { name: "Retirar na loja" })).toBeChecked()
+    expect(screen.getByRole("heading", { name: "Onde entregar" })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("radio", { name: "Pix" }))
+    // Priced again for a delivery with no address before the button takes a press.
+    await waitFor(() => expect(screen.getByRole("button", { name: /Fechar pedido pelo WhatsApp/ })).toBeEnabled())
+    fireEvent.click(screen.getByRole("button", { name: /Fechar pedido pelo WhatsApp/ }))
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Para receber em casa, preencha o endereço de entrega.")
+    expect(bodiesTo(fetched, "/loja/api/orders")).toEqual([])
   })
 
-  it("offers delivery only to a shopper with an address to deliver to, starting on pick-up otherwise", () => {
+  /** The ticket's complaint: no address meant leaving the checkout for "Alterar dados" and the profile tab. */
+  it("starts on pick-up with no address to deliver to, and a delivery chosen opens the address form right there", () => {
+    network()
     renderCart(false, { ...bia, addresses: [{ ...bia.addresses[0]!, street: null }] })
 
-    expect(screen.getByRole("radio", { name: /Receber em casa/ })).toBeDisabled()
     expect(screen.getByRole("radio", { name: "Retirar na loja" })).toBeChecked()
-    expect(screen.getByRole("link", { name: "Adicionar endereço" })).toHaveAttribute("href", identityHrefs.addAddressHref)
+    expect(screen.queryByRole("link", { name: "Adicionar endereço" })).toBeNull()
+    expect(screen.queryByRole("heading", { name: "Onde entregar" })).toBeNull()
+
+    fireEvent.click(screen.getByRole("radio", { name: /Receber em casa/ }))
+    expect(screen.getByRole("radio", { name: /Receber em casa/ })).toBeChecked()
+    expect(screen.getByRole("heading", { name: "Onde entregar" })).toBeInTheDocument()
+    expect(screen.getByLabelText("CEP")).toHaveFocus()
+  })
+
+  /** Saved, it lands back on the checkout with the address chosen; refused, on the checkout too, its form saying why. */
+  it("posts the checkout's address to the shopper's own handler, landing back on the checkout to deliver to it", () => {
+    network()
+    const { container } = renderCart(false, { ...bia, addresses: [] })
+
+    fireEvent.click(screen.getByRole("radio", { name: /Receber em casa/ }))
+    const form = container.querySelector('form[action="/loja/api/customer/enderecos/salvar"]')
+    const hidden = (name: string) => form?.querySelector<HTMLInputElement>(`input[type=hidden][name="${name}"]`)?.value
+    expect(form).toHaveAttribute("method", "post")
+    expect(hidden("retorno")).toBe("/loja/carrinho#finalizar")
+    expect(hidden("formulario")).toBe("/loja/carrinho#finalizar")
+    expect(hidden("entregar")).toBe("1")
+    expect(container.querySelector("#finalizar")).not.toBeNull()
+  })
+
+  it("comes back from a refused address on the delivery, its form open with the sentence", () => {
+    network()
+    renderCart(false, bia, { addressError: "Confira o endereço: o CEP com 8 números, a rua, a cidade e a UF com 2 letras." })
+
+    expect(screen.getByRole("radio", { name: /Receber em casa/ })).toBeChecked()
+    expect(screen.getByRole("heading", { name: "Onde entregar" })).toBeInTheDocument()
+    expect(screen.getByText("Confira o endereço: o CEP com 8 números, a rua, a cidade e a UF com 2 letras.")).toBeInTheDocument()
+    // Beside a saved address, there is one to go back to.
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar" }))
+    expect(screen.queryByRole("heading", { name: "Onde entregar" })).toBeNull()
+  })
+
+  /** At the API's cap a new address would be refused: the checkout keeps the link to the profile tab, which says so. */
+  it("keeps the link to the profile tab for a shopper whose addresses are at the cap", () => {
+    network()
+    const many = Array.from({ length: 10 }, (_, index) => ({ ...bia.addresses[0]!, id: `a${index + 1}`, isDefault: index === 0 }))
+    renderCart(false, { ...bia, addresses: many })
+
+    expect(screen.getByRole("link", { name: "Entregar em outro endereço" })).toHaveAttribute("href", identityHrefs.addAddressHref)
   })
 
   it("starts on the address just added from the cart, and sends the one chosen", async () => {
@@ -652,7 +705,9 @@ describe("the cart's price and its coupon", () => {
     await waitFor(() => expect(screen.getByText("Cupom BEMVINDO10 aplicado.")).toBeInTheDocument())
 
     expect(backOf("Alterar dados")).toBe("/loja/carrinho?cupom=BEMVINDO10")
-    expect(backOf("Entregar em outro endereço")).toBe("/loja/carrinho?cupom=BEMVINDO10")
+    fireEvent.click(screen.getByRole("button", { name: "Entregar em outro endereço" }))
+    const back = document.querySelector<HTMLInputElement>('form[action="/loja/api/customer/enderecos/salvar"] input[name="retorno"]')
+    expect(back?.value).toBe("/loja/carrinho?cupom=BEMVINDO10#finalizar")
 
     fireEvent.click(screen.getByRole("button", { name: "Remover o cupom BEMVINDO10" }))
     expect(backOf("Alterar dados")).toBe("/loja/carrinho")

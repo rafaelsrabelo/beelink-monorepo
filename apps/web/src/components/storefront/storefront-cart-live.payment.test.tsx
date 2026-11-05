@@ -98,7 +98,7 @@ function renderCart(shopper: CustomerProfile, props: Partial<StorefrontCartLiveP
           paymentMethods={["MONEY", "PIX"]}
           paymentOptions={BOTH}
           shopper={shopper}
-          identityHrefs={{ signInHref: "/loja/entrar", signUpHref: "/loja/entrar?modo=criar", editHref: "/loja/conta/perfil", addAddressHref: "/loja/conta/perfil?endereco=novo" }}
+          identityHrefs={{ signInHref: "/loja/entrar", signUpHref: "/loja/entrar?modo=criar", editHref: "/loja/conta/perfil", addAddressHref: "/loja/conta/perfil?endereco=novo", cartHref: "/loja/carrinho" }}
           locale="pt-BR"
           messages={ptBR}
           {...props}
@@ -294,6 +294,18 @@ describe("the checkout of a shop that charges online (BEELINK-205)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Fechar pedido e pagar" }))
     await waitFor(() => expect(mocks.push).toHaveBeenCalledWith("/loja/conta/pedidos/12?pagamento=1"))
     expect(ordersSent(fetched)[0]).toMatchObject({ fulfillment: "DELIVERY", paymentChannel: "ONLINE", paymentMethod: "CREDIT_CARD", deliveryFeeCents: null })
+  })
+
+  /** No address yet is no fee to agree: nothing was quoted, and the address form is open right above. */
+  it("tells no fee to be agreed while a delivery waits for its address in the checkout", async () => {
+    renderCart(ana)
+
+    fireEvent.click(screen.getByRole("radio", { name: /Receber em casa/ }))
+    expect(screen.getByRole("heading", { name: "Onde entregar" })).toBeInTheDocument()
+    fireEvent.click(payNow().getByRole("radio", { name: /^Cartão de crédito/ }))
+
+    await priced()
+    expect(screen.queryByText(/Você paga depois que a loja informar o frete/)).toBeNull()
   })
 
   it.each([

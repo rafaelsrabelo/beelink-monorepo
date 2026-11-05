@@ -1,5 +1,6 @@
 // Types
 import type { CustomerProfile, CustomerSavedAddress } from "@harness-monorepo/contracts"
+import type { StorefrontAddressFormValues } from "@harness-monorepo/ui/blocks/storefront/storefront-address-form"
 import type { StorefrontCheckoutAddress } from "@harness-monorepo/ui/blocks/storefront/storefront-checkout"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
@@ -19,6 +20,19 @@ export const ADDRESS_ERROR_KEY = "erro-endereco"
 export const DELIVER_TO_KEY = "entregar"
 /** The most a shopper keeps: the API's own cap, said before a save it would refuse. */
 export const ADDRESSES_MAX = 10
+/** The address form's start for a new address: every part empty. */
+export const BLANK_ADDRESS: StorefrontAddressFormValues = {
+  id: null,
+  label: null,
+  recipientName: null,
+  zipCode: null,
+  street: null,
+  number: null,
+  complement: null,
+  neighborhood: null,
+  city: null,
+  state: null,
+}
 
 export type AddressNotice = "endereco-salvo" | "endereco-removido" | "endereco-padrao"
 

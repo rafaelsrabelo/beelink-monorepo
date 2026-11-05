@@ -33,19 +33,23 @@ export interface CheckoutChoiceHandle {
  * an address no longer offered, and the shop's only way of handing the order over is chosen
  * already. `ways` is null until the shop's rules are known: both stand then.
  *
+ * A delivery stands with no address yet: the checkout asks for the address in place, and the order
+ * waits for it (`useCartCheckout`). `startDelivering` is a cart that came back from an address the
+ * shop refused, to the form that says why.
+ *
  * How it is paid comes back as it was picked: what the shop takes depends on the cart's total
  * (BEELINK-205), which is priced from this choice, so `useCartCheckout` holds the payment to it.
  */
-export function useCheckoutChoice(shopper: CustomerProfile | null, deliverTo: string | null, ways: CheckoutWays | null = null): CheckoutChoiceHandle {
+export function useCheckoutChoice(shopper: CustomerProfile | null, deliverTo: string | null, ways: CheckoutWays | null = null, startDelivering = false): CheckoutChoiceHandle {
   const addresses = useMemo(() => (shopper ? checkoutAddressesOf(shopper) : []), [shopper])
   const [picked, setChoice] = useState<StorefrontCheckoutChoice>(() => ({
-    fulfillment: firstFulfillmentOf(shopper),
+    fulfillment: startDelivering && shopper ? "DELIVERY" : firstFulfillmentOf(shopper),
     addressId: deliverTo,
     paymentMethod: null,
     wayId: null,
   }))
   const address = addresses.find((each) => each.id === picked.addressId) ?? addresses[0] ?? null
-  const delivers = address !== null && ways?.delivery !== false
+  const delivers = shopper !== null && ways?.delivery !== false
   const picksUp = ways?.pickup !== false
 
   return {

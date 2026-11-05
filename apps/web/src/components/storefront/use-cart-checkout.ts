@@ -33,6 +33,8 @@ export interface CartCheckoutInput {
   /** The shopper's offers for this cart as the page was served with them; null and the browser asks. */
   servedOffers?: ServedOffers | null
   arrivedWith: string | null
+  /** The cart came back from an address the shop refused: it starts on the delivery, whose form says why. */
+  addressRefused?: boolean
   locale: string
   messages: UiMessages
 }
@@ -71,12 +73,14 @@ export interface CartCheckoutHandle extends CheckoutChoiceHandle {
  * The CPF is one field for its two reasons — a carrier's label and an online payment — shown where
  * the first of them is.
  */
-export function useCartCheckout({ slug, view, shopper, paymentMethods, paymentOptions, deliverTo, served, servedOffers = null, arrivedWith, locale, messages }: CartCheckoutInput): CartCheckoutHandle {
+export function useCartCheckout({ slug, view, shopper, paymentMethods, paymentOptions, deliverTo, served, servedOffers = null, arrivedWith, addressRefused = false, locale, messages }: CartCheckoutInput): CartCheckoutHandle {
   const text = messages.storefront
   const [ways, setWays] = useState<CheckoutWays | null>(null)
   const [cpf, setCpf] = useState("")
-  const { addresses, choice: picked, setChoice } = useCheckoutChoice(shopper, deliverTo, ways)
+  const { addresses, choice: picked, setChoice } = useCheckoutChoice(shopper, deliverTo, ways, addressRefused)
   const delivering = picked.fulfillment === "DELIVERY"
+  // A delivery chosen before there is an address to send it to: its form is open in the checkout.
+  const addressless = delivering && picked.addressId === null
   const carrier = useMemo(() => (delivering ? shippingChoiceOf(picked.wayId) : null), [delivering, picked.wayId])
   // The address goes with a pick-up too: the delivery beside it says what it would cost.
   const pricing = useCartPricing({ slug, view, fulfillment: picked.fulfillment, addressId: picked.addressId, shipping: carrier, shopperId: shopper?.id ?? null, served, arrivedWith, locale, messages })
@@ -88,7 +92,8 @@ export function useCartCheckout({ slug, view, shopper, paymentMethods, paymentOp
   if (shipping && (ways?.delivery !== shipping.delivery || ways?.pickup !== shipping.pickup || ways.ids.join() !== ids.join())) setWays({ delivery: shipping.delivery, pickup: shipping.pickup, ids })
 
   // A delivery whose fee is to be agreed leaves the total open: it is what the API will not charge yet.
-  const closed = !(delivering && pricing.deliveryFeeCents === null)
+  // With no address yet, nothing was quoted to agree on: the payment is not told the fee is open.
+  const closed = addressless || !(delivering && pricing.deliveryFeeCents === null)
   const plan = useMemo(
     () => checkoutPaymentOf(paymentOptions, paymentMethods, { cents: pricing.totalCents, closed }, { money: (cents) => formatCents(cents, locale, "BRL"), text }),
     [paymentOptions, paymentMethods, pricing.totalCents, closed, locale, text],
@@ -103,15 +108,17 @@ export function useCartCheckout({ slug, view, shopper, paymentMethods, paymentOp
   const blocked =
     shipping && !shipping.delivery && !shipping.pickup
       ? text.checkoutNoWay
-      : delivering && shipping && shipping.ways.length === 0
-        ? shipping.note
-        : plan.offlineMethods.length === 0 && plan.online?.unavailable
-          ? plan.online.unavailable
-          : askCpf && cpfDigits.length !== 11
-            ? carrier
-              ? text.checkoutRecipientDocumentIssue
-              : text.checkoutPayerDocumentIssue
-            : null
+      : addressless
+        ? text.checkoutAddressMissing
+        : delivering && shipping && shipping.ways.length === 0
+          ? shipping.note
+          : plan.offlineMethods.length === 0 && plan.online?.unavailable
+            ? plan.online.unavailable
+            : askCpf && cpfDigits.length !== 11
+              ? carrier
+                ? text.checkoutRecipientDocumentIssue
+                : text.checkoutPayerDocumentIssue
+              : null
   const sent = {
     ...(delivering
       ? {
