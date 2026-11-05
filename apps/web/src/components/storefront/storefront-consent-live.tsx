@@ -17,9 +17,9 @@ export interface StorefrontConsentLiveProps {
 }
 
 /**
- * The cookie strip, wired to the visitor's answer at this shop (BEELINK-271). It is on the page
+ * The cookie notice, wired to the visitor's answer at this shop (BEELINK-271). It is on the page
  * while nobody answered, or when the footer's "Cookies" asked for it again — then it says the
- * answer in force and takes the focus, since it sits at the other end of the page.
+ * answer in force and takes the focus, so a keyboard lands on the question it just asked for.
  *
  * The answer given is said in a status line: the strip leaves the page with the click, and a
  * screen reader would otherwise hear nothing happen.
