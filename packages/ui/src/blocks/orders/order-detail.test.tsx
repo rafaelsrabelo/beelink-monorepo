@@ -16,18 +16,44 @@ import type { OrderDetailView, OrderStatusValue } from "./order-types"
 const props = { backHref: "/admin/loja/orders", deliveryLine: "Av. Paulista, 1000 — São Paulo/SP", whatsappHref: "https://wa.me/5511988887777?text=Oi", onStatusChange: () => {} }
 
 describe("the order's next step", () => {
-  it("walks a delivery through every step, and a pick-up past 'out for delivery'", () => {
-    expect(nextStatusOf("RECEIVED", "DELIVERY")).toBe("ACCEPTED")
-    expect(nextStatusOf("PREPARING", "DELIVERY")).toBe("OUT_FOR_DELIVERY")
-    expect(nextStatusOf("PREPARING", "PICKUP")).toBe("DELIVERED")
-    expect(nextStatusOf("OUT_FOR_DELIVERY", "PICKUP")).toBe("DELIVERED")
-    expect(nextStatusOf("DELIVERED", "DELIVERY")).toBeNull()
-    expect(nextStatusOf("CANCELLED", "DELIVERY")).toBeNull()
+  it("walks every order through every step, a pick-up's included", () => {
+    expect(nextStatusOf("RECEIVED")).toBe("ACCEPTED")
+    expect(nextStatusOf("PREPARING")).toBe("OUT_FOR_DELIVERY")
+    expect(nextStatusOf("OUT_FOR_DELIVERY")).toBe("DELIVERED")
+    expect(nextStatusOf("DELIVERED")).toBeNull()
+    expect(nextStatusOf("CANCELLED")).toBeNull()
   })
 
-  it("offers every other open status by hand, a pick-up's without 'out for delivery'", () => {
-    expect(otherStatusesOf("ACCEPTED", "DELIVERY")).toEqual(["RECEIVED", "OUT_FOR_DELIVERY", "DELIVERED"])
-    expect(otherStatusesOf("ACCEPTED", "PICKUP")).toEqual(["RECEIVED", "DELIVERED"])
+  it("offers every other open status by hand", () => {
+    expect(otherStatusesOf("ACCEPTED")).toEqual(["RECEIVED", "OUT_FOR_DELIVERY", "DELIVERED"])
+  })
+})
+
+describe("a pick-up in the panel", () => {
+  const pickup = { ...order, fulfillment: "PICKUP" as const, deliveryAddress: null }
+
+  it("is marked ready at the shop once prepared, and picked up after", async () => {
+    const onStatusChange = vi.fn()
+    const { container } = render(<OrderDetail order={{ ...pickup, status: "PREPARING" }} {...props} deliveryLine={null} onStatusChange={onStatusChange} />)
+
+    await userEvent.click(screen.getByRole("button", { name: "Marcar como pronto para retirar" }))
+    expect(onStatusChange).toHaveBeenCalledWith("OUT_FOR_DELIVERY")
+    await expectNoA11yViolations(container)
+  })
+
+  it("is called ready, not out for delivery, wherever the panel names it", () => {
+    const events = [...pickup.events, { status: "OUT_FOR_DELIVERY" as const, actor: "SHOPKEEPER" as const, at: "2026-09-25T15:00:00.000Z" }]
+    render(<OrderDetail order={{ ...pickup, status: "OUT_FOR_DELIVERY", events }} {...props} deliveryLine={null} />)
+
+    expect(screen.getAllByText("Pronto para retirar").length).toBeGreaterThanOrEqual(2)
+    expect(screen.queryByText("Saiu para entrega")).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Marcar como retirado" })).toBeInTheDocument()
+  })
+
+  it("leaves a delivery's words alone", () => {
+    render(<OrderDetail order={{ ...order, status: "PREPARING" }} {...props} />)
+
+    expect(screen.getByRole("button", { name: "Marcar como saiu para entrega" })).toBeInTheDocument()
   })
 })
 

@@ -86,7 +86,7 @@ export function OrderDetail({
         </Link>
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-semibold tabular-nums">{format(text.title, { number: String(order.number) })}</h1>
-          <OrderStatusBadge status={order.status} messages={messages} />
+          <OrderStatusBadge status={order.status} fulfillment={order.fulfillment} messages={messages} />
         </div>
         <p className="text-muted-foreground text-sm">{format(text.placedAt, { date: when(order.placedAt) })}</p>
         <OrderStatusActions
@@ -123,7 +123,7 @@ export function OrderDetail({
             linkComponent={Link}
             messages={messages}
           />
-          <OrderHistory events={order.events} when={when} messages={messages} />
+          <OrderHistory events={order.events} fulfillment={order.fulfillment} when={when} messages={messages} />
         </div>
       </div>
     </div>
