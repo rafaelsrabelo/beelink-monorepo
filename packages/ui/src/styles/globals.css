@@ -430,6 +430,18 @@
   html:has([data-shop-notice]:not(:focus-within)) {
     scroll-padding-bottom: var(--shop-notice-height, 0px);
   }
+  /*
+   * At the page's end the notice rests over room the footer keeps for it, in the footer's own colour,
+   * and covers none of its lines. Laid after the shop's pages, it would otherwise rest on a strip of
+   * its own under the footer, painted by nothing but the page's background. Without a footer — a page
+   * with no chrome — it keeps that strip: rising over the page's last button would cover it.
+   */
+  html:has([data-shop-notice]) [data-shop-footer] {
+    padding-bottom: var(--shop-notice-height, 0px);
+  }
+  html:has([data-shop-footer]) [data-shop-notice] {
+    margin-top: calc(-1 * var(--shop-notice-height, 0px));
+  }
 }
 /**
  * A row that scrolls sideways without the bar underneath it.

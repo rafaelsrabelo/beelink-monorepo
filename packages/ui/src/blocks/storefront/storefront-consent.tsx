@@ -42,8 +42,9 @@ const CHOICE =
  *
  * A card in the shop's own header colours, standing at the foot of the screen. Sticky and not fixed,
  * and laid after the shop's pages (`StorefrontConsentGate`): it follows the screen while the page
- * scrolls, and at the page's end it rests in its own place, under the footer — so the checkout's last
- * button and the footer's last line are never left behind it. On a phone's product page it stands on
+ * scrolls, and at the page's end it rests over room the footer keeps for it, in the footer's colour
+ * (`data-shop-footer`, `globals.css`) — so the checkout's last button and the footer's last line are
+ * never left behind it, and no strip of the page's background opens under the footer. On a phone's product page it stands on
  * the buy bar rather than over it, by the height the bar says it has (`--shop-buy-bar-height`).
  *
  * Not a dialog: a named region a keyboard walks into and out of, which traps nothing, over a shop that

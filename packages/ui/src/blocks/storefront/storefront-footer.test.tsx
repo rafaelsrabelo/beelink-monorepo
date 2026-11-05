@@ -12,6 +12,13 @@ function renderFooter(overrides: Partial<StorefrontFooterProps> = {}) {
 }
 
 describe("StorefrontFooter", () => {
+  /** The cookie notice rests over room this footer keeps for it at the page's end (`globals.css`), never on a strip of its own. */
+  it("marks itself as where the cookie notice rests", () => {
+    const { container } = renderFooter()
+
+    expect(container.querySelector("footer")).toHaveAttribute("data-shop-footer")
+  })
+
   it("lets the logo stand in for the name, and say it", () => {
     renderFooter({ logoUrl: "https://cdn/logo.png" })
     const footer = screen.getByRole("contentinfo")
