@@ -4,6 +4,9 @@ import type { ReactNode } from "react"
 // Libs
 import { HeartIcon } from "lucide-react"
 
+// UI
+import { productImageOf } from "@harness-monorepo/ui/lib/product-image"
+
 // Locales
 import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
@@ -65,7 +68,7 @@ export function StorefrontFavoriteCard({
     <article className="relative flex h-full flex-col overflow-hidden rounded-xl border border-shop-line bg-shop-background">
       <div className="relative aspect-[259/190] w-full overflow-hidden bg-shop-placeholder">
         {/* Decorative: the name right under it says what it is. */}
-        {imageUrl ? <img src={imageUrl} alt="" loading="lazy" className="size-full object-cover" /> : <div className="flex size-full items-center justify-center text-xs text-shop-muted">{text.noPhoto}</div>}
+        <img src={productImageOf(imageUrl)} alt="" loading="lazy" className="size-full object-cover" />
 
         <form method="post" action={remove.action} className="absolute top-2.5 right-2.5 z-10">
           {Object.entries(remove.fields).map(([field, value]) => (

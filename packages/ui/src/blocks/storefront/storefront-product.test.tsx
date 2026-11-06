@@ -111,10 +111,10 @@ describe("StorefrontProductDetail", () => {
     expect(screen.getByRole("button", { name: "Ampliar foto 1 de 1" })).toBeInTheDocument()
   })
 
-  it("says so plainly when there is no photograph at all", () => {
-    renderProduct({ images: [] })
+  it("draws bee-link's picture when there is no photograph at all", () => {
+    const { container } = renderProduct({ images: [] })
 
-    expect(screen.getByText("Sem foto")).toBeInTheDocument()
+    expect(container.querySelector('img[src="/brand/product-placeholder.jpg"]')).toBeInTheDocument()
   })
 
   it("offers the order button only when the shop has a WhatsApp", () => {

@@ -66,8 +66,8 @@ export function blockerOf(
 }
 
 /**
- * What the reader found, for the shopkeeper to correct before anything is created. Every row is
- * a draft: nothing here is on the shop window until it gets a photo and is published.
+ * What the reader found, for the shopkeeper to correct before anything is created. What is
+ * imported goes on sale at once, so this is the last look before a customer's.
  */
 export function ProductImportReview({
   rows,

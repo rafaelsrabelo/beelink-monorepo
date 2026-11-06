@@ -1,6 +1,9 @@
 // React
 import { useId } from "react"
 
+// UI
+import { productImageOf } from "@harness-monorepo/ui/lib/product-image"
+
 // Locales
 import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
@@ -65,7 +68,7 @@ export function StorefrontFavoritesRail({ items, total, dropped, allHref, locale
             <Link href={item.href} className="group flex flex-col gap-1.5">
               <span className="aspect-square overflow-hidden rounded-xl bg-shop-placeholder">
                 {/* Decorative: the name under it says what it is. */}
-                {item.imageUrl ? <img src={item.imageUrl} alt="" loading="lazy" className="size-full object-cover" /> : null}
+                <img src={productImageOf(item.imageUrl)} alt="" loading="lazy" className="size-full object-cover" />
               </span>
               <span className="line-clamp-2 text-sm font-medium group-hover:underline">{item.name}</span>
               <span className="text-sm font-bold">{formatCents(item.priceCents, locale, currency)}</span>

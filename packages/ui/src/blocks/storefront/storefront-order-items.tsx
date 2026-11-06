@@ -1,6 +1,9 @@
 // React
 import type { ReactNode } from "react"
 
+// UI
+import { productImageOf } from "@harness-monorepo/ui/lib/product-image"
+
 // Locales
 import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
@@ -41,12 +44,8 @@ export function StorefrontOrderItems({ items, count, actions, linkComponent: Lin
       <ul className="flex flex-col gap-3">
         {items.map((item, index) => (
           <li key={`${item.name}-${index}`} className="flex gap-3">
-            {item.imageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element -- the shop's own photo, sized by the line
-              <img src={item.imageUrl} alt="" className="size-16 shrink-0 rounded-[10px] border border-shop-line object-cover" />
-            ) : (
-              <span aria-hidden="true" className="size-16 shrink-0 rounded-[10px] bg-shop-fill" />
-            )}
+            {/* eslint-disable-next-line @next/next/no-img-element -- the shop's own photo, sized by the line */}
+            <img src={productImageOf(item.imageUrl)} alt="" className="size-16 shrink-0 rounded-[10px] border border-shop-line object-cover" />
             <div className="flex min-w-0 grow flex-col gap-0.5">
               {item.href ? (
                 <Link href={item.href} className="text-sm hover:underline">

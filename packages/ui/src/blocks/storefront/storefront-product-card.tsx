@@ -5,6 +5,7 @@ import type { ReactNode } from "react"
 import type { StorefrontInstallmentTerms } from "@harness-monorepo/ui/lib/installments"
 import { optionCountOf } from "@harness-monorepo/ui/lib/option-count"
 import { cn } from "@harness-monorepo/ui/lib/utils"
+import { productImageOf } from "@harness-monorepo/ui/lib/product-image"
 
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
@@ -93,7 +94,6 @@ export function StorefrontProductCard({
   linkComponent: Link = AnchorLink,
   messages = defaultMessages,
 }: StorefrontProductCardProps) {
-  const text = messages.storefront
   // What the visitor will choose on the product's page, said before they get there.
   const options = optionCountOf(product.optionSummary, locale)
 
@@ -105,7 +105,7 @@ export function StorefrontProductCard({
       <Link href={href} className="relative flex h-full flex-col gap-1.5 text-shop-on-background focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-shop-primary-ink">
         <span className={cn("block overflow-hidden rounded-[12px] bg-shop-placeholder", COMPACT_PHOTO)}>
           {/* Decorative, as on the full card: the name right under it says what it is. */}
-          {product.imageUrl ? <img src={product.imageUrl} alt="" loading="lazy" decoding="async" className="size-full object-cover" /> : null}
+          <img src={productImageOf(product.imageUrl)} alt="" loading="lazy" decoding="async" className="size-full object-cover" />
         </span>
         <span className="line-clamp-2 text-[14px] leading-[1.35] text-shop-primary-ink">{product.name}</span>
         {showPrice ? (
@@ -134,19 +134,15 @@ export function StorefrontProductCard({
       <div className="relative aspect-[259/230] w-full overflow-hidden bg-shop-placeholder">
         {product.imageUrls && product.imageUrls.length > 1 ? (
           <StorefrontCardPhotos urls={product.imageUrls} href={href} inRail={inRail} />
-        ) : product.imageUrl ? (
+        ) : (
           <img
-            src={product.imageUrl}
+            src={productImageOf(product.imageUrl)}
             // Decorative on purpose: the title sits right below, so naming the photograph after
             // the product makes a screen reader read the same name twice per card.
             alt=""
             loading="lazy"
             className="size-full object-cover"
           />
-        ) : (
-          // A product with no photo yet still has a name and a price; an empty frame says so
-          // without pretending an image failed to load.
-          <div className="flex size-full items-center justify-center text-xs text-shop-muted">{text.noPhoto}</div>
         )}
         {/* The saving over the photo's left corner — the right one is the heart's — and never without a real one. */}
         {showBadge ? (

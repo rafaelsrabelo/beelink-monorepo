@@ -3,8 +3,8 @@
  *
  * Two steps, on purpose. The read (`POST /stores/:slug/products/import/extract`) writes nothing: it
  * answers drafts the shopkeeper reviews. The import (`POST /stores/:slug/products/import`) creates
- * what they confirmed, as drafts of the catalogue (`DRAFT`), in one transaction. A price is the
- * field a reader gets wrong most often, and a person looks at every one before it is a product.
+ * what they confirmed, on sale (`ACTIVE`), in one transaction. A price is the field a reader gets
+ * wrong most often, and a person looks at every one before it is a product.
  */
 
 /** One value of an option as the document gives it: "Morango", or "500 ml" with its own price. */
@@ -58,7 +58,8 @@ export interface ProductImportOptionPayload {
 }
 
 /**
- * One product the shopkeeper confirmed. It is created as a draft, with no photo. Its name makes its
+ * One product the shopkeeper confirmed. It is created on sale, with no photo of its own — the shop
+ * window draws bee-link's picture until it has one. Its name makes its
  * address, and a name the shop already has — or that another item of the same import has — is
  * refused with `PRODUCT_SLUG_TAKEN`, as the editor refuses it.
  */
@@ -82,7 +83,7 @@ export interface ProductImportPayload {
 }
 
 export interface ProductImportResult {
-  /** The products created, in the order sent. Every one is a draft. */
+  /** The products created, in the order sent. Every one is on sale. */
   productIds: string[];
   categoriesCreated: number;
 }

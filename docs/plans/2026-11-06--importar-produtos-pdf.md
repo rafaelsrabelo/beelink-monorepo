@@ -92,3 +92,19 @@ criaria exatamente isso. O item 6 passa a ser:
 Para a revisão saber disso enquanto o lojista renomeia, a leitura devolve também os endereços que os produtos
 da loja já usam (`takenSlugs`). Categorias continuam ganhando número quando o endereço já existe, porque
 nenhuma regra do produto pede nome único de categoria.
+
+## Adendo, 06/11/2026: entra à venda, e o produto sem foto ganha a imagem do bee-link
+
+Rafael, depois de usar: "por que os produtos ficam em rascunho? produto é obrigado a ter foto? se não tiver foto,
+cadastra com uma foto padrão". Foto nunca foi obrigatória: o rascunho era cautela deste plano. Decidido com ele:
+
+- **A importação cria os produtos como Ativo** (`ACTIVE`), não mais como rascunho. A revisão continua sendo o
+  ponto onde o lojista confere antes de criar. Ao terminar, o painel volta para a lista inteira, não mais
+  filtrada em rascunhos.
+- **Um produto sem foto aparece com uma imagem padrão do bee-link**, a mesma para todas as lojas: a que o
+  Rafael mandou, reduzida a 640×640 e 31 KB, em `apps/web/public/brand/product-placeholder.jpg`. Ela é desenhada
+  na hora de exibir, em todo lugar onde vai a foto de um produto (vitrine, página do produto, favoritos, busca,
+  destaque, carrinho, pedidos, avaliação, lista do painel, seletor de produto do pedido), e **nunca é gravada no
+  produto**: a primeira foto de verdade toma o lugar dela em toda parte. O texto "Sem foto" sai.
+- **Fora do escopo:** cada loja escolher a própria imagem padrão (pediria um campo novo na loja); a imagem de
+  compartilhamento (Open Graph) de um produto sem foto.

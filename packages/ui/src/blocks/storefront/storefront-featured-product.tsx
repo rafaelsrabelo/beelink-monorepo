@@ -4,6 +4,7 @@ import type { ReactNode } from "react"
 // UI
 import type { StorefrontInstallmentTerms } from "@harness-monorepo/ui/lib/installments"
 import { cn } from "@harness-monorepo/ui/lib/utils"
+import { productImageOf } from "@harness-monorepo/ui/lib/product-image"
 
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
@@ -71,11 +72,7 @@ export function StorefrontFeaturedProduct({
   return (
     <div className={cn("grid items-center gap-6", large ? "mx-auto w-full max-w-4xl" : SIDE_BY_SIDE[span], className)}>
       <Link href={product.href} tabIndex={-1} aria-hidden="true" className="relative block overflow-hidden rounded-2xl bg-shop-placeholder">
-        {product.imageUrl ? (
-          <img src={product.imageUrl} alt="" className={cn("w-full object-cover", large ? "aspect-[16/9]" : "aspect-square")} />
-        ) : (
-          <span className={cn("block w-full", large ? "aspect-[16/9]" : "aspect-square")} />
-        )}
+        <img src={productImageOf(product.imageUrl)} alt="" className={cn("w-full object-cover", large ? "aspect-[16/9]" : "aspect-square")} />
         <StorefrontDiscountBadge
           priceCents={product.priceCents}
           compareAtPriceCents={product.compareAtPriceCents}

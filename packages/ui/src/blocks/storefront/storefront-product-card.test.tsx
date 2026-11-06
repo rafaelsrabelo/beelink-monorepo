@@ -52,10 +52,10 @@ describe("StorefrontProductCard", () => {
     expect(screen.getByText(/249,00/).tagName).toBe("S")
   })
 
-  it("says so plainly when a product has no photograph yet, and hides the saving when asked", () => {
-    renderCard({ product: { ...product, imageUrl: null }, showBadge: false })
+  it("draws bee-link's picture for a product with no photograph yet, and hides the saving when asked", () => {
+    const { container } = renderCard({ product: { ...product, imageUrl: null }, showBadge: false })
 
-    expect(screen.getByText("Sem foto")).toBeInTheDocument()
+    expect(container.querySelector("img")).toHaveAttribute("src", "/brand/product-placeholder.jpg")
     expect(screen.queryByText("-24%")).not.toBeInTheDocument()
   })
 

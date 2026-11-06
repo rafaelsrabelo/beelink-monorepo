@@ -34,10 +34,10 @@ describe("StorefrontCatalog", () => {
     expect(within(card).getByText("-24%")).toBeInTheDocument()
   })
 
-  it("says so plainly when a product has no photograph yet", () => {
-    renderCatalog()
+  it("draws bee-link's picture for a product with no photograph yet", () => {
+    const { container } = renderCatalog()
 
-    expect(screen.getByText("Sem foto")).toBeInTheDocument()
+    expect(container.querySelector('img[src="/brand/product-placeholder.jpg"]')).toBeInTheDocument()
   })
 
   /** Someone who filtered into a corner needs the door more than an explanation. */

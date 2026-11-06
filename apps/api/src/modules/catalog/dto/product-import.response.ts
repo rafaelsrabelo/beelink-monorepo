@@ -53,7 +53,7 @@ export class ProductImportExtractionResponse implements ProductImportExtraction 
 }
 
 export class ProductImportResultResponse implements ProductImportResult {
-  @ApiProperty({ type: [String], format: 'uuid', description: 'In the order sent. Every one is a draft.' })
+  @ApiProperty({ type: [String], format: 'uuid', description: 'In the order sent. Every one is on sale.' })
   productIds!: string[];
 
   @ApiProperty({ example: 2 })

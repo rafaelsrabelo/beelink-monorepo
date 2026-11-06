@@ -94,9 +94,9 @@ describe("StorefrontProductGallery", () => {
     expect(screen.getByText("Passe o mouse para ampliar · clique para tela cheia")).toHaveClass("hidden", "[@media(hover:hover)]:block")
   })
 
-  it("says there is no photo yet, and has no accessibility violations", async () => {
+  it("draws bee-link's picture when there is no photo yet, and has no accessibility violations", async () => {
     const { container, rerender } = render(<StorefrontProductGallery images={[]} name="Blusa" />)
-    expect(screen.getByText("Sem foto")).toBeInTheDocument()
+    expect(container.querySelector("img")).toHaveAttribute("src", "/brand/product-placeholder.jpg")
     await expectNoA11yViolations(container)
 
     rerender(<StorefrontProductGallery images={photos(8)} name="Blusa" badge={<span className="absolute">-20%</span>} />)

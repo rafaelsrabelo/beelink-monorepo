@@ -2,7 +2,7 @@
 import { useRef } from "react"
 
 // Libs
-import { ArrowLeftIcon, PackageIcon, PlusIcon } from "lucide-react"
+import { ArrowLeftIcon, PlusIcon } from "lucide-react"
 
 // UI
 import { Badge } from "@harness-monorepo/ui/components/badge"
@@ -10,6 +10,7 @@ import { Button } from "@harness-monorepo/ui/components/button"
 import { Input } from "@harness-monorepo/ui/components/input"
 import { Skeleton } from "@harness-monorepo/ui/components/skeleton"
 import { useFocusOnSwap } from "@harness-monorepo/ui/hooks/use-focus-on-swap"
+import { productImageOf } from "@harness-monorepo/ui/lib/product-image"
 
 // Locales
 import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
@@ -139,13 +140,7 @@ export function OrderProductPicker({
                 onClick={() => onChoose(product)}
                 className="hover:bg-muted focus-visible:ring-ring flex w-full items-center gap-3 px-3 py-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset"
               >
-                {product.imageUrl ? (
-                  <img src={product.imageUrl} alt="" className="size-10 shrink-0 rounded-md object-cover" />
-                ) : (
-                  <span className="bg-muted text-muted-foreground flex size-10 shrink-0 items-center justify-center rounded-md">
-                    <PackageIcon className="size-4" />
-                  </span>
-                )}
+                <img src={productImageOf(product.imageUrl)} alt="" className="size-10 shrink-0 rounded-md object-cover" />
                 <span className="flex min-w-0 flex-col">
                   <span className="truncate text-sm font-medium">{product.name}</span>
                   <span className="text-muted-foreground text-xs tabular-nums">
