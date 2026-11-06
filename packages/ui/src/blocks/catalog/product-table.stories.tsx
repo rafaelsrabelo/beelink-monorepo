@@ -98,6 +98,11 @@ export const CashbackPorProduto: Story = {
   args: { products: products.map((product, index) => ({ ...product, cashbackRateBps: index === 0 ? 500 : null })), onAddCashback: () => {} },
 }
 
+/** Products chosen for a bulk action: a checkbox on each row, and one over the page, here partly ticked. */
+export const ComSelecao: Story = {
+  args: { selection: { ids: new Set(["2", "3"]), onToggle: () => {}, onTogglePage: () => {} } },
+}
+
 export const Vazia: Story = { args: { products: [] } }
 
 /** While a row is being deleted, its two buttons go quiet rather than taking a second click. */

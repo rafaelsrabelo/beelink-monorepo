@@ -1,7 +1,7 @@
 "use client"
 
 // UI
-import { Badge } from "@harness-monorepo/ui/components/badge"
+import { Checkbox } from "@harness-monorepo/ui/components/checkbox"
 import {
   Table,
   TableBody,
@@ -12,13 +12,14 @@ import {
 } from "@harness-monorepo/ui/components/table"
 
 // Locales
-import { defaultLocale, defaultMessages } from "@harness-monorepo/ui/locales/index"
+import { defaultLocale, defaultMessages, format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import { ProductCashbackCell } from "./product-cashback-cell"
 import { ProductNameCell } from "./product-name-cell"
 import { ProductRowActions } from "./product-row-actions"
+import { ProductStatusBadge } from "./product-status-badge"
 
 export interface ProductTableItem {
   id: string
@@ -70,6 +71,15 @@ export interface ProductTableProps {
   locale?: string
   currency?: string
   busyId?: string | null
+  /**
+   * The products chosen for a bulk action. Present, the table grows a checkbox column, with one in
+   * the header for the page on screen; the choice may hold products of other pages.
+   */
+  selection?: {
+    ids: ReadonlySet<string>
+    onToggle: (productId: string, chosen: boolean) => void
+    onTogglePage: (chosen: boolean) => void
+  }
   messages?: UiMessages
 }
 
@@ -95,10 +105,12 @@ export function ProductTable({
   locale = defaultLocale,
   currency = "BRL",
   busyId = null,
+  selection,
   messages = defaultMessages,
 }: ProductTableProps) {
   const text = messages.catalog.products
   const columns = text.table
+  const chosenOnPage = selection ? products.filter((product) => selection.ids.has(product.id)).length : 0
   const money = new Intl.NumberFormat(locale, { style: "currency", currency })
 
   if (!products.length) {
@@ -116,21 +128,6 @@ export function ProductTable({
     return text.originUnset
   }
 
-  const statusOf = (product: ProductTableItem): { label: string; variant: "outline" | "default"; tone?: string } => {
-    // A draft wins over an empty shelf: the shopkeeper's intention is the headline, and a product
-    // that was never published is not "sold out" — nobody could have bought it.
-    if (product.status === "DRAFT") return { label: text.statusDraft, variant: "outline" as const }
-    // Outline with a red border and red text, not the tinted `destructive` pill: that pill puts
-    // the destructive token on a 10% wash of itself and measures 3.99:1, under the 4.5:1 this
-    // package's own axe run enforces — so the one state a shopkeeper is scanning for would have
-    // been the only one they could not read. On the table's white surface the same red is 4.77:1.
-    // (No literal colour here, even in a comment: `web/no-hex-colors` is a raw grep at zero.)
-    if (product.soldOut) {
-      return { label: text.statusSoldOut, variant: "outline" as const, tone: "border-destructive/40 text-destructive" }
-    }
-    return { label: text.statusActive, variant: "default" as const }
-  }
-
   return (
     // A card, like every other slab in this panel. Without a surface of its own the table was the
     // page colour with a border drawn round it, and the screen read as one flat sheet.
@@ -138,6 +135,16 @@ export function ProductTable({
       <Table>
         <TableHeader className="bg-muted/40">
           <TableRow>
+            {selection ? (
+              <TableHead className="w-10">
+                <Checkbox
+                  aria-label={text.bulk.selectPage}
+                  checked={chosenOnPage === products.length}
+                  indeterminate={chosenOnPage > 0 && chosenOnPage < products.length}
+                  onCheckedChange={(chosen) => selection.onTogglePage(chosen)}
+                />
+              </TableHead>
+            ) : null}
             <TableHead className="w-28">{columns.code}</TableHead>
             <TableHead>{columns.name}</TableHead>
             <TableHead className="w-28">{columns.status}</TableHead>
@@ -156,7 +163,16 @@ export function ProductTable({
 
         <TableBody>
           {products.map((product) => (
-            <TableRow key={product.id}>
+            <TableRow key={product.id} data-state={selection?.ids.has(product.id) ? "selected" : undefined}>
+              {selection ? (
+                <TableCell>
+                  <Checkbox
+                    aria-label={format(text.bulk.selectOne, { name: product.name })}
+                    checked={selection.ids.has(product.id)}
+                    onCheckedChange={(chosen) => selection.onToggle(product.id, chosen)}
+                  />
+                </TableCell>
+              ) : null}
               <TableCell className="text-muted-foreground font-mono text-xs tabular-nums">
                 {product.sku ?? columns.noCode}
               </TableCell>
@@ -166,17 +182,7 @@ export function ProductTable({
               </TableCell>
 
               <TableCell>
-                {/*
-                  Three states, because two were a lie on screen: a row marked "Ativo" with a stock
-                  of zero is not on sale, and reading it was what sent a shopkeeper looking for a
-                  bug that was in the words rather than in the shop.
-
-                  `outline` and not `secondary` for a draft: secondary is near-white on this
-                  surface, and a draft is the row a shopkeeper is scanning for.
-                */}
-                <Badge variant={statusOf(product).variant} className={statusOf(product).tone}>
-                  {statusOf(product).label}
-                </Badge>
+                <ProductStatusBadge status={product.status} soldOut={product.soldOut} messages={messages} />
               </TableCell>
 
               {/* "Not tracked" and "none left" are different facts, and the shop that sells made to

@@ -28,6 +28,8 @@ import { ProductPageResponse, ProductResponse } from './dto/catalog.response.js'
 import { ProductDetailResponse } from './dto/variant.response.js';
 import { ListProductsDto } from './dto/list-products.dto.js';
 import { ReorderDto } from './dto/reorder.dto.js';
+import { ProductStatusDto, ProductStatusResponse } from './dto/product-status.dto.js';
+import { ProductStatusService } from './product-status.service.js';
 
 @ApiTags('catalog')
 @ApiBearerAuth()
@@ -39,6 +41,7 @@ export class ProductsController {
   constructor(
     private readonly products: ProductsService,
     private readonly variants: ProductVariantsService,
+    private readonly statuses: ProductStatusService,
   ) {}
 
   @Get()
@@ -79,6 +82,19 @@ export class ProductsController {
     @Body() dto: ReorderDto,
   ): Promise<ProductResponse[]> {
     return this.products.reorder(storeSlug, current.id, dto);
+  }
+
+  // Above `:productId` too, for the same reason.
+  @Put('status')
+  @ApiOperation({ summary: 'Put several products in one status at once — all, or none if one is not the shop\'s' })
+  @ApiOkResponse({ type: ProductStatusResponse })
+  @ApiNotFoundResponse({ description: 'PRODUCT_NOT_FOUND' })
+  setStatus(
+    @Param('storeSlug') storeSlug: string,
+    @CurrentUser() current: AuthenticatedUser,
+    @Body() dto: ProductStatusDto,
+  ): Promise<ProductStatusResponse> {
+    return this.statuses.setStatus(storeSlug, current.id, dto);
   }
 
   @Get(':productId')
