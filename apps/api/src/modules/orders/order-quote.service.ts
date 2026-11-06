@@ -6,6 +6,7 @@ import type { CreateOrderItemInput, OrderQuote, OrderShippingChoice, ShippingQuo
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
+import { Buyers, type Buyer } from '../customers/buyers.service.js';
 import { CustomersService } from '../customers/customers.service.js';
 import { pricedCartOf } from '../delivery/shipping-quote.service.js';
 import { StoresService } from '../stores/stores.service.js';
@@ -38,6 +39,7 @@ export class OrderQuotes {
     private readonly prisma: PrismaService,
     private readonly stores: StoresService,
     private readonly customers: CustomersService,
+    private readonly buyers: Buyers,
     private readonly shipping: OrderShipping,
   ) {}
 
@@ -52,10 +54,11 @@ export class OrderQuotes {
 
   /**
    * The customer's cart as their order would be priced: a first purchase read from their own
-   * orders, and the coupon they typed, when there is one, held against their own uses.
+   * orders, and the coupon they typed, when there is one, held against their own uses. A purchase
+   * session prices it on its record too, but never with the record's credit: that is the account's.
    */
-  async forCustomer(storeSlug: string, userId: string, dto: CustomerOrderQuoteDto): Promise<OrderQuote> {
-    const { storeId, customerId } = await this.customers.shopperAt(storeSlug, userId);
+  async forCustomer(storeSlug: string, buyer: Buyer, dto: CustomerOrderQuoteDto): Promise<OrderQuote> {
+    const { storeId, customerId, purchaseId } = await this.buyers.at(storeSlug, buyer);
     return this.quote({
       storeId,
       items: dto.items,
@@ -66,7 +69,7 @@ export class OrderQuotes {
       couponCode: dto.couponCode ?? null,
       customer: { id: customerId },
       at: new Date(),
-      cashback: dto.useCashback ? 'MAX' : 'NONE',
+      cashback: dto.useCashback && !purchaseId ? 'MAX' : 'NONE',
       shippingTo: { customerId, addressId: dto.addressId?.toLowerCase() ?? null, choice: dto.shipping },
     });
   }

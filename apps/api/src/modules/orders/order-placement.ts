@@ -65,8 +65,10 @@ export interface Placement {
   /** The shopkeeper registers a sale they already agreed, `ACCEPTED`; a customer's order waits, `RECEIVED`. */
   status: Extract<OrderStatus, 'RECEIVED' | 'ACCEPTED'>;
   actor: Extract<OrderActor, 'SHOPKEEPER' | 'CUSTOMER'>;
-  /** The account behind it. */
-  userId: string;
+  /** The account behind it; null for a purchase session, which has none (plan 2026-11-06--whatsapp-primeiro). */
+  userId: string | null;
+  /** The purchase session that placed it: the one that may read it back. Absent for every other way. */
+  purchaseSessionId?: string | null;
   /**
    * Only what the shop window sells: a product put back in draft is off sale to a shopper. The
    * shopkeeper may still register a sale of one of their own drafts.
@@ -174,6 +176,7 @@ export class OrderPlacement {
           storeId,
           number,
           customerId,
+          ...(placement.purchaseSessionId ? { purchaseSessionId: placement.purchaseSessionId } : {}),
           status,
           fulfillment: placement.fulfillment,
           paymentMethod: placement.paymentMethod,

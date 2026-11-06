@@ -22,7 +22,8 @@ import { env } from '../../shared/config/env.js';
 import { Public } from '../auth/auth.decorators.js';
 import { OpenWhileLocked } from '../billing/page-lock.decorators.js';
 import { CustomerAuthGuard, type AuthenticatedCustomer } from '../customers/customer-auth.guard.js';
-import { CurrentCustomer } from '../customers/customer.decorators.js';
+import type { Buyer } from '../customers/buyers.service.js';
+import { CurrentBuyer, CurrentCustomer, OpenToPurchase } from '../customers/customer.decorators.js';
 import { CustomerOrdersService } from './customer-orders.service.js';
 import { CustomerOrderPageResponse, CustomerOrderResponse, CustomerReorderResponse, ListCustomerOrdersDto, PlaceCustomerOrderDto } from './dto/customer-order.dto.js';
 import { CustomerOrderQuoteDto, OrderQuoteResponse } from './dto/order-quote.dto.js';
@@ -73,15 +74,16 @@ export class CustomerOrdersController {
   }
 
   @Get(':number')
+  @OpenToPurchase()
   @OpenWhileLocked()
   @ApiOperation({ summary: "One of the shopper's orders: its lines, totals, address, payment and timeline" })
   @ApiOkResponse({ type: CustomerOrderResponse })
   get(
     @Param('storeSlug') storeSlug: string,
-    @CurrentCustomer() customer: AuthenticatedCustomer,
+    @CurrentBuyer() buyer: Buyer,
     @Param('number', OrderNumberPipe) number: number,
   ): Promise<CustomerOrder> {
-    return this.orders.get(storeSlug, customer.userId, number);
+    return this.orders.get(storeSlug, buyer, number);
   }
 
   @Get(':number/reorder')
@@ -110,17 +112,19 @@ export class CustomerOrdersController {
   }
 
   @Post('quote')
+  @OpenToPurchase()
   @RouteConfig({ rateLimit: quoteRateLimit })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "The cart as the shopper's order would be priced, and whether the coupon they typed is taken — with the reason when it is not" })
   @ApiOkResponse({ type: OrderQuoteResponse })
   @ApiBadRequestResponse({ description: 'ORDER_VARIANT_INVALID · ORDER_ITEM_DUPLICATE · ORDER_TOTAL_TOO_LARGE' })
   @ApiTooManyRequestsResponse({ description: 'Too many quotes from this address' })
-  quote(@Param('storeSlug') storeSlug: string, @CurrentCustomer() customer: AuthenticatedCustomer, @Body() dto: CustomerOrderQuoteDto): Promise<OrderQuote> {
-    return this.quotes.forCustomer(storeSlug, customer.userId, dto);
+  quote(@Param('storeSlug') storeSlug: string, @CurrentBuyer() buyer: Buyer, @Body() dto: CustomerOrderQuoteDto): Promise<OrderQuote> {
+    return this.quotes.forCustomer(storeSlug, buyer, dto);
   }
 
   @Post()
+  @OpenToPurchase()
   @RouteConfig({ rateLimit })
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: "Place the cart as the shopper's order; it starts received, numbered and priced here — and, paid online, charged at the shop's Asaas account once it is written" })
@@ -132,9 +136,9 @@ export class CustomerOrdersController {
   @ApiTooManyRequestsResponse({ description: 'Too many orders from this address' })
   place(
     @Param('storeSlug') storeSlug: string,
-    @CurrentCustomer() customer: AuthenticatedCustomer,
+    @CurrentBuyer() buyer: Buyer,
     @Body() dto: PlaceCustomerOrderDto,
   ): Promise<CustomerOrder> {
-    return this.orders.place(storeSlug, customer.userId, dto);
+    return this.orders.place(storeSlug, buyer, dto);
   }
 }

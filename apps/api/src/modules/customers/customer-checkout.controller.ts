@@ -4,7 +4,7 @@ import { RouteConfig } from '@nestjs/platform-fastify';
 import { ApiAcceptedResponse, ApiBadRequestResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags, ApiTooManyRequestsResponse } from '@nestjs/swagger';
 
 // Types
-import type { AuthSession, CustomerCheckoutAnswer } from '@harness-monorepo/contracts';
+import type { AuthSession, CustomerCheckoutAnswer, CustomerCheckoutPhoneAnswer } from '@harness-monorepo/contracts';
 
 // App
 import { env } from '../../shared/config/env.js';
@@ -12,7 +12,8 @@ import { Public } from '../auth/auth.decorators.js';
 import { EmailDto } from '../auth/dto/auth.dto.js';
 import { AuthSessionResponse } from '../auth/dto/auth.response.js';
 import { CustomerCheckoutService } from './customer-checkout.service.js';
-import { CustomerCheckoutAnswerResponse, CustomerCheckoutCodeDto, CustomerCheckoutDto } from './dto/customer-checkout.dto.js';
+import { CustomerPurchaseService } from './customer-purchase.service.js';
+import { CustomerCheckoutAnswerResponse, CustomerCheckoutCodeDto, CustomerCheckoutDto, CustomerCheckoutPhoneAnswerResponse, CustomerCheckoutPhoneDto } from './dto/customer-checkout.dto.js';
 
 /** Keyed by IP, as the account door is: it opens accounts and answers whether an e-mail has one. */
 const rateLimit = { max: env.AUTH_RATE_LIMIT_MAX, timeWindow: env.AUTH_RATE_LIMIT_WINDOW };
@@ -28,7 +29,20 @@ const rateLimit = { max: env.AUTH_RATE_LIMIT_MAX, timeWindow: env.AUTH_RATE_LIMI
 @Public()
 @Controller('stores/:storeSlug/customer/checkout')
 export class CustomerCheckoutController {
-  constructor(private readonly checkout: CustomerCheckoutService) {}
+  constructor(
+    private readonly checkout: CustomerCheckoutService,
+    private readonly purchases: CustomerPurchaseService,
+  ) {}
+
+  @Post('phone')
+  @HttpCode(HttpStatus.OK)
+  @RouteConfig({ rateLimit })
+  @ApiOperation({ summary: 'The WhatsApp first: one the shop knows goes on with a purchase session on its record; any other is asked a name and an e-mail' })
+  @ApiOkResponse({ type: CustomerCheckoutPhoneAnswerResponse })
+  @ApiBadRequestResponse({ description: 'A WhatsApp that is not one' })
+  phone(@Param('storeSlug') storeSlug: string, @Body() dto: CustomerCheckoutPhoneDto): Promise<CustomerCheckoutPhoneAnswer> {
+    return this.purchases.byPhone(storeSlug, dto.phone);
+  }
 
   @Post()
   @HttpCode(HttpStatus.OK)

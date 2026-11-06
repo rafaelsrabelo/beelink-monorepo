@@ -6,7 +6,7 @@ import { Transform } from 'class-transformer';
 import { IsString, Matches, MaxLength, MinLength } from 'class-validator';
 
 // Types
-import type { CustomerCheckoutCodePayload, CustomerCheckoutPayload } from '@harness-monorepo/contracts';
+import type { CustomerCheckoutCodePayload, CustomerCheckoutPayload, CustomerCheckoutPhonePayload } from '@harness-monorepo/contracts';
 
 // App
 import { EmailDto } from '../../auth/dto/auth.dto.js';
@@ -45,4 +45,37 @@ export class CustomerCheckoutAnswerResponse {
 
   @ApiPropertyOptional({ type: AuthSessionResponse })
   session?: AuthSessionResponse;
+}
+
+/** The checkout's first question: the WhatsApp, as the profile keeps it. */
+export class CustomerCheckoutPhoneDto implements CustomerCheckoutPhonePayload {
+  @ApiProperty({ example: '(11) 99999-8888', description: 'Any way a person writes it; compared as a WhatsApp link wants it.' })
+  @normaliseWhatsapp
+  @Matches(/^\d{12,15}$/)
+  phone!: string;
+}
+
+/** The number's answer, for Swagger: `purchase` with `RECOGNIZED`, nothing with `NEW`. */
+export class PurchaseSessionResponse {
+  @ApiProperty() accessToken!: string;
+  @ApiProperty({ description: 'ISO-8601; two hours, not renewed' }) accessTokenExpiresAt!: string;
+}
+
+export class CustomerCheckoutPhoneAnswerResponse {
+  @ApiProperty({ enum: ['RECOGNIZED', 'NEW'] })
+  kind!: 'RECOGNIZED' | 'NEW';
+
+  @ApiPropertyOptional({ type: PurchaseSessionResponse })
+  purchase?: PurchaseSessionResponse;
+}
+
+export class CustomerPurchaseAddressResponse {
+  @ApiProperty() id!: string;
+  @ApiProperty({ example: 'Rua Tib•••, 12•• — Fortaleza/CE' }) line!: string;
+  @ApiProperty() isDefault!: boolean;
+}
+
+export class CustomerPurchaseResponse {
+  @ApiProperty({ type: [CustomerPurchaseAddressResponse] }) addresses!: CustomerPurchaseAddressResponse[];
+  @ApiProperty() expiresAt!: string;
 }

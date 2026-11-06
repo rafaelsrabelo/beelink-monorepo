@@ -7,7 +7,7 @@ import type { CouponModel } from '../../generated/prisma/models.js';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
-import { CustomersService } from '../customers/customers.service.js';
+import { Buyers, type Buyer } from '../customers/buyers.service.js';
 import { couponRefusalOf, couponStandingRefusalOf, type CouponStanding } from '../promotions/coupon-verdict.js';
 import { customerUsesOf, firstPurchaseOf, runningPromotions } from '../promotions/order-discounts.js';
 import { couponBenefitOf, firstOrderOfferOf, shownCoupons } from '../promotions/shop-offers.js';
@@ -38,12 +38,12 @@ interface Candidate {
 export class CustomerOffersReader {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly customers: CustomersService,
+    private readonly buyers: Buyers,
     private readonly quotes: OrderQuotes,
   ) {}
 
-  async forCustomer(storeSlug: string, userId: string, dto: CustomerOffersDto): Promise<CustomerOffers> {
-    const { storeId, customerId } = await this.customers.shopperAt(storeSlug, userId);
+  async forCustomer(storeSlug: string, buyer: Buyer, dto: CustomerOffersDto): Promise<CustomerOffers> {
+    const { storeId, customerId } = await this.buyers.at(storeSlug, buyer);
     const now = new Date();
     const [firstPurchase, shown] = await Promise.all([firstPurchaseOf(this.prisma, customerId, false), shownCoupons(this.prisma, storeId, now, this.prisma.coupon.fields.maxUses)]);
 
