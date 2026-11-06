@@ -30,7 +30,7 @@ import { purchaseOf, purchaseOrderOf } from "@/lib/purchase"
 import { fullMomentOf, orderHandoverOf, orderHistoryOf, orderItemsOf, orderPaymentOf, orderPlacedLineOf, orderStatusViewOf, orderTrackingOf } from "@/lib/order-page-view"
 import { reorderActionOf } from "@/lib/reorder-view"
 import { shopShareOf } from "@/lib/shop-share"
-import { shopperAt } from "@/lib/shopper"
+import { purchaseAt, shopperAt } from "@/lib/shopper"
 import { siteOrigin } from "@/lib/site-origin"
 import { navigationAt, shopAt } from "@/lib/storefront-data"
 import { accountOrderNumberOf, BACK_KEY, paramOf, PAYMENT_KEY, RECEIPT_KEY, sectionOf, storefrontRoutes } from "@/lib/storefront-routes"
@@ -92,8 +92,11 @@ export async function OrderPage({ query, ...params }: OrderPageProps) {
   const paying = !receipt && paramOf(query[PAYMENT_KEY]) === "1"
   const here = routes.accountOrder(number, { receipt, payment: paying })
   const shopper = await shopperAt(params.slug)
-  // Theirs alone: a visitor signs in and comes back to this very order.
-  if (!shopper) redirect(routes.signIn({ back: here }) as Parameters<typeof redirect>[0])
+  // Or a visitor's purchase session (P0), which reads the orders it placed — the API answers no other.
+  const visitor = shopper ? null : await purchaseAt(params.slug)
+  // Theirs alone: anyone else signs in and comes back to this very order.
+  if (!shopper && !visitor) redirect(routes.signIn({ back: here }) as Parameters<typeof redirect>[0])
+  const customerName = shopper?.name ?? visitor?.name ?? ""
 
   const [{ ui }, { categories, onSale }, read] = await Promise.all([getMessages(), navigationAt(params.slug), customerOrderAt(params.slug, number)])
   if (read.status === "missing") notFound()
@@ -107,12 +110,17 @@ export async function OrderPage({ query, ...params }: OrderPageProps) {
   const header = (extra: Partial<Parameters<typeof StorefrontOrderHeader>[0]> = {}) => (
     <StorefrontOrderHeader
       number={number}
-      trail={[
-        { label: ui.storefront.account, href: routes.account() },
-        { label: ui.storefront.accountOrders, href: routes.accountTab("orders") },
-      ]}
+      // A visitor has no account to go back through: the shop is where they came from.
+      trail={
+        shopper
+          ? [
+              { label: ui.storefront.account, href: routes.account() },
+              { label: ui.storefront.accountOrders, href: routes.accountTab("orders") },
+            ]
+          : []
+      }
       homeHref={routes.home}
-      backHref={routes.accountTab("orders")}
+      backHref={shopper ? routes.accountTab("orders") : routes.home}
       linkComponent={AppLink}
       messages={ui}
       {...extra}
@@ -152,7 +160,7 @@ export async function OrderPage({ query, ...params }: OrderPageProps) {
         shop={shop}
         number={order.number}
         placedOn={fullMomentOf(order.placedAt, context.locale)}
-        customer={shopper.name}
+        customer={customerName}
         handover={handover}
         items={items}
         {...payment}
@@ -173,7 +181,8 @@ export async function OrderPage({ query, ...params }: OrderPageProps) {
           placed: orderPlacedLineOf(order, context),
           receiptHref: cancelled ? undefined : routes.accountOrder(order.number, { receipt: true }),
           // Talking to the shop while it is on its way (K3), and the cancel while received. Buying again sits under the lines.
-          actions: isOrderInProgress(order.status) ? (
+          // A visitor's session reaches neither the order's conversation nor its cancel: those are the account's.
+          actions: shopper && isOrderInProgress(order.status) ? (
             <>
               <OrderTalkLive number={order.number} href={routes.accountConversation(order.number)} messages={ui} />
               {orderActionOf(order.status, order.payment) === "cancel" ? <OrderCancelLive slug={store.slug} number={order.number} messages={ui} /> : null}
@@ -194,7 +203,7 @@ export async function OrderPage({ query, ...params }: OrderPageProps) {
             <StorefrontOrderItems
               items={items}
               count={count}
-              actions={orderActionOf(order.status) === "reorder" ? <StorefrontReorderButton action={reorderActionOf(store.slug, order.number)} variant="all" messages={ui} /> : undefined}
+              actions={shopper && orderActionOf(order.status) === "reorder" ? <StorefrontReorderButton action={reorderActionOf(store.slug, order.number)} variant="all" messages={ui} /> : undefined}
               linkComponent={AppLink}
               messages={ui}
             />

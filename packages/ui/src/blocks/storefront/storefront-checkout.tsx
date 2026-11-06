@@ -40,6 +40,11 @@ export interface StorefrontCheckoutCustomer {
   complete: boolean
   /** Where to change them, coming back here after. */
   editHref: string
+  /**
+   * A visitor's "Alterar" (plan 2026-11-06--P0-checkout-sem-codigo): a form that ends their purchase
+   * session and asks again, in place of `editHref` — a post, never a link a prefetch could follow.
+   */
+  editAction?: { action: string; hidden: Readonly<Record<string, string>> } | null
   /** Their saved addresses a delivery can go to, the default first. */
   addresses: readonly StorefrontCheckoutAddress[]
   /** Where they add an address, coming back here after: what stands without `addressForm`. */

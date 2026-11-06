@@ -22,13 +22,14 @@ import { useCart } from "./cart-provider"
 import { useCartCheckout } from "./use-cart-checkout"
 import { useCartOrder } from "./use-cart-order"
 import { CHECKOUT_ANCHOR, useCheckoutAddressForm } from "./use-checkout-address-form"
-import { useCheckoutIdentity } from "./use-checkout-identity"
+import { checkoutBackOf, useCheckoutIdentity } from "./use-checkout-identity"
 import { useCheckoutTracking } from "./use-checkout-tracking"
 import { waysBackWithCoupon } from "@/lib/cart-coupon"
 import { cartViewOf, orderItemsOf, rowKeyOf } from "@/lib/cart-view"
 import { checkoutChannelOf } from "@/lib/checkout-payment"
 import { checkoutRefusalOf, REPRICED, rereadsTheCart } from "@/lib/checkout-refusal"
 import { isReachable } from "@/lib/customer-address"
+import { purchaseProfileOf } from "@/lib/purchase-profile"
 import { ShopperOrderError } from "@/services/storefront/storefront-requests"
 
 export type { StorefrontCartLiveProps } from "./storefront-cart-live.types"
@@ -65,6 +66,7 @@ export function StorefrontCartLive({
   deliverTo = null,
   addressError = null,
   identity = null,
+  purchase = null,
   arrival,
   served = null,
   servedOffers = null,
@@ -75,22 +77,24 @@ export function StorefrontCartLive({
 }: StorefrontCartLiveProps) {
   const text = messages.storefront
   const router = useRouter()
+  // A visitor already identified buys through the same checkout, as a shopper made of what they typed (P0).
+  const buyer = useMemo(() => shopper ?? (purchase ? purchaseProfileOf(purchase) : null), [shopper, purchase])
   const lines = useCart((cart) => cart.lines)
   const setQty = useCart((cart) => cart.setQty)
   const remove = useCart((cart) => cart.remove)
   const clear = useCart((cart) => cart.clear)
-  const order = useCartOrder({ slug, routeWords, shopName, whatsapp, shopper, locale, messages })
+  const order = useCartOrder({ slug, routeWords, shopName, whatsapp, shopper: buyer, locale, messages })
   // What the last press on the button found missing, before anything was sent.
   const [asked, setAsked] = useState<"payment" | "coupon" | "credit" | "shipping" | null>(null)
   const view = useMemo(() => cartViewOf(lines, products), [lines, products])
   const told = useCheckoutTracking(view)
   const byKey = useMemo(() => new Map(view.rows.map((row) => [rowKeyOf(row), row])), [view.rows])
-  const { addresses, choice, setChoice, pricing, offers, shipping, blocked, deliveryIssue, sent: leaving, recipientDocument, offlineMethods, online, nothingToPay, payment } = useCartCheckout({ slug, view, shopper, paymentMethods, paymentOptions, deliverTo, served, servedOffers, arrivedWith: coupon, addressRefused: addressError !== null, locale, messages })
+  const { addresses, choice, setChoice, pricing, offers, shipping, blocked, deliveryIssue, sent: leaving, recipientDocument, offlineMethods, online, nothingToPay, payment } = useCartCheckout({ slug, view, shopper: buyer, paymentMethods, paymentOptions, deliverTo, served, servedOffers, arrivedWith: coupon, addressRefused: addressError !== null, locale, messages })
   const paysOnline = payment?.paymentChannel === "ONLINE"
   // Each way out of the cart that comes back to it — to sign in, to change details, to add an address — takes the coupon along.
   const ways = useMemo(() => waysBackWithCoupon(identityHrefs, pricing.carried), [identityHrefs, pricing.carried])
-  const addressForm = useCheckoutAddressForm({ slug, shopper, cartHref: identityHrefs.cartHref, coupon: pricing.carried, error: addressError, messages })
-  const whoIsBuying = useCheckoutIdentity({ slug, identity: shopper ? null : identity, cartHref: identityHrefs.cartHref, coupon: pricing.carried, signInHref: ways.signInHref, signUpHref: ways.signUpHref, messages })
+  const addressForm = useCheckoutAddressForm({ slug, shopper: buyer, cartHref: identityHrefs.cartHref, coupon: pricing.carried, error: addressError, visitor: !shopper && purchase !== null, messages })
+  const whoIsBuying = useCheckoutIdentity({ slug, identity: buyer ? null : identity, cartHref: identityHrefs.cartHref, coupon: pricing.carried, signInHref: ways.signInHref, signUpHref: ways.signUpHref, messages })
 
   // A line the shop no longer sells is taken out of the cookie once, rather than asked for forever.
   useEffect(() => {
@@ -173,15 +177,18 @@ export function StorefrontCartLive({
         notice={goneOnArrival ? messages.storefront.cartGone : null}
         checkout={
           <>
-            <CartPriceControls pricing={pricing} offers={offers} signedOut={!shopper} signedOutBenefit={signedOutBenefit} disabled={order.pending || view.count === 0} onChange={changed} locale={locale} messages={messages} />
+            <CartPriceControls pricing={pricing} offers={offers} signedOut={!buyer} signedOutBenefit={signedOutBenefit} disabled={order.pending || view.count === 0} onChange={changed} locale={locale} messages={messages} />
             <StorefrontCheckout
               channel={checkoutChannelOf({ offlineMethods, online, nothingToPay }, payment, Boolean(whatsapp))}
               customer={
-                shopper
+                buyer
                   ? {
-                      lines: [shopper.name, shopper.phone].filter((line): line is string => Boolean(line)),
-                      complete: isReachable(shopper),
+                      lines: [buyer.name, buyer.phone].filter((line): line is string => Boolean(line)),
+                      // A visitor gave a WhatsApp, and gives the address in the checkout itself.
+                      complete: shopper ? isReachable(shopper) : true,
                       editHref: ways.editHref,
+                      // A visitor's "Alterar" ends their purchase session and asks again, by a post.
+                      editAction: shopper ? null : { action: `/${slug}/api/customer/checkout/sair`, hidden: { retorno: checkoutBackOf(identityHrefs.cartHref, pricing.carried) } },
                       addresses,
                       addAddressHref: ways.addAddressHref,
                       addressForm,

@@ -568,15 +568,6 @@ export interface UiMessages {
     checkoutIdentityHasAccount: string
     checkoutIdentitySignIn: string
     checkoutIdentityWithPassword: string
-    /** The code e-mailed to an e-mail that already has an account at the shop. `{email}`: where it went. */
-    checkoutCodeTitle: string
-    checkoutCodeSent: string
-    checkoutCodeLabel: string
-    checkoutCodeHint: string
-    checkoutCodeConfirm: string
-    checkoutCodeResend: string
-    checkoutCodeResent: string
-    checkoutCodeOtherEmail: string
     /** The checkout's three steps (2026-11-06). `{step}` and `{total}`: numbers. */
     checkoutStepOf: string
     checkoutStepDelivery: string

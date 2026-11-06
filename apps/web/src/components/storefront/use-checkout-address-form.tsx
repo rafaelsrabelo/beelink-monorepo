@@ -25,6 +25,11 @@ export interface CheckoutAddressFormInput {
   coupon: string | null
   /** Why the address last sent from here was refused, already a sentence; null with none. */
   error: string | null
+  /**
+   * A visitor's purchase session (plan 2026-11-06--P0-checkout-sem-codigo): their one address is kept on
+   * the session, not saved on a record, so the form posts to the checkout's own handler and replaces it.
+   */
+  visitor?: boolean
   messages: UiMessages
 }
 
@@ -35,9 +40,9 @@ export interface CheckoutAddressFormInput {
  * the sentence. Null where a form here could not be saved — nobody signed in, or the addresses
  * already at the API's cap — and the checkout keeps its link to the profile tab, which says so.
  */
-export function useCheckoutAddressForm({ slug, shopper, cartHref, coupon, error, messages }: CheckoutAddressFormInput): StorefrontCheckoutAddressForm | null {
+export function useCheckoutAddressForm({ slug, shopper, cartHref, coupon, error, visitor = false, messages }: CheckoutAddressFormInput): StorefrontCheckoutAddressForm | null {
   const name = shopper?.name ?? null
-  const full = (shopper?.addresses.length ?? 0) >= ADDRESSES_MAX
+  const full = !visitor && (shopper?.addresses.length ?? 0) >= ADDRESSES_MAX
 
   return useMemo(() => {
     if (name === null || full) return null
@@ -49,8 +54,8 @@ export function useCheckoutAddressForm({ slug, shopper, cartHref, coupon, error,
           slug={slug}
           address={BLANK_ADDRESS}
           shopperName={name}
-          action={`/${slug}/api/customer/enderecos/salvar`}
-          hidden={{ retorno: back, formulario: back, [DELIVER_TO_KEY]: "1" }}
+          action={visitor ? `/${slug}/api/customer/checkout/endereco` : `/${slug}/api/customer/enderecos/salvar`}
+          hidden={visitor ? { retorno: back } : { retorno: back, formulario: back, [DELIVER_TO_KEY]: "1" }}
           compact
           autoFocus={autoFocus}
           {...(onCancel ? { onCancel } : {})}
@@ -60,5 +65,5 @@ export function useCheckoutAddressForm({ slug, shopper, cartHref, coupon, error,
         />
       ),
     } satisfies StorefrontCheckoutAddressForm
-  }, [slug, name, full, cartHref, coupon, error, messages])
+  }, [slug, name, full, visitor, cartHref, coupon, error, messages])
 }

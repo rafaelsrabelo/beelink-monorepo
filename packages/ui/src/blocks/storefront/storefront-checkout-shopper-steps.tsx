@@ -110,9 +110,20 @@ export function StorefrontCheckoutShopperSteps({
           </>
         }
         edit={
-          <Link href={customer.editHref} className={LINK}>
-            {text.checkoutStepEdit}
-          </Link>
+          customer.editAction ? (
+            <form action={customer.editAction.action} method="post">
+              {Object.entries(customer.editAction.hidden).map(([name, value]) => (
+                <input key={name} type="hidden" name={name} value={value} />
+              ))}
+              <button type="submit" disabled={pending} className={LINK}>
+                {text.checkoutStepEdit}
+              </button>
+            </form>
+          ) : (
+            <Link href={customer.editHref} className={LINK}>
+              {text.checkoutStepEdit}
+            </Link>
+          )
         }
         messages={messages}
       />

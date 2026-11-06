@@ -16,38 +16,38 @@ import { LEGAL_ROUTES } from "@/lib/legal-routes"
 
 export interface CheckoutIdentityInput {
   slug: string
-  /** Who is buying, as the cart's address left it; null where nobody is asked — a signed-in shopper. */
+  /** Who is buying, as the cart's address left it; null where nobody is asked — a shopper or a visitor already identified. */
   identity: CheckoutIdentityState | null
   /** The cart's own address, as the shop spells it. */
   cartHref: string
-  /** The coupon the summary shows: every way back carries it. */
+  /** The coupon the summary shows: the way back carries it. */
   coupon: string | null
-  /** Signing in and signing up with a password, each coming back to the cart with the coupon. */
+  /** Signing in and signing up, optional, each coming back to the cart with the coupon. */
   signInHref: string
   signUpHref: string
   messages: UiMessages
 }
 
+/** Where every visitor's form lands back: the checkout, with the coupon. */
+export function checkoutBackOf(cartHref: string, coupon: string | null): string {
+  return pathWithCoupon(`${cartHref}#${CHECKOUT_ANCHOR}`, coupon)
+}
+
 /**
- * The checkout's "who is buying" for a visitor (plan 2026-11-05--compra-sem-cadastro), posting to
- * `/[slug]/api/customer/checkout/<step>`, every answer landing back on the checkout (`#finalizar`)
- * with the coupon. Null for a signed-in shopper, who has nothing to say about themselves here.
+ * A visitor's "who is buying" (plan 2026-11-06--P0-checkout-sem-codigo), posting to
+ * `/[slug]/api/customer/checkout/identificar`, which opens their purchase session and lands back on the
+ * checkout (`#finalizar`) with the coupon. Null where nobody is to be asked.
  */
 export function useCheckoutIdentity({ slug, identity, cartHref, coupon, signInHref, signUpHref, messages }: CheckoutIdentityInput): ReactNode {
   return useMemo(() => {
     if (!identity) return null
-    const back = pathWithCoupon(`${cartHref}#${CHECKOUT_ANCHOR}`, coupon)
-    const door = `/${slug}/api/customer/checkout`
     return (
       <StorefrontCheckoutIdentity
-        step={identity.step}
         email={identity.email}
-        actions={{ identify: `${door}/identificar`, code: `${door}/codigo`, resend: `${door}/reenviar` }}
-        hidden={{ retorno: back }}
-        otherEmailHref={back}
+        action={`/${slug}/api/customer/checkout/identificar`}
+        hidden={{ retorno: checkoutBackOf(cartHref, coupon) }}
         hrefs={{ signIn: signInHref, signUp: signUpHref, terms: LEGAL_ROUTES.terms, privacy: LEGAL_ROUTES.privacy }}
         error={identity.error}
-        notice={identity.notice}
         // Inside the checkout's first step, which says "Seus dados" itself.
         headless
         linkComponent={AppLink}

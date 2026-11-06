@@ -2,7 +2,7 @@
 import type { ReactNode } from "react"
 
 // Types
-import type { CustomerProfile, PaymentMethod, PublicProductDetail, StorefrontPaymentOptions, StorefrontRouteWords } from "@harness-monorepo/contracts"
+import type { CustomerProfile, CustomerPurchase, PaymentMethod, PublicProductDetail, StorefrontPaymentOptions, StorefrontRouteWords } from "@harness-monorepo/contracts"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
@@ -37,8 +37,10 @@ export interface StorefrontCartLiveProps {
   identityHrefs: { signInHref: string; signUpHref: string; editHref: string; addAddressHref: string; cartHref: string }
   /** Why the address last sent from the checkout was refused, already a sentence: its form opens again to say it. */
   addressError?: string | null
-  /** A visitor's "who is buying" as the cart's address left it (step, e-mail, what to say); absent, a visitor is sent to sign in, as before. */
+  /** A visitor's "who is buying" as the cart's address left it (the e-mail, what to say); absent, a visitor is sent to sign in, as before. */
   identity?: CheckoutIdentityState | null
+  /** A visitor already identified: their purchase session — what they typed, the address they gave. Null for a shopper or an unidentified visitor. */
+  purchase?: CustomerPurchase | null
   /** An address just saved on the way from this cart, to deliver to; null or not the shopper's, the default. */
   deliverTo?: string | null
   /** What brought the shopper here — an order bought again — said over the cart until an order is sent from it. */
