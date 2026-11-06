@@ -78,3 +78,17 @@ eles são criados, como rascunho e sem foto.
   criados.
 - **Fila em segundo plano.** A leitura leva de 15 a 60 s e roda dentro do pedido. Se cardápios grandes
   passarem do tempo, a próxima fase é um job com aviso no painel.
+
+## Correção, 06/11/2026: nome repetido é recusado, não numerado
+
+O item 6 da Definition of Done estava errado. [docs/product/](../product/README.md#catalogue) diz que o nome de
+um produto é único na loja, para dois produtos com o mesmo nome não confundirem um pedido, e numerar com `-2`
+criaria exatamente isso. O item 6 passa a ser:
+
+6. Um nome que já é de um produto da loja chega à revisão **desmarcado**, com o aviso de que já existe.
+   Marcado de novo, ou repetido entre as linhas marcadas, ele segura a importação até ser renomeado. A API
+   recusa da mesma forma (`409 PRODUCT_SLUG_TAKEN`) e não cria nada.
+
+Para a revisão saber disso enquanto o lojista renomeia, a leitura devolve também os endereços que os produtos
+da loja já usam (`takenSlugs`). Categorias continuam ganhando número quando o endereço já existe, porque
+nenhuma regra do produto pede nome único de categoria.

@@ -47,6 +47,9 @@ export class ProductImportDraftResponse implements ProductImportDraft {
 export class ProductImportExtractionResponse implements ProductImportExtraction {
   @ApiProperty({ type: [ProductImportDraftResponse], minItems: 1 })
   drafts!: ProductImportDraftResponse[];
+
+  @ApiProperty({ type: [String], description: "The addresses the shop's products hold: a row whose name makes one is refused." })
+  takenSlugs!: string[];
 }
 
 export class ProductImportResultResponse implements ProductImportResult {

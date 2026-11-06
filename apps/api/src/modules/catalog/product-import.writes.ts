@@ -18,8 +18,9 @@ export function categoryKeyOf(name: string): string {
 /**
  * The first of `base`, `base-2`, `base-3`… that nothing holds, cut so the suffix fits.
  *
- * Importing the same menu twice is the likeliest way to meet a taken slug, and refusing the whole
- * import over it would leave the shopkeeper renaming rows by hand to find out which.
+ * For a category the import creates, whose name may make a segment another category already holds
+ * under a different name. Never for a product: a product's name is unique in its shop, and a
+ * repeated one is refused for the shopkeeper to rename.
  */
 export function freeSlug(base: string, taken: ReadonlySet<string>, max: number): string {
   const fitted = base.slice(0, max).replace(/-+$/, '');

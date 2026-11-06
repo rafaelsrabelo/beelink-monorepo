@@ -38,6 +38,12 @@ export interface ProductImportDraft {
 /** What the read answers. An empty list is never answered: that is `PRODUCT_IMPORT_UNREADABLE`. */
 export interface ProductImportExtraction {
   drafts: ProductImportDraft[];
+  /**
+   * The addresses the shop's products already hold. A name is unique in a shop, and a row whose
+   * name would take one of these is refused by the import — the review checks it as the
+   * shopkeeper renames, against the segment the name makes.
+   */
+  takenSlugs: string[];
 }
 
 export interface ProductImportValuePayload {
@@ -51,7 +57,11 @@ export interface ProductImportOptionPayload {
   values: ProductImportValuePayload[];
 }
 
-/** One product the shopkeeper confirmed. It is created as a draft, with no photo. */
+/**
+ * One product the shopkeeper confirmed. It is created as a draft, with no photo. Its name makes its
+ * address, and a name the shop already has — or that another item of the same import has — is
+ * refused with `PRODUCT_SLUG_TAKEN`, as the editor refuses it.
+ */
 export interface ProductImportItemPayload {
   name: string;
   description?: string | null;

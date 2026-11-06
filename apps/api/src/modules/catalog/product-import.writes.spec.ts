@@ -2,14 +2,14 @@
 import { importTypeOf } from './product-import.file.js';
 import { categoryKeyOf, freeSlug } from './product-import.writes.js';
 
-describe('freeSlug — a taken address gains a number instead of refusing the import', () => {
+describe('freeSlug — a category the import creates takes the next free address', () => {
   it('answers the base when nothing holds it', () => {
-    expect(freeSlug('dindin-de-coco', new Set(), 120)).toBe('dindin-de-coco');
+    expect(freeSlug('dindins', new Set(), 80)).toBe('dindins');
   });
 
   it('counts up past what is taken, a reserved word included', () => {
-    expect(freeSlug('dindin', new Set(['dindin', 'dindin-2']), 120)).toBe('dindin-3');
-    expect(freeSlug('carrinho', new Set(['carrinho']), 120)).toBe('carrinho-2');
+    expect(freeSlug('dindins', new Set(['dindins', 'dindins-2']), 80)).toBe('dindins-3');
+    expect(freeSlug('carrinho', new Set(['carrinho']), 80)).toBe('carrinho-2');
   });
 
   it('cuts the base so the suffix still fits, without leaving a hyphen before it', () => {

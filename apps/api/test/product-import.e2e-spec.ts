@@ -100,7 +100,7 @@ describe('product import', () => {
       const response = await extract(owner);
 
       expect(response.statusCode).toBe(200);
-      expect(response.json<ProductImportExtraction>()).toEqual({ drafts });
+      expect(response.json<ProductImportExtraction>()).toEqual({ drafts, takenSlugs: [] });
       expect(reader.read).toHaveBeenCalledWith(expect.objectContaining({ type: 'application/pdf' }), ['Picolés']);
       expect(await prisma.product.count()).toBe(0);
     });
@@ -181,17 +181,31 @@ describe('product import', () => {
       expect(gourmet!.priceCents).toBe(400);
     });
 
-    it('gives a name the shop already uses the next free address instead of refusing', async () => {
+    it('tells the review which names the shop already has, and refuses one of them on import', async () => {
       await call('POST', '/api/stores/dindin-da-leia/products', owner, { name: 'Dindin de coco', priceCents: 400 });
+      reader.read.mockResolvedValue({ status: 'read', drafts: [] });
+
+      expect((await extract(owner)).json<ProductImportExtraction>().takenSlugs).toEqual(['dindin-de-coco']);
 
       const response = await commit(owner, [
-        { name: 'Dindin de coco', priceCents: 400 },
+        { name: 'Picolé de uva', priceCents: 500, newCategoryName: 'Picolés' },
         { name: 'Dindin de Coco', priceCents: 450 },
       ]);
 
-      expect(response.statusCode).toBe(201);
-      const slugs = await Promise.all(response.json<ProductImportResult>().productIds.map(async (id) => (await detail(id)).slug));
-      expect(slugs).toEqual(['dindin-de-coco-2', 'dindin-de-coco-3']);
+      expect(response.statusCode).toBe(409);
+      expect(response.json<ApiErrorBody>().errorCode).toBe('PRODUCT_SLUG_TAKEN');
+      expect([await prisma.product.count(), await prisma.productCategory.count()]).toEqual([1, 0]);
+    });
+
+    it('refuses two items of one import with the same name, before writing anything', async () => {
+      const response = await commit(owner, [
+        { name: 'Dindin de coco', priceCents: 400 },
+        { name: 'DINDIN DE COCO', priceCents: 450 },
+      ]);
+
+      expect(response.statusCode).toBe(409);
+      expect(response.json<ApiErrorBody>().errorCode).toBe('PRODUCT_SLUG_TAKEN');
+      expect(await prisma.product.count()).toBe(0);
     });
 
     it('creates nothing when one item is refused', async () => {

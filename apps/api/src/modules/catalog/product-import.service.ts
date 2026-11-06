@@ -1,7 +1,6 @@
 // Nest
 import {
   BadGatewayException,
-  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -17,9 +16,8 @@ import type { ImportFile } from './product-import.reader.js';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
-import { slugify } from '../../shared/slug.js';
 import { StoresService } from '../stores/stores.service.js';
-import { catalogError } from './catalog-slug.service.js';
+import { catalogError, CatalogSlugService } from './catalog-slug.service.js';
 import { CATEGORY_SLUG_MAX_LENGTH, PRODUCT_SLUG_MAX_LENGTH, RESERVED_PATH_SEGMENTS } from './catalog.constants.js';
 import { PRODUCT_IMPORT_TRANSACTION_MS, productImportError } from './product-import.constants.js';
 import { ProductImportReader } from './product-import.reader.js';
@@ -41,6 +39,7 @@ export class ProductImportService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly stores: StoresService,
+    private readonly slugs: CatalogSlugService,
     private readonly reader: ProductImportReader,
   ) {}
 
@@ -56,17 +55,20 @@ export class ProductImportService {
   /** Drafts, and nothing written. The shop's category names go along so the reader reuses them. */
   async extract(storeSlug: string, userId: string, file: ImportFile): Promise<ProductImportExtraction> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
-    const categories = await this.prisma.productCategory.findMany({
-      where: { storeId },
-      select: { name: true },
-      orderBy: [{ position: 'asc' }, { name: 'asc' }],
-    });
+    const [categories, products] = await Promise.all([
+      this.prisma.productCategory.findMany({
+        where: { storeId },
+        select: { name: true },
+        orderBy: [{ position: 'asc' }, { name: 'asc' }],
+      }),
+      this.prisma.product.findMany({ where: { storeId }, select: { slug: true } }),
+    ]);
 
     const outcome = await this.reader.read(file, categories.map((category) => category.name));
 
     switch (outcome.status) {
       case 'read':
-        return { drafts: outcome.drafts };
+        return { drafts: outcome.drafts, takenSlugs: products.map((product) => product.slug) };
       case 'unreadable':
         throw new UnprocessableEntityException(
           productImportError('PRODUCT_IMPORT_UNREADABLE', 'Nothing in that document could be read as a product'),
@@ -87,20 +89,18 @@ export class ProductImportService {
 
     for (const item of dto.products) {
       if (item.option) refuseDuplicateOptions({ options: [item.option] });
-      if (slugify(item.name) === '') {
-        throw new BadRequestException(catalogError('CATALOG_SLUG_EMPTY', `"${item.name}" leaves nothing that can be part of a web address`));
-      }
     }
+    const slugs = this.slugsOf(dto.products);
     await this.assertCategoriesOwned(storeId, dto.products);
 
     try {
-      return await this.prisma.$transaction((tx) => this.write(tx, storeId, dto.products), {
+      return await this.prisma.$transaction((tx) => this.write(tx, storeId, dto.products, slugs), {
         timeout: PRODUCT_IMPORT_TRANSACTION_MS,
       });
     } catch (error) {
       // Another write of the same shop took a segment between the read of the taken ones and this.
       const model = uniqueViolationOn(error);
-      if (model === 'Product') throw new ConflictException(catalogError('PRODUCT_SLUG_TAKEN', 'A product took one of these addresses meanwhile'));
+      if (model === 'Product') throw new ConflictException(catalogError('PRODUCT_SLUG_TAKEN', 'A product took one of these names meanwhile'));
       if (model === 'ProductCategory') {
         throw new ConflictException(catalogError('PRODUCT_CATEGORY_SLUG_TAKEN', 'A category took one of these addresses meanwhile'));
       }
@@ -108,24 +108,39 @@ export class ProductImportService {
     }
   }
 
-  private async write(tx: Db, storeId: string, items: readonly ProductImportItemDto[]): Promise<ProductImportResult> {
-    const resolveCategory = await this.categoryResolver(tx, storeId);
+  /**
+   * Each item's address, as the editor would make it from the name — refusing what it refuses — and
+   * two items that would share one refused here, before anything is written. A name is unique in a
+   * shop (docs/product), so a repeated one is the shopkeeper's to rename, never a number to append.
+   */
+  private slugsOf(items: readonly ProductImportItemDto[]): string[] {
+    const slugs = items.map((item) => this.slugs.resolve(undefined, item.name).slice(0, PRODUCT_SLUG_MAX_LENGTH).replace(/-+$/, ''));
+    const repeated = slugs.findIndex((slug, index) => slugs.indexOf(slug) !== index);
+    if (repeated !== -1) throw this.taken(items[repeated]!.name);
+    return slugs;
+  }
 
-    const reserved = new Set(RESERVED_PATH_SEGMENTS);
-    const takenSlugs = new Set([
-      ...reserved,
-      ...(await tx.product.findMany({ where: { storeId }, select: { slug: true } })).map((row) => row.slug),
-    ]);
+  private taken(name: string): ConflictException {
+    return new ConflictException(catalogError('PRODUCT_SLUG_TAKEN', `"${name}" is already the name of a product of this shop`));
+  }
+
+  private async write(
+    tx: Db,
+    storeId: string,
+    items: readonly ProductImportItemDto[],
+    slugs: readonly string[],
+  ): Promise<ProductImportResult> {
+    const clash = await tx.product.findFirst({ where: { storeId, slug: { in: [...slugs] } }, select: { slug: true } });
+    if (clash) throw this.taken(items[slugs.indexOf(clash.slug)]!.name);
+
+    const resolveCategory = await this.categoryResolver(tx, storeId);
     const last = await tx.product.aggregate({ where: { storeId }, _max: { position: true } });
     const firstPosition = (last._max.position ?? -1) + 1;
 
     const productIds: string[] = [];
     for (const [index, item] of items.entries()) {
-      const slug = freeSlug(slugify(item.name), takenSlugs, PRODUCT_SLUG_MAX_LENGTH);
-      takenSlugs.add(slug);
-
       const categoryId = await resolveCategory(item);
-      productIds.push(await createImportedProduct(tx, item, { storeId, slug, categoryId, position: firstPosition + index }));
+      productIds.push(await createImportedProduct(tx, item, { storeId, slug: slugs[index]!, categoryId, position: firstPosition + index }));
     }
 
     return { productIds, categoriesCreated: resolveCategory.created() };

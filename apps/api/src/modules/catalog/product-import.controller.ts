@@ -99,9 +99,9 @@ export class ProductImportController {
   @Post()
   @ApiOperation({ summary: 'Create the confirmed products as drafts, with their categories and options, all or none' })
   @ApiCreatedResponse({ type: ProductImportResultResponse })
-  @ApiBadRequestResponse({ description: 'PRODUCT_OPTION_DUPLICATE · CATALOG_SLUG_EMPTY · BAD_REQUEST (over 100 products)' })
+  @ApiBadRequestResponse({ description: 'PRODUCT_OPTION_DUPLICATE · CATALOG_SLUG_EMPTY · CATALOG_SLUG_RESERVED · BAD_REQUEST (over 100 products)' })
   @ApiNotFoundResponse({ description: 'PRODUCT_CATEGORY_NOT_FOUND' })
-  @ApiConflictResponse({ description: 'PRODUCT_SLUG_TAKEN · PRODUCT_CATEGORY_SLUG_TAKEN — another write got there first; try again' })
+  @ApiConflictResponse({ description: 'PRODUCT_SLUG_TAKEN — a name the shop or this import already has · PRODUCT_CATEGORY_SLUG_TAKEN' })
   commit(
     @Param('storeSlug') storeSlug: string,
     @CurrentUser() current: AuthenticatedUser,
