@@ -1,6 +1,5 @@
-// Block
-import { maskCpf } from "../landing/landing-courier-masks"
-import { isCpf } from "../landing/landing-courier-schema"
+// UI
+import { isCpf, maskCpf } from "@harness-monorepo/ui/lib/cpf"
 
 const digitsOf = (typed: string) => typed.replace(/\D/g, "")
 

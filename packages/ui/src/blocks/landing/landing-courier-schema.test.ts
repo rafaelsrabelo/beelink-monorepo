@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest"
 import { en, ptBR } from "@harness-monorepo/ui/locales/index"
 
 // Block
-import { createCourierSchema, isCpf, isFullName, isMobile, LANDING_COURIER_FIELDS, missingCourierFields, type LandingCourierValues } from "./landing-courier-schema"
+import { createCourierSchema, isFullName, isMobile, LANDING_COURIER_FIELDS, missingCourierFields, type LandingCourierValues } from "./landing-courier-schema"
 
 const text = ptBR.landing.couriers.form
 const schema = createCourierSchema(text)
@@ -20,25 +20,6 @@ const valid = {
   acceptedTerms: true,
   website: "",
 } satisfies LandingCourierValues
-
-/** The cases of the API's own tests (`shared/http/cpf.spec.ts`, `dto/courier-application.dto.spec.ts`): the two must agree. */
-describe("isCpf", () => {
-  it.each(["52998224725", "529.982.247-25", " 529 982 247 25 ", "11144477735", "111.444.777-35"])("holds for %j, whose two check digits do", (typed) => {
-    expect(isCpf(typed)).toBe(true)
-  })
-
-  it.each([
-    ["a wrong check digit", "529.982.247-26"],
-    ["the other check digit wrong", "52998224724"],
-    ["one digit repeated", "111.111.111-11"],
-    ["too short", "5299822472"],
-    ["too long", "529982247250"],
-    ["a CNPJ", "11.222.333/0001-81"],
-    ["nothing", ""],
-  ])("fails for %s", (_, typed) => {
-    expect(isCpf(typed)).toBe(false)
-  })
-})
 
 describe("isMobile", () => {
   it.each(["(85) 98765-4321", "85987654321", "85 9 8765 4321", "+55 85 98765-4321", "5585987654321", "085 98765-4321", "(55) 99999-8888"])("holds for %j: an area code and nine digits that start with a 9", (typed) => {

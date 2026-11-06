@@ -9,6 +9,7 @@ import { ArrowRightIcon } from "lucide-react"
 import { useForm, useWatch } from "react-hook-form"
 
 // UI
+import { maskCpf } from "@harness-monorepo/ui/lib/cpf"
 import { withParts } from "@harness-monorepo/ui/lib/text-parts"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
@@ -18,7 +19,7 @@ import type { LandingCourierFieldValue, LandingLegalValue, UiMessages } from "@h
 // Block
 import { LandingCourierConsent } from "./landing-courier-consent"
 import { LandingCourierField } from "./landing-courier-field"
-import { maskCpf, maskMobile } from "./landing-courier-masks"
+import { maskMobile } from "./landing-courier-masks"
 import { createCourierSchema, missingCourierFields, type LandingCourierValues } from "./landing-courier-schema"
 import { LandingCourierSent } from "./landing-courier-sent"
 import { LandingCourierVehicles } from "./landing-courier-vehicles"
