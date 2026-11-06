@@ -2718,6 +2718,7 @@ export const en: UiMessages = {
         submitting: "Importing…",
         again: "Choose another file",
         missingPrices: "Some ticked products have no price. Type the price or untick the row.",
+        missingNames: "Some ticked products have no name. Give each a name of two letters at least.",
         nothingSelected: "Tick at least one product to import.",
       },
       pager: {

@@ -2719,6 +2719,7 @@ export const ptBR: UiMessages = {
         submitting: "Importando…",
         again: "Escolher outro arquivo",
         missingPrices: "Há produtos marcados sem preço. Digite o preço ou desmarque a linha.",
+        missingNames: "Há produtos marcados sem nome. Dê um nome com ao menos duas letras.",
         nothingSelected: "Marque ao menos um produto para importar.",
       },
       pager: {

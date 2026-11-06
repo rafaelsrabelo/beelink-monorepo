@@ -29,6 +29,7 @@ export interface ProductImportReviewProps {
 export function blockerOf(rows: readonly Row[], text: UiMessages["catalog"]["products"]["import"]): string | null {
   const ticked = rows.filter((row) => row.include)
   if (ticked.length === 0) return text.nothingSelected
+  if (ticked.some((row) => row.name.trim().length < 2)) return text.missingNames
   if (ticked.some((row) => centsFrom(row.price) === null)) return text.missingPrices
   return null
 }

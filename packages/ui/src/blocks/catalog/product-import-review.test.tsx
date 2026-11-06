@@ -40,6 +40,21 @@ describe("ProductImportReview", () => {
     expect(onSubmit).toHaveBeenCalledOnce()
   })
 
+  it("waits for a ticked row whose name was cleared", () => {
+    render(
+      <ProductImportReview
+        rows={priced.map((row, index) => (index === 0 ? { ...row, name: " " } : row))}
+        categories={importCategories}
+        onChange={noop}
+        onSubmit={noop}
+        onRestart={noop}
+      />,
+    )
+
+    expect(screen.getByText("Há produtos marcados sem nome. Dê um nome com ao menos duas letras.")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Importar marcados (3)" })).toBeDisabled()
+  })
+
   it("hands back the whole list with the one row changed", async () => {
     const onChange = vi.fn()
     render(<ProductImportReview rows={priced} categories={importCategories} onChange={onChange} onSubmit={noop} onRestart={noop} />)

@@ -3195,6 +3195,8 @@ export interface UiMessages {
         again: string
         /** Said instead of importing while a checked row has no price. */
         missingPrices: string
+        /** A ticked row whose name was cleared: a product needs two letters at least. */
+        missingNames: string
         nothingSelected: string
       }
       pager: {
