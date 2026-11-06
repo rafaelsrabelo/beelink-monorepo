@@ -7,6 +7,7 @@ import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
+import { Buyers, givenAddressOf, type Buyer } from '../customers/buyers.service.js';
 import { CustomersService } from '../customers/customers.service.js';
 import { CUSTOMER_ORDER_INCLUDE, toCustomerOrder, toCustomerOrderSummary } from './customer-order.mapper.js';
 import type { ListCustomerOrdersDto, PlaceCustomerOrderDto } from './dto/customer-order.dto.js';
@@ -39,6 +40,7 @@ export class CustomerOrdersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly customers: CustomersService,
+    private readonly buyers: Buyers,
     private readonly placement: OrderPlacement,
     private readonly shipping: OrderShipping,
     private readonly realtime: RealtimePublisher,
@@ -51,15 +53,19 @@ export class CustomerOrdersService {
    * delivery goes at the fee and the window the shop's rules quote to its address now (BEELINK-178);
    * where they quote none, the fee is the shop's to tell: not agreed (null), never a free delivery.
    */
-  async place(storeSlug: string, userId: string, dto: PlaceCustomerOrderDto): Promise<CustomerOrder> {
-    const { storeId, customerId } = await this.customers.shopperAt(storeSlug, userId);
-    const addressId = dto.addressId?.toLowerCase() ?? null;
-    const terms = await this.shipping.forPlacement({ storeId, customerId, fulfillment: dto.fulfillment, addressId, items: dto.items, choice: dto.shipping, shownFeeCents: dto.deliveryFeeCents });
+  async place(storeSlug: string, buyer: Buyer, dto: PlaceCustomerOrderDto): Promise<CustomerOrder> {
+    const { storeId, customerId, userId, purchase, purchaseId } = await this.buyers.at(storeSlug, buyer);
+    // A purchase session spends none of the record's credit: it is the account's (plan 2026-11-06--whatsapp-primeiro).
+    if (purchaseId && (dto.cashbackCents ?? 0) > 0) throw new BadRequestException(orderError('ORDER_CASHBACK_REFUSED', 'A purchase session spends no cashback'));
+    // A visitor delivers to the address they typed, never to one of the record's (plan 2026-11-06--P0-checkout-sem-codigo).
+    const addressId = purchase ? null : (dto.addressId?.toLowerCase() ?? null);
+    const given = purchase ? givenAddressOf(purchase) : undefined;
+    const terms = await this.shipping.forPlacement({ storeId, customerId, fulfillment: dto.fulfillment, addressId, items: dto.items, choice: dto.shipping, shownFeeCents: dto.deliveryFeeCents, ...(given ? { given } : {}) });
     // A carrier's label is bought with the CPF of who receives it (BEELINK-187): the checkout asks for it first.
-    const deliveryDocument = terms.carrier ? await this.documentOf(customerId, dto.recipientDocument, 'ORDER_RECIPIENT_DOCUMENT_MISSING') : null;
+    const deliveryDocument = terms.carrier ? await this.documentOf(customerId, dto.recipientDocument, 'ORDER_RECIPIENT_DOCUMENT_MISSING', purchaseId) : null;
     const { online, onlyIfNothingToPay } = await this.channelOf(storeId, dto);
     // Asaas charges a person by their CPF (BEELINK-204): asked at checkout as a carrier's is.
-    if (online) await this.documentOf(customerId, dto.recipientDocument, 'ORDER_PAYER_DOCUMENT_MISSING');
+    if (online) await this.documentOf(customerId, dto.recipientDocument, 'ORDER_PAYER_DOCUMENT_MISSING', purchaseId);
 
     const placed = await this.placement.place({
       storeId,
@@ -82,6 +88,8 @@ export class CustomerOrdersService {
       status: 'RECEIVED',
       actor: 'CUSTOMER',
       userId,
+      purchaseSessionId: purchaseId,
+      ...(purchase ? { deliveryGiven: givenAddressOf(purchase), contactEmail: purchase.email } : {}),
       onSaleOnly: true,
       origin: placedOriginOf(dto.origin),
       marketingConsent: placedConsentOf(dto.marketingConsent),
@@ -92,7 +100,7 @@ export class CustomerOrdersService {
     // order goes back without a charge and its customer makes one from it. A fee not agreed yet is
     // no total to charge.
     if (online && placed.deliveryFeeCents !== null) await this.payments.ensureWithin(storeId, placed.id, PLACE_CHARGE_BUDGET_MS);
-    return this.read(storeId, customerId, placed.number);
+    return this.read(storeId, customerId, placed.number, purchaseId);
   }
 
   /**
@@ -117,11 +125,20 @@ export class CustomerOrdersService {
     return { online, onlyIfNothingToPay: !online && takes.connected && !takes.offline };
   }
 
-  /** The customer's CPF on file, else the one typed at checkout — which is kept on their record, so it is asked once. */
-  private async documentOf(customerId: string, typed: string | undefined, missing: 'ORDER_RECIPIENT_DOCUMENT_MISSING' | 'ORDER_PAYER_DOCUMENT_MISSING'): Promise<string> {
+  /**
+   * The customer's CPF on file, else the one typed at checkout — which is kept on their record, so it
+   * is asked once. A purchase session neither reads nor writes the record's: a charge in somebody's
+   * CPF never comes from whoever only typed their WhatsApp, so it is the typed one, every time.
+   */
+  private async documentOf(customerId: string, typed: string | undefined, missing: 'ORDER_RECIPIENT_DOCUMENT_MISSING' | 'ORDER_PAYER_DOCUMENT_MISSING', purchaseId: string | null = null): Promise<string> {
+    const refused = () => new BadRequestException(orderError(missing, "A carrier's delivery and an online payment need the customer's CPF"));
+    if (purchaseId) {
+      if (!typed) throw refused();
+      return typed;
+    }
     const { cpf } = await this.prisma.customer.findUniqueOrThrow({ where: { id: customerId }, select: { cpf: true } });
     if (cpf) return cpf;
-    if (!typed) throw new BadRequestException(orderError(missing, "A carrier's delivery and an online payment need the customer's CPF"));
+    if (!typed) throw refused();
     await this.prisma.customer.update({ where: { id: customerId }, data: { cpf: typed } });
     return typed;
   }
@@ -170,9 +187,9 @@ export class CustomerOrdersService {
     };
   }
 
-  async get(storeSlug: string, userId: string, number: number): Promise<CustomerOrder> {
-    const { storeId, customerId } = await this.customers.shopperAt(storeSlug, userId);
-    return this.read(storeId, customerId, number);
+  async get(storeSlug: string, buyer: Buyer, number: number): Promise<CustomerOrder> {
+    const { storeId, customerId, purchaseId } = await this.buyers.at(storeSlug, buyer);
+    return this.read(storeId, customerId, number, purchaseId);
   }
 
   /**
@@ -253,8 +270,9 @@ export class CustomerOrdersService {
     return this.read(storeId, customerId, number);
   }
 
-  private async read(storeId: string, customerId: string, number: number): Promise<CustomerOrder> {
-    const order = await this.prisma.order.findFirst({ where: { storeId, customerId, number }, include: CUSTOMER_ORDER_INCLUDE });
+  /** One of the record's orders — for a purchase session, only one it placed itself. */
+  private async read(storeId: string, customerId: string, number: number, purchaseId: string | null = null): Promise<CustomerOrder> {
+    const order = await this.prisma.order.findFirst({ where: { storeId, customerId, number, ...(purchaseId ? { purchaseSessionId: purchaseId } : {}) }, include: CUSTOMER_ORDER_INCLUDE });
     if (!order) throw notFound(number);
     return toCustomerOrder(order);
   }

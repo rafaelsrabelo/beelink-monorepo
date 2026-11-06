@@ -9,41 +9,35 @@ import { StorefrontCheckoutIdentity, type StorefrontCheckoutIdentityProps } from
 function identity(props: Partial<StorefrontCheckoutIdentityProps> = {}) {
   return (
     <StorefrontCheckoutIdentity
-      step="form"
       email={null}
-      actions={{ identify: "/loja/api/customer/checkout/identificar", code: "/loja/api/customer/checkout/codigo", resend: "/loja/api/customer/checkout/reenviar" }}
+      action="/loja/api/customer/checkout/identificar"
       hidden={{ retorno: "/loja/carrinho#finalizar" }}
-      otherEmailHref="/loja/carrinho#finalizar"
       hrefs={{ signIn: "/loja/entrar?voltar=%2Floja%2Fcarrinho", signUp: "/loja/entrar?modo=criar", terms: "/termos", privacy: "/privacidade" }}
       {...props}
     />
   )
 }
 
-const hiddenOf = (form: Element | null, name: string) => form?.querySelector<HTMLInputElement>(`input[type=hidden][name="${name}"]`)?.value
-
 describe("StorefrontCheckoutIdentity", () => {
-  /** The ticket's complaint: buying asked for an account first. Now a name, an e-mail and a WhatsApp. */
-  it("asks who is buying with no password, posting a plain form back to the checkout, the terms said beside it", () => {
+  /** P0: a name, a phone and an e-mail, and on — no password, no code. */
+  it("asks a name, a phone and an e-mail and goes on, a plain form back to the checkout, with the terms beside it", () => {
     const { container } = render(identity())
 
     expect(screen.getByRole("heading", { name: "Seus dados" })).toBeInTheDocument()
     const form = container.querySelector('form[action="/loja/api/customer/checkout/identificar"]')
     expect(form).toHaveAttribute("method", "post")
-    expect(hiddenOf(form, "retorno")).toBe("/loja/carrinho#finalizar")
-    expect(screen.getByLabelText("Nome completo")).toHaveAttribute("autocomplete", "name")
-    expect(screen.getByLabelText("E-mail")).toHaveAttribute("type", "email")
+    expect(form?.querySelector<HTMLInputElement>('input[type=hidden][name="retorno"]')?.value).toBe("/loja/carrinho#finalizar")
+    const fields = [...(form?.querySelectorAll("input:not([type=hidden])") ?? [])].map((input) => input.getAttribute("name"))
+    expect(fields).toEqual(["name", "phone", "email"])
     expect(screen.getByLabelText("WhatsApp")).toHaveAttribute("type", "tel")
-    expect(screen.getByLabelText("WhatsApp")).toHaveAttribute("inputmode", "tel")
-    for (const name of ["Nome completo", "E-mail", "WhatsApp"]) expect(screen.getByLabelText(name)).toBeRequired()
-    expect(screen.queryByLabelText(/senha/i)).toBeNull()
+    expect(screen.getByLabelText("E-mail")).toHaveAttribute("type", "email")
+    for (const name of ["Nome completo", "WhatsApp", "E-mail"]) expect(screen.getByLabelText(name)).toBeRequired()
+    expect(screen.queryByLabelText(/senha|código/i)).toBeNull()
     expect(screen.getByRole("button", { name: "Continuar" })).toHaveAttribute("type", "submit")
     expect(screen.getByText(/Ao continuar, você aceita os/)).toBeInTheDocument()
-    expect(screen.getByRole("link", { name: "Termos de uso" })).toHaveAttribute("href", "/termos")
   })
 
-  /** Signing in and signing up stay, as options (the ticket's last criterion). */
-  it("keeps signing in and an account with a password a link away", () => {
+  it("keeps signing in and signing up as options, a link away", () => {
     render(identity())
 
     expect(screen.getByRole("link", { name: "Entrar" })).toHaveAttribute("href", "/loja/entrar?voltar=%2Floja%2Fcarrinho")
@@ -51,46 +45,21 @@ describe("StorefrontCheckoutIdentity", () => {
   })
 
   it("keeps the e-mail typed in a refused form, with the sentence", () => {
-    render(identity({ email: "bia@exemplo.com", error: "Confira o nome, o e-mail e o WhatsApp." }))
+    render(identity({ email: "bia@exemplo.com", error: "Confira o nome, o e-mail e o WhatsApp com DDD." }))
 
-    expect(screen.getByRole("alert")).toHaveTextContent("Confira o nome, o e-mail e o WhatsApp.")
+    expect(screen.getByRole("alert")).toHaveTextContent("Confira o nome, o e-mail e o WhatsApp com DDD.")
     expect(screen.getByLabelText("E-mail")).toHaveValue("bia@exemplo.com")
   })
 
-  it("asks an e-mail with an account here for the code sent to it, filled in by the phone, with a new one or another e-mail at hand", () => {
-    const { container } = render(identity({ step: "code", email: "bia@exemplo.com", notice: "Enviamos um novo código. Use o do e-mail mais recente." }))
-
-    expect(screen.getByRole("heading", { name: "Confirme que é você" })).toBeInTheDocument()
-    expect(screen.getByText("Você já tem conta nesta loja. Enviamos um código de 6 dígitos para bia@exemplo.com.")).toBeInTheDocument()
-    expect(screen.getByRole("status")).toHaveTextContent("Enviamos um novo código.")
-    const code = screen.getByLabelText("Código")
-    expect(code).toHaveAttribute("autocomplete", "one-time-code")
-    expect(code).toHaveAttribute("inputmode", "numeric")
-    expect(code).toHaveFocus()
-
-    const confirm = container.querySelector('form[action="/loja/api/customer/checkout/codigo"]')
-    expect(hiddenOf(confirm, "email")).toBe("bia@exemplo.com")
-    expect(hiddenOf(confirm, "retorno")).toBe("/loja/carrinho#finalizar")
-    const resend = container.querySelector('form[action="/loja/api/customer/checkout/reenviar"]')
-    expect(hiddenOf(resend, "email")).toBe("bia@exemplo.com")
-    expect(screen.getByRole("button", { name: "Reenviar código" })).toHaveAttribute("type", "submit")
-    expect(screen.getByRole("link", { name: "Usar outro e-mail" })).toHaveAttribute("href", "/loja/carrinho#finalizar")
-    expect(screen.queryByLabelText("Nome completo")).toBeNull()
-  })
-
-  /** Inside the checkout's first step, which already says "Seus dados". */
   it("draws no frame and no title of its own inside a step", () => {
     render(identity({ headless: true }))
 
     expect(screen.queryByRole("heading", { name: "Seus dados" })).toBeNull()
-    expect(screen.getByText("Sem senha e sem cadastro: é só para a loja saber quem pediu.")).toBeInTheDocument()
     expect(screen.getByLabelText("WhatsApp")).toBeInTheDocument()
   })
 
-  it("has no accessibility violations, in either step", async () => {
-    const { container, rerender } = render(identity({ error: "Confira o nome, o e-mail e o WhatsApp." }))
-    await expectNoA11yViolations(container)
-    rerender(identity({ step: "code", email: "bia@exemplo.com" }))
+  it("has no accessibility violations", async () => {
+    const { container } = render(identity({ error: "Confira o nome, o e-mail e o WhatsApp com DDD." }))
     await expectNoA11yViolations(container)
   })
 })

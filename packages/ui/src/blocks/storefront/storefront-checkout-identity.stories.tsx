@@ -10,27 +10,14 @@ const meta = {
   component: StorefrontCheckoutIdentity,
   parameters: { layout: "padded" },
   decorators: [(Story) => <div style={{ ...shopPaletteStyle(sampleColorPresets[2]!.colors), maxWidth: 360 }}>{Story()}</div>],
-  args: {
-    step: "form",
-    email: null,
-    actions: { identify: "#", code: "#", resend: "#" },
-    hidden: {},
-    otherEmailHref: "#",
-    hrefs: { signIn: "#", signUp: "#", terms: "#", privacy: "#" },
-  },
+  args: { email: null, action: "#", hidden: {}, hrefs: { signIn: "#", signUp: "#", terms: "#", privacy: "#" } },
 } satisfies Meta<typeof StorefrontCheckoutIdentity>
 
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** No lugar de "Entre para fazer o pedido": nome, e-mail e WhatsApp, sem senha. */
+/** No lugar de "Entre para fazer o pedido": nome, telefone e e-mail, sem senha, sem código. */
 export const Formulario: Story = {}
 
 /** Recusado: o e-mail digitado volta, com a frase. */
-export const Recusado: Story = { args: { email: "bia@exemplo.com", error: "Confira o nome, o e-mail e o WhatsApp." } }
-
-/** O e-mail já tem conta na loja: o código de 6 dígitos que foi para ele. */
-export const Codigo: Story = { args: { step: "code", email: "bia@exemplo.com" } }
-
-/** Código errado ou vencido. */
-export const CodigoRecusado: Story = { args: { step: "code", email: "bia@exemplo.com", error: "Código errado ou vencido. Confira o e-mail mais recente ou peça outro." } }
+export const Recusado: Story = { args: { email: "bia@exemplo.com", error: "Confira o nome, o e-mail e o WhatsApp com DDD." } }

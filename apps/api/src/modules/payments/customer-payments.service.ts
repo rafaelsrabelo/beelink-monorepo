@@ -7,7 +7,7 @@ import type { OrderPaymentModel } from '../../generated/prisma/models.js';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
-import { CustomersService } from '../customers/customers.service.js';
+import { Buyers, type Buyer } from '../customers/buyers.service.js';
 import { AsaasCharges } from '../integrations/asaas/asaas-charges.service.js';
 import { OrderPayments } from './order-payments.service.js';
 import { READ_CHECK_EVERY_MS } from './payment-checks.js';
@@ -25,15 +25,15 @@ export class CustomerPayments {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly customers: CustomersService,
+    private readonly buyers: Buyers,
     private readonly payments: OrderPayments,
     private readonly charges: AsaasCharges,
     private readonly heard: PaymentSync,
   ) {}
 
   /** The order's charge with what it is paid with; null for an order settled with the shop, and for one with no charge yet. */
-  async read(storeSlug: string, userId: string, number: number): Promise<CustomerOrderPaymentAnswer> {
-    const { storeId, orderId, stands } = await this.orderOf(storeSlug, userId, number);
+  async read(storeSlug: string, buyer: Buyer, number: number): Promise<CustomerOrderPaymentAnswer> {
+    const { storeId, orderId, stands } = await this.orderOf(storeSlug, buyer, number);
     const shown = shownPaymentOf(await this.prisma.orderPayment.findMany({ where: { orderId } }));
     const row = shown && stands && (await this.asked(storeId, shown)) ? shownPaymentOf(await this.prisma.orderPayment.findMany({ where: { orderId } })) : shown;
     if (!row) return { payment: null };
@@ -41,8 +41,8 @@ export class CustomerPayments {
   }
 
   /** The order's charge made sure of — the one it has, or a new one — and answered as `read` answers it. */
-  async charge(storeSlug: string, userId: string, number: number): Promise<CustomerOrderPaymentAnswer> {
-    const { storeId, orderId } = await this.orderOf(storeSlug, userId, number);
+  async charge(storeSlug: string, buyer: Buyer, number: number): Promise<CustomerOrderPaymentAnswer> {
+    const { storeId, orderId } = await this.orderOf(storeSlug, buyer, number);
     const row = await this.payments.ensure(storeId, orderId);
     return { payment: toCustomerPayment(await this.withPix(storeId, row), new Date(), true, await this.refundsOf(orderId)) };
   }
@@ -51,9 +51,10 @@ export class CustomerPayments {
     return this.prisma.orderRefund.findMany({ where: { orderId } });
   }
 
-  private async orderOf(storeSlug: string, userId: string, number: number): Promise<{ storeId: string; orderId: string; stands: boolean }> {
-    const { storeId, customerId } = await this.customers.shopperAt(storeSlug, userId);
-    const order = await this.prisma.order.findFirst({ where: { storeId, customerId, number }, select: { id: true, status: true } });
+  /** The buyer's order: the account's, or — for a purchase session — one it placed itself, and no other of the record's. */
+  private async orderOf(storeSlug: string, buyer: Buyer, number: number): Promise<{ storeId: string; orderId: string; stands: boolean }> {
+    const { storeId, customerId, purchaseId } = await this.buyers.at(storeSlug, buyer);
+    const order = await this.prisma.order.findFirst({ where: { storeId, customerId, number, ...(purchaseId ? { purchaseSessionId: purchaseId } : {}) }, select: { id: true, status: true } });
     if (!order) throw new NotFoundException(paymentError('ORDER_NOT_FOUND', `No order #${number} of yours in this shop`));
     return { storeId, orderId: order.id, stands: order.status !== 'CANCELLED' };
   }

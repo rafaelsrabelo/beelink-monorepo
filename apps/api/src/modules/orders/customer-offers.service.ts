@@ -7,7 +7,8 @@ import type { CouponModel } from '../../generated/prisma/models.js';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
-import { CustomersService } from '../customers/customers.service.js';
+import { Buyers, givenAddressOf, type Buyer } from '../customers/buyers.service.js';
+import type { CustomerAddressRow } from './order-delivery.js';
 import { couponRefusalOf, couponStandingRefusalOf, type CouponStanding } from '../promotions/coupon-verdict.js';
 import { customerUsesOf, firstPurchaseOf, runningPromotions } from '../promotions/order-discounts.js';
 import { couponBenefitOf, firstOrderOfferOf, shownCoupons } from '../promotions/shop-offers.js';
@@ -38,12 +39,12 @@ interface Candidate {
 export class CustomerOffersReader {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly customers: CustomersService,
+    private readonly buyers: Buyers,
     private readonly quotes: OrderQuotes,
   ) {}
 
-  async forCustomer(storeSlug: string, userId: string, dto: CustomerOffersDto): Promise<CustomerOffers> {
-    const { storeId, customerId } = await this.customers.shopperAt(storeSlug, userId);
+  async forCustomer(storeSlug: string, buyer: Buyer, dto: CustomerOffersDto): Promise<CustomerOffers> {
+    const { storeId, customerId, purchase } = await this.buyers.at(storeSlug, buyer);
     const now = new Date();
     const [firstPurchase, shown] = await Promise.all([firstPurchaseOf(this.prisma, customerId, false), shownCoupons(this.prisma, storeId, now, this.prisma.coupon.fields.maxUses)]);
 
@@ -59,7 +60,7 @@ export class CustomerOffersReader {
     return {
       hasOrder: !firstPurchase,
       firstPurchase: firstPurchase ? await this.firstOrderOffer(storeId, now, theirs) : null,
-      coupons: dto.items?.length ? await this.onCart(storeId, customerId, { ...dto, items: dto.items }, theirs) : [],
+      coupons: dto.items?.length ? await this.onCart(storeId, customerId, { ...dto, items: dto.items }, theirs, purchase ? givenAddressOf(purchase) : undefined) : [],
     } satisfies CustomerOffers;
   }
 
@@ -71,11 +72,11 @@ export class CustomerOffersReader {
   }
 
   /** Each of their coupons against the cart: taken, short of its minimum by so much, or left out. */
-  private async onCart(storeId: string, customerId: string, cart: CustomerOffersDto & { items: NonNullable<CustomerOffersDto['items']> }, theirs: readonly Candidate[]): Promise<OfferedCoupon[]> {
+  private async onCart(storeId: string, customerId: string, cart: CustomerOffersDto & { items: NonNullable<CustomerOffersDto['items']> }, theirs: readonly Candidate[], given?: CustomerAddressRow): Promise<OfferedCoupon[]> {
     if (theirs.length === 0) return [];
 
     // Only a free delivery reads the fee: with none among them, the carriers are not asked.
-    const base = await this.quotes.couponBaseFor(storeId, customerId, cart, theirs.some(({ coupon }) => coupon.kind === 'FREE_SHIPPING'));
+    const base = await this.quotes.couponBaseFor(storeId, customerId, cart, theirs.some(({ coupon }) => coupon.kind === 'FREE_SHIPPING'), given);
 
     return theirs.flatMap(({ coupon, standing }): OfferedCoupon[] => {
       // At the instant the cart was priced, with who they are as read above: the quote's own question.

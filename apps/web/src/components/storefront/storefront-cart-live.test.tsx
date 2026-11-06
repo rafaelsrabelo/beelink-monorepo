@@ -738,31 +738,65 @@ describe("the cart's price and its coupon", () => {
     expect(backOf("Alterar")).toBe("/loja/carrinho")
   })
 
-  /** Buying with no sign-up: a visitor says who is buying right in the checkout, the coupon carried through the form. */
+  /** P0: a visitor says who is buying right in the checkout — no code, no account — the coupon carried through the form. */
   it("asks a visitor who is buying in place of the sign-in, posting back to the checkout with the coupon", () => {
     network()
-    const { container } = renderCart(false, null, { coupon: "BEMVINDO10", identity: { step: "form", email: null, error: null, notice: null } })
+    const { container } = renderCart(false, null, { coupon: "BEMVINDO10", identity: { email: null, error: null } })
 
     expect(screen.getByRole("heading", { name: "Seus dados" })).toBeInTheDocument()
     expect(screen.queryByRole("link", { name: "Entrar para fazer o pedido" })).toBeNull()
+    expect(screen.queryByLabelText(/código/i)).toBeNull()
     const form = container.querySelector('form[action="/loja/api/customer/checkout/identificar"]')
     expect(form?.querySelector<HTMLInputElement>('input[name="retorno"]')?.value).toBe("/loja/carrinho?cupom=BEMVINDO10#finalizar")
-    // Signing in stays, coming back to this cart with the coupon.
+    // Signing in stays, optional, coming back to this cart with the coupon.
     expect(new URL(screen.getByRole("link", { name: "Entrar" }).getAttribute("href")!, "http://x").searchParams.get("voltar")).toBe("/loja/carrinho?cupom=BEMVINDO10")
   })
 
-  it("asks a visitor whose e-mail has an account for the code sent to it", () => {
-    network()
-    renderCart(false, null, { identity: { step: "code", email: "bia@exemplo.com", error: null, notice: null } })
+  /** Once identified, the visitor buys through the shopper's checkout, made of what they typed and nothing else. */
+  describe("a visitor already identified (P0)", () => {
+    const visitor = { name: "Ana Souza", email: "ana@exemplo.com", phone: "5511977776666", address: null, expiresAt: "2026-11-13T12:00:00.000Z" }
+    const home = { zipCode: "60160230", street: "Rua Tibúrcio Cavalcante", number: "1200", complement: null, neighborhood: "Meireles", city: "Fortaleza", state: "CE" }
 
-    expect(screen.getByText("Você já tem conta nesta loja. Enviamos um código de 6 dígitos para bia@exemplo.com.")).toBeInTheDocument()
-    expect(screen.getByLabelText("Código")).toHaveAttribute("autocomplete", "one-time-code")
+    it("is done with who is buying, changes it by a post that ends the session, and gives the address to the session's handler", () => {
+      network()
+      const { container } = renderCart(false, null, { purchase: visitor })
+
+      expect(screen.getByRole("heading", { name: /^Seus dados\s*— concluída$/ })).toBeInTheDocument()
+      expect(screen.getByText("Ana Souza · 5511977776666")).toBeInTheDocument()
+      const change = container.querySelector('form[action="/loja/api/customer/checkout/sair"]')
+      expect(change).toHaveAttribute("method", "post")
+      expect(change?.querySelector<HTMLInputElement>('input[name="retorno"]')?.value).toBe("/loja/carrinho#finalizar")
+
+      // No address yet: the delivery is open, and choosing it opens the form that keeps it on the session.
+      fireEvent.click(screen.getByRole("radio", { name: /Receber em casa/ }))
+      const address = container.querySelector('form[action="/loja/api/customer/checkout/endereco"]')
+      expect(address).not.toBeNull()
+      expect(address?.querySelector('input[name="entregar"]')).toBeNull()
+    })
+
+    it("delivers to the address it gave, sending no address of any record — the API takes the session's", async () => {
+      const fetched = network()
+      openedTab()
+      renderCart(false, null, { purchase: { ...visitor, address: home } })
+
+      expect(within(screen.getByRole("region", { name: /^Entrega/ })).getByText(/^Entregar em Rua Tibúrcio Cavalcante/)).toBeInTheDocument()
+      fireEvent.click(screen.getByRole("radio", { name: "Pix" }))
+      await waitFor(() => expect(screen.getByRole("button", { name: /Fechar pedido pelo WhatsApp/ })).toBeEnabled())
+      fireEvent.click(screen.getByRole("button", { name: /Fechar pedido pelo WhatsApp/ }))
+
+      await waitFor(() => expect(bodiesTo(fetched, "/loja/api/orders")).toHaveLength(1))
+      const sent = bodiesTo(fetched, "/loja/api/orders")[0]!
+      expect(sent).toMatchObject({ fulfillment: "DELIVERY", paymentMethod: "PIX" })
+      expect(sent).not.toHaveProperty("addressId")
+      // Priced to it too, with no record's address named.
+      expect(bodiesTo(fetched, "/loja/api/orders/quote").every((body) => !("addressId" in body))).toBe(true)
+    })
   })
 
-  /** Once signed in by the code or the form, nobody is asked again: the checkout of a shopper. */
+  /** A shopper signed in is asked nothing about who they are: the checkout of a shopper. */
   it("asks a signed-in shopper nothing about who they are", () => {
     network()
-    renderCart(false, bia, { identity: { step: "form", email: null, error: null, notice: null } })
+    renderCart(false, bia, { identity: { email: null, error: null } })
 
     // "Seus dados" is done: a line with who is ordering, and no form.
     expect(screen.getByRole("heading", { name: /^Seus dados\s*— concluída$/ })).toBeInTheDocument()

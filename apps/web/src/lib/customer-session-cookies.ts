@@ -1,5 +1,5 @@
 // Types
-import type { AuthSession } from "@harness-monorepo/contracts"
+import type { AuthSession, PurchaseSession } from "@harness-monorepo/contracts"
 import type { NextResponse } from "next/server"
 
 // App
@@ -44,6 +44,18 @@ export function setCustomerSessionCookies(answer: Answer, shop: ShopAddress, ses
   const path = shopHomeOf(shop)
   answer.cookies.set(CUSTOMER_ACCESS_COOKIE, session.accessToken, { ...base, path, expires: accessCookieExpiryOf(session) })
   answer.cookies.set(CUSTOMER_REFRESH_COOKIE, session.refreshToken, { ...base, path, expires: new Date(session.refreshTokenExpiresAt) })
+  dropPlatformTwins(answer, shop)
+}
+
+/**
+ * Stores a visitor's purchase session (plan 2026-11-06--P0-checkout-sem-codigo) in the shopper's access
+ * cookie — no new cookie, so nothing new for the privacy policy to list — and expires the refresh one: a
+ * visitor is nobody's account, and a refresh left from before would bring one back over their purchase.
+ */
+export function setPurchaseSessionCookie(answer: Answer, shop: ShopAddress, purchase: PurchaseSession): void {
+  const path = shopHomeOf(shop)
+  answer.cookies.set(CUSTOMER_ACCESS_COOKIE, purchase.accessToken, { ...base, path, expires: new Date(purchase.accessTokenExpiresAt) })
+  answer.cookies.set(CUSTOMER_REFRESH_COOKIE, "", { ...base, path, maxAge: 0 })
   dropPlatformTwins(answer, shop)
 }
 

@@ -8,8 +8,9 @@ import type { CustomerOffers } from '@harness-monorepo/contracts';
 
 // App
 import { Public } from '../auth/auth.decorators.js';
-import { CustomerAuthGuard, type AuthenticatedCustomer } from '../customers/customer-auth.guard.js';
-import { CurrentCustomer } from '../customers/customer.decorators.js';
+import { CustomerAuthGuard } from '../customers/customer-auth.guard.js';
+import type { Buyer } from '../customers/buyers.service.js';
+import { CurrentBuyer, OpenToPurchase } from '../customers/customer.decorators.js';
 import { CustomerOffersResponse } from '../promotions/dto/offers.response.js';
 import { STOREFRONT_RATE_LIMIT } from '../stores/stores.constants.js';
 import { CustomerOffersReader } from './customer-offers.service.js';
@@ -36,6 +37,7 @@ export class CustomerOffersController {
   constructor(private readonly offers: CustomerOffersReader) {}
 
   @Post()
+  @OpenToPurchase()
   @HttpCode(HttpStatus.OK)
   @RouteConfig({ rateLimit: STOREFRONT_RATE_LIMIT })
   @ApiOperation({ summary: "The shopper's offers: whether an order of theirs stands, the first-order benefit to show, and the shown coupons the cart sent may take" })
@@ -43,7 +45,7 @@ export class CustomerOffersController {
   @ApiBadRequestResponse({ description: 'ORDER_VARIANT_INVALID · ORDER_ITEM_DUPLICATE · ORDER_TOTAL_TOO_LARGE' })
   @ApiNotFoundResponse({ description: 'STORE_NOT_FOUND' })
   @ApiTooManyRequestsResponse({ description: 'RATE_LIMITED' })
-  read(@Param('storeSlug') storeSlug: string, @CurrentCustomer() customer: AuthenticatedCustomer, @Body() dto: CustomerOffersDto): Promise<CustomerOffers> {
-    return this.offers.forCustomer(storeSlug, customer.userId, dto);
+  read(@Param('storeSlug') storeSlug: string, @CurrentBuyer() buyer: Buyer, @Body() dto: CustomerOffersDto): Promise<CustomerOffers> {
+    return this.offers.forCustomer(storeSlug, buyer, dto);
   }
 }

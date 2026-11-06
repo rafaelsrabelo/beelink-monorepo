@@ -7,7 +7,7 @@ import { cache } from "react"
 import { cookies } from "next/headers"
 
 // Types
-import type { CustomerProfile } from "@harness-monorepo/contracts"
+import type { CustomerProfile, CustomerPurchase } from "@harness-monorepo/contracts"
 
 // App
 import { callApi } from "./api"
@@ -28,4 +28,16 @@ export const shopperAt = cache(async (slug: string): Promise<CustomerProfile | n
   const response = await callApi({ path: `/stores/${encodeURIComponent(slug)}/customer/me`, method: "GET", accessToken }).catch(() => null)
 
   return response?.ok ? ((await response.json()) as CustomerProfile) : null
+})
+
+/**
+ * A visitor's purchase session at this shop (plan 2026-11-06--P0-checkout-sem-codigo) — what they typed at
+ * the checkout — or null. Read only where `shopperAt` found nobody: the same cookie holds either a
+ * shopper's access or a visitor's session, and the account's door refuses a visitor's.
+ */
+export const purchaseAt = cache(async (slug: string): Promise<CustomerPurchase | null> => {
+  const accessToken = (await cookies()).get(CUSTOMER_ACCESS_COOKIE)?.value
+  if (!accessToken) return null
+  const response = await callApi({ path: `/stores/${encodeURIComponent(slug)}/customer/purchase`, method: "GET", accessToken }).catch(() => null)
+  return response?.ok ? ((await response.json()) as CustomerPurchase) : null
 })

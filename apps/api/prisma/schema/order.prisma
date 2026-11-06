@@ -46,6 +46,13 @@ model Order {
   /// NoAction and not Restrict: checked at the end of the statement, so deleting the whole shop,
   /// which cascades to its customers and its orders together, still goes through.
   customer   Customer         @relation(fields: [customerId], references: [id], onDelete: NoAction)
+  /// The visitor's checkout that placed it (plan 2026-11-06--P0-checkout-sem-codigo): that session reads
+  /// the orders carrying its id, and no other. Null for every order placed any other way. Not a foreign
+  /// key: an order outlives the session that placed it.
+  purchaseSessionId String? @db.Uuid
+  /// The e-mail a visitor typed at the checkout, as it was: how the shop reaches who bought with no
+  /// account. Null for an order of an account, whose e-mail is the account's, and for the panel's.
+  contactEmail      String?
   status     OrderStatus
   fulfillment OrderFulfillment
   /// A label for how the two of them settle it; nothing is charged by the product.
@@ -176,6 +183,7 @@ model Order {
   @@index([storeId, placedAt])
   @@index([storeId, status])
   @@index([customerId, placedAt])
+  @@index([customerId, purchaseSessionId])
   @@index([paymentDueAt])
   /// "Sales by origin" with no period, and "which orders came by this campaign"; a period's report rides `[storeId, placedAt]`.
   @@index([storeId, utmSource, utmMedium, utmCampaign])

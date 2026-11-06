@@ -17,8 +17,9 @@ import type { OrderQuote } from '@harness-monorepo/contracts';
 
 // App
 import { Public } from '../auth/auth.decorators.js';
-import { CustomerAuthGuard, type AuthenticatedCustomer } from '../customers/customer-auth.guard.js';
-import { CurrentCustomer } from '../customers/customer.decorators.js';
+import { CustomerAuthGuard } from '../customers/customer-auth.guard.js';
+import type { Buyer } from '../customers/buyers.service.js';
+import { CurrentBuyer, OpenToPurchase } from '../customers/customer.decorators.js';
 import { STOREFRONT_RATE_LIMIT } from '../stores/stores.constants.js';
 import { CustomerCartQuoteDto, OrderQuoteResponse } from './dto/order-quote.dto.js';
 import { OrderQuotes } from './order-quote.service.js';
@@ -44,6 +45,7 @@ export class CustomerCartQuoteController {
   constructor(private readonly quotes: OrderQuotes) {}
 
   @Post('quote')
+  @OpenToPurchase()
   @HttpCode(HttpStatus.OK)
   @RouteConfig({ rateLimit: STOREFRONT_RATE_LIMIT })
   @ApiOperation({ summary: "The shopper's cart priced as their order would be, with no coupon: each line's discount, the totals, and a first-purchase promotion applied or announced" })
@@ -51,7 +53,7 @@ export class CustomerCartQuoteController {
   @ApiBadRequestResponse({ description: 'ORDER_VARIANT_INVALID · ORDER_ITEM_DUPLICATE · ORDER_TOTAL_TOO_LARGE' })
   @ApiNotFoundResponse({ description: 'STORE_NOT_FOUND' })
   @ApiTooManyRequestsResponse({ description: 'RATE_LIMITED' })
-  quote(@Param('storeSlug') storeSlug: string, @CurrentCustomer() customer: AuthenticatedCustomer, @Body() dto: CustomerCartQuoteDto): Promise<OrderQuote> {
-    return this.quotes.forCustomer(storeSlug, customer.userId, dto);
+  quote(@Param('storeSlug') storeSlug: string, @CurrentBuyer() buyer: Buyer, @Body() dto: CustomerCartQuoteDto): Promise<OrderQuote> {
+    return this.quotes.forCustomer(storeSlug, buyer, dto);
   }
 }

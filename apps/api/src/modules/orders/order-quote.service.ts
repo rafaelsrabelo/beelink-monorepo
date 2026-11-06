@@ -6,6 +6,8 @@ import type { CreateOrderItemInput, OrderQuote, OrderShippingChoice, ShippingQuo
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
+import { Buyers, givenAddressOf, type Buyer } from '../customers/buyers.service.js';
+import type { CustomerAddressRow } from './order-delivery.js';
 import { CustomersService } from '../customers/customers.service.js';
 import { pricedCartOf } from '../delivery/shipping-quote.service.js';
 import { StoresService } from '../stores/stores.service.js';
@@ -22,7 +24,7 @@ type QuoteInput = Omit<PricingInput, 'lines' | 'lock'> & {
   items: readonly CreateOrderItemInput[];
   onSaleOnly: boolean;
   /** Whose saved address the shop's ways to deliver are quoted to — the one chosen, else their default — and the way asked about; absent quotes none. */
-  shippingTo?: { customerId: string; addressId: string | null; choice: OrderShippingChoice | undefined };
+  shippingTo?: { customerId: string; addressId: string | null; choice: OrderShippingChoice | undefined; given?: CustomerAddressRow | null };
 };
 
 /**
@@ -38,6 +40,7 @@ export class OrderQuotes {
     private readonly prisma: PrismaService,
     private readonly stores: StoresService,
     private readonly customers: CustomersService,
+    private readonly buyers: Buyers,
     private readonly shipping: OrderShipping,
   ) {}
 
@@ -52,11 +55,12 @@ export class OrderQuotes {
 
   /**
    * The customer's cart as their order would be priced: a first purchase read from their own
-   * orders, and the coupon they typed, when there is one, held against their own uses.
+   * orders, and the coupon they typed, when there is one, held against their own uses. A purchase
+   * session prices it on its record too, but never with the record's credit: that is the account's.
    */
-  async forCustomer(storeSlug: string, userId: string, dto: CustomerOrderQuoteDto): Promise<OrderQuote> {
-    const { storeId, customerId } = await this.customers.shopperAt(storeSlug, userId);
-    return this.quote({
+  async forCustomer(storeSlug: string, buyer: Buyer, dto: CustomerOrderQuoteDto): Promise<OrderQuote> {
+    const { storeId, customerId, purchase, purchaseId } = await this.buyers.at(storeSlug, buyer);
+    const quote = await this.quote({
       storeId,
       items: dto.items,
       onSaleOnly: true,
@@ -66,9 +70,12 @@ export class OrderQuotes {
       couponCode: dto.couponCode ?? null,
       customer: { id: customerId },
       at: new Date(),
-      cashback: dto.useCashback ? 'MAX' : 'NONE',
-      shippingTo: { customerId, addressId: dto.addressId?.toLowerCase() ?? null, choice: dto.shipping },
+      cashback: dto.useCashback && !purchaseId ? 'MAX' : 'NONE',
+      // A visitor's own address, never the record's: the session's is the one its order goes to.
+      shippingTo: { customerId, addressId: purchase ? null : (dto.addressId?.toLowerCase() ?? null), choice: dto.shipping, ...(purchase ? { given: givenAddressOf(purchase) } : {}) },
     });
+    // Not even the balance: how much credit someone has is not for whoever typed their WhatsApp.
+    return purchaseId ? { ...quote, cashbackUse: null } : quote;
   }
 
   /** The panel's sale as registering it would price it — drafts included, at the day it was sold. */
@@ -96,7 +103,7 @@ export class OrderQuotes {
    * `withFee` quotes the delivery to their address, as the quote does: only a free delivery reads the
    * fee, so a caller with none to ask about spares the carriers the question.
    */
-  async couponBaseFor(storeId: string, customerId: string, dto: CustomerOffersDto & { items: readonly CreateOrderItemInput[] }, withFee: boolean): Promise<PricedOrder['couponBase']> {
+  async couponBaseFor(storeId: string, customerId: string, dto: CustomerOffersDto & { items: readonly CreateOrderItemInput[] }, withFee: boolean, given?: CustomerAddressRow): Promise<PricedOrder['couponBase']> {
     const { priced } = await this.price({
       storeId,
       items: dto.items,
@@ -107,7 +114,7 @@ export class OrderQuotes {
       couponCode: null,
       customer: { id: customerId },
       at: new Date(),
-      ...(withFee ? { shippingTo: { customerId, addressId: dto.addressId?.toLowerCase() ?? null, choice: dto.shipping } } : {}),
+      ...(withFee ? { shippingTo: { customerId, addressId: given ? null : (dto.addressId?.toLowerCase() ?? null), choice: dto.shipping, ...(given ? { given } : {}) } } : {}),
     });
     return priced.couponBase;
   }
@@ -118,7 +125,7 @@ export class OrderQuotes {
     const unshipped = await priceOrder(this.prisma, { ...input, lines, lock: false });
     // The shop's ways to deliver, quoted to the customer's address whichever way the cart leaves: the
     // checkout says them beside the pick-up. On a delivery, the fee of the way it goes by is priced in.
-    const shipping: ShippingQuote | null = shippingTo ? await this.shipping.quoteFor(input.storeId, shippingTo.customerId, shippingTo.addressId, pricedCartOf(lines, unshipped)) : null;
+    const shipping: ShippingQuote | null = shippingTo ? await this.shipping.quoteFor(input.storeId, shippingTo.customerId, shippingTo.addressId, pricedCartOf(lines, unshipped), shippingTo.given) : null;
     const feeCents = shipping && input.fulfillment === 'DELIVERY' ? (deliveryTermsOf(shipping, shippingTo?.choice)?.deliveryFeeCents ?? null) : null;
     // Priced again with the fee: a free-delivery coupon takes it off, and the total carries it.
     const priced = feeCents === null ? unshipped : await priceOrder(this.prisma, { ...input, deliveryFeeCents: feeCents, lines, lock: false });

@@ -74,10 +74,10 @@ export interface CustomerEmailPayload extends EmailPayload {
 }
 
 /**
- * Who is buying, asked at the checkout in place of a sign-up: a name, an e-mail and the WhatsApp the
- * shop answers on. An e-mail the shop does not know becomes its account at once — no password, the
- * e-mail still to confirm, the WhatsApp on its record (or claimed, when another record has it). Sending
- * it is taking bee-link's terms, which the checkout says beside its button.
+ * Who is buying, asked at the checkout of a visitor (plan 2026-11-06--P0-checkout-sem-codigo): a name, an
+ * e-mail and the WhatsApp the shop answers on. It opens a purchase session and nothing else — no account,
+ * no code, no password — whatever the e-mail or the phone. Sending it is taking bee-link's terms, which the
+ * checkout says beside its button.
  */
 export interface CustomerCheckoutPayload {
   name: string;
@@ -87,17 +87,44 @@ export interface CustomerCheckoutPayload {
 }
 
 /**
- * The checkout's answer: signed in, or a code on its way to an e-mail that already has an account at
- * this shop. The one answer of the product that says whether an e-mail is a shop's customer — the
- * price of a new customer not having to open their e-mail before buying.
+ * A visitor's purchase session: what they typed at the checkout, for this purchase alone — never an
+ * account. It prices the cart, places the order and reads the orders it placed and their payment; it
+ * reads nothing of any account or record of the shop. Seven days, to pay a Pix; not renewed.
  */
-export type CustomerCheckoutAnswer = { kind: "SESSION"; session: AuthSession } | { kind: "CODE_SENT" };
+export interface PurchaseSession {
+  accessToken: string;
+  /** ISO-8601. */
+  accessTokenExpiresAt: string;
+}
 
-/** The six digits e-mailed to the account the checkout found, for its session. */
-export interface CustomerCheckoutCodePayload {
+/** The checkout's answer: the same for any e-mail and any phone, so it says nothing of who is a customer. */
+export interface CustomerCheckoutAnswer {
+  purchase: PurchaseSession;
+}
+
+/** Where a visitor's order goes, typed at the checkout: kept on their purchase session, never on a record of the shop. */
+export interface PurchaseAddressPayload {
+  /** Eight digits, the mask allowed. */
+  zipCode: string;
+  street: string;
+  number?: string | null;
+  complement?: string | null;
+  neighborhood?: string | null;
+  city: string;
+  /** Two letters; upper-cased when kept. */
+  state: string;
+}
+
+/** What a purchase session reads: the visitor's own words — what they typed — and when it ends. Nothing of the shop's record. */
+export interface CustomerPurchase {
+  name: string;
   email: string;
-  /** Six digits, spaces allowed. */
-  code: string;
+  /** As `wa.me` wants it. */
+  phone: string;
+  /** The address they gave; null before they gave one. */
+  address: CustomerAddress | null;
+  /** ISO-8601. */
+  expiresAt: string;
 }
 
 /** What a signed-in shopper sees of themselves at one shop: that shop's record, and the account's e-mail. */
@@ -382,8 +409,6 @@ export interface GoogleHandoffSession {
 /** What a shopper's door answers besides the account's own codes (`AuthErrorCode`). */
 export type CustomerErrorCode =
   | "CUSTOMER_PHONE_TAKEN"
-  /** The checkout's code: wrong, spent, past its ten minutes, or tried five times — one word for all, so none is told apart. */
-  | "CUSTOMER_CODE_INVALID"
   /** Not eleven digits, all one digit, or check digits that do not hold. */
   | "CUSTOMER_CPF_INVALID"
   /** A day that does not exist, one in the future, or one before 1900. */

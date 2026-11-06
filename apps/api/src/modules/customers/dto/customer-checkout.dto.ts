@@ -1,21 +1,21 @@
 // Nest
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, OmitType } from '@nestjs/swagger';
 
 // Libs
 import { Transform } from 'class-transformer';
 import { IsString, Matches, MaxLength, MinLength } from 'class-validator';
 
 // Types
-import type { CustomerCheckoutCodePayload, CustomerCheckoutPayload } from '@harness-monorepo/contracts';
+import type { CustomerCheckoutPayload, PurchaseAddressPayload } from '@harness-monorepo/contracts';
 
 // App
 import { EmailDto } from '../../auth/dto/auth.dto.js';
-import { AuthSessionResponse } from '../../auth/dto/auth.response.js';
 import { normaliseWhatsapp } from '../../stores/dto/store-fields.dto.js';
+import { SaveCustomerAddressDto } from './customer-address.dto.js';
 
 const trim = Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value));
 
-/** Who is buying, at the checkout: the e-mail as `EmailDto` takes it, the name as a sign-up does, and the WhatsApp as the profile keeps it. */
+/** Who is buying, at a visitor's checkout: the e-mail as `EmailDto` takes it, the name as a sign-up does, and the WhatsApp as the profile keeps it. */
 export class CustomerCheckoutDto extends EmailDto implements CustomerCheckoutPayload {
   @ApiProperty({ example: 'Ana Souza', minLength: 2, maxLength: 120 })
   @trim
@@ -30,19 +30,35 @@ export class CustomerCheckoutDto extends EmailDto implements CustomerCheckoutPay
   phone!: string;
 }
 
-/** The code e-mailed to the account the checkout found, with the e-mail it went to. */
-export class CustomerCheckoutCodeDto extends EmailDto implements CustomerCheckoutCodePayload {
-  @ApiProperty({ example: '123 456', description: 'The six digits, spaces allowed. Refused with CUSTOMER_CODE_INVALID.' })
-  @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.replace(/\s/g, '') : value))
-  @Matches(/^\d{6}$/)
-  code!: string;
+/** Where a visitor's order goes: a saved address's parts and rules, without a name for it, someone else receiving or a default. */
+export class PurchaseAddressDto extends OmitType(SaveCustomerAddressDto, ['label', 'recipientName', 'isDefault'] as const) implements PurchaseAddressPayload {}
+
+export class PurchaseSessionResponse {
+  @ApiProperty() accessToken!: string;
+  @ApiProperty({ description: 'ISO-8601; seven days, not renewed' }) accessTokenExpiresAt!: string;
 }
 
-/** The checkout's answer, for Swagger: `session` with `SESSION`, nothing with `CODE_SENT`. */
+/** The checkout's answer, the same for every e-mail and phone. */
 export class CustomerCheckoutAnswerResponse {
-  @ApiProperty({ enum: ['SESSION', 'CODE_SENT'] })
-  kind!: 'SESSION' | 'CODE_SENT';
+  @ApiProperty({ type: PurchaseSessionResponse })
+  purchase!: PurchaseSessionResponse;
+}
 
-  @ApiPropertyOptional({ type: AuthSessionResponse })
-  session?: AuthSessionResponse;
+export class PurchaseAddressResponse {
+  @ApiPropertyOptional({ nullable: true, type: String }) zipCode!: string | null;
+  @ApiPropertyOptional({ nullable: true, type: String }) street!: string | null;
+  @ApiPropertyOptional({ nullable: true, type: String }) number!: string | null;
+  @ApiPropertyOptional({ nullable: true, type: String }) complement!: string | null;
+  @ApiPropertyOptional({ nullable: true, type: String }) neighborhood!: string | null;
+  @ApiPropertyOptional({ nullable: true, type: String }) city!: string | null;
+  @ApiPropertyOptional({ nullable: true, type: String }) state!: string | null;
+}
+
+/** What a purchase session reads: the visitor's own words. */
+export class CustomerPurchaseResponse {
+  @ApiProperty() name!: string;
+  @ApiProperty() email!: string;
+  @ApiProperty() phone!: string;
+  @ApiPropertyOptional({ type: PurchaseAddressResponse, nullable: true }) address!: PurchaseAddressResponse | null;
+  @ApiProperty() expiresAt!: string;
 }

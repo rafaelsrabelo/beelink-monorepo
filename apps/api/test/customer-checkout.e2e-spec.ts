@@ -1,34 +1,34 @@
 // Nest
+import { JwtService } from '@nestjs/jwt';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 
 // Types
-import type { AuthSession, CustomerCheckoutAnswer, CustomerProfile } from '@harness-monorepo/contracts';
+import type { CustomerCheckoutAnswer, CustomerOrder, CustomerPurchase, OrderQuote, PurchaseSession } from '@harness-monorepo/contracts';
 
 // App
-import { LEGAL_VERSION } from '../src/modules/auth/auth.constants.js';
+import { AsaasClient } from '../src/modules/integrations/asaas/asaas.client.js';
 import { PrismaService } from '../src/shared/prisma/prisma.service.js';
-import { PASSWORD, newEmail, signUpAndSignIn } from './support/auth-flow.js';
+import { PASSWORD, newEmail } from './support/auth-flow.js';
 import { createTestApp } from './support/create-test-app.js';
-import { clearInbox, waitForMessage } from './support/mailpit.js';
+import { FakeAsaas } from './support/fake-asaas.js';
+import { clearInbox } from './support/mailpit.js';
+import { openOnlineShop, type OnlineShop } from './support/online-shop.js';
 import { resetDatabase } from './support/reset-database.js';
 
-const shop = (slug: string) => ({
-  name: slug,
-  slug,
-  type: 'ECOMMERCE',
-  socialNetworks: { whatsapp: '(11) 99999-8888' },
-  address: { city: 'São Paulo', state: 'sp', zipCode: '01310-930' },
-});
+const MAILPIT_URL = process.env.MAILPIT_URL ?? 'http://localhost:8025';
+const inboxOf = async (email: string) => ((await (await fetch(`${MAILPIT_URL}/api/v1/search?query=${encodeURIComponent(`to:${email}`)}`)).json()) as { messages: unknown[] }).messages;
 
-/** The code out of the e-mail's subject, "123 456 é o seu código na …", as the six digits. */
-const codeOf = (subject: string) => subject.slice(0, 7).replace(' ', '');
+/** A place to deliver to, as a visitor types it at the checkout. */
+const HOME = { zipCode: '60160-230', street: 'Rua Tibúrcio Cavalcante', number: '1200', neighborhood: 'Meireles', city: 'Fortaleza', state: 'ce' };
 
-describe("the checkout's door: buying with no sign-up", () => {
+describe('P0 — a visitor buys with no code and no account (plan 2026-11-06--P0-checkout-sem-codigo)', () => {
   let app: NestFastifyApplication;
   let prisma: PrismaService;
+  let shop: OnlineShop;
+  const asaas = new FakeAsaas();
 
   beforeAll(async () => {
-    app = await createTestApp();
+    app = await createTestApp((builder) => builder.overrideProvider(AsaasClient).useValue(asaas));
     prisma = app.get(PrismaService);
   });
 
@@ -38,135 +38,138 @@ describe("the checkout's door: buying with no sign-up", () => {
 
   beforeEach(async () => {
     await resetDatabase(prisma);
+    shop = await openOnlineShop(app, prisma, 'lessari');
     await clearInbox();
-    const owner = await signUpAndSignIn(app, newEmail('dona'));
-    for (const slug of ['lessari', 'outra']) {
-      await app.inject({ method: 'POST', url: '/api/stores', headers: { authorization: `Bearer ${owner.accessToken}` }, payload: shop(slug) });
-    }
   });
 
-  const identify = (slug: string, payload: object) => app.inject({ method: 'POST', url: `/api/stores/${slug}/customer/checkout`, payload });
-  const withCode = (slug: string, payload: object) => app.inject({ method: 'POST', url: `/api/stores/${slug}/customer/checkout/code`, payload });
-  const me = (slug: string, session: AuthSession) => app.inject({ method: 'GET', url: `/api/stores/${slug}/customer/me`, headers: { authorization: `Bearer ${session.accessToken}` } });
-
-  it('opens the account of an e-mail the shop does not know and signs it in at once, with no password and the e-mail still to confirm', async () => {
-    const email = newEmail('nova');
-
-    const response = await identify('lessari', { name: ' Bia Cliente ', email: email.toUpperCase(), phone: '(11) 98765-4321' });
-
+  const identify = (payload: object, slug = 'lessari') => app.inject({ method: 'POST', url: `/api/stores/${slug}/customer/checkout`, payload });
+  const sessionFor = async (payload: { name: string; email: string; phone: string }, slug = 'lessari'): Promise<PurchaseSession> => {
+    const response = await identify(payload, slug);
     expect(response.statusCode).toBe(200);
-    const answer = response.json<CustomerCheckoutAnswer>();
-    if (answer.kind !== 'SESSION') throw new Error('expected a session');
-    expect(answer.session.user).toMatchObject({ name: 'Bia Cliente', email, emailVerified: false });
+    return response.json<CustomerCheckoutAnswer>().purchase;
+  };
+  const as = (purchase: PurchaseSession, method: 'GET' | 'POST' | 'PUT' | 'DELETE', url: string, payload?: object) =>
+    app.inject({ method, url, headers: { authorization: `Bearer ${purchase.accessToken}` }, ...(payload ? { payload } : {}) });
+  const order = (extra: object = {}) => ({ items: [{ variantId: shop.variantId, quantity: 1 }], fulfillment: 'PICKUP', paymentMethod: 'PIX', paymentChannel: 'OFFLINE', ...extra });
 
-    const profile = (await me('lessari', answer.session)).json<CustomerProfile>();
-    expect(profile).toMatchObject({ name: 'Bia Cliente', email, phone: '5511987654321' });
+  it('lets a new customer buy with no code, no password and no account', async () => {
+    const email = newEmail('nova');
+    const purchase = await sessionFor({ name: 'Ana Souza', email, phone: '(11) 97777-6666' });
 
-    const account = await prisma.user.findFirstOrThrow({ where: { email }, include: { legalAcceptances: true } });
-    expect(account.passwordHash).toBeNull();
-    expect(account.emailVerifiedAt).toBeNull();
-    // The checkout said, beside its button, that going on accepts the terms (BEELINK-171).
-    expect(account.legalAcceptances).toEqual([expect.objectContaining({ version: LEGAL_VERSION, via: 'CHECKOUT' })]);
-    // The confirmation link goes, as a sign-up's does: confirmed, the e-mail hears of the orders.
-    expect((await waitForMessage(email)).Subject).toBe('lessari — confirme seu e-mail');
+    const placed = await as(purchase, 'POST', '/api/stores/lessari/customer/orders', order());
+    expect(placed.statusCode).toBe(201);
+
+    expect(await prisma.user.count({ where: { email } })).toBe(0);
+    const row = await prisma.order.findFirstOrThrow({ where: { storeId: shop.storeId, number: placed.json<CustomerOrder>().number }, include: { customer: true } });
+    expect(row).toMatchObject({ contactEmail: email, customer: { name: 'Ana Souza', phone: '5511977776666', userId: null } });
+    expect(await inboxOf(email)).toEqual([]);
   });
 
-  it('e-mails a code to an e-mail that already has an account here, and the code signs that account in and confirms its e-mail', async () => {
-    const email = newEmail('conhecida');
-    expect((await app.inject({ method: 'POST', url: '/api/stores/lessari/customer/register', payload: { name: 'Ana Souza', email, password: PASSWORD } })).statusCode).toBe(202);
+  /** "Having someone's e-mail is no authorisation to their account." */
+  it('lets an e-mail that has an account buy the same way — no code sent, the account not signed in, nothing of it read', async () => {
+    const email = newEmail('cadastrada');
+    expect((await app.inject({ method: 'POST', url: '/api/stores/lessari/customer/register', payload: { name: 'Dona da Conta', email, password: PASSWORD } })).statusCode).toBe(202);
     await clearInbox();
 
-    const response = await identify('lessari', { name: 'Quem Digitou', email, phone: '11987654321' });
-    expect(response.json()).toEqual({ kind: 'CODE_SENT' });
+    const fresh = (await identify({ name: 'Ana', email: newEmail('outra'), phone: '(11) 97777-6666' })).json<CustomerCheckoutAnswer>();
+    const answer = (await identify({ name: 'Ana', email, phone: '(11) 96666-5555' })).json<CustomerCheckoutAnswer>();
+    // The same answer, key for key: nothing tells a registered e-mail from a new one.
+    expect(Object.keys(answer)).toEqual(Object.keys(fresh));
+    expect(Object.keys(answer.purchase).sort()).toEqual(Object.keys(fresh.purchase).sort());
 
-    const message = await waitForMessage(email);
-    expect(message.Subject).toMatch(/^\d{3} \d{3} é o seu código na lessari$/);
-    expect(message.From).toMatchObject({ Name: 'lessari' });
-    expect(message.Text).toContain('Olá, Ana!');
-
-    const signedIn = await withCode('lessari', { email, code: message.Subject.slice(0, 7) });
-    expect(signedIn.statusCode).toBe(200);
-    const session = signedIn.json<AuthSession>();
-    expect(session.user).toMatchObject({ email, emailVerified: true });
-    // The account is the one that was there: what the checkout typed changed nothing of it.
-    expect((await me('lessari', session)).json<CustomerProfile>()).toMatchObject({ name: 'Ana Souza', phone: null });
-
-    // Spent: the same code twice opens nothing.
-    expect((await withCode('lessari', { email, code: codeOf(message.Subject) })).json()).toMatchObject({ errorCode: 'CUSTOMER_CODE_INVALID' });
+    expect((await as(answer.purchase, 'POST', '/api/stores/lessari/customer/orders', order())).statusCode).toBe(201);
+    expect(await inboxOf(email)).toEqual([]);
+    expect((await as(answer.purchase, 'GET', '/api/stores/lessari/customer/me')).statusCode).toBe(401);
   });
 
-  it('stops a code after five wrong tries, right or wrong after that, and says the same for every way a code fails', async () => {
-    const email = newEmail('tentativas');
-    await identify('lessari', { name: 'Bia', email, phone: '11987654321' });
-    await clearInbox();
-    await identify('lessari', { name: 'Bia', email, phone: '11987654321' });
-    const code = codeOf((await waitForMessage(email)).Subject);
-    const wrong = code === '000000' ? '111111' : '000000';
+  it('places the order on the record of the phone and reads nothing of it — not its name, addresses, orders, CPF or credit', async () => {
+    // Bia's record has her account, her CPF, an address and an order.
+    await shop.call('POST', '/api/stores/lessari/customer/addresses', shop.shopper, { ...HOME, label: 'Casa' });
+    const hers = await shop.place({ paymentChannel: 'OFFLINE' });
+    const purchase = await sessionFor({ name: 'Quem Digitou', email: newEmail('x'), phone: '(11) 98888-7777' });
 
-    for (let attempt = 0; attempt < 5; attempt++) {
-      const refused = await withCode('lessari', { email, code: wrong });
-      expect(refused.statusCode).toBe(400);
-      expect(refused.json()).toMatchObject({ errorCode: 'CUSTOMER_CODE_INVALID' });
+    for (const url of ['/api/stores/lessari/customer/me', '/api/stores/lessari/customer/orders', '/api/stores/lessari/customer/cashback', '/api/stores/lessari/customer/addresses', '/api/stores/lessari/customer/favorites']) {
+      const refused = await as(purchase, 'GET', url);
+      expect(refused.statusCode, url).toBe(401);
     }
-    expect((await withCode('lessari', { email, code })).json()).toMatchObject({ errorCode: 'CUSTOMER_CODE_INVALID' });
-    // An e-mail with no account here is the same word, never "no such account".
-    expect((await withCode('lessari', { email: newEmail('ninguem'), code })).json()).toMatchObject({ errorCode: 'CUSTOMER_CODE_INVALID' });
+    expect((await as(purchase, 'GET', `/api/stores/lessari/customer/orders/${hers.number}`)).statusCode).toBe(404);
+    const self = (await as(purchase, 'GET', '/api/stores/lessari/customer/purchase')).json<CustomerPurchase>();
+    expect(self).toMatchObject({ name: 'Quem Digitou', phone: '5511988887777', address: null });
+    const quote = (await as(purchase, 'POST', '/api/stores/lessari/customer/orders/quote', { items: [{ variantId: shop.variantId, quantity: 1 }], fulfillment: 'PICKUP', useCashback: true })).json<OrderQuote>();
+    expect(quote.cashbackUse).toBeNull();
+
+    const placed = (await as(purchase, 'POST', '/api/stores/lessari/customer/orders', order())).json<CustomerOrder>();
+    const record = await prisma.customer.findFirstOrThrow({ where: { storeId: shop.storeId, phone: '5511988887777' }, include: { addresses: true } });
+    expect((await prisma.order.findFirstOrThrow({ where: { storeId: shop.storeId, number: placed.number } })).customerId).toBe(record.id);
+    // Nothing of the record changed: its name, its one address.
+    expect(record.name).toBe('Bia Cliente');
+    expect(record.addresses).toHaveLength(1);
   });
 
-  it('sends one code a minute: asked again inside it, the one on its way still holds', async () => {
-    const email = newEmail('pressa');
-    await identify('lessari', { name: 'Bia', email, phone: '11987654321' });
-    await clearInbox();
+  it('delivers to the address the visitor typed, kept through a reload, priced and written on the order — never on a record', async () => {
+    const purchase = await sessionFor({ name: 'Ana Souza', email: newEmail('entrega'), phone: '(11) 97777-6666' });
+    const missing = await as(purchase, 'POST', '/api/stores/lessari/customer/orders', order({ fulfillment: 'DELIVERY' }));
+    expect(missing.json()).toMatchObject({ errorCode: 'ORDER_DELIVERY_ADDRESS_MISSING' });
 
-    await identify('lessari', { name: 'Bia', email, phone: '11987654321' });
-    const first = await waitForMessage(email);
-    expect((await identify('lessari', { name: 'Bia', email, phone: '11987654321' })).json()).toEqual({ kind: 'CODE_SENT' });
+    expect((await as(purchase, 'PUT', '/api/stores/lessari/customer/purchase/address', HOME)).statusCode).toBe(200);
+    // A reload reads it back.
+    expect((await as(purchase, 'GET', '/api/stores/lessari/customer/purchase')).json<CustomerPurchase>().address).toMatchObject({ street: 'Rua Tibúrcio Cavalcante', state: 'CE' });
 
-    expect(await prisma.signInCode.count({ where: { user: { email } } })).toBe(1);
-    expect((await withCode('lessari', { email, code: codeOf(first.Subject) })).statusCode).toBe(200);
+    const placed = await as(purchase, 'POST', '/api/stores/lessari/customer/orders', order({ fulfillment: 'DELIVERY', deliveryFeeCents: null }));
+    expect(placed.statusCode).toBe(201);
+    expect(placed.json<CustomerOrder>().deliveryAddress).toMatchObject({ recipientName: 'Ana Souza', street: 'Rua Tibúrcio Cavalcante', number: '1200', city: 'Fortaleza' });
+    const record = await prisma.customer.findFirstOrThrow({ where: { storeId: shop.storeId, phone: '5511977776666' }, include: { addresses: true } });
+    expect(record.addresses).toEqual([]);
   });
 
-  it('sends another code from the code step once the minute passed, and answers the same for an e-mail with no account', async () => {
-    const email = newEmail('reenvio');
-    await identify('lessari', { name: 'Bia', email, phone: '11987654321' });
-    await identify('lessari', { name: 'Bia', email, phone: '11987654321' });
-    // The minute passes for the code standing.
-    await prisma.signInCode.updateMany({ where: { user: { email } }, data: { createdAt: new Date(Date.now() - 61_000) } });
-    await clearInbox();
+  /** Pix and card, by the visitor's session: the CPF the gateway needs is typed, never another person's. */
+  it.each(['PIX', 'CREDIT_CARD'] as const)('charges %s online with the CPF typed, and reads that payment alone', async (method) => {
+    const purchase = await sessionFor({ name: 'Ana Souza', email: newEmail('online'), phone: '(11) 98888-7777' });
+    const online = order({ paymentMethod: method, paymentChannel: 'ONLINE' });
 
-    const resend = (address: string) => app.inject({ method: 'POST', url: '/api/stores/lessari/customer/checkout/code/resend', payload: { email: address } });
-    expect((await resend(email)).statusCode).toBe(202);
-    const second = await waitForMessage(email);
-    expect((await resend(newEmail('ninguem'))).statusCode).toBe(202);
-
-    // Only the last code holds.
-    expect(await prisma.signInCode.count({ where: { user: { email }, usedAt: null } })).toBe(1);
-    expect((await withCode('lessari', { email, code: codeOf(second.Subject) })).statusCode).toBe(200);
+    expect((await as(purchase, 'POST', '/api/stores/lessari/customer/orders', online)).json()).toMatchObject({ errorCode: 'ORDER_PAYER_DOCUMENT_MISSING' });
+    const placed = await as(purchase, 'POST', '/api/stores/lessari/customer/orders', { ...online, recipientDocument: '11144477735' });
+    expect(placed.statusCode).toBe(201);
+    const number = placed.json<CustomerOrder>().number;
+    expect((await as(purchase, 'GET', `/api/stores/lessari/customer/orders/${number}/payment`)).statusCode).toBe(200);
+    // Bia's own CPF, on the record of that phone, was neither used nor replaced.
+    expect((await prisma.customer.findFirstOrThrow({ where: { storeId: shop.storeId, phone: '5511988887777' } })).cpf).toBe('52998224725');
   });
 
-  /** A shop's account is the shop's alone: the same e-mail is a new customer at another shop. */
-  it('opens a second account for the same e-mail at another shop, and keeps a WhatsApp another record has as claimed', async () => {
-    const email = newEmail('duas-lojas');
-    await identify('lessari', { name: 'Bia', email, phone: '11987654321' });
+  it("reads the orders it placed and no other session's, spends no credit, and stops at once when ended", async () => {
+    const first = await sessionFor({ name: 'Ana', email: newEmail('a'), phone: '(11) 97777-6666' });
+    const placed = (await as(first, 'POST', '/api/stores/lessari/customer/orders', order())).json<CustomerOrder>();
+    const second = await sessionFor({ name: 'Ana', email: newEmail('a'), phone: '(11) 97777-6666' });
 
-    // The shopkeeper registered someone with this WhatsApp before: the purchase goes on, the pair flagged.
-    const outra = await prisma.store.findUniqueOrThrow({ where: { slug: 'outra' } });
-    await prisma.customer.create({ data: { storeId: outra.id, name: 'Venda pelo WhatsApp', phone: '5511987654321' } });
+    expect((await as(first, 'GET', `/api/stores/lessari/customer/orders/${placed.number}`)).statusCode).toBe(200);
+    expect((await as(second, 'GET', `/api/stores/lessari/customer/orders/${placed.number}`)).statusCode).toBe(404);
+    expect((await as(first, 'POST', '/api/stores/lessari/customer/orders', order({ cashbackCents: 100 }))).json()).toMatchObject({ errorCode: 'ORDER_CASHBACK_REFUSED' });
 
-    const answer = (await identify('outra', { name: 'Bia', email, phone: '(11) 98765-4321' })).json<CustomerCheckoutAnswer>();
-    expect(answer.kind).toBe('SESSION');
-    const record = await prisma.customer.findFirstOrThrow({ where: { storeId: outra.id, user: { email } } });
-    expect(record).toMatchObject({ phone: null, claimedPhone: '5511987654321' });
+    expect((await as(first, 'DELETE', '/api/stores/lessari/customer/purchase')).statusCode).toBe(204);
+    expect((await as(first, 'GET', '/api/stores/lessari/customer/purchase')).statusCode).toBe(401);
+  });
+
+  /** White-label: one shop's visitor is a stranger at another, and a session past its days is nobody. */
+  it('is a stranger at another shop, and nothing once expired', async () => {
+    await openOnlineShop(app, prisma, 'outra');
+    const purchase = await sessionFor({ name: 'Ana', email: newEmail('b'), phone: '(11) 97777-6666' });
+    expect((await as(purchase, 'GET', '/api/stores/outra/customer/purchase')).statusCode).toBe(401);
+    expect((await sessionFor({ name: 'Ana', email: newEmail('b'), phone: '(11) 97777-6666' }, 'outra')).accessToken).toBeTruthy();
+
+    const row = await prisma.purchaseSession.findFirstOrThrow({ where: { storeId: shop.storeId } });
+    await prisma.purchaseSession.update({ where: { id: row.id }, data: { expiresAt: new Date(Date.now() - 1000) } });
+    expect((await as(purchase, 'GET', '/api/stores/lessari/customer/purchase')).statusCode).toBe(401);
+    const forged = await app.get(JwtService).signAsync({ sub: row.id, store: shop.storeId, kind: 'purchase' }, { expiresIn: -10 });
+    expect((await as({ accessToken: forged, accessTokenExpiresAt: '' }, 'GET', '/api/stores/lessari/customer/purchase')).statusCode).toBe(401);
   });
 
   it('refuses a name, an e-mail or a WhatsApp that is not one', async () => {
     for (const payload of [
-      { name: 'B', email: newEmail('x'), phone: '11987654321' },
-      { name: 'Bia', email: 'nao-e-email', phone: '11987654321' },
-      { name: 'Bia', email: newEmail('x'), phone: '1234' },
+      { name: 'A', email: newEmail('x'), phone: '11987654321' },
+      { name: 'Ana', email: 'nao-e-email', phone: '11987654321' },
+      { name: 'Ana', email: newEmail('x'), phone: '1234' },
     ]) {
-      expect((await identify('lessari', payload)).statusCode).toBe(400);
+      expect((await identify(payload)).statusCode).toBe(400);
     }
-    expect((await withCode('lessari', { email: newEmail('x'), code: '12345' })).statusCode).toBe(400);
   });
 });

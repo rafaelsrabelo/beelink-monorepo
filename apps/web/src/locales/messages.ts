@@ -51,6 +51,8 @@ export type WebErrorCode =
   | "CUSTOMER_FIELDS_INVALID"
   /** The checkout's "who is buying" refused as a whole (400): a name, an e-mail or a WhatsApp that is not one. */
   | "CUSTOMER_CHECKOUT_INVALID"
+  /** A visitor's purchase session ended or expired under them: their details are asked again. */
+  | "CUSTOMER_PURCHASE_ENDED"
   /** A saved address the API refused as a whole: a 400 from the addresses' save. */
   | "CUSTOMER_ADDRESS_FIELDS_INVALID"
   /** A form of the shopper's area sent after their session had ended elsewhere: nothing was done. */

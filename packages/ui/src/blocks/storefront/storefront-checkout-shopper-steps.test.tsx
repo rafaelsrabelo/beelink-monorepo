@@ -55,6 +55,16 @@ describe("StorefrontCheckoutShopperSteps", () => {
     expect(within(stepNamed("Pagamento")).getByText("Escolha como receber para continuar.")).toBeInTheDocument()
   })
 
+  /** A visitor's "Alterar" ends their purchase session by a post, never a link a prefetch could follow. */
+  it("lets a visitor change who is buying by a form, not a link", () => {
+    const { container } = render(steps({ customer: { ...customer, editAction: { action: "/loja/api/customer/checkout/sair", hidden: { retorno: "/loja/carrinho#finalizar" } } } }))
+
+    const form = container.querySelector('form[action="/loja/api/customer/checkout/sair"]')
+    expect(form).toHaveAttribute("method", "post")
+    expect(within(stepNamed("Seus dados")).getByRole("button", { name: "Alterar" })).toHaveAttribute("type", "submit")
+    expect(within(stepNamed("Seus dados")).queryByRole("link", { name: "Alterar" })).toBeNull()
+  })
+
   it("says a pick-up as such in the delivery's line", () => {
     render(steps({ choice: { fulfillment: "PICKUP", addressId: "a1", paymentMethod: null, wayId: null } }))
 

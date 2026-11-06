@@ -21,8 +21,9 @@ import type { CustomerOrderPaymentAnswer } from '@harness-monorepo/contracts';
 import { env } from '../../shared/config/env.js';
 import { Public } from '../auth/auth.decorators.js';
 import { OpenWhileLocked } from '../billing/page-lock.decorators.js';
-import { CustomerAuthGuard, type AuthenticatedCustomer } from '../customers/customer-auth.guard.js';
-import { CurrentCustomer } from '../customers/customer.decorators.js';
+import { CustomerAuthGuard } from '../customers/customer-auth.guard.js';
+import type { Buyer } from '../customers/buyers.service.js';
+import { CurrentBuyer, OpenToPurchase } from '../customers/customer.decorators.js';
 import { OrderNumberPipe } from '../orders/order-number.pipe.js';
 import { CustomerPayments } from './customer-payments.service.js';
 import { CustomerOrderPaymentAnswerResponse } from './dto/payment.response.js';
@@ -47,13 +48,15 @@ export class CustomerPaymentsController {
   constructor(private readonly payments: CustomerPayments) {}
 
   @Get()
+  @OpenToPurchase()
   @ApiOperation({ summary: "The order's charge and what it is paid with: a Pix's code and QR, read from Asaas once and kept, or a card's hosted invoice" })
   @ApiOkResponse({ type: CustomerOrderPaymentAnswerResponse })
-  read(@Param('storeSlug') storeSlug: string, @CurrentCustomer() customer: AuthenticatedCustomer, @Param('number', OrderNumberPipe) number: number): Promise<CustomerOrderPaymentAnswer> {
-    return this.payments.read(storeSlug, customer.userId, number);
+  read(@Param('storeSlug') storeSlug: string, @CurrentBuyer() buyer: Buyer, @Param('number', OrderNumberPipe) number: number): Promise<CustomerOrderPaymentAnswer> {
+    return this.payments.read(storeSlug, buyer, number);
   }
 
   @Post()
+  @OpenToPurchase()
   @RouteConfig({ rateLimit })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Make sure the order has a charge good to pay: the one it has while that serves, else a new one — the one before removed from Asaas first' })
@@ -65,7 +68,7 @@ export class CustomerPaymentsController {
   @ApiBadGatewayResponse({ description: 'PAYMENT_REFUSED — Asaas refused the charge; the shop reads why on the order' })
   @ApiServiceUnavailableResponse({ description: 'PAYMENT_UNAVAILABLE — the shop cannot be paid online right now' })
   @ApiTooManyRequestsResponse({ description: 'Too many from this address' })
-  charge(@Param('storeSlug') storeSlug: string, @CurrentCustomer() customer: AuthenticatedCustomer, @Param('number', OrderNumberPipe) number: number): Promise<CustomerOrderPaymentAnswer> {
-    return this.payments.charge(storeSlug, customer.userId, number);
+  charge(@Param('storeSlug') storeSlug: string, @CurrentBuyer() buyer: Buyer, @Param('number', OrderNumberPipe) number: number): Promise<CustomerOrderPaymentAnswer> {
+    return this.payments.charge(storeSlug, buyer, number);
   }
 }
