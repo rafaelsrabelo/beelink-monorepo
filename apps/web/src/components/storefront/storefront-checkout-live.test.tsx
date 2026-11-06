@@ -16,7 +16,8 @@ import { cartQuoteOf, firstFulfillmentOf, type ServedQuote } from "@/lib/cart-pr
 import { checkoutAddressesOf, checkoutAddressIdOf } from "@/lib/saved-address"
 import { cartViewOf } from "@/lib/cart-view"
 import { CartProvider } from "./cart-provider"
-import { StorefrontCartLive, type StorefrontCartLiveProps } from "./storefront-cart-live"
+import { CartStepper } from "./cart-stepper.fixtures"
+import { StorefrontCheckoutLive, type StorefrontCheckoutLiveProps } from "./storefront-checkout-live"
 
 const routeWords = { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha", account: "conta", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", cashback: "cashback", profile: "perfil", messages: "conversas" } }
 
@@ -51,11 +52,11 @@ const bia: CustomerProfile = {
 bia.addresses = [{ id: "a1", label: "Casa", recipientName: null, ...bia.address, isDefault: true }]
 const work = { id: "a2", label: "Trabalho", recipientName: "Recepção", ...bia.address, street: "Av. Faria Lima", number: "3477", isDefault: false }
 const identityHrefs = {
-  signInHref: "/loja/entrar?voltar=%2Floja%2Fcarrinho",
+  signInHref: "/loja/entrar?voltar=%2Floja%2Fcheckout",
   signUpHref: "/loja/entrar?modo=criar",
-  editHref: "/loja/conta?voltar=%2Floja%2Fcarrinho",
-  addAddressHref: "/loja/conta/perfil?endereco=novo&voltar=%2Floja%2Fcarrinho",
-  cartHref: "/loja/carrinho",
+  editHref: "/loja/conta?voltar=%2Floja%2Fcheckout",
+  addAddressHref: "/loja/conta/perfil?endereco=novo&voltar=%2Floja%2Fcheckout",
+  checkoutHref: "/loja/checkout",
 }
 
 function cookieLines() {
@@ -137,19 +138,32 @@ function openDelivery() {
   if (edit) fireEvent.click(edit)
 }
 
+/** A line of the checkout's summary, which reads the lines and links none. */
+const summaryLine = (name: string) => within(screen.getByRole("region", { name: "Resumo do pedido" })).getByText(name).closest("li")!
+
+/** The coupon's field, behind "Inserir cupom de desconto" until it is asked for. */
+function openCoupon() {
+  const open = screen.queryByRole("button", { name: "Inserir cupom de desconto" })
+  if (open) fireEvent.click(open)
+}
+
 /** The delivery's step done, on to the payment, where the order is placed. */
 const toPayment = () => fireEvent.click(screen.getByRole("button", { name: "Continuar para o pagamento" }))
 
-function cartTree(client: QueryClient, goneOnArrival: boolean, shopper: CustomerProfile | null, props: Partial<StorefrontCartLiveProps>) {
+/**
+ * The checkout, with the cart's own steppers beside it: the cart changes under a checkout — the
+ * cart's page in another tab, a line the shop stopped selling — and the price follows it.
+ */
+function cartTree(client: QueryClient, goneOnArrival: boolean, shopper: CustomerProfile | null, props: Partial<StorefrontCheckoutLiveProps>) {
   return (
     <QueryClientProvider client={client}>
       <CartProvider slug="loja" lines={cartLines(goneOnArrival)}>
-        <StorefrontCartLive
+        <CartStepper name="Blusa" productId={blusa.id} />
+        <StorefrontCheckoutLive
           slug="loja"
           products={[blusa]}
-          hrefs={{ [blusa.id]: "/loja/produtos/blusa" }}
           continueHref="/loja/produtos"
-          goneOnArrival={goneOnArrival}
+          cartHref="/loja/carrinho"
           shopName="Loja"
           whatsapp="5511999998888"
           routeWords={routeWords}
@@ -167,8 +181,8 @@ function cartTree(client: QueryClient, goneOnArrival: boolean, shopper: Customer
   )
 }
 
-/** The cart page, and a way to draw it again as a refresh would — the same page, new props. */
-function renderCart(goneOnArrival = false, shopper: CustomerProfile | null = bia, props: Partial<StorefrontCartLiveProps> = {}) {
+/** The checkout page, and a way to draw it again as a refresh would — the same page, new props. */
+function renderCart(goneOnArrival = false, shopper: CustomerProfile | null = bia, props: Partial<StorefrontCheckoutLiveProps> = {}) {
   const client = new QueryClient()
   const view = render(cartTree(client, goneOnArrival, shopper, props))
   return { ...view, redraw: (next: CustomerProfile | null) => view.rerender(cartTree(client, goneOnArrival, next, props)) }
@@ -196,7 +210,7 @@ function openedTab() {
 }
 
 beforeEach(() => {
-  window.history.replaceState(null, "", "/loja/carrinho")
+  window.history.replaceState(null, "", "/loja/checkout")
   // A cart that changes is priced again: every test has a network to ask, and overrides it when it cares.
   network()
 })
@@ -208,18 +222,8 @@ afterEach(() => {
   mocks.refresh.mockReset()
 })
 
-describe("StorefrontCartLive", () => {
-  it("changes a quantity in place, the total with it, and writes the cookie", () => {
-    renderCart()
-
-    expect(screen.getByText(/Subtotal \(2 itens\)/)).toBeInTheDocument()
-    fireEvent.click(screen.getByRole("button", { name: "Aumentar a quantidade de Blusa" }))
-
-    expect(screen.getByText(/Subtotal \(3 itens\)/)).toBeInTheDocument()
-    expect(cookieLines()).toEqual([{ productId: blusa.id, variantId: null, qty: 3 }])
-  })
-
-  it("takes a line out, leaving the empty cart and its way back", () => {
+describe("StorefrontCheckoutLive", () => {
+  it("has nothing to check out once the cart was emptied under it: it says so, with the way back to the shelf", () => {
     renderCart()
 
     fireEvent.click(screen.getByRole("button", { name: "Remover Blusa do carrinho" }))
@@ -269,18 +273,6 @@ describe("StorefrontCartLive", () => {
     expect(screen.getByText(/Subtotal \(2 itens\)/)).toBeInTheDocument()
   })
 
-  it("changing the cart clears the refusal, which no longer describes it", async () => {
-    network({ order: () => Response.json({ statusCode: 409, errorCode: "ORDER_STOCK_INSUFFICIENT", message: "x" }, { status: 409 }) })
-    openedTab()
-    renderCart()
-
-    fireEvent.click(screen.getByRole("button", { name: "Fechar pedido pelo WhatsApp" }))
-    await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument())
-    fireEvent.click(screen.getByRole("button", { name: "Diminuir a quantidade de Blusa" }))
-
-    await waitFor(() => expect(screen.queryByRole("alert")).toBeNull())
-  })
-
   it("says the session ended, reads the page again and keeps saying so once it asks to sign in", async () => {
     network({ order: () => Response.json({ statusCode: 401, errorCode: "AUTH_UNAUTHENTICATED", message: "x" }, { status: 401 }) })
     openedTab()
@@ -324,22 +316,6 @@ describe("StorefrontCartLive", () => {
     expect(screen.queryByRole("link", { name: /Tente de novo/ })).toBeNull()
   })
 
-  /** Said over a cart that is gone, "os itens estão no carrinho" would contradict "pedido enviado". */
-  it("says what brought the shopper here over the cart, and stops once the order is sent", async () => {
-    network({ order: () => Response.json({ ...placed, fulfillment: "PICKUP", deliveryAddress: null }, { status: 201 }) })
-    renderCart(false, bia, { whatsapp: null, arrival: <p>Os itens do pedido nº 11 estão no carrinho.</p> })
-    expect(screen.getByText("Os itens do pedido nº 11 estão no carrinho.")).toBeInTheDocument()
-
-    openDelivery()
-
-    fireEvent.click(screen.getByRole("radio", { name: "Retirar na loja" }))
-    toPayment()
-    fireEvent.click(screen.getByRole("button", { name: "Fazer pedido" }))
-
-    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("A loja recebeu o seu pedido e vai confirmar."))
-    expect(screen.queryByText("Os itens do pedido nº 11 estão no carrinho.")).toBeNull()
-  })
-
   /** The address gone, the delivery stays the choice — and asks for an address in place, never sending to the old one. */
   it("never sends a delivery to an address gone from the page: it asks for one in the checkout", async () => {
     const fetched = network()
@@ -381,8 +357,8 @@ describe("StorefrontCartLive", () => {
     const form = container.querySelector('form[action="/loja/api/customer/enderecos/salvar"]')
     const hidden = (name: string) => form?.querySelector<HTMLInputElement>(`input[type=hidden][name="${name}"]`)?.value
     expect(form).toHaveAttribute("method", "post")
-    expect(hidden("retorno")).toBe("/loja/carrinho#finalizar")
-    expect(hidden("formulario")).toBe("/loja/carrinho#finalizar")
+    expect(hidden("retorno")).toBe("/loja/checkout#finalizar")
+    expect(hidden("formulario")).toBe("/loja/checkout#finalizar")
     expect(hidden("entregar")).toBe("1")
     expect(container.querySelector("#finalizar")).not.toBeNull()
   })
@@ -426,21 +402,15 @@ describe("StorefrontCartLive", () => {
     view.unmount()
   })
 
-  it("asks a visitor to sign in to order, and comes back to this cart", () => {
+  it("asks a visitor to sign in to order, and comes back to this checkout", () => {
     renderCart(false, null)
 
     expect(screen.queryByRole("button", { name: "Fechar pedido pelo WhatsApp" })).toBeNull()
     expect(screen.getByRole("link", { name: "Entrar para fazer o pedido" })).toHaveAttribute("href", identityHrefs.signInHref)
-    // The cart itself stays open: the total is there for anyone.
+    // The summary stays open: the total is there for anyone.
     expect(screen.getByText(/Subtotal \(2 itens\)/)).toBeInTheDocument()
   })
 
-  it("takes out a line whose product left the shop, and says so", () => {
-    renderCart(true)
-
-    expect(screen.getByRole("status")).toHaveTextContent("saiu da loja")
-    expect(cookieLines()).toEqual([{ productId: blusa.id, variantId: null, qty: 2 }])
-  })
 })
 
 /** BEELINK-194: the cart is priced by the API, and a coupon is answered before the order goes out. */
@@ -458,10 +428,11 @@ describe("the cart's price and its coupon", () => {
     Response.json({ ...quoteOf({ ...cart, couponCode: undefined }), coupon: { status: "REFUSED", code: "BEMVINDO10", ...refusal } })
 
   const summaryRows = () =>
-    [...screen.getByRole("complementary").querySelectorAll("dl > div")].map((row) => [row.querySelector("dt")!.textContent, row.querySelector("dd")!.textContent!.replace(/\s/g, " ")])
+    [...screen.getByRole("region", { name: "Resumo do pedido" }).querySelectorAll("dl > div")].map((row) => [row.querySelector("dt")!.textContent, row.querySelector("dd")!.textContent!.replace(/\s/g, " ")])
   const placeButton = () => screen.getByRole("button", { name: "Fechar pedido pelo WhatsApp" })
 
   async function applyCoupon(code: string) {
+    openCoupon()
     fireEvent.change(screen.getByLabelText("Cupom de desconto"), { target: { value: code } })
     fireEvent.click(screen.getByRole("button", { name: "Aplicar" }))
   }
@@ -475,7 +446,7 @@ describe("the cart's price and its coupon", () => {
       ["Promoção: Semana da Blusa", "− R$ 11,98"],
       ["Total", "R$ 107,82 + frete"],
     ])
-    const line = screen.getByRole("link", { name: "Blusa" }).closest("li")!
+    const line = summaryLine("Blusa")!
     expect(line).toHaveTextContent("Promoção: Semana da Blusa")
     expect(line.querySelector("s")!.textContent!.replace(/\s/g, " ")).toBe("De: R$ 119,80")
     expect(line).toHaveTextContent(/R\$\s107,82/)
@@ -644,11 +615,11 @@ describe("the cart's price and its coupon", () => {
 
     // At once: the count, and the line at the catalogue's own numbers — the price kept is dimmed, not trusted.
     expect(screen.getByText(/Subtotal \(4 itens\)/)).toBeInTheDocument()
-    expect(screen.getByRole("complementary").querySelector("dl")).toHaveAttribute("aria-busy", "true")
-    expect(screen.getByRole("link", { name: "Blusa" }).closest("li")).toHaveTextContent(/R\$\s239,60/)
+    expect(screen.getByRole("region", { name: "Resumo do pedido" }).querySelector("dl")).toHaveAttribute("aria-busy", "true")
+    expect(summaryLine("Blusa")).toHaveTextContent(/R\$\s239,60/)
 
     await waitFor(() => expect(bodiesTo(fetched, "/loja/api/orders/quote")).toEqual([{ items: blusas(4), fulfillment: "DELIVERY", addressId: "a1" }]))
-    await waitFor(() => expect(screen.getByRole("complementary").querySelector("dl")).not.toHaveAttribute("aria-busy"))
+    await waitFor(() => expect(screen.getByRole("region", { name: "Resumo do pedido" }).querySelector("dl")).not.toHaveAttribute("aria-busy"))
   })
 
   it("prices a pick-up as one: the total says no '+ frete'", async () => {
@@ -669,7 +640,7 @@ describe("the cart's price and its coupon", () => {
     network({ quote: () => Response.json({ statusCode: 502, errorCode: "UNKNOWN", message: "x" }, { status: 502 }) })
     renderCart(false, bia, { served: null })
 
-    const list = screen.getByRole("complementary").querySelector("dl")!
+    const list = screen.getByRole("region", { name: "Resumo do pedido" }).querySelector("dl")!
     expect(list).toHaveAttribute("aria-busy", "true")
     expect(list).not.toHaveTextContent("119,80")
 
@@ -697,7 +668,7 @@ describe("the cart's price and its coupon", () => {
     expect(screen.getByRole("button", { name: "Remover o cupom BEMVINDO10" })).toBeInTheDocument()
     expect(screen.queryByText("Cupom BEMVINDO10 aplicado.")).toBeNull()
     expect(summaryRows()).toEqual([["Subtotal (2 itens)", "R$ 119,80"]])
-    expect(screen.getByRole("complementary").querySelector("dl")).toHaveAttribute("aria-busy", "true")
+    expect(screen.getByRole("region", { name: "Resumo do pedido" }).querySelector("dl")).toHaveAttribute("aria-busy", "true")
     expect(placeButton()).toBeDisabled()
 
     await waitFor(() => expect(screen.getByText("Cupom BEMVINDO10 aplicado.")).toBeInTheDocument())
@@ -707,7 +678,7 @@ describe("the cart's price and its coupon", () => {
   })
 
   it("says why the coupon its address named does not hold, with a way to take it off — out of the address too", async () => {
-    window.history.replaceState(null, "", "/loja/carrinho?cupom=BEMVINDO10&entregar=a1")
+    window.history.replaceState(null, "", "/loja/checkout?cupom=BEMVINDO10&entregar=a1")
     network({ quote: (cart) => (cart.couponCode ? refusedOver(cart, { reason: "EXPIRED" }) : Response.json(quoteOf(cart))) })
     renderCart(false, bia, { coupon: "BEMVINDO10" })
 
@@ -720,22 +691,22 @@ describe("the cart's price and its coupon", () => {
     expect(window.location.search).toBe("?entregar=a1")
   })
 
-  it("takes the coupon along on every way out of the cart that comes back to it", async () => {
+  it("takes the coupon along on every way out of the checkout that comes back to it", async () => {
     renderCart()
     const backOf = (name: string) => new URL(screen.getByRole("link", { name }).getAttribute("href")!, "http://x").searchParams.get("voltar")
-    expect(backOf("Alterar")).toBe("/loja/carrinho")
+    expect(backOf("Alterar")).toBe("/loja/checkout")
 
     await applyCoupon("BEMVINDO10")
     await waitFor(() => expect(screen.getByText("Cupom BEMVINDO10 aplicado.")).toBeInTheDocument())
 
-    expect(backOf("Alterar")).toBe("/loja/carrinho?cupom=BEMVINDO10")
+    expect(backOf("Alterar")).toBe("/loja/checkout?cupom=BEMVINDO10")
     openDelivery()
     fireEvent.click(screen.getByRole("button", { name: "Entregar em outro endereço" }))
     const back = document.querySelector<HTMLInputElement>('form[action="/loja/api/customer/enderecos/salvar"] input[name="retorno"]')
-    expect(back?.value).toBe("/loja/carrinho?cupom=BEMVINDO10#finalizar")
+    expect(back?.value).toBe("/loja/checkout?cupom=BEMVINDO10#finalizar")
 
     fireEvent.click(screen.getByRole("button", { name: "Remover o cupom BEMVINDO10" }))
-    expect(backOf("Alterar")).toBe("/loja/carrinho")
+    expect(backOf("Alterar")).toBe("/loja/checkout")
   })
 
   /** P0: a visitor says who is buying right in the checkout — no code, no account — the coupon carried through the form. */
@@ -747,9 +718,9 @@ describe("the cart's price and its coupon", () => {
     expect(screen.queryByRole("link", { name: "Entrar para fazer o pedido" })).toBeNull()
     expect(screen.queryByLabelText(/código/i)).toBeNull()
     const form = container.querySelector('form[action="/loja/api/customer/checkout/identificar"]')
-    expect(form?.querySelector<HTMLInputElement>('input[name="retorno"]')?.value).toBe("/loja/carrinho?cupom=BEMVINDO10#finalizar")
+    expect(form?.querySelector<HTMLInputElement>('input[name="retorno"]')?.value).toBe("/loja/checkout?cupom=BEMVINDO10#finalizar")
     // Signing in stays, optional, coming back to this cart with the coupon.
-    expect(new URL(screen.getByRole("link", { name: "Entrar" }).getAttribute("href")!, "http://x").searchParams.get("voltar")).toBe("/loja/carrinho?cupom=BEMVINDO10")
+    expect(new URL(screen.getByRole("link", { name: "Entrar" }).getAttribute("href")!, "http://x").searchParams.get("voltar")).toBe("/loja/checkout?cupom=BEMVINDO10")
   })
 
   /** Once identified, the visitor buys through the shopper's checkout, made of what they typed and nothing else. */
@@ -765,7 +736,7 @@ describe("the cart's price and its coupon", () => {
       expect(screen.getByText("Ana Souza · 5511977776666")).toBeInTheDocument()
       const change = container.querySelector('form[action="/loja/api/customer/checkout/sair"]')
       expect(change).toHaveAttribute("method", "post")
-      expect(change?.querySelector<HTMLInputElement>('input[name="retorno"]')?.value).toBe("/loja/carrinho#finalizar")
+      expect(change?.querySelector<HTMLInputElement>('input[name="retorno"]')?.value).toBe("/loja/checkout#finalizar")
 
       // No address yet: the delivery is open, and choosing it opens the form that keeps it on the session.
       fireEvent.click(screen.getByRole("radio", { name: /Receber em casa/ }))
@@ -812,7 +783,7 @@ describe("the cart's price and its coupon", () => {
     await waitFor(() => expect(screen.getByText("Cupom BEMVINDO10 aplicado.")).toBeInTheDocument())
     expect(screen.getByRole("button", { name: "Remover o cupom BEMVINDO10" })).toBeInTheDocument()
     expect(bodiesTo(fetched, "/loja/api/orders/quote").some((body) => body.couponCode === "BEMVINDO10")).toBe(true)
-    expect(new URL(screen.getByRole("link", { name: "Entrar para fazer o pedido" }).getAttribute("href")!, "http://x").searchParams.get("voltar")).toBe("/loja/carrinho?cupom=BEMVINDO10")
+    expect(new URL(screen.getByRole("link", { name: "Entrar para fazer o pedido" }).getAttribute("href")!, "http://x").searchParams.get("voltar")).toBe("/loja/checkout?cupom=BEMVINDO10")
   })
 
   /** From the review: a code still being checked is a price nobody read yet, as a kept one being checked is. */
@@ -845,7 +816,7 @@ describe("the cart's price and its coupon", () => {
 
     hold = true
     fireEvent.click(screen.getByRole("button", { name: "Aumentar a quantidade de Blusa" }))
-    await waitFor(() => expect(screen.getByRole("complementary").querySelector("dl")).toHaveAttribute("aria-busy", "true"))
+    await waitFor(() => expect(screen.getByRole("region", { name: "Resumo do pedido" }).querySelector("dl")).toHaveAttribute("aria-busy", "true"))
     // Still said, and the order still waits: the price for three is not in yet.
     expect(screen.getByText("Cupom BEMVINDO10 aplicado.")).toBeInTheDocument()
     await waitFor(() => expect(placeButton()).toBeDisabled())
@@ -929,12 +900,12 @@ describe("the cart's price and its coupon", () => {
     render(
       <QueryClientProvider client={client}>
         <CartProvider slug="loja" lines={[...cartLines(false), { productId: soldOut.id, variantId: null, qty: 1 }]}>
-          <StorefrontCartLive
+          <CartStepper name="Blusa" productId={blusa.id} />
+          <StorefrontCheckoutLive
             slug="loja"
             products={[blusa, soldOut]}
-            hrefs={{}}
             continueHref="/loja/produtos"
-            goneOnArrival={false}
+            cartHref="/loja/carrinho"
             shopName="Loja"
             whatsapp={null}
             routeWords={routeWords}
@@ -953,7 +924,7 @@ describe("the cart's price and its coupon", () => {
     fireEvent.click(screen.getByRole("button", { name: "Remover Blusa do carrinho" }))
 
     await waitFor(() => expect(summaryRows()).toEqual([["Subtotal (0 itens)", "R$ 0,00"]]))
-    expect(screen.getByRole("complementary").querySelector("dl")).not.toHaveAttribute("aria-busy")
+    expect(screen.getByRole("region", { name: "Resumo do pedido" }).querySelector("dl")).not.toHaveAttribute("aria-busy")
   })
 
   it("reads the page again when the session ended while a code was typed", async () => {
@@ -990,7 +961,7 @@ describe("the cart's first purchase", () => {
     totalCents: 10183,
   }
   const announced = (status: "UNIDENTIFIED" | "NOT_FIRST"): Partial<OrderQuote> => ({ firstPurchase: { status, promotionName: "Boas-vindas", discountCents: 1797 } })
-  const summary = () => screen.getByRole("complementary")
+  const summary = () => screen.getByRole("region", { name: "Resumo do pedido" })
   const summaryRows = () => [...summary().querySelectorAll("dl > div")].map((row) => [row.querySelector("dt")!.textContent, row.querySelector("dd")!.textContent!.replace(/\s/g, " ")])
 
   it("tells a visitor what the first purchase takes off, and leaves it out of the total until they are identified", () => {
@@ -1070,7 +1041,7 @@ describe("the cart's delivery, as the shop quotes it", () => {
   const quoted: Partial<OrderQuote> = { deliveryFeeCents: 500, totalCents: 12480, shipping: shipping({}) }
   const outOfRange: Partial<OrderQuote> = { shipping: shipping({ options: [pickup], ownDelivery: { status: "OUT_OF_RANGE", distanceMeters: 10828, radiusMeters: 8000 } }) }
   const summaryRows = () =>
-    [...screen.getByRole("complementary").querySelectorAll("dl > div")].map((row) => [row.querySelector("dt")!.textContent, row.querySelector("dd")!.textContent!.replace(/\s/g, " ")])
+    [...screen.getByRole("region", { name: "Resumo do pedido" }).querySelectorAll("dl > div")].map((row) => [row.querySelector("dt")!.textContent, row.querySelector("dd")!.textContent!.replace(/\s/g, " ")])
   const placeButton = () => screen.getByRole("button", { name: "Fechar pedido pelo WhatsApp" })
 
   it("says the fee and the window under the address, the fee on its row, and sends the order with the fee shown", async () => {
@@ -1201,7 +1172,7 @@ describe("the cart's cashback", () => {
   // The amount is written with the no-break space a currency takes: matched as any space.
   const box = (amount = "15,00") => screen.getByRole("checkbox", { name: new RegExp(`^Usar meu cashback \\(R\\$\\s${amount} disponíveis\\)$`) })
   const summaryRows = () =>
-    [...screen.getByRole("complementary").querySelectorAll("dl > div")].map((row) => [row.querySelector("dt")!.textContent, row.querySelector("dd")!.textContent!.replace(/\s/g, " ")])
+    [...screen.getByRole("region", { name: "Resumo do pedido" }).querySelectorAll("dl > div")].map((row) => [row.querySelector("dt")!.textContent, row.querySelector("dd")!.textContent!.replace(/\s/g, " ")])
   const placeButton = () => screen.getByRole("button", { name: "Fechar pedido pelo WhatsApp" })
 
   it("offers the shopper's credit unticked, prices the cart with it once ticked, and places the order with the amount the totals show", async () => {
@@ -1428,7 +1399,7 @@ describe("the cart's available coupons", () => {
 
     await waitFor(() => expect(bodiesTo(fetched, "/loja/api/offers")).toHaveLength(1))
     expect(screen.queryByText("Cupons disponíveis")).toBeNull()
-    expect(screen.getByLabelText("Cupom de desconto")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Inserir cupom de desconto" })).toBeInTheDocument()
   })
 })
 
@@ -1439,7 +1410,7 @@ describe("the cart's call to a coupon not yet applied", () => {
   const first = offered({ code: "SEJAMUTANTE", audience: "FIRST_PURCHASE", percentBps: 1500 })
   const answering = (coupons: OfferedCoupon[]) => () => Response.json({ hasOrder: false, firstPurchase: null, coupons } satisfies CustomerOffers)
   const callButton = () => screen.queryByRole("button", { name: "Aplicar cupom" })
-  const withCoupons = (coupons: OfferedCoupon[], props: Partial<StorefrontCartLiveProps> = {}) => renderCart(false, bia, { servedOffers: offersFor(false, bia, coupons), ...props })
+  const withCoupons = (coupons: OfferedCoupon[], props: Partial<StorefrontCheckoutLiveProps> = {}) => renderCart(false, bia, { servedOffers: offersFor(false, bia, coupons), ...props })
 
   it("calls a signed-in customer to their first-order coupon, in the HTML the page was served with: the benefit, the code, one press", () => {
     const fetched = network()

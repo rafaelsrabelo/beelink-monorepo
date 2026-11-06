@@ -15,6 +15,8 @@ import { ShopUnavailable } from "@/components/storefront/shop-unavailable"
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
 import { StorefrontOffers } from "@/components/storefront/storefront-offers"
 import { StorefrontCartLive } from "@/components/storefront/storefront-cart-live"
+import { StorefrontCartSuggestions } from "@/components/storefront/storefront-cart-suggestions"
+import { StorefrontCheckoutSection } from "@/components/storefront/storefront-checkout-section"
 import { StorefrontListing } from "@/components/storefront/storefront-listing"
 import { StorefrontAccountArea } from "@/components/storefront/account/storefront-account-area"
 import { StorefrontSectionBand } from "@/components/storefront/storefront-section-band"
@@ -25,26 +27,21 @@ import { TrackView } from "@/components/storefront/tracking/track-view"
 import { getMessages } from "@/lib/locale"
 import { cartAt } from "@/lib/cart"
 import { COUPON_KEY, couponIn } from "@/lib/cart-coupon"
-import { cartQuoteOf, firstFulfillmentOf } from "@/lib/cart-pricing"
+import { cartQuoteOf } from "@/lib/cart-pricing"
 import { cartQuoteAt } from "@/lib/cart-quote"
 import { cartViewOf } from "@/lib/cart-view"
 import { customerFavoritesAt } from "@/lib/customer-favorites"
-import { servedOffersAt } from "@/lib/customer-offers"
 import { pendingReviewsAt } from "@/lib/customer-reviews"
 import { OVERVIEW_FAVORITES } from "@/lib/overview-parts"
 import { customerOrdersAt, customerReorderAt } from "@/lib/customer-orders"
 import { reorderNoticeOf } from "@/lib/reorder-view"
-import { ADDRESS_ERROR_KEY, ADDRESS_KEY, checkoutAddressesOf, checkoutAddressIdOf, DELIVER_TO_KEY, NEW_ADDRESS } from "@/lib/saved-address"
-import { cartFirstOrderOf } from "@/lib/offer-strip"
 import { shopShareOf } from "@/lib/shop-share"
 import { offTheAirAt, unavailableMetadata } from "@/lib/shop-unavailable"
-import { purchaseAt, shopperAt } from "@/lib/shopper"
+import { shopperAt } from "@/lib/shopper"
 import { siteOrigin } from "@/lib/site-origin"
-import { catalogueAt, offersAt, paymentOptionsAt, shopAt } from "@/lib/storefront-data"
+import { catalogueAt, paymentOptionsAt, shopAt } from "@/lib/storefront-data"
 import { installmentTermsOf } from "@/lib/storefront-installments"
-import { checkoutIdentityOf } from "@/lib/checkout-identity"
-import { errorSentenceOf } from "@/lib/error-sentence"
-import { BACK_KEY, orderNumberOf, paramOf, REORDER_FAILED_KEY, REORDER_TRIMMED_KEY, REORDERED_KEY, storefrontRoutes } from "@/lib/storefront-routes"
+import { orderNumberOf, paramOf, REORDER_FAILED_KEY, REORDER_TRIMMED_KEY, REORDERED_KEY, storefrontRoutes } from "@/lib/storefront-routes"
 import { canonicalOf, headingOf, isShelf, listingAskOf, placeOf } from "@/lib/storefront-section"
 import { filterCountOf } from "@/lib/storefront-filters"
 
@@ -87,7 +84,7 @@ export async function generateMetadata({ params, searchParams }: PageProps<"/[sl
     // A paged or searched shelf is not a landing page; it is the same shelf, reached differently. Nor
     // is a deep combination of filters: three narrowings of one shelf are not a page of their own.
     robots:
-      place.page > 1 || place.term || filterCountOf(place) >= 3 || ["cart", "signIn", "verifyEmail", "resetPassword", "account"].includes(place.section.kind)
+      place.page > 1 || place.term || filterCountOf(place) >= 3 || ["cart", "checkout", "signIn", "verifyEmail", "resetPassword", "account"].includes(place.section.kind)
         ? { index: false, follow: true }
         : undefined,
   }
@@ -102,6 +99,8 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
   const place = await placeOf(slug, section, query)
 
   if (!place) notFound()
+  // A page of its own, with none of the shop's header around it.
+  if (place.section.kind === "checkout") return <StorefrontCheckoutSection place={place} query={query} />
 
   const { store, category, navigation, messages: ui, scope } = place
   const routes = storefrontRoutes(store)
@@ -111,27 +110,20 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
   // Asked once, awaited twice: by the band's count and by the grid, each under its own boundary.
   const catalogue = isShelf(place) ? catalogueAt(store.slug, listingAskOf(place)) : undefined
   // The basket: its lines from the cookie, priced by the catalogue, so the HTML already has them.
-  // With it, how the shop's checkout is paid (BEELINK-205): what it charges online is read by the cart alone.
-  const [cart, shopper, paymentOptions] = await Promise.all([place.section.kind === "cart" ? cartAt(store.slug) : null, shopperAt(store.slug), place.section.kind === "cart" || isShelf(place) ? paymentOptionsAt(store.slug) : undefined])
+  // With it, the shop's card terms (BEELINK-205), for "em até 6x" under its total, and the shop's own
+  // order for "Você também pode gostar" under it.
+  const onCart = place.section.kind === "cart"
+  const [cart, shopper, paymentOptions, suggestions] = await Promise.all([
+    onCart ? cartAt(store.slug) : null,
+    shopperAt(store.slug),
+    onCart || isShelf(place) ? paymentOptionsAt(store.slug) : undefined,
+    onCart ? catalogueAt(store.slug, { pageSize: 24 }).catch(() => null) : null,
+  ])
   const installments = paymentOptions ? installmentTermsOf(paymentOptions) : undefined
   // And its totals, priced by the API as the order would be (BEELINK-194) and for whoever is reading
-  // (BEELINK-245): the promotions' rows are in the HTML too — and to the address a delivery would go
-  // to (BEELINK-178), so the fee is as well.
-  const deliverTo = paramOf(query[DELIVER_TO_KEY]) ?? null
-  // A visitor already identified at this checkout: their purchase session (P0), read only where no shopper is signed in.
-  const purchase = cart && !shopper ? await purchaseAt(store.slug) : null
-  // An address the checkout sent and the shop refused: the code it came back with, said in its form.
-  const addressRefusal = cart && (shopper || purchase) ? (paramOf(query[ADDRESS_ERROR_KEY]) ?? null) : null
-  // A visitor's "who is buying": the e-mail and what to say, as the checkout's form left them.
-  const identity = cart && !shopper && !purchase ? checkoutIdentityOf(query, (await getMessages()).web.errors) : null
-  const asked = cart ? cartQuoteOf(cartViewOf(cart.lines, cart.products).rows, firstFulfillmentOf(shopper), null, { addressId: shopper ? checkoutAddressIdOf(checkoutAddressesOf(shopper), deliverTo) : null }) : null
-  // With it, for a shopper: the shop's shown coupons that same cart may take, so the list is in the HTML as well.
-  // And for a visitor, what the shop's first-purchase coupon gives (BEELINK-311): the kept public read, never a code.
-  const [served, servedOffers, publicOffers] = await Promise.all([
-    asked ? cartQuoteAt(store.slug, asked, shopper?.id ?? null) : null,
-    asked?.items.length && shopper ? servedOffersAt(store.slug, shopper.id, asked) : null,
-    cart && !shopper ? offersAt(store.slug) : null,
-  ])
+  // (BEELINK-245) — as a pick-up: the delivery is the checkout's, where the address is.
+  const asked = cart ? cartQuoteOf(cartViewOf(cart.lines, cart.products).rows, "PICKUP", null) : null
+  const served = asked ? await cartQuoteAt(store.slug, asked, shopper?.id ?? null) : null
   // The menu's counts, read together on the area's own front: each is its own call to the API. The
   // favourites' page is the rail's too, so the front reads it once.
   const [inProgress, liked, toRate] =
@@ -200,37 +192,32 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
       ) : place.section.kind === "resetPassword" ? (
         <StorefrontResetPasswordSection place={place} routes={routes} query={query} errors={(await getMessages()).web.errors} />
       ) : cart ? (
-        <StorefrontCartLive
-          slug={store.slug}
-          products={cart.products}
-          hrefs={Object.fromEntries(cart.products.map((product) => [product.id, routes.product(product.slug)]))}
-          continueHref={routes.catalog()}
-          goneOnArrival={cart.gone > 0}
-          shopName={store.name}
-          whatsapp={store.socialNetworks.whatsapp?.replace(/\D/g, "") || null}
-          routeWords={store.routeWords}
-          paymentMethods={store.paymentMethods}
-          paymentOptions={paymentOptions}
-          shopper={shopper}
-          identityHrefs={{
-            signInHref: routes.signIn({ back: routes.cart() }),
-            signUpHref: routes.signIn({ mode: "criar", back: routes.cart() }),
-            editHref: `${routes.accountTab("profile")}?${BACK_KEY}=${encodeURIComponent(routes.cart())}`,
-            addAddressHref: `${routes.accountTab("profile")}?${new URLSearchParams({ [ADDRESS_KEY]: NEW_ADDRESS, [BACK_KEY]: routes.cart() }).toString()}`,
-            cartHref: routes.cart(),
-          }}
-          deliverTo={deliverTo}
-          addressError={addressRefusal ? errorSentenceOf((await getMessages()).web.errors, addressRefusal) : null}
-          identity={identity}
-          purchase={purchase}
-          arrival={reorderNotice ? <StorefrontReorderNotice {...reorderNotice} messages={ui} /> : undefined}
-          served={served}
-          servedOffers={servedOffers}
-          signedOutBenefit={publicOffers ? cartFirstOrderOf(publicOffers.firstOrder, locale, ui) : null}
-          coupon={couponIn(paramOf(query[COUPON_KEY]))}
-          locale={locale}
-          messages={ui}
-        />
+        <>
+          <StorefrontCartLive
+            slug={store.slug}
+            products={cart.products}
+            askedIds={cart.lines.map((line) => line.productId)}
+            hrefs={Object.fromEntries(cart.products.map((product) => [product.id, routes.product(product.slug)]))}
+            continueHref={routes.catalog()}
+            checkoutHref={routes.checkout()}
+            goneOnArrival={cart.gone > 0}
+            shopper={shopper}
+            arrival={reorderNotice ? <StorefrontReorderNotice {...reorderNotice} messages={ui} /> : undefined}
+            served={served}
+            coupon={couponIn(paramOf(query[COUPON_KEY]))}
+            {...(installments ? { installments } : {})}
+            locale={locale}
+            messages={ui}
+          />
+          <StorefrontCartSuggestions
+            catalogue={suggestions}
+            excluding={cart.lines.map((line) => line.productId)}
+            productHref={(productSlug) => routes.product(productSlug)}
+            showPrice={store.layoutSettings.showProductPrice ?? true}
+            {...(installments ? { installments } : {})}
+            messages={ui}
+          />
+        </>
       ) : (
         <StorefrontCategoryGrid
           categories={navigation.categories}

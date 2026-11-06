@@ -1,22 +1,26 @@
 "use client"
 
 // React
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 
 // Next
 import { useRouter } from "next/navigation"
 
 // Types
 import type { StorefrontPaymentOptions } from "@harness-monorepo/contracts"
-import type { StorefrontCartLiveProps } from "./storefront-cart-live.types"
+import type { StorefrontCheckoutLiveProps } from "./storefront-checkout-live.types"
 
 // UI
 import { StorefrontCart } from "@harness-monorepo/ui/blocks/storefront/storefront-cart"
+import { StorefrontCartTotals } from "@harness-monorepo/ui/blocks/storefront/storefront-cart-totals"
 import { StorefrontCheckout } from "@harness-monorepo/ui/blocks/storefront/storefront-checkout"
+import { StorefrontCheckoutLayout } from "@harness-monorepo/ui/blocks/storefront/storefront-checkout-layout"
+import { StorefrontCheckoutSummary } from "@harness-monorepo/ui/blocks/storefront/storefront-checkout-summary"
 import { StorefrontOrderSent } from "@harness-monorepo/ui/blocks/storefront/storefront-order-sent"
 import { formatCents } from "@harness-monorepo/ui/blocks/storefront/storefront-price"
 
 // App
+import { AppLink } from "@/components/app-link"
 import { CartPriceControls } from "./cart-price-controls"
 import { useCart } from "./cart-provider"
 import { useCartCheckout } from "./use-cart-checkout"
@@ -24,7 +28,7 @@ import { useCartOrder } from "./use-cart-order"
 import { CHECKOUT_ANCHOR, useCheckoutAddressForm } from "./use-checkout-address-form"
 import { checkoutBackOf, useCheckoutIdentity } from "./use-checkout-identity"
 import { useCheckoutTracking } from "./use-checkout-tracking"
-import { waysBackWithCoupon } from "@/lib/cart-coupon"
+import { pathWithCoupon, waysBackWithCoupon } from "@/lib/cart-coupon"
 import { cartViewOf, orderItemsOf, rowKeyOf } from "@/lib/cart-view"
 import { checkoutChannelOf } from "@/lib/checkout-payment"
 import { checkoutRefusalOf, REPRICED, rereadsTheCart } from "@/lib/checkout-refusal"
@@ -32,15 +36,16 @@ import { isReachable } from "@/lib/customer-address"
 import { purchaseProfileOf } from "@/lib/purchase-profile"
 import { ShopperOrderError } from "@/services/storefront/storefront-requests"
 
-export type { StorefrontCartLiveProps } from "./storefront-cart-live.types"
+export type { StorefrontCheckoutLiveProps } from "./storefront-checkout-live.types"
 
 /** The checkout of a shop that charges nothing online: its own labels, settled with it. */
 const SETTLED_WITH_THE_SHOP: StorefrontPaymentOptions = { online: null, offline: true }
 
 /**
- * The cart page, following the cart as it changes. Quantities and removals go to the store — which
- * writes the cookie — and the totals are the API's price of the cart (BEELINK-194): the promotions
- * and the coupon each on their row, by the one calculation the order is written with.
+ * The checkout's page, following the cart as it stands: the summary of what is ordered, the coupon,
+ * and the steps — who buys, where it goes, how it is paid. The totals are the API's price of the cart
+ * (BEELINK-194): the promotions, the coupon and the delivery each on their row, by the one
+ * calculation the order is written with. The lines are changed in the cart, never here.
  *
  * Placing the order asks the API first: the order exists — numbered, priced by the API, in the
  * shop's panel — before the shop's WhatsApp opens with that number. The cart is emptied only then.
@@ -50,12 +55,10 @@ const SETTLED_WITH_THE_SHOP: StorefrontPaymentOptions = { online: null, offline:
  * An order charged online (BEELINK-205) opens no WhatsApp and goes on to its payment screen: the
  * sending itself is `useCartOrder`'s.
  */
-export function StorefrontCartLive({
+export function StorefrontCheckoutLive({
   slug,
   products,
-  hrefs,
   continueHref,
-  goneOnArrival,
   shopName,
   whatsapp,
   routeWords,
@@ -63,45 +66,39 @@ export function StorefrontCartLive({
   paymentOptions = SETTLED_WITH_THE_SHOP,
   shopper,
   identityHrefs,
+  cartHref,
   deliverTo = null,
   addressError = null,
   identity = null,
   purchase = null,
-  arrival,
   served = null,
   servedOffers = null,
   signedOutBenefit = null,
   coupon = null,
   locale,
   messages,
-}: StorefrontCartLiveProps) {
+}: StorefrontCheckoutLiveProps) {
   const text = messages.storefront
   const router = useRouter()
   // A visitor already identified buys through the same checkout, as a shopper made of what they typed (P0).
   const buyer = useMemo(() => shopper ?? (purchase ? purchaseProfileOf(purchase) : null), [shopper, purchase])
   const lines = useCart((cart) => cart.lines)
-  const setQty = useCart((cart) => cart.setQty)
-  const remove = useCart((cart) => cart.remove)
   const clear = useCart((cart) => cart.clear)
   const order = useCartOrder({ slug, routeWords, shopName, whatsapp, shopper: buyer, locale, messages })
   // What the last press on the button found missing, before anything was sent.
   const [asked, setAsked] = useState<"payment" | "coupon" | "credit" | "shipping" | null>(null)
   const view = useMemo(() => cartViewOf(lines, products), [lines, products])
   const told = useCheckoutTracking(view)
-  const byKey = useMemo(() => new Map(view.rows.map((row) => [rowKeyOf(row), row])), [view.rows])
   const { addresses, choice, setChoice, pricing, offers, shipping, blocked, deliveryIssue, sent: leaving, recipientDocument, offlineMethods, online, nothingToPay, payment } = useCartCheckout({ slug, view, shopper: buyer, paymentMethods, paymentOptions, deliverTo, served, servedOffers, arrivedWith: coupon, addressRefused: addressError !== null, locale, messages })
   const paysOnline = payment?.paymentChannel === "ONLINE"
-  // Each way out of the cart that comes back to it — to sign in, to change details, to add an address — takes the coupon along.
+  // Each way out of the checkout that comes back to it — to sign in, to change details, to add an address — takes the coupon along.
   const ways = useMemo(() => waysBackWithCoupon(identityHrefs, pricing.carried), [identityHrefs, pricing.carried])
-  const addressForm = useCheckoutAddressForm({ slug, shopper: buyer, cartHref: identityHrefs.cartHref, coupon: pricing.carried, error: addressError, visitor: !shopper && purchase !== null, messages })
-  const whoIsBuying = useCheckoutIdentity({ slug, identity: buyer ? null : identity, cartHref: identityHrefs.cartHref, coupon: pricing.carried, signInHref: ways.signInHref, signUpHref: ways.signUpHref, messages })
-
-  // A line the shop no longer sells is taken out of the cookie once, rather than asked for forever.
-  useEffect(() => {
-    for (const line of view.gone) remove(line.productId, line.variantId)
-  }, [view.gone, remove])
+  const addressForm = useCheckoutAddressForm({ slug, shopper: buyer, checkoutHref: identityHrefs.checkoutHref, coupon: pricing.carried, error: addressError, visitor: !shopper && purchase !== null, messages })
+  const whoIsBuying = useCheckoutIdentity({ slug, identity: buyer ? null : identity, checkoutHref: identityHrefs.checkoutHref, coupon: pricing.carried, signInHref: ways.signInHref, signUpHref: ways.signUpHref, messages })
 
   if (order.sent) return <StorefrontOrderSent {...order.sent} continueHref={continueHref} messages={messages} />
+  // Emptied elsewhere — another tab, the cart's own page: nothing is left to check out, and the cart says so.
+  if (view.rows.length === 0) return <StorefrontCart rows={[]} subtotalCents={0} count={0} locale={locale} continueHref={continueHref} linkComponent={AppLink} messages={messages} />
 
   function place() {
     // The shop does not reach the address, or hands nothing over now: nothing is sent to be refused.
@@ -150,7 +147,7 @@ export function StorefrontCartLive({
         online: paysOnline,
       })
     : null
-  // A changed cart, choice or coupon is a new order to try: the refusal of the last one no longer describes it.
+  // A changed choice or coupon is a new order to try: the refusal of the last one no longer describes it.
   const changed = (change: () => void) => {
     change()
     setAsked(null)
@@ -158,78 +155,75 @@ export function StorefrontCartLive({
   }
 
   return (
-    <>
-      {/* Its own box: the page's element as an only child, never a sibling React asks a key of. */}
-      {arrival ? <div className="pt-5">{arrival}</div> : null}
-      <StorefrontCart
-        rows={view.rows.map((row) => ({ ...row, key: rowKeyOf(row), href: hrefs[row.productId] ?? continueHref, ...pricing.lines.get(rowKeyOf(row)) }))}
-        subtotalCents={pricing.subtotalCents}
-        count={view.count}
-        discounts={pricing.discounts}
-        delivery={pricing.delivery}
-        total={pricing.total}
-        offer={pricing.offer}
-        cashback={pricing.cashback}
-        pricing={pricing.pricing}
-        stale={pricing.stale}
-        locale={locale}
-        continueHref={continueHref}
-        notice={goneOnArrival ? messages.storefront.cartGone : null}
-        checkout={
-          <>
-            <CartPriceControls pricing={pricing} offers={offers} signedOut={!buyer} signedOutBenefit={signedOutBenefit} disabled={order.pending || view.count === 0} onChange={changed} locale={locale} messages={messages} />
-            <StorefrontCheckout
-              channel={checkoutChannelOf({ offlineMethods, online, nothingToPay }, payment, Boolean(whatsapp))}
-              customer={
-                buyer
-                  ? {
-                      lines: [buyer.name, buyer.phone].filter((line): line is string => Boolean(line)),
-                      // A visitor gave a WhatsApp, and gives the address in the checkout itself.
-                      complete: shopper ? isReachable(shopper) : true,
-                      editHref: ways.editHref,
-                      // A visitor's "Alterar" ends their purchase session and asks again, by a post.
-                      editAction: shopper ? null : { action: `/${slug}/api/customer/checkout/sair`, hidden: { retorno: checkoutBackOf(identityHrefs.cartHref, pricing.carried) } },
-                      addresses,
-                      addAddressHref: ways.addAddressHref,
-                      addressForm,
-                    }
-                  : null
-              }
-              signIn={ways}
-              identity={whoIsBuying}
-              paymentMethods={offlineMethods}
-              online={online}
-              nothingToPay={nothingToPay}
-              choice={choice}
-              onChoiceChange={(next) => {
-                if (next.paymentMethod && next.paymentMethod !== choice.paymentMethod) told.paymentPicked()
-                changed(() => setChoice(next))
-              }}
-              shipping={shipping}
-              recipientDocument={recipientDocument}
-              deliveryIssue={deliveryIssue}
-              onPlace={place}
-              pending={order.pending}
-              error={missing ?? refusal}
-              // Nothing to order, or what the order goes with — its coupon, the credit ticked, a delivery's fee — is still being priced.
-              disabled={view.count === 0 || pricing.couponBlock === "checking" || pricing.creditBlock === "checking" || (choice.fulfillment === "DELIVERY" && pricing.stale)}
-              id={CHECKOUT_ANCHOR}
-              messages={messages}
-            />
-          </>
-        }
-        onQtyChange={(key, qty) => {
-          const row = byKey.get(key)
-          if (row) setQty(row.productId, row.variantId, qty)
-          order.reset()
-        }}
-        onRemove={(key) => {
-          const row = byKey.get(key)
-          if (row) remove(row.productId, row.variantId)
-          order.reset()
-        }}
-        messages={messages}
-      />
-    </>
+    <StorefrontCheckoutLayout
+      summary={
+        <StorefrontCheckoutSummary
+          rows={view.rows.map((row) => ({ ...row, key: rowKeyOf(row), href: cartHref, ...pricing.lines.get(rowKeyOf(row)) }))}
+          count={view.count}
+          amount={pricing.total ?? formatCents(pricing.subtotalCents, locale, "BRL")}
+          pricing={pricing.pricing}
+          editHref={pathWithCoupon(cartHref, pricing.carried)}
+          locale={locale}
+          linkComponent={AppLink}
+          messages={messages}
+        >
+          <StorefrontCartTotals
+            subtotalCents={pricing.subtotalCents}
+            count={view.count}
+            discounts={pricing.discounts}
+            delivery={pricing.delivery}
+            total={pricing.total}
+            offer={pricing.offer}
+            cashback={pricing.cashback}
+            pricing={pricing.pricing}
+            stale={pricing.stale}
+            locale={locale}
+            messages={messages}
+          />
+        </StorefrontCheckoutSummary>
+      }
+      controls={<CartPriceControls pricing={pricing} offers={offers} signedOut={!buyer} signedOutBenefit={signedOutBenefit} collapsed disabled={order.pending || view.count === 0} onChange={changed} locale={locale} messages={messages} />}
+      steps={
+        <StorefrontCheckout
+          channel={checkoutChannelOf({ offlineMethods, online, nothingToPay }, payment, Boolean(whatsapp))}
+          customer={
+            buyer
+              ? {
+                  lines: [buyer.name, buyer.phone].filter((line): line is string => Boolean(line)),
+                  // A visitor gave a WhatsApp, and gives the address in the checkout itself.
+                  complete: shopper ? isReachable(shopper) : true,
+                  editHref: ways.editHref,
+                  // A visitor's "Alterar" ends their purchase session and asks again, by a post.
+                  editAction: shopper ? null : { action: `/${slug}/api/customer/checkout/sair`, hidden: { retorno: checkoutBackOf(identityHrefs.checkoutHref, pricing.carried) } },
+                  addresses,
+                  addAddressHref: ways.addAddressHref,
+                  addressForm,
+                }
+              : null
+          }
+          signIn={ways}
+          identity={whoIsBuying}
+          paymentMethods={offlineMethods}
+          online={online}
+          nothingToPay={nothingToPay}
+          choice={choice}
+          onChoiceChange={(next) => {
+            if (next.paymentMethod && next.paymentMethod !== choice.paymentMethod) told.paymentPicked()
+            changed(() => setChoice(next))
+          }}
+          shipping={shipping}
+          recipientDocument={recipientDocument}
+          deliveryIssue={deliveryIssue}
+          onPlace={place}
+          pending={order.pending}
+          error={missing ?? refusal}
+          // Nothing to order, or what the order goes with — its coupon, the credit ticked, a delivery's fee — is still being priced.
+          disabled={view.count === 0 || pricing.couponBlock === "checking" || pricing.creditBlock === "checking" || (choice.fulfillment === "DELIVERY" && pricing.stale)}
+          id={CHECKOUT_ANCHOR}
+          messages={messages}
+        />
+      }
+      messages={messages}
+    />
   )
 }
