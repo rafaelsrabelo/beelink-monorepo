@@ -659,6 +659,21 @@ export interface ReorderPayload {
   ids: string[];
 }
 
+/**
+ * Several products put in one status at once — the list's "Ativar" and "Mover para rascunho". All
+ * or none: an id that is not one of the shop's products refuses the whole call with
+ * `PRODUCT_NOT_FOUND`, so a selection is never applied in part.
+ */
+export interface ProductStatusPayload {
+  ids: string[];
+  status: ProductStatus;
+}
+
+export interface ProductStatusResult {
+  /** The products whose status changed; one already in that status is not counted. */
+  changed: number;
+}
+
 /** The `errorCode` values the catalogue answers. The apps own the sentences. */
 export type CatalogErrorCode =
   | "PRODUCT_NOT_FOUND"
