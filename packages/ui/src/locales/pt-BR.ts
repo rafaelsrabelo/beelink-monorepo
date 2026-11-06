@@ -341,6 +341,7 @@ export const ptBR: UiMessages = {
     checkoutPayerDocument: "Seu CPF",
     checkoutPayerDocumentHint: "O pagamento online é feito no seu CPF. Ele fica guardado no seu cadastro, e só é pedido uma vez.",
     checkoutPayerDocumentIssue: "Para pagar online, informe um CPF válido, com 11 dígitos.",
+    checkoutDocumentInvalid: "CPF inválido: confira os números digitados.",
     checkoutPayOnline: "Fechar pedido e pagar",
     checkoutBelowMinimumGone: "O valor ficou baixo demais para pagar online, ou para tantas parcelas. Escolha de novo.",
     checkoutSentPayHint: "Falta pagar: estamos abrindo o pagamento.",

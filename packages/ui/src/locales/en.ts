@@ -341,6 +341,7 @@ export const en: UiMessages = {
     checkoutPayerDocument: "Your CPF",
     checkoutPayerDocumentHint: "Paying online is done under your CPF. It is kept on your record, and asked once.",
     checkoutPayerDocumentIssue: "To pay online, enter a valid CPF, with 11 digits.",
+    checkoutDocumentInvalid: "That CPF is not valid: check the digits you typed.",
     checkoutPayOnline: "Place the order and pay",
     checkoutBelowMinimumGone: "The amount became too low to pay online, or for that many instalments. Choose again.",
     checkoutSentPayHint: "It is still to be paid: we are opening the payment.",

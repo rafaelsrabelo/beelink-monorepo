@@ -9,6 +9,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import type { PaymentMethod } from "../store/store-types"
+import { StorefrontCpfField } from "./storefront-cpf-field"
 
 /** Mirrors the wire's `OrderPaymentChannel` and `OnlinePaymentMethod`; this package imports no contracts. */
 export type CheckoutPaymentChannel = "OFFLINE" | "ONLINE"
@@ -152,24 +153,7 @@ export function StorefrontCheckoutPayment<Value extends StorefrontCheckoutPaymen
             </p>
           ) : null}
           {paysOnline && online.document ? (
-            <div className="flex flex-col gap-1 text-xs">
-              <label htmlFor={`${id}-document`} className="font-semibold">
-                {text.checkoutPayerDocument}
-              </label>
-              <input
-                id={`${id}-document`}
-                inputMode="numeric"
-                autoComplete="off"
-                placeholder="000.000.000-00"
-                value={online.document.value}
-                aria-describedby={`${id}-document-hint`}
-                onChange={(event) => online.document?.onChange(event.target.value)}
-                className={FIELD}
-              />
-              <span id={`${id}-document-hint`} className="text-shop-muted">
-                {text.checkoutPayerDocumentHint}
-              </span>
-            </div>
+            <StorefrontCpfField label={text.checkoutPayerDocument} hint={text.checkoutPayerDocumentHint} value={online.document.value} onChange={online.document.onChange} messages={messages} />
           ) : null}
         </div>
       ) : null}
