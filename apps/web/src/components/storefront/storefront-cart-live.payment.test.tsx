@@ -82,7 +82,19 @@ function Told({ children }: { children: ReactNode }) {
   return <TrackingContext value={{ allowed: true, track: mocks.track }}>{children}</TrackingContext>
 }
 
+/**
+ * The cart, at its payment. A shopper with no address on file is first asked how to receive the order
+ * (plan 2026-11-06--checkout-em-etapas): the pick-up they start on goes on, and these tests are about
+ * what comes after it.
+ */
 function renderCart(shopper: CustomerProfile, props: Partial<StorefrontCartLiveProps> = {}, qty = 3) {
+  const view = renderAt(shopper, props, qty)
+  const onward = screen.queryByRole("button", { name: "Continuar para o pagamento" })
+  if (onward) fireEvent.click(onward)
+  return view
+}
+
+function renderAt(shopper: CustomerProfile, props: Partial<StorefrontCartLiveProps> = {}, qty = 3) {
   return render(
     <QueryClientProvider client={new QueryClient()}>
       <CartProvider slug="loja" lines={[{ productId: blusa.id, variantId: null, qty }]}>
@@ -297,14 +309,16 @@ describe("the checkout of a shop that charges online (BEELINK-205)", () => {
   })
 
   /** No address yet is no fee to agree: nothing was quoted, and the address form is open right above. */
-  it("tells no fee to be agreed while a delivery waits for its address in the checkout", async () => {
-    renderCart(ana)
+  /** No address yet is no fee to agree: the payment waits for the delivery, and says no fee is open. */
+  it("keeps the payment waiting while a delivery waits for its address, telling of no fee to agree", () => {
+    renderAt(ana)
 
     fireEvent.click(screen.getByRole("radio", { name: /Receber em casa/ }))
     expect(screen.getByRole("heading", { name: "Onde entregar" })).toBeInTheDocument()
-    fireEvent.click(payNow().getByRole("radio", { name: /^Cartão de crédito/ }))
+    fireEvent.click(screen.getByRole("button", { name: "Continuar para o pagamento" }))
 
-    await priced()
+    expect(screen.getByRole("alert")).toHaveTextContent("Para receber em casa, preencha o endereço de entrega.")
+    expect(screen.getByText("Escolha como receber para continuar.")).toBeInTheDocument()
     expect(screen.queryByText(/Você paga depois que a loja informar o frete/)).toBeNull()
   })
 

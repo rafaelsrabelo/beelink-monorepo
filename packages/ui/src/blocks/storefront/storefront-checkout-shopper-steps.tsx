@@ -66,10 +66,14 @@ export function StorefrontCheckoutShopperSteps({
   const text = messages.storefront
   const paymentHeading = useRef<HTMLHeadingElement>(null)
   const chosen = customer.addresses.find((address) => address.id === choice.addressId) ?? customer.addresses[0] ?? null
-  const [editing, setEditing] = useState(() => (choice.fulfillment === "DELIVERY" && !chosen) || Boolean(customer.addressForm?.startOpen))
+  // Open on arrival for a shopper with no address on file — how to receive it is theirs to say, never a pick-up assumed — and for an address refused.
+  const [editing, setEditing] = useState(() => !chosen || Boolean(customer.addressForm?.startOpen) || deliveryIssue !== null)
   // The last press on "Continuar" found the delivery wanting: said until it no longer is.
   const [asked, setAsked] = useState(false)
-  const deliveryOpen = editing || deliveryIssue !== null
+  // A delivery that stops holding — the quote says the shop does not reach the address — opens again,
+  // and stays open while the shopper fixes it: it closes on their "Continuar", never under their hand.
+  if (deliveryIssue !== null && !editing) setEditing(true)
+  const deliveryOpen = editing
 
   function toPayment() {
     if (deliveryIssue) return setAsked(true)

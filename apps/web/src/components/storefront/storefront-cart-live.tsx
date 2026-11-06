@@ -85,7 +85,7 @@ export function StorefrontCartLive({
   const view = useMemo(() => cartViewOf(lines, products), [lines, products])
   const told = useCheckoutTracking(view)
   const byKey = useMemo(() => new Map(view.rows.map((row) => [rowKeyOf(row), row])), [view.rows])
-  const { addresses, choice, setChoice, pricing, offers, shipping, blocked, sent: leaving, recipientDocument, offlineMethods, online, nothingToPay, payment } = useCartCheckout({ slug, view, shopper, paymentMethods, paymentOptions, deliverTo, served, servedOffers, arrivedWith: coupon, addressRefused: addressError !== null, locale, messages })
+  const { addresses, choice, setChoice, pricing, offers, shipping, blocked, deliveryIssue, sent: leaving, recipientDocument, offlineMethods, online, nothingToPay, payment } = useCartCheckout({ slug, view, shopper, paymentMethods, paymentOptions, deliverTo, served, servedOffers, arrivedWith: coupon, addressRefused: addressError !== null, locale, messages })
   const paysOnline = payment?.paymentChannel === "ONLINE"
   // Each way out of the cart that comes back to it — to sign in, to change details, to add an address — takes the coupon along.
   const ways = useMemo(() => waysBackWithCoupon(identityHrefs, pricing.carried), [identityHrefs, pricing.carried])
@@ -200,6 +200,7 @@ export function StorefrontCartLive({
               }}
               shipping={shipping}
               recipientDocument={recipientDocument}
+              deliveryIssue={deliveryIssue}
               onPlace={place}
               pending={order.pending}
               error={missing ?? refusal}

@@ -128,6 +128,18 @@ function network({
 
 const bodiesTo = (fetched: Fetched, path: string) => fetched.mock.calls.filter(([url]) => url === path).map(([, init]) => JSON.parse(String(init?.body)) as Record<string, unknown>)
 
+/**
+ * The delivery's step, opened when it came done: a shopper with an address on file starts at the
+ * payment (plan 2026-11-06--checkout-em-etapas), and these tests are about how the order leaves.
+ */
+function openDelivery() {
+  const edit = within(screen.getByRole("region", { name: /^Entrega/ })).queryByRole("button", { name: "Alterar" })
+  if (edit) fireEvent.click(edit)
+}
+
+/** The delivery's step done, on to the payment, where the order is placed. */
+const toPayment = () => fireEvent.click(screen.getByRole("button", { name: "Continuar para o pagamento" }))
+
 function cartTree(client: QueryClient, goneOnArrival: boolean, shopper: CustomerProfile | null, props: Partial<StorefrontCartLiveProps>) {
   return (
     <QueryClientProvider client={client}>
@@ -301,7 +313,10 @@ describe("StorefrontCartLive", () => {
     const open = vi.spyOn(window, "open")
     renderCart(false, bia, { whatsapp: null })
 
+    openDelivery()
+
     fireEvent.click(screen.getByRole("radio", { name: "Retirar na loja" }))
+    toPayment()
     fireEvent.click(screen.getByRole("button", { name: "Fazer pedido" }))
 
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("A loja recebeu o seu pedido e vai confirmar."))
@@ -315,7 +330,10 @@ describe("StorefrontCartLive", () => {
     renderCart(false, bia, { whatsapp: null, arrival: <p>Os itens do pedido nº 11 estão no carrinho.</p> })
     expect(screen.getByText("Os itens do pedido nº 11 estão no carrinho.")).toBeInTheDocument()
 
+    openDelivery()
+
     fireEvent.click(screen.getByRole("radio", { name: "Retirar na loja" }))
+    toPayment()
     fireEvent.click(screen.getByRole("button", { name: "Fazer pedido" }))
 
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("A loja recebeu o seu pedido e vai confirmar."))
@@ -326,14 +344,14 @@ describe("StorefrontCartLive", () => {
   it("never sends a delivery to an address gone from the page: it asks for one in the checkout", async () => {
     const fetched = network()
     const view = renderCart()
-    expect(screen.getByRole("radio", { name: /Receber em casa/ })).toBeChecked()
+    // A delivery to the address on file, done in its line.
+    expect(within(screen.getByRole("region", { name: /^Entrega/ })).getByText(/^Entregar em /)).toBeInTheDocument()
 
     view.redraw({ ...bia, addresses: [] })
     expect(screen.getByRole("heading", { name: "Onde entregar" })).toBeInTheDocument()
-    fireEvent.click(screen.getByRole("radio", { name: "Pix" }))
-    // Priced again for a delivery with no address before the button takes a press.
-    await waitFor(() => expect(screen.getByRole("button", { name: /Fechar pedido pelo WhatsApp/ })).toBeEnabled())
-    fireEvent.click(screen.getByRole("button", { name: /Fechar pedido pelo WhatsApp/ }))
+    // The payment waits for the delivery, and the press on to it says what is wanting.
+    expect(screen.queryByRole("button", { name: /Fechar pedido pelo WhatsApp/ })).toBeNull()
+    toPayment()
 
     expect(screen.getByRole("alert")).toHaveTextContent("Para receber em casa, preencha o endereço de entrega.")
     expect(bodiesTo(fetched, "/loja/api/orders")).toEqual([])
@@ -386,6 +404,7 @@ describe("StorefrontCartLive", () => {
     network()
     const many = Array.from({ length: 10 }, (_, index) => ({ ...bia.addresses[0]!, id: `a${index + 1}`, isDefault: index === 0 }))
     renderCart(false, { ...bia, addresses: many })
+    openDelivery()
 
     expect(screen.getByRole("link", { name: "Entregar em outro endereço" })).toHaveAttribute("href", identityHrefs.addAddressHref)
   })
@@ -395,8 +414,11 @@ describe("StorefrontCartLive", () => {
     openedTab()
     const view = renderCart(false, { ...bia, addresses: [...bia.addresses, work] }, { deliverTo: "a2" })
 
+    openDelivery()
+
     expect(screen.getByRole("radio", { name: /Trabalho · Recepção/ })).toBeChecked()
     fireEvent.click(screen.getByRole("radio", { name: /Casa · Bia Cliente/ }))
+    toPayment()
     fireEvent.click(screen.getByRole("button", { name: "Fechar pedido pelo WhatsApp" }))
 
     await waitFor(() => expect(bodiesTo(fetched, "/loja/api/orders")).toHaveLength(1))
@@ -634,6 +656,8 @@ describe("the cart's price and its coupon", () => {
     renderCart(false, bia, { served: servedFor(false, bia, promotion) })
     expect(summaryRows()[2]).toEqual(["Total", "R$ 107,82 + frete"])
 
+    openDelivery()
+
     fireEvent.click(screen.getByRole("radio", { name: "Retirar na loja" }))
 
     await waitFor(() => expect(summaryRows()[2]).toEqual(["Total", "R$ 107,82"]))
@@ -699,18 +723,19 @@ describe("the cart's price and its coupon", () => {
   it("takes the coupon along on every way out of the cart that comes back to it", async () => {
     renderCart()
     const backOf = (name: string) => new URL(screen.getByRole("link", { name }).getAttribute("href")!, "http://x").searchParams.get("voltar")
-    expect(backOf("Alterar dados")).toBe("/loja/carrinho")
+    expect(backOf("Alterar")).toBe("/loja/carrinho")
 
     await applyCoupon("BEMVINDO10")
     await waitFor(() => expect(screen.getByText("Cupom BEMVINDO10 aplicado.")).toBeInTheDocument())
 
-    expect(backOf("Alterar dados")).toBe("/loja/carrinho?cupom=BEMVINDO10")
+    expect(backOf("Alterar")).toBe("/loja/carrinho?cupom=BEMVINDO10")
+    openDelivery()
     fireEvent.click(screen.getByRole("button", { name: "Entregar em outro endereço" }))
     const back = document.querySelector<HTMLInputElement>('form[action="/loja/api/customer/enderecos/salvar"] input[name="retorno"]')
     expect(back?.value).toBe("/loja/carrinho?cupom=BEMVINDO10#finalizar")
 
     fireEvent.click(screen.getByRole("button", { name: "Remover o cupom BEMVINDO10" }))
-    expect(backOf("Alterar dados")).toBe("/loja/carrinho")
+    expect(backOf("Alterar")).toBe("/loja/carrinho")
   })
 
   /** Buying with no sign-up: a visitor says who is buying right in the checkout, the coupon carried through the form. */
@@ -739,8 +764,10 @@ describe("the cart's price and its coupon", () => {
     network()
     renderCart(false, bia, { identity: { step: "form", email: null, error: null, notice: null } })
 
-    expect(screen.queryByRole("heading", { name: "Seus dados" })).toBeNull()
-    expect(screen.getByText("Pedido em nome de")).toBeInTheDocument()
+    // "Seus dados" is done: a line with who is ordering, and no form.
+    expect(screen.getByRole("heading", { name: /^Seus dados\s*— concluída$/ })).toBeInTheDocument()
+    expect(screen.getByText(/^Bia Cliente · /)).toBeInTheDocument()
+    expect(screen.queryByLabelText("WhatsApp")).toBeNull()
   })
 
   it("leaves a visitor's coupon unchecked, and takes it along to the sign-in: it is checked once they are back", () => {
@@ -1035,11 +1062,14 @@ describe("the cart's delivery, as the shop quotes it", () => {
     renderCart(false, bia, { served: servedFor(false, bia, outOfRange) })
 
     expect(screen.getByRole("status")).toHaveTextContent("A loja não entrega neste endereço: ele fica a 10,8 km, e a entrega vai até 8 km. Escolha outro endereço ou retire na loja.")
-    fireEvent.click(placeButton())
+    // The delivery stays open on its own, and the press on to the payment says why.
+    toPayment()
     expect(screen.getByRole("alert")).toHaveTextContent(/A loja não entrega neste endereço/)
+    expect(screen.getByText("Escolha como receber para continuar.")).toBeInTheDocument()
     expect(bodiesTo(fetched, "/loja/api/orders")).toEqual([])
 
     fireEvent.click(screen.getByRole("radio", { name: "Retirar na loja" }))
+    toPayment()
     await waitFor(() => expect(placeButton()).toBeEnabled())
     fireEvent.click(placeButton())
 
@@ -1051,6 +1081,8 @@ describe("the cart's delivery, as the shop quotes it", () => {
     const pickupOnly: Partial<OrderQuote> = { shipping: shipping({ options: [pickup], ownDelivery: { status: "OFF" } }) }
     const fetched = network({ quote: (cart) => Response.json(quoteOf(cart, pickupOnly)) })
     renderCart(false, bia, { served: servedFor(false, bia, pickupOnly) })
+
+    openDelivery()
 
     expect(screen.queryByRole("radio", { name: /Receber em casa/ })).toBeNull()
     expect(screen.getByRole("radio", { name: "Retirar na loja" })).toBeChecked()
@@ -1080,6 +1112,8 @@ describe("the cart's delivery, as the shop quotes it", () => {
     openedTab()
     renderCart(false, bia, { served: servedFor(false, bia, { ...quoted, shipping: withCarriers }) })
 
+    openDelivery()
+
     const ways = screen.getByRole("group", { name: "Forma de envio" })
     expect(within(ways).getByRole("radio", { name: /Entrega da loja/ })).toBeChecked()
     fireEvent.click(within(ways).getByRole("radio", { name: /Correios · SEDEX/ }))
@@ -1087,13 +1121,14 @@ describe("the cart's delivery, as the shop quotes it", () => {
     await waitFor(() => expect(summaryRows()).toEqual([["Subtotal (2 itens)", "R$ 119,80"], ["Entrega", "R$ 27,45"], ["Total", "R$ 147,25"]]))
     expect(bodiesTo(fetched, "/loja/api/orders/quote")).toEqual([{ items: [{ variantId: blusa.variants[0]!.id, quantity: 2 }], fulfillment: "DELIVERY", addressId: "a1", shipping: { kind: "CARRIER", serviceId: 2 } }])
 
-    await waitFor(() => expect(placeButton()).toBeEnabled())
-    // A carrier asks for the CPF of who receives it, which Bia's record does not have (BEELINK-187).
-    fireEvent.click(placeButton())
+    // A carrier asks for the CPF of who receives it, which Bia's record does not have (BEELINK-187): the delivery says so before the payment.
+    toPayment()
     expect(screen.getByRole("alert")).toHaveTextContent("Para enviar por transportadora, informe um CPF válido, com 11 dígitos.")
     expect(bodiesTo(fetched, "/loja/api/orders")).toEqual([])
 
     fireEvent.change(screen.getByLabelText("CPF de quem recebe"), { target: { value: "529.982.247-25" } })
+    toPayment()
+    await waitFor(() => expect(placeButton()).toBeEnabled())
     fireEvent.click(placeButton())
 
     await waitFor(() => expect(bodiesTo(fetched, "/loja/api/orders")).toHaveLength(1))

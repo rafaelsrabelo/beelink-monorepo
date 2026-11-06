@@ -47,6 +47,14 @@ describe("StorefrontCheckoutShopperSteps", () => {
     expect(screen.getByRole("button", { name: "Fechar pedido" })).toBeInTheDocument()
   })
 
+  /** A shopper just identified has no address: a pick-up is never assumed for them at the payment. */
+  it("opens the delivery for a shopper with no address even with a pick-up chosen, for them to say how to receive it", () => {
+    render(steps({ customer: { ...customer, addresses: [] }, choice: { fulfillment: "PICKUP", addressId: null, paymentMethod: null, wayId: null } }))
+
+    expect(within(stepNamed("Entrega")).getByRole("radio", { name: "Retirar na loja" })).toBeChecked()
+    expect(within(stepNamed("Pagamento")).getByText("Escolha como receber para continuar.")).toBeInTheDocument()
+  })
+
   it("says a pick-up as such in the delivery's line", () => {
     render(steps({ choice: { fulfillment: "PICKUP", addressId: "a1", paymentMethod: null, wayId: null } }))
 
@@ -89,6 +97,13 @@ describe("StorefrontCheckoutShopperSteps", () => {
     await userEvent.click(screen.getByRole("button", { name: "Continuar para o pagamento" }))
     rerender(steps({ onChoiceChange, deliveryIssue: "A loja não entrega neste endereço." }))
     expect(within(stepNamed("Entrega")).getByRole("radio", { name: /Receber em casa/ })).toBeInTheDocument()
+
+    // Fixed — a pick-up chosen — it stays open under the shopper's hand until their "Continuar".
+    rerender(steps({ onChoiceChange, choice: { fulfillment: "PICKUP", addressId: "a1", paymentMethod: null, wayId: null } }))
+    expect(within(stepNamed("Entrega")).getByRole("radio", { name: "Retirar na loja" })).toBeChecked()
+    await userEvent.click(screen.getByRole("button", { name: "Continuar para o pagamento" }))
+    expect(within(stepNamed("Entrega")).getByText("Retirar na loja")).toBeInTheDocument()
+    expect(within(stepNamed("Entrega")).queryByRole("radio")).toBeNull()
   })
 
   it("has no accessibility violations, at the payment or at the delivery", async () => {
