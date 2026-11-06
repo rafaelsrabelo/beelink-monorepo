@@ -13,6 +13,10 @@ import type { ProductCategoryOption } from "./product-form-types"
 import { ProductImportRow } from "./product-import-row"
 import type { ProductImportRow as Row } from "./product-import-types"
 
+// Re-exported because the package exports `blocks/*` as `.tsx` alone: the screen that fills the
+// review needs the row's shape and its category key from somewhere it can import.
+export { categoryKeyOf, NEW_CATEGORY, type ProductImportRow } from "./product-import-types"
+
 export interface ProductImportReviewProps {
   rows: readonly Row[]
   categories: readonly ProductCategoryOption[]

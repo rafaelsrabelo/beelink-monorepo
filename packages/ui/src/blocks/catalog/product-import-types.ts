@@ -1,3 +1,12 @@
+// Block
+import { slugify } from "../store/store-slug"
+
+/**
+ * The key a category is matched by, in the review and in the API alike: the segment its name would
+ * take, so "Picolés" and "PICOLES" are one category on both sides.
+ */
+export const categoryKeyOf = slugify
+
 /** The category select's value for "the one the document named, created on import". */
 export const NEW_CATEGORY = "new"
 
