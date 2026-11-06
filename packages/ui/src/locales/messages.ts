@@ -577,6 +577,14 @@ export interface UiMessages {
     checkoutCodeResend: string
     checkoutCodeResent: string
     checkoutCodeOtherEmail: string
+    /** The checkout's three steps (2026-11-06). `{step}` and `{total}`: numbers. */
+    checkoutStepOf: string
+    checkoutStepDelivery: string
+    checkoutStepDone: string
+    checkoutStepEdit: string
+    checkoutStepToPayment: string
+    checkoutStepIdentityFirst: string
+    checkoutStepDeliveryFirst: string
     /** Over the shopper's details, as the shop keeps them. */
     checkoutFor: string
     checkoutEdit: string

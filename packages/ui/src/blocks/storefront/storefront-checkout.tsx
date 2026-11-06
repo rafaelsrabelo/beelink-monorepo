@@ -12,13 +12,14 @@ import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import { WhatsAppIcon } from "../store/store-brand-icons"
 import type { PaymentMethod } from "../store/store-types"
 import {
-  StorefrontCheckoutChoices,
   type StorefrontCheckoutAddress,
   type StorefrontCheckoutAddressForm,
   type StorefrontCheckoutChoice,
   type StorefrontCheckoutChoicesProps,
   type StorefrontCheckoutShipping,
 } from "./storefront-checkout-choices"
+import { StorefrontCheckoutShopperSteps } from "./storefront-checkout-shopper-steps"
+import { StorefrontCheckoutStep } from "./storefront-checkout-step"
 
 export type {
   CheckoutFulfillment,
@@ -72,6 +73,8 @@ export interface StorefrontCheckoutProps {
   shipping?: StorefrontCheckoutShipping | null
   /** The CPF of who receives a carrier's delivery, asked when the record has none; null asks for none. */
   recipientDocument?: StorefrontCheckoutChoicesProps["recipientDocument"]
+  /** Why the delivery cannot go on as chosen, in words; null when it can. It keeps the delivery's step open. */
+  deliveryIssue?: string | null
   /** Places the order; the page opens WhatsApp itself once the order has its number. */
   onPlace: () => void
   /** The order is on its way to the shop: nothing is pressed twice. */
@@ -108,6 +111,7 @@ export function StorefrontCheckout({
   onChoiceChange,
   shipping = null,
   recipientDocument = null,
+  deliveryIssue = null,
   onPlace,
   pending = false,
   error,
@@ -127,7 +131,11 @@ export function StorefrontCheckout({
     return (
       <div id={id} className="flex scroll-mt-24 flex-col gap-3">
         {alert}
-        {identity}
+        <StorefrontCheckoutStep step={1} total={3} title={text.checkoutIdentityTitle} state="open" messages={messages}>
+          {identity}
+        </StorefrontCheckoutStep>
+        <StorefrontCheckoutStep step={2} total={3} title={text.checkoutStepDelivery} state="locked" hint={text.checkoutStepIdentityFirst} messages={messages} />
+        <StorefrontCheckoutStep step={3} total={3} title={text.checkoutPayment} state="locked" hint={text.checkoutStepDeliveryFirst} messages={messages} />
       </div>
     )
   }
@@ -150,47 +158,37 @@ export function StorefrontCheckout({
 
   const label = pending ? text.checkoutPlacing : channel === "whatsapp" ? text.checkoutWhatsApp : channel === "pay" ? text.checkoutPayOnline : text.checkoutPlace
 
-  return (
-    <div id={id} className="flex scroll-mt-24 flex-col gap-4">
-      <div className="flex flex-col gap-1 rounded-[10px] border border-shop-line bg-shop-fill px-4 py-3 text-sm">
-        <p className="text-xs text-shop-muted">{text.checkoutFor}</p>
-        {customer.lines.map((line) => (
-          <p key={line}>{line}</p>
-        ))}
-        {customer.complete ? null : <p className="text-xs text-shop-muted">{text.checkoutPhoneMissing}</p>}
-        <Link href={customer.editHref} className="self-start text-xs font-semibold text-shop-primary-ink hover:underline">
-          {text.checkoutEdit}
-        </Link>
-      </div>
+  const placeButton = (
+    <button
+      type="button"
+      onClick={onPlace}
+      disabled={disabled || pending}
+      aria-busy={pending || undefined}
+      className={`${PRIMARY} transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50`}
+    >
+      {channel === "whatsapp" ? <WhatsAppIcon className="size-5" /> : null}
+      {label}
+    </button>
+  )
 
-      <StorefrontCheckoutChoices
-        value={choice}
-        onChange={onChoiceChange}
-        addresses={customer.addresses}
-        addHref={customer.addAddressHref}
-        addressForm={customer.addressForm ?? null}
+  return (
+    <div id={id} className="flex scroll-mt-24 flex-col gap-3">
+      <StorefrontCheckoutShopperSteps
+        customer={customer}
+        choice={choice}
+        onChoiceChange={onChoiceChange}
+        shipping={shipping}
+        recipientDocument={recipientDocument}
         paymentMethods={paymentMethods}
         online={online}
         nothingToPay={nothingToPay}
-        shipping={shipping}
-        recipientDocument={recipientDocument}
-        disabled={pending}
+        deliveryIssue={deliveryIssue}
+        alert={alert}
+        placeButton={placeButton}
+        pending={pending}
         linkComponent={Link}
         messages={messages}
       />
-
-      {alert}
-
-      <button
-        type="button"
-        onClick={onPlace}
-        disabled={disabled || pending}
-        aria-busy={pending || undefined}
-        className={`${PRIMARY} transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50`}
-      >
-        {channel === "whatsapp" ? <WhatsAppIcon className="size-5" /> : null}
-        {label}
-      </button>
     </div>
   )
 }
