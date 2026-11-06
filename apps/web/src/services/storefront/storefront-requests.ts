@@ -10,6 +10,7 @@ import type {
   PlaceCustomerOrderPayload,
   PublicProductCard,
 } from "@harness-monorepo/contracts"
+import type { ListingPage } from "@/lib/listing-pages"
 
 export interface StorefrontSearchResult {
   products: PublicProductCard[]
@@ -36,6 +37,22 @@ export async function searchStorefront(slug: string, term: string, scope = ""): 
   if (!response.ok) return { products: [], total: 0 }
 
   return (await response.json()) as StorefrontSearchResult
+}
+
+/**
+ * One more page of a shelf, for the listing that loads as the visitor scrolls. `query` is the one
+ * the page wrote for its own shelf (`catalogueQueryOf`); only the page changes. A failure throws,
+ * so the listing can offer to try again instead of reading it as the end of the listing.
+ */
+export async function fetchListingPage(slug: string, query: string, page: number): Promise<ListingPage> {
+  const asked = new URLSearchParams(query)
+  asked.set("pagina", String(page))
+  const response = await fetch(`/api/storefront/${encodeURIComponent(slug)}/catalog?${asked.toString()}`, {
+    headers: { accept: "application/json" },
+  })
+
+  if (!response.ok) throw new Error("LISTING_UNAVAILABLE")
+  return (await response.json()) as ListingPage
 }
 
 /** A visitor's "Avise-me" for one sold-out combination. Anonymous; the handler forwards the address. */

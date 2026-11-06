@@ -72,6 +72,8 @@ The shop window at `/<slug>` is **anonymous**. No one signs in to buy, nothing a
 
 It shows the store's brand, its catalogue grouped by category, and a product's detail with its images. A visitor builds a **cart**, which is theirs and stays on their device until they check out.
 
+Most visitors are on a phone, so a list of products — the catalogue, a category, a search — **grows as it is scrolled** rather than asking for a page number: the next products are on their way before the visitor reaches the end, and coming back from a product returns them to where they were in the list. Each page still has its own address, which is what a search engine follows and what a visitor whose phone has not run the page's script gets.
+
 A shop window that is briefly out of date is acceptable; a shop window that is slow or unreadable is not.
 
 ## The panel

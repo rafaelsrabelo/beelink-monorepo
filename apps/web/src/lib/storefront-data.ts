@@ -131,7 +131,11 @@ export type StorefrontShelf = StorefrontCatalog & { failed?: true }
  * Under `catalogTag` and not `storeTag`: a price change should not drop the shop's colours from the
  * cache, and a colour change should not drop every paged catalogue with it.
  */
-export async function catalogueAt(slug: string, ask: CatalogueAsk = {}): Promise<StorefrontShelf> {
+/**
+ * An ask in the API's own words — `categoria`, `busca`, `pagina` — which are also the address's, so
+ * the infinite shelf can hand the browser this query and read it back unchanged (`shelfAskOf`).
+ */
+export function catalogueQueryOf(ask: CatalogueAsk): URLSearchParams {
   const query = new URLSearchParams()
   if (ask.category) query.set("categoria", ask.category)
   if (ask.search) query.set("busca", ask.search)
@@ -144,7 +148,11 @@ export async function catalogueAt(slug: string, ask: CatalogueAsk = {}): Promise
   if (ask.discountMinPercent && ask.discountMinPercent > 1) query.set("desconto", String(Math.floor(ask.discountMinPercent)))
   else if (ask.discount) query.set("desconto", "1")
   for (const option of ask.options ?? []) query.append("opcao", option)
+  return query
+}
 
+export async function catalogueAt(slug: string, ask: CatalogueAsk = {}): Promise<StorefrontShelf> {
+  const query = catalogueQueryOf(ask)
   const suffix = query.size ? `?${query.toString()}` : ""
 
   // A request that never reached the API throws; it is the same outage as a 500, not a broken page.

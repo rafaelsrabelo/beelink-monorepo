@@ -1,7 +1,7 @@
 "use client"
 
 // Libs
-import { skipToken, useMutation, useQuery, type UseMutationResult, type UseQueryResult } from "@tanstack/react-query"
+import { skipToken, useInfiniteQuery, useMutation, useQuery, type UseMutationResult, type UseQueryResult } from "@tanstack/react-query"
 
 // Types
 import type {
@@ -18,7 +18,8 @@ import type {
 // App
 import { sameOffersCart, type ServedOffers } from "@/lib/cart-offers"
 import { sameCart, type ServedQuote } from "@/lib/cart-pricing"
-import { cancelShopperOrder, fetchCustomerOffers, placeShopperOrder, quoteCart, searchStorefront, sendRestockRequest } from "./storefront-requests"
+import type { ListingPage } from "@/lib/listing-pages"
+import { cancelShopperOrder, fetchCustomerOffers, fetchListingPage, placeShopperOrder, quoteCart, searchStorefront, sendRestockRequest } from "./storefront-requests"
 
 /** Below this a shop answers with most of itself, and every keystroke would be a request. */
 const MIN_QUERY_LENGTH = 2
@@ -35,11 +36,33 @@ const QUOTE_STALE_MS = 30 * 1000
 export const storefrontKeys = {
   all: ["storefront"] as const,
   search: (slug: string, term: string, scope: string) => [...storefrontKeys.all, slug, "search", scope, term] as const,
+  /** A shelf as one address shows it: its filters, and the page it opened on. */
+  listing: (slug: string, query: string, firstPage: number) => [...storefrontKeys.all, slug, "listing", query, firstPage] as const,
   quotes: (slug: string) => [...storefrontKeys.all, slug, "quote"] as const,
   /** Who asks is part of the question (BEELINK-245): a first-purchase promotion prices one cart differently for each. */
   quote: (slug: string, shopperId: string | null, cart: CustomerOrderQuotePayload | null) => [...storefrontKeys.quotes(slug), shopperId, cart] as const,
   /** A shopper's offers for one cart: theirs alone, so who asks is part of the key. */
   offers: (slug: string, shopperId: string | null, cart: CustomerOffersPayload) => [...storefrontKeys.all, slug, "offers", shopperId, cart] as const,
+}
+
+/**
+ * A shelf that grows as the visitor scrolls: the page the server drew, then the next ones, asked one
+ * at a time. Server state, so it lives in the query cache — which is also what puts the visitor back
+ * where they were when they return from a product: the pages already loaded are still there, and the
+ * browser's scroll lands on the card it left.
+ */
+export function useListingPages(slug: string, query: string, first: ListingPage) {
+  return useInfiniteQuery({
+    queryKey: storefrontKeys.listing(slug, query, first.page),
+    queryFn: ({ pageParam }) => fetchListingPage(slug, query, pageParam),
+    initialPageParam: first.page,
+    initialData: { pages: [first], pageParams: [first.page] },
+    getNextPageParam: (last) => (last.page * last.pageSize < last.total ? last.page + 1 : undefined),
+    // A shelf scrolled through is not asked again on a focus or a return: every page would be
+    // fetched anew to replace itself, and the list would jump under the visitor's thumb.
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  })
 }
 
 export interface StorefrontSearchHandle {
