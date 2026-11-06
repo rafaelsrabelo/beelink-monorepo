@@ -4,7 +4,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // UI
 import { shopPaletteVariables } from "@harness-monorepo/ui/lib/shop-palette"
-import { customerPopupWordsOf, popupWordsOf } from "@harness-monorepo/ui/lib/shop-popup"
+import { customerPopupWordsOf } from "@harness-monorepo/ui/lib/shop-popup"
 
 // App
 import { figtree } from "./shop-font"
@@ -21,8 +21,6 @@ import { storefrontRoutes } from "@/lib/storefront-routes"
 
 export interface StorefrontOffersProps {
   store: Pick<PublicStore, "slug" | "type" | "routeWords" | "colors">
-  /** This page's own address: where a visitor comes back to once they have opened their account. */
-  back: string
   messages: UiMessages
 }
 
@@ -30,18 +28,20 @@ export interface StorefrontOffersProps {
 const LOCALE = "pt-BR"
 
 /**
- * What a shop says of its offers to whoever this page is drawn for: an invitation to open an
- * account to a visitor, their first-order benefit to a shopper who has not ordered, and nothing to
- * anyone else. What is said is `offerStripOf`'s; this reads what it asks for.
+ * What a shop says of its offers to whoever this page is drawn for: the first-order benefit, to
+ * anyone with no order that stands — a signed-in shopper's own, and to somebody not signed in the
+ * shop's public one, since buying asks no account and a first order is priced by the buyer's phone.
+ * Nothing invites anyone to open an account. What is said is `offerStripOf`'s; this reads what it
+ * asks for.
  *
  * Read on the server, so it is in the HTML — no skeleton that most pages would only take back. The
- * shop's headline is anyone's and kept; a shopper's own offers are asked for only when that
- * headline says the shop has something for a first order, so a shop with none costs a signed-in
- * shopper's page no call at all.
+ * shop's offers are anyone's and kept; a shopper's own are asked for only when the headline says
+ * the shop has something for a first order, so a shop with none costs a signed-in shopper's page no
+ * call at all.
  *
  * A page mounts it by handing it to the frame, and only the shop's home, its listings and its
  * product pages do: not the cart, the account, the sign-in and token pages or a landing — and the
- * panel's design preview draws the frame without it. A site has no account to open.
+ * panel's design preview draws the frame without it. A site sells nothing to offer.
  *
  * It is said as a strip under the header or, at a shop that switched its first-purchase pop-up on
  * (BEELINK-306), as a dialog — never both on one page, and which is `offersViewOf`'s (BEELINK-310):
@@ -52,23 +52,22 @@ const LOCALE = "pt-BR"
  * second rule. The pop-up's words and benefit arrive in the same kept read as the headline, and a
  * customer's notice is their own offers, already read for the strip: a pop-up costs no call more.
  */
-export async function StorefrontOffers({ store, back, messages }: StorefrontOffersProps) {
+export async function StorefrontOffers({ store, messages }: StorefrontOffersProps) {
   if (store.type === "INSTITUTIONAL") return null
 
-  const [shopper, { firstPurchase: headline, popup }, visitor] = await Promise.all([shopperAt(store.slug), offersAt(store.slug), popupVisitorAt()])
-  // Nothing for a first order: a shopper is shown nothing, and their offers are not asked for.
-  if (shopper && !headline) return null
+  const [shopper, { firstPurchase: headline, firstOrder, popup }, visitor] = await Promise.all([shopperAt(store.slug), offersAt(store.slug), popupVisitorAt()])
+  // Nothing for a first order: nobody is shown anything, and a shopper's offers are not asked for.
+  if (!headline) return null
 
   const routes = storefrontRoutes(store)
-  const signUpHref = routes.signIn({ mode: "criar", back })
-  const offers = shopper ? await customerOffersAt(store.slug) : null
-  const strip = offerStripOf({ headline, viewer: shopper ? { offers } : "visitor", signUpHref, cartHref: routes.cart(), locale: LOCALE, messages })
+  const session = !shopper && visitor.holdsSession
+  // A shopper's own, by the strip's rule; the shop's public one to anyone not signed in — but never
+  // to a browser whose session the page could not read: it may be somebody who has ordered.
+  const offer = shopper ? firstOrderOfferOf(await customerOffersAt(store.slug)) : session ? null : firstOrder
+  const strip = offerStripOf({ offer, cartHref: routes.cart(), locale: LOCALE, messages })
 
-  // Their coupon, by the strip's own rule: the pop-up never tells a shopper what the strip would not.
-  const offer = firstOrderOfferOf(offers)
-  const view = offersViewOf({ popup, viewer: shopper ? { offer } : visitor.holdsSession ? "session" : "visitor", seen: visitor.seen })
-  const customerWords = view.notice === "CUSTOMER" && offer ? customerPopupWordsOf(offer, LOCALE, messages) : null
-  const words = customerWords ?? (popup && view.notice === "VISITOR" ? popupWordsOf(popup, popup.benefit, LOCALE, messages) : null)
+  const view = offersViewOf({ popup, viewer: session ? "session" : { offer }, seen: visitor.seen })
+  const words = view.notice && offer ? customerPopupWordsOf(offer, LOCALE, messages) : null
 
   return (
     <>
@@ -81,9 +80,9 @@ export async function StorefrontOffers({ store, back, messages }: StorefrontOffe
           trigger={popup.trigger}
           delaySeconds={popup.delaySeconds}
           words={words}
-          code={customerWords?.code ?? null}
-          // A visitor goes to the sign-up; a customer to the cart with their coupon, or — a promotion has no code — nowhere.
-          actionHref={customerWords ? (customerWords.code ? pathWithCoupon(routes.cart(), customerWords.code) : null) : signUpHref}
+          code={words.code}
+          // To the cart with the coupon in its address, or — a promotion has no code — nowhere.
+          actionHref={words.code ? pathWithCoupon(routes.cart(), words.code) : null}
           imageUrl={popup.imageUrl}
           // The dialog is drawn in a portal, outside the frame that carries the shop's variables and typeface.
           style={{ ...shopPaletteVariables(store.colors), fontFamily: figtree.style.fontFamily }}

@@ -130,7 +130,7 @@ describe("a shop's offers in its window", () => {
       await coupon({ code: 'OCULTO10', audience: 'FIRST_PURCHASE' });
       await promotion({ name: 'Para todos', audience: 'EVERYONE' });
 
-      expect((await headline()).body).toEqual({ firstPurchase: null, popup: null });
+      expect((await headline()).body).toEqual({ firstPurchase: null, firstOrder: null, popup: null });
     });
 
     it('says a first-purchase promotion by its kind and amount, and whether it is over the whole cart', async () => {
@@ -144,20 +144,24 @@ describe("a shop's offers in its window", () => {
       expect((await headline()).body.firstPurchase).toEqual({ source: 'PROMOTION', kind: 'FIXED', percentBps: null, amountCents: 1500, minSubtotalCents: 0, endsAt: ends, wholeCart: true });
     });
 
-    it('says a shown first-purchase coupon as a benefit, and never its code', async () => {
-      await shown({ code: 'SEGREDO15', audience: 'FIRST_PURCHASE', percentBps: 1500, minSubtotalCents: 5000 });
+    // Buying asks no account: anyone not signed in is told a shown coupon as a customer is, code and all.
+    it('says a shown first-purchase coupon as a benefit in the headline, and with its code in the offer anyone is told', async () => {
+      await shown({ code: 'BEMVINDO15', audience: 'FIRST_PURCHASE', percentBps: 1500, minSubtotalCents: 5000 });
 
-      const { body, raw } = await headline();
+      const { body } = await headline();
       expect(body.firstPurchase).toEqual({ source: 'COUPON', kind: 'PERCENT', percentBps: 1500, amountCents: null, minSubtotalCents: 5000, endsAt: null, wholeCart: true });
-      expect(raw).not.toContain('SEGREDO15');
       expect(Object.keys(body.firstPurchase!)).not.toContain('code');
+      expect(body.firstOrder).toEqual({ source: 'COUPON', code: 'BEMVINDO15', kind: 'PERCENT', percentBps: 1500, amountCents: null, minSubtotalCents: 5000, endsAt: null });
     });
 
     it('says the promotion when there are both: it applies by itself', async () => {
       await shown({ code: 'PRIMEIRA10', audience: 'FIRST_PURCHASE' });
       await promotion();
 
-      expect((await headline()).body.firstPurchase).toMatchObject({ source: 'PROMOTION', percentBps: 1500 });
+      const { body } = await headline();
+      expect(body.firstPurchase).toMatchObject({ source: 'PROMOTION', percentBps: 1500 });
+      // The offer follows the customer's rule: the coupon, with the code to type.
+      expect(body.firstOrder).toMatchObject({ source: 'COUPON', code: 'PRIMEIRA10' });
     });
 
     it('drops a coupon that is paused, scheduled, ended or used up, and a promotion that is paused', async () => {
@@ -170,7 +174,7 @@ describe("a shop's offers in its window", () => {
       const stopped = await promotion();
       await call('PATCH', `/api/stores/lessari/promotions/${stopped.id}`, owner, { active: false });
 
-      expect((await headline()).body).toEqual({ firstPurchase: null, popup: null });
+      expect((await headline()).body).toEqual({ firstPurchase: null, firstOrder: null, popup: null });
     });
 
     it('carries the instant it next changes by itself: the soonest start or end ahead, of what is switched on and shown', async () => {
@@ -192,7 +196,7 @@ describe("a shop's offers in its window", () => {
       await call('POST', '/api/stores', other, shopBody('vizinha'));
       await made<Coupon>('coupons', couponBody({ code: 'VIZINHA10', audience: 'FIRST_PURCHASE', shownInStore: true }), 'vizinha', other);
 
-      expect((await headline()).body).toEqual({ firstPurchase: null, popup: null });
+      expect((await headline()).body).toEqual({ firstPurchase: null, firstOrder: null, popup: null });
       expect((await headline('vizinha')).body.firstPurchase).toMatchObject({ source: 'COUPON' });
       expect((await call('GET', '/api/stores/ninguem/offers')).statusCode).toBe(404);
     });

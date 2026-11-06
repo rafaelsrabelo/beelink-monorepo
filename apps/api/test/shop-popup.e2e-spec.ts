@@ -287,7 +287,8 @@ describe("a shop's first-purchase pop-up", () => {
         benefit: { source: 'COUPON', kind: 'PERCENT', percentBps: 1500, amountCents: null, minSubtotalCents: 5000, endsAt: null, wholeCart: true },
         keepReminder: true,
       });
-      expect(raw).not.toContain('SEGREDO15');
+      // The pop-up carries no code; a shown coupon's is the answer's `firstOrder`, what anyone not signed in is told.
+      expect(JSON.stringify(popup)).not.toContain('SEGREDO15');
       expect(raw).not.toContain(first.id);
     });
 
@@ -410,13 +411,14 @@ describe("a shop's first-purchase pop-up", () => {
       expect((await theirOffers(await shopperOf('cliente'))).firstPurchase).toBeNull();
     });
 
-    it('never reaches what anyone is served: the public pop-up carries no code', async () => {
+    it('never reaches the public pop-up: the code is the answer\'s firstOrder, never the dialog\'s own', async () => {
       await coupon({ code: 'SEGREDO15', percentBps: 1500 });
       await saved();
 
-      const { popup, raw } = await served();
+      const { popup } = await served();
       expect(popup).not.toHaveProperty('customerOffer');
-      expect(raw).not.toContain('SEGREDO15');
+      // The pop-up carries no code; a shown coupon's is the answer's `firstOrder`, what anyone not signed in is told.
+      expect(JSON.stringify(popup)).not.toContain('SEGREDO15');
     });
   });
 

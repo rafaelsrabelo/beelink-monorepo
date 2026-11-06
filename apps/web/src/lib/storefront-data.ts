@@ -71,18 +71,18 @@ export async function paymentOptionsAt(slug: string): Promise<StorefrontPaymentO
 }
 
 /** A shop with nothing to say for a first purchase — and what a read that failed is taken for. */
-export const NO_OFFERS: StorefrontOffers = { firstPurchase: null, popup: null }
+export const NO_OFFERS: StorefrontOffers = { firstPurchase: null, firstOrder: null, popup: null }
 
 /**
- * What the shop says of its offers to anyone: its benefit for a first purchase, without any code.
- * The strip under the header words its invitation from it, and a signed-in shopper's own offers are
- * asked for only when it says there is something.
+ * What the shop says of its offers to anyone: its benefit for a first purchase, and the offer anyone
+ * not signed in is told (`firstOrder`, a shown coupon's code included). A signed-in shopper's own
+ * offers are asked for only when it says there is something.
  *
  * Under the store's tag — a promotion's write drops it (`revalidateStore`) — and under its own,
  * which a coupon's write drops alone (`revalidateOffers`). A benefit that starts or ends by the
  * clock is no write: its instant travels on the answer, and `callPublicApi` asks again past it.
  *
- * A read that failed is no offer: the strip then invites plainly, and promises nothing.
+ * A read that failed is no offer: nothing is said, and nothing is promised.
  */
 export async function offersAt(slug: string): Promise<StorefrontOffers> {
   const response = await callPublicApi({ path: `/stores/${slug}/offers`, tags: [storeTag(slug), offersTag(slug)] }).catch(() => null)

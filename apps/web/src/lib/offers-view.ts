@@ -8,11 +8,12 @@ export interface OffersViewAsk {
   /** The shop's pop-up while it is switched on; null otherwise. */
   popup: Pick<StorefrontPopup, "revision" | "keepReminder"> | null
   /**
-   * Who the page is drawn for: a visitor with no account; a browser holding a shopper's session the
-   * page could not read as one (a token that ran out — BEELINK-306); or a signed-in shopper, with
-   * the first-order benefit the strip would tell them (`firstOrderOfferOf`) or null for none.
+   * Who the page is drawn for: a browser holding a shopper's session the page could not read as one
+   * (a token that ran out — BEELINK-306), told nothing; or anyone else, with the first-order benefit
+   * the strip would tell them — a signed-in shopper's own, or the shop's public one to somebody with
+   * no account, since buying asks none — or null for none.
    */
-  viewer: "visitor" | "session" | { offer: CustomerFirstPurchaseOffer | null }
+  viewer: "session" | { offer: CustomerFirstPurchaseOffer | null }
   /** What this browser's `bl_popup` says was closed. */
   seen: PopupSeen | null
 }
@@ -34,26 +35,24 @@ export interface OffersView {
  * - **The pop-up switched off:** no dialog; the strip is the notice, until it is closed. Anything
  *   this browser closed of that notice at the shop — the strip, or a dialog from when the pop-up
  *   was on — keeps it out: closed is closed, for the cookie's thirty days.
- * - **A dialog still due** — to a visitor, the invitation; to a signed-in shopper with a
- *   first-order benefit to tell, their coupon — and not yet closed by this browser: the dialog, and
- *   no strip. While it waits (its delay, the cookie question, its trigger) nothing says the same
+ * - **A dialog still due** — to whoever has a first-order benefit to be told, signed in or not:
+ *   the coupon, or the promotion — and not yet closed by this browser: the dialog, and no strip. While it waits (its delay, the cookie question, its trigger) nothing says the same
  *   thing under the header.
  * - **No dialog due** — closed already, or nobody it speaks to: nothing, unless the shopkeeper
  *   keeps the strip as a reminder. Kept, it is there from the page after the one where the dialog
  *   was closed — never under the pointer at the click — and until it is closed itself.
  *
- * A shopper with nothing to be told is called to nothing: the invitation is for somebody with no
- * account. Nor is a browser holding a session, whoever it reads as on this one page — the strip it
- * may be drawn is the visitor's, as the page reads them.
+ * Nobody with nothing to be told is called to anything: no notice invites anyone to open an
+ * account — buying asks none. Nor is a browser holding a session, whoever it reads as on this page.
+ * Every notice is the first-order one (`CUSTOMER`); `VISITOR` is only what an older cookie may hold.
  */
 export function offersViewOf({ popup, viewer, seen }: OffersViewAsk): OffersView {
-  // The strip a page draws is `offerStripOf`'s: a shopper's own offer, the invitation to anyone else.
-  const stripFor: PopupNotice = typeof viewer === "object" ? "CUSTOMER" : "VISITOR"
+  const stripFor: PopupNotice = "CUSTOMER"
   const revision = closingRevisionOf(seen, popup?.revision ?? 0)
 
   if (!popup) return { notice: null, strip: noticeClosed(seen, stripFor, "DIALOG", 0) ? null : stripFor, revision }
 
-  const speaksTo: PopupNotice | null = viewer === "visitor" ? "VISITOR" : viewer !== "session" && viewer.offer ? "CUSTOMER" : null
+  const speaksTo: PopupNotice | null = viewer !== "session" && viewer.offer ? "CUSTOMER" : null
   const notice = speaksTo && !noticeClosed(seen, speaksTo, "DIALOG", popup.revision) ? speaksTo : null
   const reminder = notice === null && popup.keepReminder && !noticeClosed(seen, stripFor, "STRIP", popup.revision)
 
