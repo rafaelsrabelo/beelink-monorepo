@@ -21,6 +21,37 @@ function row(name: string) {
   return screen.getByRole("row", { name: new RegExp(name) })
 }
 
+describe("ProductTable — choosing products for a bulk action", () => {
+  it("has no checkboxes unless the screen asks for a selection", () => {
+    renderTable()
+
+    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument()
+  })
+
+  it("ticks one row by its name, and the whole page from the header", async () => {
+    const onToggle = vi.fn()
+    const onTogglePage = vi.fn()
+    const { container } = renderTable({ selection: { ids: new Set(["2"]), onToggle, onTogglePage } })
+
+    const page = screen.getByRole("checkbox", { name: "Selecionar todos desta página" })
+    expect(page).toHaveAttribute("aria-checked", "mixed")
+    expect(screen.getByRole("checkbox", { name: "Selecionar Creatina" })).toBeChecked()
+
+    await userEvent.click(screen.getByRole("checkbox", { name: "Selecionar BCAA" }))
+    expect(onToggle).toHaveBeenCalledWith("3", true)
+
+    await userEvent.click(page)
+    expect(onTogglePage).toHaveBeenCalledWith(true)
+    await expectNoA11yViolations(container)
+  })
+
+  it("shows the page's box ticked when every row of it is chosen", () => {
+    renderTable({ selection: { ids: new Set(["1", "2", "3", "outra-pagina"]), onToggle: vi.fn(), onTogglePage: vi.fn() } })
+
+    expect(screen.getByRole("checkbox", { name: "Selecionar todos desta página" })).toBeChecked()
+  })
+})
+
 describe("ProductTable", () => {
   /** BEELINK-313: only a shop that gives its cashback by product has the column. */
   it("says each product's cashback, and offers to add one where there is none, in a shop that gives by product", async () => {

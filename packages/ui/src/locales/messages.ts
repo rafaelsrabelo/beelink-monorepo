@@ -3207,6 +3207,22 @@ export interface UiMessages {
         /** "{from}–{to} de {total}" — the range, because the page number is not the question. */
         range: string
       }
+      /**
+       * Several products at once, from the list: a checkbox on each row and one over the page,
+       * then a bar that puts the chosen ones on sale or back to draft. `{name}` and `{count}`.
+       */
+      bulk: {
+        selectPage: string
+        selectOne: string
+        selectedOne: string
+        selectedMany: string
+        /** That the choice survives a change of page, so thirty can be chosen across two. */
+        hint: string
+        activate: string
+        draft: string
+        clear: string
+        saving: string
+      }
       table: {
         code: string
         name: string
