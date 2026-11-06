@@ -144,6 +144,14 @@ services:
       # Address search and geocoding in the panel. Without it the address is typed by hand.
       - MAPTILER_API_KEY
 
+      # A shop's menu read into products by Claude ("Importar do PDF"). Without the key the read
+      # answers PRODUCT_IMPORT_NOT_CONFIGURED and nothing else changes. The model and the read's own
+      # limit per IP have defaults; set them only to change them.
+      - ANTHROPIC_API_KEY
+      - PRODUCT_IMPORT_MODEL
+      - PRODUCT_IMPORT_RATE_LIMIT_MAX
+      - PRODUCT_IMPORT_RATE_LIMIT_WINDOW
+
       # "Continuar com Google" at a shop. All three or none — half of it stops the boot. The redirect
       # URI is https://<WEB_DOMAIN>/api/customer/google/callback, registered in the Google console.
       - GOOGLE_CLIENT_ID
