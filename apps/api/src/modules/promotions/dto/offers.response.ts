@@ -40,13 +40,6 @@ export class StorefrontPopupResponse extends PopupCopyResponse implements Storef
   @ApiProperty({ type: FirstPurchaseHeadlineResponse, nullable: true, description: 'What it announces; null promises no discount.' }) benefit!: FirstPurchaseHeadlineResponse | null;
 }
 
-export class StorefrontOffersResponse implements StorefrontOffers {
-  @ApiProperty({ type: FirstPurchaseHeadlineResponse, nullable: true, description: "The shop's benefit for a first purchase, without any code; null with none." })
-  firstPurchase!: FirstPurchaseHeadlineResponse | null;
-  @ApiProperty({ type: StorefrontPopupResponse, nullable: true, description: "The shop's first-purchase pop-up while it is switched on; null otherwise." })
-  popup!: StorefrontPopupResponse | null;
-}
-
 export class OfferedCouponResponse extends OfferBenefitResponse implements OfferedCoupon {
   @ApiProperty({ example: 'BEMVINDO10' }) code!: string;
   @ApiProperty({ enum: DISCOUNT_AUDIENCES }) audience!: DiscountAudience;
@@ -58,6 +51,20 @@ export class CustomerFirstPurchaseOfferResponse extends OfferBenefitResponse {
   @ApiProperty({ enum: HEADLINE_SOURCES }) source!: CustomerFirstPurchaseOffer['source'];
   @ApiProperty({ required: false, description: 'On a COUPON: the code to apply.' }) code?: string;
   @ApiProperty({ required: false, description: 'On a PROMOTION: false when it is over named products or categories.' }) wholeCart?: boolean;
+}
+
+/** Declared after the customer's offer it repeats: a decorator reads its type when the class is defined. */
+export class StorefrontOffersResponse implements StorefrontOffers {
+  @ApiProperty({ type: FirstPurchaseHeadlineResponse, nullable: true, description: "The shop's benefit for a first purchase, without any code; null with none." })
+  firstPurchase!: FirstPurchaseHeadlineResponse | null;
+  @ApiProperty({
+    type: CustomerFirstPurchaseOfferResponse,
+    nullable: true,
+    description: 'What anyone not signed in is told of a first order — buying asks no account: the shown coupon with its code, else the promotion.',
+  })
+  firstOrder!: CustomerFirstPurchaseOffer | null;
+  @ApiProperty({ type: StorefrontPopupResponse, nullable: true, description: "The shop's first-purchase pop-up while it is switched on; null otherwise." })
+  popup!: StorefrontPopupResponse | null;
 }
 
 export class CustomerOffersResponse implements CustomerOffers {

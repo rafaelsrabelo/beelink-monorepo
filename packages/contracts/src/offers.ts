@@ -3,8 +3,8 @@ import type { StorefrontPopup } from "./popup.js";
 import type { CouponKind, DiscountAudience } from "./promotion.js";
 
 /**
- * What a shop shows of its own offers, unasked: the invitation to open an account, the first-order
- * strip and the cart's "Cupons disponíveis". Two reads — one anyone's and kept, one a shopper's —
+ * What a shop shows of its own offers, unasked: the first-order strip and pop-up — to anyone with no
+ * order, since buying asks no account — and the cart's "Cupons disponíveis". Two reads — one anyone's and kept, one a shopper's —
  * and neither prices anything: what an offer is worth on a cart is still `order-quote.ts`.
  *
  * A coupon is in either only while its shopkeeper switched "Mostrar este cupom na loja" on
@@ -43,6 +43,13 @@ export interface FirstPurchaseHeadline extends OfferBenefit {
  */
 export interface StorefrontOffers {
   firstPurchase: FirstPurchaseHeadline | null;
+  /**
+   * What anyone not signed in is told of a first order, now that buying asks no account and a
+   * visitor's order is priced by their phone's record: the very offer a signed-in customer with no
+   * order gets (`CustomerOffers.firstPurchase`) — the shown coupon with its code, else the promotion.
+   * A code is here only because its shopkeeper switched "Mostrar este cupom na loja" on.
+   */
+  firstOrder: CustomerFirstPurchaseOffer | null;
   /**
    * The shop's first-purchase pop-up (BEELINK-306), while it is switched on; null otherwise — a
    * shop that switched it off serves nothing of what it configured. Read with the headline because

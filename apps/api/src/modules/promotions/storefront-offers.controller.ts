@@ -17,7 +17,7 @@ import { StoresService } from '../stores/stores.service.js';
 import { StorefrontOffersResponse } from './dto/offers.response.js';
 import { runningPromotions } from './order-discounts.js';
 import { PRICES_CHANGE_AT_HEADER } from './promotions.constants.js';
-import { firstPurchaseHeadlineOf, nextHeadlineChange, shownFirstPurchaseCoupon } from './shop-offers.js';
+import { firstOrderOfferOf, firstPurchaseHeadlineOf, nextHeadlineChange, shownFirstPurchaseCoupon } from './shop-offers.js';
 import { servedPopupOf } from './shop-popup.js';
 
 /**
@@ -46,7 +46,7 @@ export class StorefrontOffersController {
   @Get()
   @Public()
   @RouteConfig({ rateLimit: STOREFRONT_RATE_LIMIT })
-  @ApiOperation({ summary: "The shop's benefit for a first purchase, as anyone may be told of it — its kind and amount, never a code — and its pop-up while switched on" })
+  @ApiOperation({ summary: "The shop's benefit for a first purchase — its headline, and the offer anyone not signed in is told, a shown coupon's code included — and its pop-up while switched on" })
   @ApiOkResponse({ type: StorefrontOffersResponse })
   @ApiNotFoundResponse({ description: 'STORE_NOT_FOUND' })
   @ApiTooManyRequestsResponse({ description: 'RATE_LIMITED' })
@@ -65,6 +65,12 @@ export class StorefrontOffersController {
     // After the two it speaks of: the pop-up announces from what this answer already read.
     const popup = await servedPopupOf(this.prisma, storeId, now, maxUses, { promotions, headlineCoupon: coupon });
 
-    return { firstPurchase: firstPurchaseHeadlineOf(promotions, coupon), popup } satisfies StorefrontOffers;
+    return {
+      firstPurchase: firstPurchaseHeadlineOf(promotions, coupon),
+      // Buying asks no account and a visitor's order is priced by their phone's record: they are told
+      // what a signed-in customer with no order is, by the same rule — the coupon, else the promotion.
+      firstOrder: firstOrderOfferOf(coupon, coupon ? [] : promotions),
+      popup,
+    } satisfies StorefrontOffers;
   }
 }
