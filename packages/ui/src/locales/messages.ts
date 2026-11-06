@@ -3155,6 +3155,48 @@ export interface UiMessages {
         leaveStay: string
         leaveGo: string
       }
+      /**
+       * Reading a menu — a PDF or a photo of it — into products, then reviewing them before they
+       * are created as drafts. `{name}` is a product's name in the per-row labels, which a screen
+       * reader needs: a list of twenty fields called "Preço" names nothing.
+       */
+      import: {
+        /** The way to it, beside "Novo produto" on the list. */
+        open: string
+        back: string
+        title: string
+        description: string
+        pick: string
+        /** Under the button: what is accepted, so a refusal is never the first time it is said. */
+        pickHint: string
+        /** Shown over the skeleton while the document is read — a minute is long enough to say so. */
+        readingHint: string
+        reviewTitle: string
+        reviewHint: string
+        includeFor: string
+        nameFor: string
+        priceFor: string
+        categoryFor: string
+        /** The columns' headers, over the rows on a wide screen. */
+        nameHeader: string
+        priceHeader: string
+        categoryHeader: string
+        categoryNone: string
+        /** A category the document named and the shop does not have yet. Takes `{name}`. */
+        categoryNew: string
+        priceMissing: string
+        /** One option's values, under the name: `{option}` and `{values}`. */
+        variations: string
+        /** `{count}` of `{total}`. */
+        selected: string
+        /** Takes `{count}`. */
+        submit: string
+        submitting: string
+        again: string
+        /** Said instead of importing while a checked row has no price. */
+        missingPrices: string
+        nothingSelected: string
+      }
       pager: {
         previous: string
         next: string
