@@ -109,6 +109,8 @@ type PanelPageErrorCode = Extract<
 /** The catalogue codes a save from the product editor can meet and a shopkeeper can act on. */
 type PanelCatalogErrorCode = Extract<
   CatalogErrorCode,
+  /** A product chosen in the list that was deleted meanwhile, met by the bulk change of status. */
+  | "PRODUCT_NOT_FOUND"
   | "PRODUCT_SLUG_TAKEN"
   /** What a menu's import can meet beside the editor's: a name with no letters, a category gone or taken meanwhile. */
   | "CATALOG_SLUG_EMPTY"

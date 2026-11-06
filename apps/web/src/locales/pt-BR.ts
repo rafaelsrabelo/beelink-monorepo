@@ -153,6 +153,7 @@ export const ptBR: WebMessages = {
     FEATURED_PRODUCT_INVALID: "Escolha um produto desta loja para o destaque.",
     SHOWCASE_LIMIT_INVALID: "O limite vai de 1 a 48 produtos.",
     PRODUCT_SLUG_TAKEN: "Outro produto da loja já usa este endereço. Escolha outro.",
+    PRODUCT_NOT_FOUND: "Um dos produtos escolhidos não existe mais. Atualize a lista e tente de novo.",
     CATALOG_SLUG_EMPTY: "Um dos nomes não tem nenhuma letra ou número. Corrija o nome e tente de novo.",
     CATALOG_SLUG_RESERVED: "Um dos nomes é uma palavra que a loja usa nos próprios endereços. Mude o nome e tente de novo.",
     PRODUCT_CATEGORY_NOT_FOUND: "Uma das categorias escolhidas não existe mais. Escolha outra e tente de novo.",

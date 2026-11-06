@@ -13,6 +13,8 @@ import type {
   ProductCategory,
   ProductListQuery,
   ProductPage,
+  ProductStatusPayload,
+  ProductStatusResult,
   UpdateProductCategoryPayload,
   UpdateProductPayload,
 } from "@harness-monorepo/contracts"
@@ -28,6 +30,7 @@ import {
   fetchProductCategories,
   fetchProducts,
   reorderProducts,
+  setProductsStatus,
   updateProduct,
   updateProductCategory,
 } from "./catalog-requests"
@@ -141,6 +144,22 @@ export function useReorderProducts(slug: string): UseMutationResult<Product[], E
   return useMutation({
     mutationFn: (ids: readonly string[]) => reorderProducts(slug, ids),
     onSettled: () => queryClient.invalidateQueries({ queryKey: catalogKeys.products(slug) }),
+  })
+}
+
+/**
+ * The list's bulk "Ativar" and "Mover para rascunho". Both lists after it: a category's count is
+ * of what is on sale, and the categories screen reads it.
+ */
+export function useSetProductsStatus(slug: string): UseMutationResult<ProductStatusResult, Error, ProductStatusPayload> {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (payload: ProductStatusPayload) => setProductsStatus(slug, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: catalogKeys.products(slug) })
+      queryClient.invalidateQueries({ queryKey: catalogKeys.categories(slug) })
+    },
   })
 }
 
