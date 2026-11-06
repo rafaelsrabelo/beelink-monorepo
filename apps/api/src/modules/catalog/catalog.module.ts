@@ -16,6 +16,7 @@ import { StorefrontController } from './storefront.controller.js';
 import { StorefrontListingService } from './storefront-listing.service.js';
 import { ProductsService } from './products.service.js';
 import { ProductVariantsService } from './product-variants.service.js';
+import { ProductStatusService } from './product-status.service.js';
 import { RestockRequestsController } from './restock-requests.controller.js';
 import { RestockRequestsService } from './restock-requests.service.js';
 
@@ -43,6 +44,7 @@ import { RestockRequestsService } from './restock-requests.service.js';
     ProductImportReader,
     ProductImportService,
     ProductsService,
+    ProductStatusService,
     ProductVariantsService,
     RestockRequestsService,
     StorefrontListingService,

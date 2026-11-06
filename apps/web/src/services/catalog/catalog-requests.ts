@@ -7,6 +7,8 @@ import type {
   ProductDetail,
   ProductListQuery,
   ProductPage,
+  ProductStatusPayload,
+  ProductStatusResult,
   ReorderPayload,
   ReplaceProductOptionsPayload,
   UpdateProductCategoryPayload,
@@ -140,6 +142,11 @@ export function reorderProducts(slug: string, ids: readonly string[]): Promise<P
     method: "PUT",
     body: JSON.stringify({ ids: [...ids] } satisfies ReorderPayload),
   })
+}
+
+/** Several products put in one status at once — all, or none if one is no longer the shop's. */
+export function setProductsStatus(slug: string, payload: ProductStatusPayload): Promise<ProductStatusResult> {
+  return call<ProductStatusResult>(`${productsPath(slug)}/status`, { method: "PUT", body: JSON.stringify(payload) })
 }
 
 export function fetchProduct(slug: string, productId: string): Promise<ProductDetail> {

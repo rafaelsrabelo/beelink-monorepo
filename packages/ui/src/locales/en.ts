@@ -2729,6 +2729,17 @@ export const en: UiMessages = {
         next: "Next",
         range: "{from}–{to} of {total}",
       },
+      bulk: {
+        selectPage: "Select every product on this page",
+        selectOne: "Select {name}",
+        selectedOne: "1 product selected",
+        selectedMany: "{count} products selected",
+        hint: "The selection stays when you change page.",
+        activate: "Activate",
+        draft: "Move to draft",
+        clear: "Clear selection",
+        saving: "Saving…",
+      },
       table: {
         code: "Code",
         name: "Product",

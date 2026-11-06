@@ -146,6 +146,9 @@ export const PRICE_CENTS_MAX = 100_000_000;
 /** On sale, or still being written. See the ProductStatus enum for why it is not a boolean. */
 export const PRODUCT_STATUSES = ['ACTIVE', 'DRAFT'] as const satisfies readonly ProductStatus[];
 
+/** Products one bulk change of status takes: a selection across a few of the panel's pages. */
+export const PRODUCT_STATUS_BULK_MAX = 500;
+
 /** Made here, or bought to resell. Absent means the shopkeeper has not said. */
 export const PRODUCT_ORIGINS = ['IN_HOUSE', 'RESALE'] as const satisfies readonly ProductOrigin[];
 

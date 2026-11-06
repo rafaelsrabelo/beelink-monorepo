@@ -2730,6 +2730,17 @@ export const ptBR: UiMessages = {
         next: "Próxima",
         range: "{from}–{to} de {total}",
       },
+      bulk: {
+        selectPage: "Selecionar todos desta página",
+        selectOne: "Selecionar {name}",
+        selectedOne: "1 produto selecionado",
+        selectedMany: "{count} produtos selecionados",
+        hint: "A seleção continua quando você troca de página.",
+        activate: "Ativar",
+        draft: "Mover para rascunho",
+        clear: "Limpar seleção",
+        saving: "Salvando…",
+      },
       table: {
         code: "Código",
         name: "Produto",

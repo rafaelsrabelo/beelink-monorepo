@@ -4,17 +4,20 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 
 import { StorefrontSearchSuggestions, type StorefrontSuggestion } from "./storefront-search-suggestions"
 
+const add = () => {}
+
+/** Two the cart can take as they are, one with options — chosen on its page, so no "+". */
 const suggestions: StorefrontSuggestion[] = [
-  { id: "1", label: "Whey Protein Concentrado 900g", href: "/loja/produtos/whey", imageUrl: "https://picsum.photos/seed/w/80/80", price: "R$ 139,90" },
-  { id: "2", label: "Whey Protein Isolado 900g", href: "/loja/produtos/iso", imageUrl: "https://picsum.photos/seed/i/80/80", price: "R$ 189,90" },
-  { id: "3", label: "Creatina Monohidratada 300g", href: "/loja/produtos/crea", imageUrl: null, price: "R$ 89,90" },
+  { id: "1", label: "Ninho com Nutella", href: "/loja/produtos/ninho", imageUrl: "https://picsum.photos/seed/w/80/80", price: "R$ 7,00", wasPrice: "R$ 8,00", hasOptions: false, onAdd: add },
+  { id: "2", label: "Coco", href: "/loja/produtos/coco", imageUrl: "https://picsum.photos/seed/i/80/80", price: "R$ 6,00", hasOptions: false, onAdd: add },
+  { id: "3", label: "Dindin gourmet", href: "/loja/produtos/gourmet", imageUrl: null, price: "R$ 8,00", hasOptions: true, onAdd: add },
 ]
 
 const meta = {
   title: "Blocos/Vitrine/Sugestões da busca",
   component: StorefrontSearchSuggestions,
   parameters: { layout: "fullscreen" },
-  args: { listId: "sugestoes", optionId: (index: number) => `sugestoes-${index}`, suggestions, active: -1 },
+  args: { listId: "sugestoes", cellId: (row: number, column: 0 | 1) => `sugestoes-${row}-${column}`, suggestions, activeRow: -1, activeColumn: 0 },
   decorators: [
     (Story) => (
       // A lista é posicionada sob o campo: aqui, sob uma caixa da altura dele.
@@ -22,7 +25,7 @@ const meta = {
         className="p-6"
         style={{ "--shop-background": "oklch(1 0 0)", "--shop-text": "oklch(0.15 0 0)", "--shop-primary-ink": "oklch(0.45 0.2 25)" } as CSSProperties}
       >
-        <div className="relative h-10 max-w-[22rem]">
+        <div className="relative h-12 max-w-[45rem]">
           <Story />
         </div>
       </div>
@@ -36,7 +39,10 @@ type Story = StoryObj<typeof meta>
 export const Padrao: Story = {}
 
 /** A linha em que as setas do teclado estão. */
-export const ComLinhaAtiva: Story = { args: { active: 1 } }
+export const ComLinhaAtiva: Story = { args: { activeRow: 1 } }
+
+/** A seta para a direita leva ao "+" do produto. */
+export const NoMaisDaLinha: Story = { args: { activeRow: 0, activeColumn: 1 } }
 
 /** A lista mostra só os primeiros: a última linha leva a todos. */
 export const ComVerTodos: Story = { args: { total: 18, seeAllHref: "/loja/busca?q=whey" } }

@@ -58,7 +58,7 @@ describe("StorefrontMasthead", () => {
    * the row's two ends; the search itself is capped and centred inside it. Given all of that room it
    * was a 646px bar at 1280 — half the header — which the owner asked to be made smaller.
    */
-  it("puts the search between the delivery block and the account, capped and centred in the room between them", () => {
+  it("puts the search between the delivery block and the account, up to 45rem from the start of the room between them", () => {
     render(
       <StorefrontMasthead name="Lessari" homeHref="/lessari" deliverTo={<span>Entregar em</span>} searchAction="/lessari/busca" accountHref="/c" />,
     )
@@ -67,7 +67,8 @@ describe("StorefrontMasthead", () => {
     const order = [...row.children].map((child) => child.textContent?.slice(0, 12))
     expect(order).toEqual(["Lessari", "Entregar em", "Buscar nesta", "Olá, entreMi"])
     const cap = screen.getByRole("search").parentElement!
-    expect(cap).toHaveClass("w-full", "min-w-0", "shop-md:mx-auto", "shop-md:max-w-[22rem]")
+    expect(cap).toHaveClass("w-full", "min-w-0", "shop-md:max-w-[45rem]")
+    expect(cap).not.toHaveClass("shop-md:mx-auto")
     expect(cap.parentElement).toHaveClass("flex-1", "min-w-0")
   })
 
