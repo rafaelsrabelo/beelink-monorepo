@@ -272,9 +272,9 @@ describe("offersAt — what the shop says of its offers to anyone", () => {
 
   it("is no offer when the read fails: the strip then promises nothing", async () => {
     vi.stubGlobal("fetch", () => Promise.reject(new TypeError("Failed to fetch")))
-    expect(await offersAt("loja")).toEqual({ firstPurchase: null, popup: null })
+    expect(await offersAt("loja")).toEqual({ firstPurchase: null, firstOrder: null, popup: null })
 
     vi.stubGlobal("fetch", () => Promise.resolve(new Response("{}", { status: 500 })))
-    expect(await offersAt("loja")).toEqual({ firstPurchase: null, popup: null })
+    expect(await offersAt("loja")).toEqual({ firstPurchase: null, firstOrder: null, popup: null })
   })
 })
