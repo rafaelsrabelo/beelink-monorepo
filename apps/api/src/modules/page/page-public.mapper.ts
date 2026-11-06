@@ -31,6 +31,8 @@ import { itemsOf } from './page.mapper.js';
 export interface Shelf {
   products: PublicProductCard[];
   category: { slug: string; name: string; description: string | null } | null;
+  /** Where its "ver tudo" leads holds more than `products`: see `PublicComponent.moreToSee`. */
+  more: boolean;
 }
 
 /**
@@ -92,6 +94,7 @@ function toPublicComponent(row: ComponentShape, shopSlug: string, words: Storefr
     display: row.display,
     source: row.source,
     sourceCategory: row.kind === 'PRODUCTS' ? (lookups.shelves.get(row.id)?.category ?? null) : null,
+    ...(row.kind === 'PRODUCTS' ? { moreToSee: lookups.shelves.get(row.id)?.more ?? false } : {}),
     // The ids never reach the wire: `PublicStore` is served to anyone who asks, and a uuid on it is a
     // row's identity handed to a stranger for nothing.
     items: publicItemsOf(row, shopSlug, words, lookups),

@@ -146,6 +146,21 @@ describe('stores — the public read resolves each showcase', () => {
     expect((await shelf(id)).names).toEqual(['Calça Jeans', 'Regata Lisa']);
   });
 
+  // Three products are on the shelf: Blusa Azul, Regata Lisa (a Blusa's child) and Calça Jeans.
+  it('says "ver tudo" leads to more only where it does: past the limit, or to a catalogue the shelf does not hold', async () => {
+    const pick = (...names: string[]) => names.map((name, index) => ({ id: String(index), productId: byName[name]!.id }));
+    const moreOf = async (component: object) => (await shelf(await addShowcase(component))).component.moreToSee;
+
+    expect((await shelf(await firstShowcaseId())).component.moreToSee).toBe(false);
+    expect(await moreOf({ source: 'NEWEST', limit: 2 })).toBe(true);
+    expect(await moreOf({ source: 'NEWEST', limit: 3 })).toBe(false);
+    expect(await moreOf({ source: 'CATEGORY', sourceCategoryId: blusas.id })).toBe(false);
+    expect(await moreOf({ source: 'CATEGORY', sourceCategoryId: blusas.id, limit: 1 })).toBe(true);
+    expect(await moreOf({ source: 'ON_SALE' })).toBe(true);
+    expect(await moreOf({ source: 'SELECTION', items: pick('Calça Jeans', 'Blusa Azul') })).toBe(true);
+    expect(await moreOf({ source: 'SELECTION', items: pick('Calça Jeans', 'Blusa Azul', 'Regata Lisa') })).toBe(false);
+  });
+
   // Every product on one position, so only the tie-breakers decide.
   it('answers the same order on every read, even when positions tie', async () => {
     await app.get(PrismaService).product.updateMany({ data: { position: 0 } });

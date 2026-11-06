@@ -53,6 +53,16 @@ function headingOf(component: PublicComponent, messages: UiMessages): string {
 }
 
 /**
+ * Where a showcase's "ver tudo" leads — its category, or the whole catalogue — or nothing when that
+ * holds no more than the showcase already draws (`moreToSee`). A page cached before the API said so
+ * keeps the link, as it always had it.
+ */
+export function seeAllHrefOf(component: PublicComponent, routes: Pick<StorefrontRoutes, "category" | "catalog">): string | undefined {
+  if (component.moreToSee === false) return undefined
+  return component.sourceCategory ? routes.category(component.sourceCategory.slug) : routes.catalog()
+}
+
+/**
  * One showcase of products, as a rail or as a grid — the shopkeeper's `display`, and a rail when
  * none was chosen, because a rail is what every showcase drew before there was a choice.
  *
@@ -78,7 +88,7 @@ export function StorefrontShelf({
     title: component.title ?? headingOf(component, messages),
     // The line a grouped shelf carried over its category's name, kept when it became a showcase.
     ...(category?.description ? { label: category.description } : {}),
-    seeAllHref: category ? routes.category(category.slug) : routes.catalog(),
+    seeAllHref: seeAllHrefOf(component, routes),
     locale: "pt-BR",
     showPrice,
     ...(installments ? { installments } : {}),

@@ -72,6 +72,8 @@ The shop window at `/<slug>` is **anonymous**. No one signs in to buy, nothing a
 
 It shows the store's brand, its catalogue grouped by category, and a product's detail with its images. A visitor builds a **cart**, which is theirs and stays on their device until they check out.
 
+A showcase — a row of products on a page — offers **"ver tudo"** only when it leads somewhere with more than the row already shows: its category, for a category's showcase, and the whole catalogue for any other. A link over every product there is promises what is not there.
+
 The **search** is the header's protagonist: the widest thing in it, right after the logo. While someone types it suggests products with their price, and a product sold one way only goes into the cart from there, with no page in between; one with options is chosen on its page.
 
 Most visitors are on a phone, so a list of products — the catalogue, a category, a search — **grows as it is scrolled** rather than asking for a page number: the next products are on their way before the visitor reaches the end, and coming back from a product returns them to where they were in the list. Each page still has its own address, which is what a search engine follows and what a visitor whose phone has not run the page's script gets.

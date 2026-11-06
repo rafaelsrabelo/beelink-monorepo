@@ -351,6 +351,13 @@ export interface PublicComponent {
    */
   sourceCategory: { slug: string; name: string; description: string | null } | null;
   /**
+   * A showcase's "ver tudo" leads somewhere with more products than the showcase draws: its category,
+   * for a CATEGORY showcase; the whole catalogue, for every other source. False draws no link — a
+   * "see all" over every product there is promises what is not there. Absent on every other kind, and
+   * on a page cached before it existed, which draws the link as before.
+   */
+  moreToSee?: boolean;
+  /**
    * A banner's slides, the benefits band's rows, the strip's one link, a form's fields, a FAQ's
    * questions, a call to action's button or an image with text's picture, their addresses built — or
    * the cards read when the page is: a featured product's one, a showcase's products chosen by its

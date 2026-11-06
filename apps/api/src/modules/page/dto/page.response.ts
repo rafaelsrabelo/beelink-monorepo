@@ -1,5 +1,5 @@
 // Nest
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 // Types
 import type {
@@ -50,6 +50,8 @@ export class PublicComponentResponse implements PublicComponent {
   source!: ProductSource | null;
   @ApiProperty({ nullable: true, type: Object, description: 'The category a CATEGORY showcase draws: { slug, name, description }.' })
   sourceCategory!: { slug: string; name: string; description: string | null } | null;
+  @ApiPropertyOptional({ description: "A showcase's: whether its \"ver tudo\" leads to more products than it draws. Absent on every other kind." })
+  moreToSee?: boolean;
   @ApiProperty({
     type: 'array',
     items: { type: 'object', additionalProperties: true },
