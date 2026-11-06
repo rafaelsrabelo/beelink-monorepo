@@ -41,21 +41,26 @@ describe("StorefrontCheckout", () => {
   })
 
   /** Buying with no sign-up: who is buying is asked here, and "sign in to order" is gone. */
-  it("asks a visitor who is buying in place of a sign-in when given the form, saying a refusal over it", () => {
-    render(checkout({ customer: null, identity: <section aria-label="Seus dados" />, error: "Sua sessão terminou." }))
+  it("asks a visitor who is buying as the first of three steps, the other two waiting, saying a refusal over it", () => {
+    render(checkout({ customer: null, identity: <p>o formulário de dados</p>, error: "Sua sessão terminou." }))
 
-    expect(screen.getByRole("region", { name: "Seus dados" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Seus dados" })).toBeInTheDocument()
+    expect(screen.getByText("o formulário de dados")).toBeInTheDocument()
+    expect(screen.getByText("Preencha seus dados para continuar.")).toBeInTheDocument()
+    expect(screen.getByText("Escolha como receber para continuar.")).toBeInTheDocument()
+    expect(screen.getByText("1 de 3")).toBeInTheDocument()
     expect(screen.getByRole("alert")).toHaveTextContent("Sua sessão terminou.")
     expect(screen.queryByRole("link", { name: "Entrar para fazer o pedido" })).toBeNull()
+    expect(screen.queryByRole("button", { name: /pedido/ })).toBeNull()
   })
 
   it("shows a signed-in shopper their details and where a delivery goes, and places the order on a press", () => {
     const onPlace = vi.fn()
     render(checkout({ onPlace }))
 
-    expect(screen.getByText("Bia Cliente")).toBeInTheDocument()
+    expect(screen.getByText("Bia Cliente · 11988887777")).toBeInTheDocument()
     expect(screen.getByText("Entregar em Av. Paulista, 1000 — São Paulo/SP")).toBeInTheDocument()
-    expect(screen.getByRole("link", { name: "Alterar dados" })).toHaveAttribute("href", customer.editHref)
+    expect(screen.getByRole("link", { name: "Alterar" })).toHaveAttribute("href", customer.editHref)
     fireEvent.click(screen.getByRole("button", { name: "Fechar pedido pelo WhatsApp" }))
     expect(onPlace).toHaveBeenCalledOnce()
   })
@@ -79,7 +84,7 @@ describe("StorefrontCheckout", () => {
 
     rerender(checkout({ pending: true }))
     expect(screen.getByRole("button", { name: "Enviando pedido…" })).toBeDisabled()
-    expect(screen.getByRole("radio", { name: /Retirar na loja/ })).toBeDisabled()
+    expect(screen.getByRole("radio", { name: "Pix" })).toBeDisabled()
   })
 
   it("says why an order was refused — to a shopper whose session ended too, over the way back in", () => {

@@ -1,8 +1,5 @@
 "use client"
 
-// React
-import { useId } from "react"
-
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
@@ -10,7 +7,8 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import type { PaymentMethod } from "../store/store-types"
-import { StorefrontCheckoutDelivery, type StorefrontCheckoutAddressForm } from "./storefront-checkout-delivery"
+import type { StorefrontCheckoutAddressForm } from "./storefront-checkout-delivery"
+import { StorefrontCheckoutFulfillment } from "./storefront-checkout-fulfillment"
 import { StorefrontCheckoutPayment, type CheckoutPaymentChannel, type StorefrontCheckoutOnline } from "./storefront-checkout-payment"
 
 export type { CheckoutOnlineMethod, CheckoutPaymentChannel, StorefrontCheckoutOnline } from "./storefront-checkout-payment"
@@ -96,17 +94,12 @@ export interface StorefrontCheckoutChoicesProps {
   messages?: UiMessages
 }
 
-/** A choice drawn as a card around a real radio: the whole card is its label, and it reads as chosen. */
-const OPTION =
-  "flex min-h-11 cursor-pointer items-start gap-3 rounded-[10px] border border-shop-line px-3 py-2.5 text-sm has-checked:border-shop-primary has-checked:bg-shop-primary-tint has-disabled:cursor-not-allowed has-disabled:opacity-60"
-const RADIO = "mt-0.5 size-4 shrink-0 accent-shop-primary"
-
 /**
- * How the order is handed over and how it is paid — what an order cannot be placed without. The
- * delivery is `StorefrontCheckoutDelivery`'s: one of the shopper's saved addresses, or one given
- * right there in the checkout; under it, what the shop's rules quote to it (BEELINK-178) and the
- * ways to get there (BEELINK-186). A way the shop switched off is not offered. How it is paid is
- * `StorefrontCheckoutPayment`'s: the shop's own labels, and what it charges online (BEELINK-205).
+ * How the order is handed over and how it is paid, together — what an order cannot be placed
+ * without. The first is `StorefrontCheckoutFulfillment`'s (the delivery's address, what the shop's
+ * rules quote to it, the ways to get there, and the pick-up); the second `StorefrontCheckoutPayment`'s
+ * (the shop's own labels, and what it charges online, BEELINK-205). The checkout draws them as two
+ * steps of their own; this is the two side by side.
  */
 export function StorefrontCheckoutChoices({
   value,
@@ -123,44 +116,20 @@ export function StorefrontCheckoutChoices({
   linkComponent: Link = AnchorLink,
   messages = defaultMessages,
 }: StorefrontCheckoutChoicesProps) {
-  const text = messages.storefront
-  const id = useId()
-  const delivers = shipping?.delivery !== false
-  const picksUp = shipping?.pickup !== false
-
   return (
     <div className="flex flex-col gap-4">
-      <fieldset disabled={disabled} className="flex flex-col gap-2">
-        <legend className="mb-2 text-sm font-semibold">{text.checkoutFulfillment}</legend>
-        {delivers ? (
-          <StorefrontCheckoutDelivery
-            value={value}
-            onChange={onChange}
-            name={`${id}-fulfillment`}
-            addresses={addresses}
-            addHref={addHref}
-            addressForm={addressForm}
-            shipping={shipping}
-            recipientDocument={recipientDocument}
-            linkComponent={Link}
-            messages={messages}
-          />
-        ) : null}
-        {picksUp ? (
-          <label className={OPTION}>
-            <input
-              type="radio"
-              name={`${id}-fulfillment`}
-              className={RADIO}
-              checked={value.fulfillment === "PICKUP"}
-              onChange={() => onChange({ ...value, fulfillment: "PICKUP" })}
-            />
-            <span className="font-medium">{text.checkoutPickup}</span>
-          </label>
-        ) : null}
-        {!delivers && !picksUp ? <p role="status" className="text-sm">{text.checkoutNoWay}</p> : null}
-      </fieldset>
-
+      <StorefrontCheckoutFulfillment
+        value={value}
+        onChange={onChange}
+        addresses={addresses}
+        addHref={addHref}
+        addressForm={addressForm}
+        shipping={shipping}
+        recipientDocument={recipientDocument}
+        disabled={disabled}
+        linkComponent={Link}
+        messages={messages}
+      />
       <StorefrontCheckoutPayment value={value} onChange={onChange} offlineMethods={paymentMethods} online={online} nothingToPay={nothingToPay} disabled={disabled} messages={messages} />
     </div>
   )

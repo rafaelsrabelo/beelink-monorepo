@@ -30,6 +30,8 @@ export interface StorefrontCheckoutIdentityProps {
   error?: string | null
   /** What the last press did, already a sentence: a new code sent. */
   notice?: string | null
+  /** Inside a step of the checkout, which says "Seus dados" itself: no frame and no title of its own. */
+  headless?: boolean
   linkComponent?: LinkComponent
   messages?: UiMessages
 }
@@ -58,12 +60,16 @@ export function StorefrontCheckoutIdentity({
   hrefs,
   error,
   notice,
+  headless = false,
   linkComponent: Link = AnchorLink,
   messages = defaultMessages,
 }: StorefrontCheckoutIdentityProps) {
   const text = messages.storefront
   const legal = messages.legal
   const id = useId()
+  const frame = headless ? "flex flex-col gap-4" : "flex flex-col gap-4 rounded-[10px] border border-shop-line bg-shop-fill p-4"
+  const Heading = headless ? "h3" : "h2"
+  const Frame = headless ? "div" : "section"
   const carried = Object.entries(hidden).map(([name, value]) => <input key={name} type="hidden" name={name} value={value} />)
   const said = (
     <>
@@ -78,10 +84,10 @@ export function StorefrontCheckoutIdentity({
 
   if (step === "code" && email) {
     return (
-      <section aria-labelledby={`${id}-title`} className="flex flex-col gap-4 rounded-[10px] border border-shop-line bg-shop-fill p-4">
-        <h2 id={`${id}-title`} className="text-base font-bold">
+      <section aria-labelledby={`${id}-title`} className={frame}>
+        <Heading id={`${id}-title`} className="text-base font-bold">
           {text.checkoutCodeTitle}
-        </h2>
+        </Heading>
         <p className="text-sm break-words">{format(text.checkoutCodeSent, { email })}</p>
         {said}
         <form action={actions.code} method="post" className="flex flex-col gap-3">
@@ -130,11 +136,13 @@ export function StorefrontCheckoutIdentity({
     privacy: <Link href={hrefs.privacy} className="underline hover:text-shop-on-background">{legal.privacy}</Link>,
   }
   return (
-    <section aria-labelledby={`${id}-title`} className="flex flex-col gap-4 rounded-[10px] border border-shop-line bg-shop-fill p-4">
+    <Frame {...(headless ? {} : { "aria-labelledby": `${id}-title` })} className={frame}>
       <div className="flex flex-col gap-1">
-        <h2 id={`${id}-title`} className="text-base font-bold">
-          {text.checkoutIdentityTitle}
-        </h2>
+        {headless ? null : (
+          <h2 id={`${id}-title`} className="text-base font-bold">
+            {text.checkoutIdentityTitle}
+          </h2>
+        )}
         <p className="text-sm text-shop-muted">{text.checkoutIdentityLead}</p>
       </div>
       {said}
@@ -175,6 +183,6 @@ export function StorefrontCheckoutIdentity({
         <p>{withParts(text.checkoutIdentityHasAccount, { signIn: <Link href={hrefs.signIn} className={LINK}>{text.checkoutIdentitySignIn}</Link> })}</p>
         <p className="text-shop-muted">{withParts(text.checkoutIdentityWithPassword, { signUp: <Link href={hrefs.signUp} className={LINK}>{text.checkoutSignUp}</Link> })}</p>
       </div>
-    </section>
+    </Frame>
   )
 }

@@ -47,6 +47,8 @@ export interface CartCheckoutHandle extends CheckoutChoiceHandle {
   shipping: StorefrontCheckoutShipping | null
   /** Why no order can go out the way chosen — the shop does not reach the address, or hands nothing over now — in words; null when one can. */
   blocked: string | null
+  /** The part of `blocked` the delivery's step answers for, which keeps that step open; null when the delivery can go on. */
+  deliveryIssue: string | null
   /** How the order leaves, as it is sent: the address and the carrier of a delivery, the fee the summary shows for it, and the CPF typed for a carrier or for paying online. */
   sent: Pick<PlaceCustomerOrderPayload, "addressId" | "shipping" | "deliveryFeeCents" | "recipientDocument">
   /** The CPF of who receives a carrier's delivery, asked while the shopper's record has none (BEELINK-187); null asks for none. */
@@ -105,20 +107,20 @@ export function useCartCheckout({ slug, view, shopper, paymentMethods, paymentOp
   const askCpf = (carrier !== null || paysOnline) && shopper !== null && !shopper.cpf
   const cpfField = askCpf ? { value: cpf, onChange: setCpf } : null
   const cpfDigits = cpf.replace(/\D/g, "")
-  const blocked =
+  // What keeps the delivery's step open: the shop takes no way now, no address yet, a place it does not reach, a carrier's CPF.
+  const deliveryIssue =
     shipping && !shipping.delivery && !shipping.pickup
       ? text.checkoutNoWay
       : addressless
         ? text.checkoutAddressMissing
         : delivering && shipping && shipping.ways.length === 0
           ? shipping.note
-          : plan.offlineMethods.length === 0 && plan.online?.unavailable
-            ? plan.online.unavailable
-            : askCpf && cpfDigits.length !== 11
-              ? carrier
-                ? text.checkoutRecipientDocumentIssue
-                : text.checkoutPayerDocumentIssue
-              : null
+          : carrier && askCpf && cpfDigits.length !== 11
+            ? text.checkoutRecipientDocumentIssue
+            : null
+  const blocked =
+    deliveryIssue ??
+    (plan.offlineMethods.length === 0 && plan.online?.unavailable ? plan.online.unavailable : askCpf && cpfDigits.length !== 11 ? text.checkoutPayerDocumentIssue : null)
   const sent = {
     ...(delivering
       ? {
@@ -137,6 +139,7 @@ export function useCartCheckout({ slug, view, shopper, paymentMethods, paymentOp
     offers,
     shipping,
     blocked,
+    deliveryIssue,
     sent,
     recipientDocument: carrier ? cpfField : null,
     offlineMethods: plan.offlineMethods,

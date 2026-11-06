@@ -48,6 +48,8 @@ export function useCheckoutIdentity({ slug, identity, cartHref, coupon, signInHr
         hrefs={{ signIn: signInHref, signUp: signUpHref, terms: LEGAL_ROUTES.terms, privacy: LEGAL_ROUTES.privacy }}
         error={identity.error}
         notice={identity.notice}
+        // Inside the checkout's first step, which says "Seus dados" itself.
+        headless
         linkComponent={AppLink}
         messages={messages}
       />

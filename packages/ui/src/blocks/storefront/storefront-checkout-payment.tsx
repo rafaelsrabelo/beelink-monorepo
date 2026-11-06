@@ -45,6 +45,8 @@ export interface StorefrontCheckoutPaymentProps<Value extends StorefrontCheckout
   /** The order has nothing to pay: said in place of every choice. */
   nothingToPay?: string | null
   disabled?: boolean
+  /** Under a step that already says "Pagamento", the legend is for a screen reader alone. */
+  titled?: boolean
   messages?: UiMessages
 }
 
@@ -68,6 +70,7 @@ export function StorefrontCheckoutPayment<Value extends StorefrontCheckoutPaymen
   online = null,
   nothingToPay = null,
   disabled = false,
+  titled = true,
   messages = defaultMessages,
 }: StorefrontCheckoutPaymentProps<Value>) {
   const text = messages.storefront
@@ -80,7 +83,7 @@ export function StorefrontCheckoutPayment<Value extends StorefrontCheckoutPaymen
   if (nothingToPay) {
     return (
       <div className="flex flex-col gap-2">
-        <p className="text-sm font-semibold">{text.checkoutPayment}</p>
+        <p className={titled ? "text-sm font-semibold" : "sr-only"}>{text.checkoutPayment}</p>
         <p role="status" className="rounded-[10px] border border-shop-line bg-shop-fill px-3 py-2 text-sm">
           {nothingToPay}
         </p>
@@ -90,7 +93,7 @@ export function StorefrontCheckoutPayment<Value extends StorefrontCheckoutPaymen
 
   return (
     <fieldset disabled={disabled} className="flex flex-col gap-2">
-      <legend className="mb-2 text-sm font-semibold">{text.checkoutPayment}</legend>
+      <legend className={titled ? "mb-2 text-sm font-semibold" : "sr-only"}>{text.checkoutPayment}</legend>
 
       {online ? (
         <div role="group" aria-labelledby={`${id}-now`} className="flex flex-col gap-2">

@@ -78,6 +78,15 @@ describe("StorefrontCheckoutIdentity", () => {
     expect(screen.queryByLabelText("Nome completo")).toBeNull()
   })
 
+  /** Inside the checkout's first step, which already says "Seus dados". */
+  it("draws no frame and no title of its own inside a step", () => {
+    render(identity({ headless: true }))
+
+    expect(screen.queryByRole("heading", { name: "Seus dados" })).toBeNull()
+    expect(screen.getByText("Sem senha e sem cadastro: é só para a loja saber quem pediu.")).toBeInTheDocument()
+    expect(screen.getByLabelText("WhatsApp")).toBeInTheDocument()
+  })
+
   it("has no accessibility violations, in either step", async () => {
     const { container, rerender } = render(identity({ error: "Confira o nome, o e-mail e o WhatsApp." }))
     await expectNoA11yViolations(container)
