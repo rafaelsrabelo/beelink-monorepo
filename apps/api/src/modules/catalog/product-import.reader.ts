@@ -44,9 +44,9 @@ const MAX_TOKENS = 64_000;
 /**
  * The one place this API talks to Claude.
  *
- * The client is built once, from `env` and never from the SDK's own reading of `process.env`, so
- * the key is read where every other key is (rule 3) and a deployment without one has no client at
- * all. One retry and three minutes: the shopkeeper is waiting on this answer with the page open.
+ * The client is built once, with the key handed to it from `env` — never left to the SDK to find in
+ * the environment on its own — so the key is read where every other key is (rule 3) and a
+ * deployment without one has no client at all. One retry and three minutes: the shopkeeper is waiting on this answer with the page open.
  */
 @Injectable()
 export class ProductImportReader {
