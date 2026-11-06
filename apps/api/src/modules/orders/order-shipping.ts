@@ -8,7 +8,7 @@ import type { CreateOrderItemInput, OrderFulfillment, OrderShippingChangedDetail
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { DeliveryService } from '../delivery/delivery.service.js';
 import { pricedCartOf, ShippingQuotes, type PricedCart } from '../delivery/shipping-quote.service.js';
-import { deliveryColumnsOf } from './order-delivery.js';
+import { deliveryColumnsOf, type CustomerAddressRow } from './order-delivery.js';
 import { readOrderLines } from './order-lines.js';
 import { priceOrder } from './order-pricing.js';
 import { orderError } from './orders.constants.js';
@@ -61,16 +61,21 @@ export class OrderShipping {
    * to — no such address, or one with no street and city, which an order refuses in its own words —
    * and for an address with no CEP, the one thing a place on the map and a carrier both start from.
    */
-  async quoteFor(storeId: string, customerId: string, addressId: string | null, cart: PricedCart): Promise<ShippingQuote | null> {
+  async quoteFor(storeId: string, customerId: string, addressId: string | null, cart: PricedCart, given?: CustomerAddressRow | null): Promise<ShippingQuote | null> {
+    const to = given !== undefined ? (given ? deliveryColumnsOf(given) : null) : await this.savedColumnsOf(customerId, addressId);
+    if (!to?.deliveryZipCode) return null;
+
+    return this.quotes.forCart(storeId, { zipCode: to.deliveryZipCode, street: to.deliveryStreet, number: to.deliveryNumber, neighborhood: to.deliveryNeighborhood, city: to.deliveryCity, state: to.deliveryState }, cart);
+  }
+
+  /** The record's address chosen, else its default, as a delivery reads it. */
+  private async savedColumnsOf(customerId: string, addressId: string | null) {
     const customer = await this.prisma.customer.findUniqueOrThrow({
       where: { id: customerId },
       select: { name: true, addresses: { where: addressId ? { id: addressId } : { isDefault: true }, take: 1 } },
     });
     const address = customer.addresses[0];
-    const to = address ? deliveryColumnsOf({ ...address, name: address.recipientName ?? customer.name }) : null;
-    if (!to?.deliveryZipCode) return null;
-
-    return this.quotes.forCart(storeId, { zipCode: to.deliveryZipCode, street: to.deliveryStreet, number: to.deliveryNumber, neighborhood: to.deliveryNeighborhood, city: to.deliveryCity, state: to.deliveryState }, cart);
+    return address ? deliveryColumnsOf({ ...address, name: address.recipientName ?? customer.name }) : null;
   }
 
   /**
@@ -86,6 +91,8 @@ export class OrderShipping {
     items: readonly CreateOrderItemInput[];
     choice: OrderShippingChoice | undefined;
     shownFeeCents: number | null | undefined;
+    /** A visitor's address, typed at the checkout; absent for the account, whose saved address `addressId` names. */
+    given?: CustomerAddressRow | null;
   }): Promise<DeliveryTerms> {
     const { storeId, customerId } = input;
     if (input.fulfillment === 'PICKUP') {
@@ -97,7 +104,7 @@ export class OrderShipping {
     const lines = await readOrderLines(this.prisma, storeId, input.items, true);
     // Without the lock and the coupon: only what the products cost after promotions is read from it.
     const priced = await priceOrder(this.prisma, { storeId, lines, fulfillment: 'DELIVERY', deliveryFeeCents: null, manualDiscountCents: 0, couponCode: null, customer: { id: customerId }, at: new Date(), lock: false });
-    const quote = await this.quoteFor(storeId, customerId, input.addressId, pricedCartOf(lines, priced));
+    const quote = await this.quoteFor(storeId, customerId, input.addressId, pricedCartOf(lines, priced), input.given);
     // Nowhere to quote to: the order's own transaction says which address is missing.
     if (!quote) return AGREED_LATER;
 

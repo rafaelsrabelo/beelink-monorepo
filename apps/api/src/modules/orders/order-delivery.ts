@@ -79,8 +79,14 @@ export function deliveryColumnsOf(customer: CustomerAddressRow): DeliveryColumns
  * else the customer. A chosen address that is not the customer's, or nowhere to go, throws — and the
  * transaction takes the order's number, its stock and a customer registered with it back with it.
  */
-export async function deliveryOf(tx: Tx, customerId: string, fulfillment: OrderFulfillment, addressId: string | null): Promise<DeliveryColumns> {
+export async function deliveryOf(tx: Tx, customerId: string, fulfillment: OrderFulfillment, addressId: string | null, given?: CustomerAddressRow | null): Promise<DeliveryColumns> {
   if (fulfillment === 'PICKUP') return PICKUP;
+  // A visitor's address, typed at the checkout (plan 2026-11-06--P0-checkout-sem-codigo): the record's own are not theirs to use.
+  if (given !== undefined) {
+    const typed = given ? deliveryColumnsOf(given) : null;
+    if (!typed) throw new BadRequestException(orderError('ORDER_DELIVERY_ADDRESS_MISSING', 'The visitor gave no street and city to deliver to'));
+    return typed;
+  }
 
   const customer = await tx.customer.findUniqueOrThrow({
     where: { id: customerId },

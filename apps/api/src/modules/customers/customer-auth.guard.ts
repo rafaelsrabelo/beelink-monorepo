@@ -18,8 +18,7 @@ interface AccessTokenPayload {
   sub: string;
   sid?: string;
   kind?: string;
-  /** A purchase session's: its id, and the shop it was opened at. */
-  pid?: string;
+  /** A purchase session's: the shop it was opened at; `sub` is the session's id. */
   store?: string;
 }
 
@@ -31,8 +30,8 @@ interface AccessTokenPayload {
  * Routes that use it are `@Public()` to the global guard, which would refuse a shopper's token.
  *
  * A purchase session (plan 2026-11-06--whatsapp-primeiro) passes only where a route says
- * `@OpenToPurchase()`; anywhere else it is refused as if there were no token. Its token is signed and
- * short, and has no session row to be alive in.
+ * `@OpenToPurchase()`; anywhere else it is refused as if there were no token. Whether it still holds is
+ * its row's to say (`Buyers.at`), where the route reads it.
  */
 @Injectable()
 export class CustomerAuthGuard implements CanActivate {
@@ -62,8 +61,8 @@ export class CustomerAuthGuard implements CanActivate {
 
     if (payload.kind === PURCHASE_TOKEN_KIND) {
       const open = this.reflector.getAllAndOverride<boolean | undefined>(OPEN_TO_PURCHASE, [context.getHandler(), context.getClass()]);
-      if (!open || !payload.pid || !payload.store) throw this.unauthenticated();
-      request.buyer = { kind: 'purchase', customerId: payload.sub, purchaseId: payload.pid, storeId: payload.store };
+      if (!open || !payload.store) throw this.unauthenticated();
+      request.buyer = { kind: 'purchase', purchaseId: payload.sub, storeId: payload.store };
       return true;
     }
     if (payload.kind !== CUSTOMER_TOKEN_KIND || !payload.sid) throw this.unauthenticated();

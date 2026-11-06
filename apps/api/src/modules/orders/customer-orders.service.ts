@@ -7,9 +7,8 @@ import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
-import { Buyers, type Buyer } from '../customers/buyers.service.js';
+import { Buyers, givenAddressOf, type Buyer } from '../customers/buyers.service.js';
 import { CustomersService } from '../customers/customers.service.js';
-import { maskedDeliveryOf } from '../customers/purchase-address.js';
 import { CUSTOMER_ORDER_INCLUDE, toCustomerOrder, toCustomerOrderSummary } from './customer-order.mapper.js';
 import type { ListCustomerOrdersDto, PlaceCustomerOrderDto } from './dto/customer-order.dto.js';
 import { settleCancellation } from './order-cancellation.js';
@@ -55,11 +54,13 @@ export class CustomerOrdersService {
    * where they quote none, the fee is the shop's to tell: not agreed (null), never a free delivery.
    */
   async place(storeSlug: string, buyer: Buyer, dto: PlaceCustomerOrderDto): Promise<CustomerOrder> {
-    const { storeId, customerId, userId, purchaseId } = await this.buyers.at(storeSlug, buyer);
+    const { storeId, customerId, userId, purchase, purchaseId } = await this.buyers.at(storeSlug, buyer);
     // A purchase session spends none of the record's credit: it is the account's (plan 2026-11-06--whatsapp-primeiro).
     if (purchaseId && (dto.cashbackCents ?? 0) > 0) throw new BadRequestException(orderError('ORDER_CASHBACK_REFUSED', 'A purchase session spends no cashback'));
-    const addressId = dto.addressId?.toLowerCase() ?? null;
-    const terms = await this.shipping.forPlacement({ storeId, customerId, fulfillment: dto.fulfillment, addressId, items: dto.items, choice: dto.shipping, shownFeeCents: dto.deliveryFeeCents });
+    // A visitor delivers to the address they typed, never to one of the record's (plan 2026-11-06--P0-checkout-sem-codigo).
+    const addressId = purchase ? null : (dto.addressId?.toLowerCase() ?? null);
+    const given = purchase ? givenAddressOf(purchase) : undefined;
+    const terms = await this.shipping.forPlacement({ storeId, customerId, fulfillment: dto.fulfillment, addressId, items: dto.items, choice: dto.shipping, shownFeeCents: dto.deliveryFeeCents, ...(given ? { given } : {}) });
     // A carrier's label is bought with the CPF of who receives it (BEELINK-187): the checkout asks for it first.
     const deliveryDocument = terms.carrier ? await this.documentOf(customerId, dto.recipientDocument, 'ORDER_RECIPIENT_DOCUMENT_MISSING', purchaseId) : null;
     const { online, onlyIfNothingToPay } = await this.channelOf(storeId, dto);
@@ -88,6 +89,7 @@ export class CustomerOrdersService {
       actor: 'CUSTOMER',
       userId,
       purchaseSessionId: purchaseId,
+      ...(purchase ? { deliveryGiven: givenAddressOf(purchase), contactEmail: purchase.email } : {}),
       onSaleOnly: true,
       origin: placedOriginOf(dto.origin),
       marketingConsent: placedConsentOf(dto.marketingConsent),
@@ -272,8 +274,7 @@ export class CustomerOrdersService {
   private async read(storeId: string, customerId: string, number: number, purchaseId: string | null = null): Promise<CustomerOrder> {
     const order = await this.prisma.order.findFirst({ where: { storeId, customerId, number, ...(purchaseId ? { purchaseSessionId: purchaseId } : {}) }, include: CUSTOMER_ORDER_INCLUDE });
     if (!order) throw notFound(number);
-    const read = toCustomerOrder(order);
-    return purchaseId && read.deliveryAddress ? { ...read, deliveryAddress: maskedDeliveryOf(read.deliveryAddress) } : read;
+    return toCustomerOrder(order);
   }
 }
 

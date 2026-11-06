@@ -17,7 +17,7 @@ import { lockCustomer } from '../customers/customer-lock.js';
 import { owePurchase } from '../integrations/meta-pixel/meta-purchase-outbox.js';
 import { redeemCoupon } from '../promotions/order-discounts.js';
 import { businessDaysAfter } from './business-days.js';
-import { deliveryOf, deliveryWindowColumnsOf } from './order-delivery.js';
+import { deliveryOf, deliveryWindowColumnsOf, type CustomerAddressRow } from './order-delivery.js';
 import { readOrderLines } from './order-lines.js';
 import { originColumnsOf, type PlacedMarketingConsent, type PlacedOrigin } from './order-origin.js';
 import { cashbackRefused, couponRefused, earningPartsOf, priceOrder } from './order-pricing.js';
@@ -67,8 +67,12 @@ export interface Placement {
   actor: Extract<OrderActor, 'SHOPKEEPER' | 'CUSTOMER'>;
   /** The account behind it; null for a purchase session, which has none (plan 2026-11-06--whatsapp-primeiro). */
   userId: string | null;
-  /** The purchase session that placed it: the one that may read it back. Absent for every other way. */
+  /** The visitor's checkout that placed it: the one that may read it back. Absent for every other way. */
   purchaseSessionId?: string | null;
+  /** The visitor's address, typed at the checkout, in place of a saved one; absent for the account and the panel. */
+  deliveryGiven?: CustomerAddressRow | null;
+  /** The e-mail the visitor typed, kept on the order; absent for the account and the panel. */
+  contactEmail?: string | null;
   /**
    * Only what the shop window sells: a product put back in draft is off sale to a shopper. The
    * shopkeeper may still register a sale of one of their own drafts.
@@ -144,7 +148,7 @@ export class OrderPlacement {
       await lockCustomer(tx, customerId);
       // Before the order is written: a line the stock cannot cover refuses the whole order.
       await takeStock(tx, lines);
-      const delivery = await deliveryOf(tx, customerId, placement.fulfillment, placement.addressId);
+      const delivery = await deliveryOf(tx, customerId, placement.fulfillment, placement.addressId, placement.deliveryGiven);
       const delivering = placement.fulfillment === 'DELIVERY';
       const priced = await priceOrder(tx, {
         storeId,
@@ -176,7 +180,7 @@ export class OrderPlacement {
           storeId,
           number,
           customerId,
-          ...(placement.purchaseSessionId ? { purchaseSessionId: placement.purchaseSessionId } : {}),
+          ...(placement.purchaseSessionId ? { purchaseSessionId: placement.purchaseSessionId, contactEmail: placement.contactEmail ?? null } : {}),
           status,
           fulfillment: placement.fulfillment,
           paymentMethod: placement.paymentMethod,

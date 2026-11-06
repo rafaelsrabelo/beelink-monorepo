@@ -2,48 +2,53 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 
 // Types
-import type { CustomerCheckoutPhoneAnswer, CustomerPurchase } from '@harness-monorepo/contracts';
+import type { CustomerPurchase } from '@harness-monorepo/contracts';
+import type { PurchaseSessionModel } from '../../generated/prisma/models.js';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
-import { SAVED_ADDRESS_ORDER } from './customer-addresses.js';
-import { Buyers, PURCHASE_SESSION_TTL_SECONDS, type Buyer } from './buyers.service.js';
-import { CustomersService } from './customers.service.js';
-import { purchaseAddressOf } from './purchase-address.js';
+import { Buyers, type Buyer } from './buyers.service.js';
+import type { PurchaseAddressDto } from './dto/customer-checkout.dto.js';
+
+/** The visitor's own words back: what they typed, and the address once they gave it. */
+function toPurchase(row: PurchaseSessionModel): CustomerPurchase {
+  const address = row.street && row.city ? { zipCode: row.zipCode, street: row.street, number: row.number, complement: row.complement, neighborhood: row.neighborhood, city: row.city, state: row.state } : null;
+  return { name: row.name, email: row.email, phone: row.phone, address, expiresAt: row.expiresAt.toISOString() };
+}
 
 /**
- * A WhatsApp the shop knows, going on without a code (plan 2026-11-06--whatsapp-primeiro). Recognising
- * the number is not opening the account: it opens a purchase session on the shop's record of it, which
- * reads that record's addresses masked and nothing else of the person — no name, e-mail, CPF, history
- * or cashback — and places this purchase on it, as the panel does with a sale over WhatsApp.
- *
- * It says whether a number is the shop's customer, as the e-mail's door does: the price of a returning
- * customer not being stopped. The account door's limit by address slows a script.
+ * A visitor's purchase session, as the visitor reaches it (plan 2026-11-06--P0-checkout-sem-codigo):
+ * reading back what they typed, giving the address their order goes to, and ending it. The address lives
+ * on the session — never on a record of the shop, whose own addresses the session neither reads nor writes.
  */
 @Injectable()
 export class CustomerPurchaseService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly customers: CustomersService,
     private readonly buyers: Buyers,
   ) {}
 
-  async byPhone(storeSlug: string, phone: string): Promise<CustomerCheckoutPhoneAnswer> {
-    const { storeId } = await this.customers.scopeOf(storeSlug);
-    const record = await this.prisma.customer.findUnique({ where: { storeId_phone: { storeId, phone } }, select: { id: true } });
-    if (!record) return { kind: 'NEW' };
-    return { kind: 'RECOGNIZED', purchase: await this.buyers.open(storeId, record.id) };
+  async read(storeSlug: string, buyer: Buyer): Promise<CustomerPurchase> {
+    return toPurchase(await this.sessionOf(storeSlug, buyer));
   }
 
-  /** What a purchase session reads of its record: the addresses to deliver to, masked. The account has its own door to its record. */
-  async read(storeSlug: string, buyer: Buyer): Promise<CustomerPurchase> {
-    if (buyer.kind !== 'purchase') throw new UnauthorizedException({ errorCode: 'AUTH_UNAUTHENTICATED', message: 'Only a purchase session reads this' });
-    const { customerId } = await this.buyers.at(storeSlug, buyer);
-    const addresses = await this.prisma.customerAddress.findMany({
-      where: { customerId, street: { not: null }, city: { not: null } },
-      orderBy: SAVED_ADDRESS_ORDER,
-      select: { id: true, street: true, number: true, city: true, state: true, isDefault: true },
+  async saveAddress(storeSlug: string, buyer: Buyer, dto: PurchaseAddressDto): Promise<CustomerPurchase> {
+    const session = await this.sessionOf(storeSlug, buyer);
+    const row = await this.prisma.purchaseSession.update({
+      where: { id: session.id },
+      data: { zipCode: dto.zipCode, street: dto.street, number: dto.number ?? null, complement: dto.complement ?? null, neighborhood: dto.neighborhood ?? null, city: dto.city, state: dto.state },
     });
-    return { addresses: addresses.map(purchaseAddressOf), expiresAt: new Date(Date.now() + PURCHASE_SESSION_TTL_SECONDS * 1000).toISOString() };
+    return toPurchase(row);
+  }
+
+  async end(storeSlug: string, buyer: Buyer): Promise<void> {
+    await this.buyers.end((await this.sessionOf(storeSlug, buyer)).id);
+  }
+
+  /** The account has its own doors to itself; these are a visitor's. */
+  private async sessionOf(storeSlug: string, buyer: Buyer): Promise<PurchaseSessionModel> {
+    const { purchase } = await this.buyers.at(storeSlug, buyer);
+    if (!purchase) throw new UnauthorizedException({ errorCode: 'AUTH_UNAUTHENTICATED', message: "Only a visitor's purchase session reads this" });
+    return purchase;
   }
 }
