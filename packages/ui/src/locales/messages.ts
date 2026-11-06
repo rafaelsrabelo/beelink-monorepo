@@ -306,13 +306,6 @@ export interface UiMessages {
       benefitFreeShipping: string
       /** `{amount}` — a second sentence, when the benefit asks for a minimum. */
       minimum: string
-      /** A visitor, at a shop with nothing for a first purchase: what an account gives here. */
-      signUp: string
-      /** `{benefit}` — a visitor, at a shop with a first-purchase benefit over the whole cart. */
-      signUpBenefit: string
-      /** `{benefit}` — the same, when the promotion is over named products or categories. */
-      signUpBenefitSelected: string
-      signUpAction: string
       /** `{benefit}` — a customer with no order that stands; the code follows the sentence. */
       firstOrderCoupon: string
       /** `{benefit}` — the same customer, at a shop whose first-purchase benefit is a promotion. */
