@@ -46,7 +46,7 @@ describe("the cart's price", () => {
     expect(await response.json()).toEqual(priced)
     expect(urlOf(fetched.mock.calls[0])).toMatch(/\/stores\/loja\/cart\/quote$/)
     expect(authOf(fetched.mock.calls[0])).toBeNull()
-    // Field by field: the public door refuses a body that carries a coupon.
+    // Field by field, and a blank code is no code.
     expect(bodyOf(fetched.mock.calls[0])).toEqual({ items, fulfillment: "DELIVERY" })
     // The API's limit is per address: it has to see the visitor's, not this server's.
     expect(new Headers(initOf(fetched.mock.calls[0])?.headers).get("x-forwarded-for")).toBe("203.0.113.7")
@@ -152,16 +152,32 @@ describe("the cart's price", () => {
     expect(response.cookies.get("bl_shopper_access")).toMatchObject({ value: "new-access", httpOnly: true, path: "/loja" })
   })
 
-  it("answers signed out to a code with no session left: a code is checked for an identified customer only", async () => {
-    const fetched = vi.fn(async () => Response.json({ statusCode: 401, errorCode: "AUTH_UNAUTHENTICATED", message: "x" }, { status: 401 }))
+  // The first-order banner's coupon, straight into the cart: buying asks no account.
+  it("takes a visitor's code to the public door, which takes only a coupon the shop shows — never a sign-in", async () => {
+    const fetched = vi.fn(async () => Response.json(priced, { status: 200 }))
     vi.stubGlobal("fetch", fetched)
 
-    const response = await post({ items, fulfillment: "PICKUP", couponCode: "BEMVINDO10" }, { cookie: "bl_shopper_access=old" })
+    const response = await post({ items, fulfillment: "PICKUP", couponCode: "PRIMEIRA10" })
 
-    expect(response.status).toBe(401)
-    expect(await response.json()).toMatchObject({ errorCode: "AUTH_UNAUTHENTICATED" })
+    expect(response.status).toBe(200)
+    expect(urlOf(fetched.mock.calls[0])).toMatch(/\/stores\/loja\/cart\/quote$/)
+    expect(authOf(fetched.mock.calls[0])).toBeNull()
+    expect(bodyOf(fetched.mock.calls[0])).toEqual({ items, fulfillment: "PICKUP", couponCode: "PRIMEIRA10" })
+  })
+
+  it("prices a code as a visitor's when the session is gone, and clears its cookies", async () => {
+    const fetched = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json({ statusCode: 401, errorCode: "AUTH_UNAUTHENTICATED", message: "x" }, { status: 401 }))
+      .mockResolvedValueOnce(Response.json(priced, { status: 200 }))
+    vi.stubGlobal("fetch", fetched)
+
+    const response = await post({ items, fulfillment: "PICKUP", couponCode: "PRIMEIRA10" }, { cookie: "bl_shopper_access=old" })
+
+    expect(response.status).toBe(200)
     expect(urlOf(fetched.mock.calls[0])).toMatch(/\/customer\/orders\/quote$/)
-    expect(fetched).toHaveBeenCalledOnce()
+    expect(urlOf(fetched.mock.calls[1])).toMatch(/\/cart\/quote$/)
+    expect(bodyOf(fetched.mock.calls[1])).toEqual({ items, fulfillment: "PICKUP", couponCode: "PRIMEIRA10" })
     expect(response.cookies.get("bl_shopper_access")?.value).toBe("")
   })
 

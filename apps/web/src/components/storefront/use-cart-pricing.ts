@@ -37,8 +37,9 @@ export interface CartPricingInput {
   /** The carrier a delivery would go by, once one was picked (BEELINK-186): its fee is in the totals. Null goes by the shop's own. */
   shipping: OrderShippingChoice | null
   /**
-   * Who is asking: the signed-in shopper's id, or null for a visitor. A coupon is a shopper's — a
-   * visitor's cart is priced without one — and so is a price, since a first-purchase promotion is.
+   * Who is asking: the signed-in shopper's id, or null for a visitor. A price is somebody's, since a
+   * first-purchase promotion is. A visitor's cart takes the coupon its address carries — the public
+   * door looks only at one the shop shows, the first-order banner's — so buying asks no sign-in.
    */
   shopperId: string | null
   /** The price the page was served with; null when the server could not ask for one. */
@@ -131,7 +132,7 @@ export function useCartPricing({ slug, view, fulfillment, addressId, shipping, s
     // own, keeps the old address as the page's, and puts it back at the next `router.refresh()`.
     window.history.replaceState(null, "", pathWithCoupon(`${window.location.pathname}${window.location.search}`, code))
   }, [])
-  const coupon = shopperId ? kept : null
+  const coupon = kept
   // Credit is somebody's: a session that ended under a ticked box asks as a visitor, without it.
   const [spending, setSpending] = useState(false)
   const useCredit = shopperId !== null && spending
@@ -184,6 +185,9 @@ export function useCartPricing({ slug, view, fulfillment, addressId, shipping, s
   // The answer for the cart on screen — not one kept from a moment ago, nor one for quantities still settling.
   const fresh = quote.data && !quote.isPlaceholderData && !settling && !unanswered ? quote.data : null
   const verdict = asked ? fresh?.coupon : null
+  // A visitor's code the public door did not look at — not one the shop shows: it stays in the address
+  // for the checkout to ask about once they say who is buying, and is never drawn as applied.
+  const unlooked = shopperId === null && asked !== null && fresh !== null && fresh.coupon === null
   // Refused for good: remembered during the draw itself, so the next question already leaves the code out.
   if (asked && verdict?.status === "REFUSED" && FINAL.includes(verdict.reason)) setSettledBy(cart)
 
@@ -215,7 +219,7 @@ export function useCartPricing({ slug, view, fulfillment, addressId, shipping, s
     pricing: cart.items.length > 0 && quote.isPending,
     stale: cart.items.length > 0 && (settling || quote.isPlaceholderData),
     coupon: {
-      applied: coupon,
+      applied: unlooked ? null : coupon,
       holding: last?.status === "APPLIED",
       pending: applying.isPending,
       error,

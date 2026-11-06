@@ -804,13 +804,14 @@ describe("the cart's price and its coupon", () => {
     expect(screen.queryByLabelText("WhatsApp")).toBeNull()
   })
 
-  it("leaves a visitor's coupon unchecked, and takes it along to the sign-in: it is checked once they are back", () => {
+  // The first-order banner leads a visitor to the cart with its coupon: applied there, with no sign-in.
+  it("applies a visitor's coupon the address carried, and keeps it along every way out of the cart", async () => {
     const fetched = network()
     renderCart(false, null, { coupon: "BEMVINDO10" })
 
-    expect(screen.queryByRole("button", { name: "Remover o cupom BEMVINDO10" })).toBeNull()
-    expect(screen.getByText("Tem um cupom de desconto? Você aplica depois de informar seus dados.")).toBeInTheDocument()
-    expect(fetched).not.toHaveBeenCalled()
+    await waitFor(() => expect(screen.getByText("Cupom BEMVINDO10 aplicado.")).toBeInTheDocument())
+    expect(screen.getByRole("button", { name: "Remover o cupom BEMVINDO10" })).toBeInTheDocument()
+    expect(bodiesTo(fetched, "/loja/api/orders/quote").some((body) => body.couponCode === "BEMVINDO10")).toBe(true)
     expect(new URL(screen.getByRole("link", { name: "Entrar para fazer o pedido" }).getAttribute("href")!, "http://x").searchParams.get("voltar")).toBe("/loja/carrinho?cupom=BEMVINDO10")
   })
 

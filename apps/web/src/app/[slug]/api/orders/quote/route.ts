@@ -25,16 +25,16 @@ async function answerOf(response: Response): Promise<NextResponse> {
  * take off them and — when a code was typed — whether the coupon is taken.
  *
  * One address for the page, three doors at the API, and who is asking picks the door. A visitor's
- * cart is priced at the public door. A signed-in shopper's is priced as theirs (BEELINK-245): a
- * first-purchase promotion applies to them or says why it does not, so their price is not anyone's.
- * A code goes to the door that answers about codes, with their session, because whether a code
- * exists is told only to an identified customer — and that door counts its calls apart, so a cart
- * that only changes quantities never spends them. Their cashback (BEELINK-244) is asked for at
- * either of their two doors, and never at the visitor's: credit is somebody's.
+ * cart is priced at the public door — with its code, which that door takes only when the shop shows
+ * the coupon in its window (the first-order banner's) and prices as no code otherwise: buying asks no
+ * account. A signed-in shopper's is priced as theirs (BEELINK-245): a first-purchase promotion applies
+ * to them or says why it does not, so their price is not anyone's. Their code goes to the door that
+ * answers about any code, with their session — and that door counts its calls apart, so a cart that
+ * only changes quantities never spends them. Their cashback (BEELINK-244) is asked for at either of
+ * their two doors, and never at the visitor's: credit is somebody's.
  *
- * A session that is gone refuses a code. It never refuses a price: the cookies are cleared and the
- * cart is priced as a visitor's, since a cart is priced for anyone — the page learns of the session
- * where it reads one, at the order.
+ * A session that is gone refuses nothing: the cookies are cleared and the cart is priced as a
+ * visitor's, code and all — the page learns of the session where it reads one, at the order.
  *
  * Under the shop's path for the shopper's cookies, which reach no handler anywhere else.
  */
@@ -65,11 +65,12 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
   }
 
   const asVisitor = async () => {
-    const priced = await callApi({ path: `${shop}/cart/quote`, body: withoutCode, clientIp }).catch(() => null)
+    const body = couponCode === null ? withoutCode : { ...withoutCode, couponCode }
+    const priced = await callApi({ path: `${shop}/cart/quote`, body, clientIp }).catch(() => null)
     return priced ? answerOf(priced) : refusal(502, "UNKNOWN", "The shop could not be reached")
   }
   // Either cookie is a session: the refresh one alone is a shopper whose access ran out, renewed below.
-  if (couponCode === null && !request.cookies.has(CUSTOMER_ACCESS_COOKIE) && !request.cookies.has(CUSTOMER_REFRESH_COOKIE)) return asVisitor()
+  if (!request.cookies.has(CUSTOMER_ACCESS_COOKIE) && !request.cookies.has(CUSTOMER_REFRESH_COOKIE)) return asVisitor()
 
   const priced = await callAsShopper(request, slug, (accessToken) =>
     callApi({
@@ -81,7 +82,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
   )
 
   if (priced.status === "signedOut") {
-    const answer = couponCode === null ? await asVisitor() : refusal(401, "AUTH_UNAUTHENTICATED", "Sign in to apply a coupon")
+    const answer = await asVisitor()
     clearCustomerSessionCookies(answer, shopAddressOf(request.headers, slug))
     return answer
   }

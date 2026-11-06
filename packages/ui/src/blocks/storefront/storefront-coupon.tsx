@@ -32,7 +32,10 @@ export interface StorefrontCouponProps {
   onEdit?: () => void
   /** The order is on its way: the coupon is no longer changed. */
   disabled?: boolean
-  /** Nobody is signed in: a sentence says where the code goes, and no field is offered. */
+  /**
+   * Nobody is signed in: a sentence says where a typed code goes, and no field is offered — but a
+   * coupon already applied (the first-order banner's, from the cart's address) is drawn as applied.
+   */
   signedOut?: boolean
   /** What the shop gives a first order, said to a visitor over that sentence — never a code; null or absent says nothing. */
   signedOutBenefit?: string | null
@@ -83,7 +86,7 @@ export function StorefrontCoupon({
     ;(applied ? remove.current : input.current)?.focus()
   }, [applied, pending])
 
-  if (signedOut) {
+  if (signedOut && !applied) {
     const where = <p className="text-sm text-shop-muted">{text.couponSignedOut}</p>
     if (!signedOutBenefit) return where
     return (

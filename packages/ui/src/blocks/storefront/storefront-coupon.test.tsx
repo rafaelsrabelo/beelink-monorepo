@@ -126,12 +126,24 @@ describe("StorefrontCoupon", () => {
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument()
   })
 
+  // The first-order banner leads to the cart with its coupon: a visitor's cart draws it applied, with no sign-in.
+  it("draws a visitor's coupon applied, with the way to remove it, when the cart's address carried it", async () => {
+    const onRemove = vi.fn()
+    const { container } = render(<StorefrontCoupon applied="SEJAMUTANTE" holding signedOut signedOutBenefit="Seu primeiro pedido tem 15% de desconto com o cupom SEJAMUTANTE." onRemove={onRemove} />)
+
+    expect(screen.getByText("SEJAMUTANTE")).toBeInTheDocument()
+    expect(screen.queryByText("Tem um cupom de desconto? Você aplica depois de informar seus dados.")).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole("button", { name: "Remover o cupom SEJAMUTANTE" }))
+    expect(onRemove).toHaveBeenCalledOnce()
+    await expectNoA11yViolations(container)
+  })
+
   // BEELINK-311.
   describe("for a visitor at a shop with a first-purchase coupon", () => {
-    it("says the benefit it was handed over the sentence that says where the code goes — and still no field, and no code", () => {
-      render(<StorefrontCoupon applied={null} signedOut signedOutBenefit="Crie sua conta e ganhe 15% de desconto no primeiro pedido." />)
+    it("says the benefit it was handed over the sentence that says where a code goes — and still no field", () => {
+      render(<StorefrontCoupon applied={null} signedOut signedOutBenefit="Seu primeiro pedido tem 15% de desconto com o cupom SEJAMUTANTE." />)
 
-      const benefit = screen.getByText("Crie sua conta e ganhe 15% de desconto no primeiro pedido.")
+      const benefit = screen.getByText("Seu primeiro pedido tem 15% de desconto com o cupom SEJAMUTANTE.")
       const where = screen.getByText("Tem um cupom de desconto? Você aplica depois de informar seus dados.")
       expect(benefit.compareDocumentPosition(where) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
       expect(screen.queryByRole("textbox")).not.toBeInTheDocument()
@@ -139,7 +151,7 @@ describe("StorefrontCoupon", () => {
     })
 
     it("has no accessibility violations", async () => {
-      const { container } = render(<StorefrontCoupon applied={null} signedOut signedOutBenefit="Crie sua conta e ganhe 15% de desconto no primeiro pedido." />)
+      const { container } = render(<StorefrontCoupon applied={null} signedOut signedOutBenefit="Seu primeiro pedido tem 15% de desconto com o cupom SEJAMUTANTE." />)
 
       await expectNoA11yViolations(container)
     })

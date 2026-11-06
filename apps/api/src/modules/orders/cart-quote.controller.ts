@@ -14,8 +14,10 @@ import { OrderQuotes } from './order-quote.service.js';
 
 /**
  * A visitor's cart, priced: the lines at the catalogue's price and what the shop's promotions take
- * off them. Open to anyone, like the cart's own read beside it — and for that reason it takes no
- * coupon: a route that answers whether a code exists is a way to guess a shop's codes.
+ * off them. Open to anyone, like the cart's own read beside it — and for that reason the only coupon
+ * it takes is one the shop already shows in its window: a route that answered about any other code
+ * would be a way to guess a shop's codes. Buying asks no account, so the first-order banner's coupon
+ * goes straight into the visitor's cart.
  *
  * Nobody is identified here, so a promotion for a first purchase (BEELINK-245) is not on the lines:
  * the answer announces it, with what it would take off, for the cart to say it is theirs once they

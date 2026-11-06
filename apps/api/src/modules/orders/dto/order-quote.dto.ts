@@ -34,7 +34,7 @@ const COUPON_VERDICTS = ['APPLIED', 'REFUSED'] as const satisfies readonly Quote
 const COUPON_REFUSALS = ['NOT_FOUND', 'EXPIRED', 'EXHAUSTED', 'INACTIVE', 'CUSTOMER_LIMIT', 'NOT_FIRST_PURCHASE', 'NOT_APPLICABLE', 'BELOW_MINIMUM'] as const satisfies readonly CouponRefusalReason[];
 const FIRST_PURCHASE_STATUSES = ['UNIDENTIFIED', 'NOT_FIRST'] as const satisfies readonly QuotedFirstPurchase['status'][];
 
-/** The visitor's cart: the lines and how it would leave. No coupon — that takes a signed-in customer. */
+/** The visitor's cart: the lines, how it would leave, and a coupon the shop shows in its window. */
 export class CartQuoteDto implements CartQuotePayload {
   @ApiProperty({ type: [OrderItemDto], minItems: 1, maxItems: ORDER_ITEMS_MAX })
   @IsArray()
@@ -48,6 +48,10 @@ export class CartQuoteDto implements CartQuotePayload {
   @IsOptional()
   @IsIn(ORDER_FULFILLMENTS)
   fulfillment?: OrderFulfillment;
+
+  /** Taken only when the shop shows it in its window; any other code is priced as no code at all. */
+  @couponCode
+  couponCode?: string | null;
 }
 
 /** The signed-in customer's cart with no code: a coupon in it is refused, so this door answers nothing about a shop's codes. */
