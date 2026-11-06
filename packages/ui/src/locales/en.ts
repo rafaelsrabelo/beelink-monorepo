@@ -900,7 +900,6 @@ export const en: UiMessages = {
     cartEmpty: "Your cart is empty.",
     cartEmptyHint: "What you add in the shop shows up here.",
     account: "My account",
-    noPhoto: "No photo",
     search: "Search this shop",
     searchAction: "Search",
     searchScope: "Search in",

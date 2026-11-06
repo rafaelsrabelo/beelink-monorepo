@@ -5,6 +5,7 @@ import { useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode
 
 // UI
 import { scrollToSlide, useSnapIndex } from "@harness-monorepo/ui/hooks/use-snap-index"
+import { PRODUCT_PLACEHOLDER_SRC } from "@harness-monorepo/ui/lib/product-image"
 
 // Locales
 import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
@@ -83,7 +84,8 @@ export function StorefrontProductGallery({ images, name, badge, corner, messages
             className="flex aspect-square snap-x snap-mandatory overflow-x-auto overscroll-x-contain rounded-[16px] bg-shop-placeholder [scrollbar-width:none] shop-lg:aspect-auto shop-lg:h-[560px]"
           >
             {images.length === 0 ? (
-              <p className="flex size-full items-center justify-center text-[14px] text-shop-muted">{text.noPhoto}</p>
+              // bee-link's picture, decorative: the product's name is the page's heading.
+              <img src={PRODUCT_PLACEHOLDER_SRC} alt="" className="size-full object-cover" />
             ) : (
               images.map((image, at) => (
                 <button

@@ -3,6 +3,7 @@ import type { ReactNode } from "react"
 
 // UI
 import { cn } from "@harness-monorepo/ui/lib/utils"
+import { productImageOf } from "@harness-monorepo/ui/lib/product-image"
 
 // Locales
 import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
@@ -136,12 +137,8 @@ export function StorefrontOrderCard({
         <ul className="flex flex-col gap-3">
           {items.map((item, index) => (
             <li key={`${item.name}-${index}`} className="flex items-center gap-3">
-              {item.imageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element -- the shop's own photo, sized by the card
-                <img src={item.imageUrl} alt="" className="size-14 shrink-0 rounded-[10px] border border-shop-line object-cover" />
-              ) : (
-                <span aria-hidden="true" className="size-14 shrink-0 rounded-[10px] bg-shop-fill" />
-              )}
+              {/* eslint-disable-next-line @next/next/no-img-element -- the shop's own photo, sized by the card */}
+              <img src={productImageOf(item.imageUrl)} alt="" className="size-14 shrink-0 rounded-[10px] border border-shop-line object-cover" />
               <div className="flex min-w-0 flex-col gap-0.5">
                 {item.href ? (
                   <Link href={item.href} className="truncate text-sm font-medium hover:underline">

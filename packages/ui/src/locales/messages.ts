@@ -1133,7 +1133,6 @@ export interface UiMessages {
     cartEmpty: string
     cartEmptyHint: string
     account: string
-    noPhoto: string
     search: string
     searchAction: string
     /** Names the select before the field: which category the search is narrowed to. */

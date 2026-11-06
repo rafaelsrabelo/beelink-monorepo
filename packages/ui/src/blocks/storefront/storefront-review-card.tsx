@@ -4,6 +4,9 @@ import type { ReactNode } from "react"
 // Libs
 import { EyeOffIcon, StarIcon } from "lucide-react"
 
+// UI
+import { productImageOf } from "@harness-monorepo/ui/lib/product-image"
+
 // Locales
 import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
@@ -59,7 +62,7 @@ export function StorefrontReviewCard({ id, name, href, imageUrl, meta, rating, c
     <article id={id} className="flex scroll-mt-24 gap-4 rounded-2xl border border-shop-line bg-shop-background p-4">
       <span className="size-[72px] shrink-0 overflow-hidden rounded-[10px] bg-shop-placeholder">
         {/* Decorative: the name beside it says what it is. */}
-        {imageUrl ? <img src={imageUrl} alt="" loading="lazy" className="size-full object-cover" /> : null}
+        <img src={productImageOf(imageUrl)} alt="" loading="lazy" className="size-full object-cover" />
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-2">
         {outcome}

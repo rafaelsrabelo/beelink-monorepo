@@ -3,6 +3,7 @@ import { MinusIcon, PlusIcon, Trash2Icon } from "lucide-react"
 
 // UI
 import { cn } from "@harness-monorepo/ui/lib/utils"
+import { productImageOf } from "@harness-monorepo/ui/lib/product-image"
 
 // Locales
 import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
@@ -58,7 +59,7 @@ export function StorefrontCartLine({ row, locale, maxQty = 99, onQtyChange, onRe
   return (
     <li className={cn("flex gap-4 border-b border-shop-line py-4 last:border-b-0", !row.available && "opacity-70")}>
       <div className="size-20 shrink-0 overflow-hidden rounded-lg bg-shop-placeholder">
-        {row.imageUrl ? <img src={row.imageUrl} alt="" className="size-full object-cover" /> : null}
+        <img src={productImageOf(row.imageUrl)} alt="" className="size-full object-cover" />
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col gap-1">

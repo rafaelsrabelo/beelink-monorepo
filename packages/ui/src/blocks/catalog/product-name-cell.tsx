@@ -1,6 +1,9 @@
 // Libs
 import { TruckIcon } from "lucide-react"
 
+// UI
+import { productImageOf } from "@harness-monorepo/ui/lib/product-image"
+
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
@@ -24,7 +27,7 @@ export function ProductNameCell({ name, imageUrl, carrierGap = null, messages = 
   return (
     <div className="flex items-center gap-3">
       <span className="bg-muted flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md">
-        {imageUrl ? <img src={imageUrl} alt="" aria-hidden="true" className="size-full object-cover" /> : null}
+        <img src={productImageOf(imageUrl)} alt="" aria-hidden="true" className="size-full object-cover" />
       </span>
       <span className="flex min-w-0 flex-col">
         <span className="truncate font-medium">{name}</span>

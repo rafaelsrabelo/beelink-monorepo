@@ -1,3 +1,6 @@
+// UI
+import { productImageOf } from "@harness-monorepo/ui/lib/product-image"
+
 // Locales
 import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
@@ -74,14 +77,12 @@ export function StorefrontSearchSuggestions({ listId, optionId, suggestions, pen
               index === active ? "bg-black/5" : "",
             )}
           >
-            {suggestion.imageUrl ? (
-              <img
-                src={suggestion.imageUrl}
-                alt=""
-                aria-hidden="true"
-                className="size-10 shrink-0 rounded-lg object-cover"
-              />
-            ) : null}
+            <img
+              src={productImageOf(suggestion.imageUrl)}
+              alt=""
+              aria-hidden="true"
+              className="size-10 shrink-0 rounded-lg object-cover"
+            />
             <span className="min-w-0 flex-1 truncate">{suggestion.label}</span>
             {suggestion.price ? (
               <span className="shrink-0 text-xs font-semibold opacity-80">{suggestion.price}</span>

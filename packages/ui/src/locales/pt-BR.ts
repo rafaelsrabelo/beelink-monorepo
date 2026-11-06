@@ -901,7 +901,6 @@ export const ptBR: UiMessages = {
     cartEmpty: "Seu carrinho está vazio.",
     cartEmptyHint: "O que você adicionar na loja aparece aqui.",
     account: "Minha conta",
-    noPhoto: "Sem foto",
     search: "Buscar nesta loja",
     searchAction: "Buscar",
     searchScope: "Buscar em",
