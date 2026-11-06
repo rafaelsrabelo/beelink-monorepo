@@ -112,6 +112,7 @@ type PanelCatalogErrorCode = Extract<
   | "PRODUCT_SLUG_TAKEN"
   /** What a menu's import can meet beside the editor's: a name with no letters, a category gone or taken meanwhile. */
   | "CATALOG_SLUG_EMPTY"
+  | "CATALOG_SLUG_RESERVED"
   | "PRODUCT_CATEGORY_NOT_FOUND"
   | "PRODUCT_CATEGORY_SLUG_TAKEN"
   | "PRODUCT_SKU_TAKEN"

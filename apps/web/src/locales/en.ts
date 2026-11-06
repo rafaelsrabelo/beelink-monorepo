@@ -154,6 +154,7 @@ export const en: WebMessages = {
     SHOWCASE_LIMIT_INVALID: "The limit goes from 1 to 48 products.",
     PRODUCT_SLUG_TAKEN: "Another product of this shop already uses this address. Choose another.",
     CATALOG_SLUG_EMPTY: "One of the names has no letter or number. Fix the name and try again.",
+    CATALOG_SLUG_RESERVED: "One of the names is a word the shop's own addresses use. Change the name and try again.",
     PRODUCT_CATEGORY_NOT_FOUND: "One of the chosen categories no longer exists. Choose another and try again.",
     PRODUCT_CATEGORY_SLUG_TAKEN: "A category with that name was just created. Try importing again.",
     PRODUCT_IMPORT_NOT_CONFIGURED: "Importing from a PDF is not available in this environment yet.",

@@ -48,7 +48,7 @@ export function ProductImportScreen({ slug, ui, web }: ProductImportScreenProps)
   function pick(file: File) {
     read.mutate(file, {
       // Categories not loaded yet only cost a "Nova:" the import then resolves to the shop's own.
-      onSuccess: (answer) => setRows(rowsFrom(answer.drafts, categories.data ?? [])),
+      onSuccess: (answer) => setRows(rowsFrom(answer.drafts, categories.data ?? [], answer.takenSlugs)),
     })
   }
 
@@ -83,6 +83,7 @@ export function ProductImportScreen({ slug, ui, web }: ProductImportScreenProps)
         <ProductImportReview
           rows={rows}
           categories={(categories.data ?? []).map((category) => ({ id: category.id, name: category.name }))}
+          takenSlugs={read.data?.takenSlugs ?? []}
           onChange={setRows}
           onSubmit={submit}
           onRestart={restart}

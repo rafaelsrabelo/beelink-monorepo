@@ -1,5 +1,5 @@
 // UI
-import { categoryKeyOf, NEW_CATEGORY, type ProductImportRow } from "@harness-monorepo/ui/blocks/catalog/product-import-review"
+import { NEW_CATEGORY, segmentOf, type ProductImportRow } from "@harness-monorepo/ui/blocks/catalog/product-import-review"
 import { centsFrom, reaisFrom } from "@harness-monorepo/ui/lib/money"
 
 // Types
@@ -15,17 +15,25 @@ import type {
  * the shop's by the segment the two names would share — case, accents and spaces aside — which is
  * the same key the API matches by before it creates one, so the review never offers to create a
  * category the import would then reuse.
+ *
+ * A draft whose name the shop already has arrives unticked: reading the same menu twice is the
+ * likeliest way to meet one, and what the shopkeeper wants then is what is new.
  */
-export function rowsFrom(drafts: readonly ProductImportDraft[], categories: readonly Pick<ProductCategory, "id" | "name">[]): ProductImportRow[] {
-  const byKey = new Map(categories.map((category) => [categoryKeyOf(category.name), category.id]))
+export function rowsFrom(
+  drafts: readonly ProductImportDraft[],
+  categories: readonly Pick<ProductCategory, "id" | "name">[],
+  takenSlugs: readonly string[] = [],
+): ProductImportRow[] {
+  const byKey = new Map(categories.map((category) => [segmentOf(category.name), category.id]))
+  const taken = new Set(takenSlugs)
 
   return drafts.map((draft, index) => {
-    const known = draft.categoryName ? byKey.get(categoryKeyOf(draft.categoryName)) : undefined
+    const known = draft.categoryName ? byKey.get(segmentOf(draft.categoryName)) : undefined
     const unknownName = draft.categoryName && !known ? draft.categoryName : null
 
     return {
       key: `draft-${index}`,
-      include: true,
+      include: !taken.has(segmentOf(draft.name)),
       name: draft.name,
       price: draft.priceCents === null ? "" : reaisFrom(draft.priceCents),
       categoryId: known ?? (unknownName ? NEW_CATEGORY : ""),

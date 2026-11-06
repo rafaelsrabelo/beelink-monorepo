@@ -32,6 +32,12 @@ describe("rowsFrom", () => {
     expect(gourmet).toMatchObject({ categoryId: NEW_CATEGORY, newCategoryName: "Dindins", price: "4,00" })
     expect(suco).toMatchObject({ categoryId: "", newCategoryName: null, price: "" })
   })
+
+  it("leaves unticked a draft whose name the shop already has", () => {
+    const rows = rowsFrom(drafts, [picoles], ["picole-de-uva"])
+
+    expect(rows.map((row) => row.include)).toEqual([false, true, true])
+  })
 })
 
 describe("payloadFrom", () => {

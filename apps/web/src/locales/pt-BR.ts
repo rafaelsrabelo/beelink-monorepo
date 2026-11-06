@@ -154,6 +154,7 @@ export const ptBR: WebMessages = {
     SHOWCASE_LIMIT_INVALID: "O limite vai de 1 a 48 produtos.",
     PRODUCT_SLUG_TAKEN: "Outro produto da loja já usa este endereço. Escolha outro.",
     CATALOG_SLUG_EMPTY: "Um dos nomes não tem nenhuma letra ou número. Corrija o nome e tente de novo.",
+    CATALOG_SLUG_RESERVED: "Um dos nomes é uma palavra que a loja usa nos próprios endereços. Mude o nome e tente de novo.",
     PRODUCT_CATEGORY_NOT_FOUND: "Uma das categorias escolhidas não existe mais. Escolha outra e tente de novo.",
     PRODUCT_CATEGORY_SLUG_TAKEN: "Uma categoria com esse nome acabou de ser criada. Tente importar de novo.",
     PRODUCT_IMPORT_NOT_CONFIGURED: "A importação por PDF ainda não está disponível neste ambiente.",
