@@ -45,3 +45,6 @@ export const VisitanteComBeneficio: Story = { args: { signedOut: true, signedOut
 
 /** O cliente tem um cupom que ainda não aplicou: a chamada fica sobre o campo (BEELINK-311). */
 export const ComChamada: Story = { args: { call: { message: "Você tem 15% de desconto no primeiro pedido com o cupom", code: "SEJAMUTANTE" } } }
+
+/** Recolhido, como no carrinho e no checkout: o campo espera atrás de "Inserir cupom de desconto". */
+export const Recolhido: Story = { args: { collapsed: true } }

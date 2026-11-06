@@ -220,4 +220,38 @@ describe("StorefrontCoupon", () => {
     rerender(<StorefrontCoupon applied="BEMVINDO10" holding />)
     await expectNoA11yViolations(container)
   })
+
+  describe("collapsed, as the cart and the checkout draw it", () => {
+    it("waits behind 'Inserir cupom de desconto', and opens on the field, focused", () => {
+      render(<StorefrontCoupon applied={null} collapsed />)
+
+      expect(screen.queryByLabelText("Cupom de desconto")).toBeNull()
+      fireEvent.click(screen.getByRole("button", { name: "Inserir cupom de desconto" }))
+
+      expect(screen.getByLabelText("Cupom de desconto")).toHaveFocus()
+    })
+
+    it("stands open on a coupon in force, and stays open once it is taken off", () => {
+      const { rerender } = render(<StorefrontCoupon applied="BEMVINDO10" holding collapsed />)
+
+      expect(screen.getByRole("button", { name: "Remover o cupom BEMVINDO10" })).toBeInTheDocument()
+      rerender(<StorefrontCoupon applied={null} collapsed />)
+
+      expect(screen.getByLabelText("Cupom de desconto")).toBeInTheDocument()
+      expect(screen.queryByRole("button", { name: "Inserir cupom de desconto" })).toBeNull()
+    })
+
+    it("stands open to say why a coupon was refused", () => {
+      render(<StorefrontCoupon applied={null} error="Esse cupom venceu." collapsed />)
+
+      expect(screen.getByRole("alert")).toHaveTextContent("Esse cupom venceu.")
+      expect(screen.getByLabelText("Cupom de desconto")).toBeInTheDocument()
+    })
+
+    it("has no accessibility violations", async () => {
+      const { container } = render(<StorefrontCoupon applied={null} collapsed />)
+
+      await expectNoA11yViolations(container)
+    })
+  })
 })
