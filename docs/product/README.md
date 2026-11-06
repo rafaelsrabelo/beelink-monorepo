@@ -72,6 +72,8 @@ The shop window at `/<slug>` is **anonymous**. No one signs in to buy, nothing a
 
 It shows the store's brand, its catalogue grouped by category, and a product's detail with its images. A visitor builds a **cart**, which is theirs and stays on their device until they check out.
 
+The **search** is the header's protagonist: the widest thing in it, right after the logo. While someone types it suggests products with their price, and a product sold one way only goes into the cart from there, with no page in between; one with options is chosen on its page.
+
 A shop window that is briefly out of date is acceptable; a shop window that is slow or unreadable is not.
 
 ## The panel
