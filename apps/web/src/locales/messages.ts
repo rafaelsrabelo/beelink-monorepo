@@ -14,6 +14,7 @@ import type {
   CourierApplicationErrorCode,
   StoreErrorCode,
   PageErrorCode,
+  ProductImportErrorCode,
 } from "@harness-monorepo/contracts"
 
 /**
@@ -109,6 +110,10 @@ type PanelPageErrorCode = Extract<
 type PanelCatalogErrorCode = Extract<
   CatalogErrorCode,
   | "PRODUCT_SLUG_TAKEN"
+  /** What a menu's import can meet beside the editor's: a name with no letters, a category gone or taken meanwhile. */
+  | "CATALOG_SLUG_EMPTY"
+  | "PRODUCT_CATEGORY_NOT_FOUND"
+  | "PRODUCT_CATEGORY_SLUG_TAKEN"
   | "PRODUCT_SKU_TAKEN"
   | "PRODUCT_HAS_OPTIONS"
   | "PRODUCT_OPTION_DUPLICATE"
@@ -300,6 +305,8 @@ export interface WebMessages {
     | WebErrorCode
     | PanelPageErrorCode
     | PanelCatalogErrorCode
+    /** A menu read into products, and the import of the ones confirmed. */
+    | ProductImportErrorCode
     | StorefrontCatalogErrorCode
     | "UNKNOWN",
     string
