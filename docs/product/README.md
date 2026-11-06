@@ -74,6 +74,8 @@ It shows the store's brand, its catalogue grouped by category, and a product's d
 
 The **search** is the header's protagonist: the widest thing in it, right after the logo. While someone types it suggests products with their price, and a product sold one way only goes into the cart from there, with no page in between; one with options is chosen on its page.
 
+Most visitors are on a phone, so a list of products — the catalogue, a category, a search — **grows as it is scrolled** rather than asking for a page number: the next products are on their way before the visitor reaches the end, and coming back from a product returns them to where they were in the list. Each page still has its own address, which is what a search engine follows and what a visitor whose phone has not run the page's script gets.
+
 A shop window that is briefly out of date is acceptable; a shop window that is slow or unreadable is not.
 
 ## The panel

@@ -928,6 +928,8 @@ export const ptBR: UiMessages = {
     shelfFailed: "Não conseguimos carregar os produtos agora.",
     shelfFailedHint: "Pode ser a conexão. Tente de novo em instantes.",
     shelfRetry: "Tentar de novo",
+    loadMore: "Ver mais produtos",
+    loadMoreFailed: "Não deu para carregar mais produtos agora.",
     productsHeading: "Produtos",
     productCount: "{count} produtos",
     productCountOne: "1 produto",

@@ -1,6 +1,5 @@
 // UI
 import type { StorefrontInstallmentTerms } from "@harness-monorepo/ui/lib/installments"
-import { StorefrontCatalog as StorefrontCatalogGrid } from "@harness-monorepo/ui/blocks/storefront/storefront-catalog"
 import { StorefrontCategories } from "@harness-monorepo/ui/blocks/storefront/storefront-categories"
 import { StorefrontCategoryFilter } from "@harness-monorepo/ui/blocks/storefront/storefront-category-filter"
 import { StorefrontDiscountFilter } from "@harness-monorepo/ui/blocks/storefront/storefront-discount-filter"
@@ -8,18 +7,15 @@ import { StorefrontFilterChips } from "@harness-monorepo/ui/blocks/storefront/st
 import { StorefrontFilterColumn } from "@harness-monorepo/ui/blocks/storefront/storefront-filter-column"
 import { StorefrontFilterSheet } from "@harness-monorepo/ui/blocks/storefront/storefront-filter-sheet"
 import { StorefrontOptionFilter } from "@harness-monorepo/ui/blocks/storefront/storefront-option-filter"
-import { StorefrontPagination } from "@harness-monorepo/ui/blocks/storefront/storefront-pagination"
-import type { StorefrontProduct } from "@harness-monorepo/ui/blocks/storefront/storefront-product-card"
 import { StorefrontPriceFilter } from "@harness-monorepo/ui/blocks/storefront/storefront-price-filter"
 import { StorefrontSearch } from "@harness-monorepo/ui/blocks/storefront/storefront-search"
 
 // App
-import { pageCountOf, type StorefrontShelf } from "@/lib/storefront-data"
-import { StorefrontFavoriteLive } from "./favorites/storefront-favorite-live"
-import { StorefrontCardCartLive } from "./storefront-card-cart-live"
+import { catalogueQueryOf, pageCountOf, type StorefrontShelf as Shelf } from "@/lib/storefront-data"
 import { StorefrontListingControls } from "./storefront-listing-controls"
+import { StorefrontListingGrid } from "./storefront-listing-grid"
 import { categoryFilterOf, clearFiltersHrefOf, discountFilterOf, filterChipsOf, optionFiltersOf, priceFilterOf } from "@/lib/storefront-filters"
-import { pageHrefOf, type SectionPlace } from "@/lib/storefront-section"
+import { listingAskOf, pageHrefOf, type SectionPlace } from "@/lib/storefront-section"
 import type { StorefrontRoutes } from "@/lib/storefront-routes"
 
 export interface StorefrontListingProps {
@@ -30,7 +26,7 @@ export interface StorefrontListingProps {
    * boundary, so the shop's header and menu are on screen while the products are not — and the
    * request stays in the page, the one lane a Server Component reads the catalogue through.
    */
-  catalogue: Promise<StorefrontShelf>
+  catalogue: Promise<Shelf>
   /** The shop's card terms, for "em até 6x" under a price; absent when it splits nothing. */
   installments?: StorefrontInstallmentTerms
   locale: string
@@ -38,7 +34,8 @@ export interface StorefrontListingProps {
 
 /**
  * A shelf of products — the catalogue, a category, a search — as 5a lays it out on the canvas: the
- * filter column beside the grid and the pager. The results band above it is the page's.
+ * filter column beside the grid, and the grid growing as it is scrolled. The results band above it
+ * is the page's.
  */
 export async function StorefrontListing({ place, routes, catalogue: pending, installments, locale }: StorefrontListingProps) {
   const catalogue = await pending
@@ -50,6 +47,9 @@ export async function StorefrontListing({ place, routes, catalogue: pending, ins
   const subcategories = category ? navigation.categories.filter((entry) => entry.parentSlug === category.slug) : []
   const price = priceFilterOf(place, catalogue, routes, locale)
   const chips = filterChipsOf(place, routes, locale)
+  // The shelf's own question without its page, which the grid asks again for every next one.
+  const query = catalogueQueryOf({ ...listingAskOf(place), page: undefined }).toString()
+  const hrefOf = pageHrefOf(place, routes)
 
   // One set of groups, drawn by the desktop's column and by the phone's sheet alike.
   const groups = (
@@ -104,30 +104,27 @@ export async function StorefrontListing({ place, routes, catalogue: pending, ins
         */}
         {section.kind === "search" ? <StorefrontSearch action={routes.search()} value={term} autoFocus messages={ui} /> : null}
 
-        <StorefrontCatalogGrid
-          products={catalogue.products}
-          productHref={routes.product}
+        {/* Keyed by its question: another filter or sort is another shelf, starting over. */}
+        <StorefrontListingGrid
+          key={`${query}#${page}`}
+          slug={store.slug}
+          query={query}
+          first={{ products: catalogue.products, page: catalogue.page, pageSize: catalogue.pageSize, total: catalogue.total }}
+          productPath={routes.product("")}
+          pageHrefs={Array.from({ length: pageCountOf(catalogue.total, catalogue.pageSize) }, (_, index) => hrefOf(index + 1))}
           // Filters in force: out through "Limpar tudo"'s own address. None: out to the whole catalogue.
-          clearHref={chips.length ? clearFiltersHrefOf(place, routes) : section.kind === "catalog" ? undefined : routes.catalog()}
+          {...(chips.length ? { clearHref: clearFiltersHrefOf(place, routes) } : section.kind === "catalog" ? {} : { clearHref: routes.catalog() })}
           filtered={chips.length > 0}
-          {...(catalogue.failed ? { retryHref: pageHrefOf(place, routes)(page) } : {})}
+          {...(catalogue.failed ? { retryHref: hrefOf(page) } : {})}
           locale={locale}
           productsPerRow={layout.productsPerRow ?? 4}
           showPrice={layout.showProductPrice ?? true}
           {...(installments ? { installments } : {})}
           showBadge={layout.showProductBadges ?? true}
           showRating={layout.showProductRating ?? true}
-          {...(layout.showQuickAdd ?? true ? { cardAction: (product: StorefrontProduct) => <StorefrontCardCartLive product={product} messages={ui} /> } : {})}
-          cardFavorite={(product: StorefrontProduct) => <StorefrontFavoriteLive productId={product.id} productName={product.name} priceCents={product.priceCents} messages={ui} />}
+          quickAdd={layout.showQuickAdd ?? true}
           messages={ui}
-        >
-          <StorefrontPagination
-            page={page}
-            pageCount={pageCountOf(catalogue.total, catalogue.pageSize)}
-            href={pageHrefOf(place, routes)}
-            messages={ui}
-          />
-        </StorefrontCatalogGrid>
+        />
       </div>
     </StorefrontListingControls>
   )
