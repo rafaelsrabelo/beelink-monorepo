@@ -73,3 +73,12 @@ sessão de compra; outro número responde `NEW`, e o checkout pede nome e e-mail
 
 - **Código pelo WhatsApp (Z-API)** para a conta completa: o código continua por e-mail.
 - **Juntar cadastros** (`claimedPhone`): continua com o lojista.
+
+## Adendo — 06/11/2026, substituído pelo P0 antes de abrir o PR
+
+No mesmo dia, Rafael mandou o "TASK P0 — Remover bloqueio de verificação de e-mail no Checkout": nenhum código,
+nenhuma conta, e **não expor se um e-mail está cadastrado**. Reconhecer o número ("Bem-vindo de volta", endereço
+mascarado) diz justamente que o número é cliente da loja: este desenho não segue. A sessão de compra que ele
+construiu — o guard que só a aceita nas rotas marcadas, os pedidos presos ao id dela, nada de cashback, o CPF
+sempre digitado, o endereço devolvido mascarado — vira a sessão do visitante do P0. Ver
+[o plano do P0](2026-11-06--P0-checkout-sem-codigo.md).
