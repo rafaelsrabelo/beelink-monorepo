@@ -179,6 +179,19 @@ describe("a favourite's notice by e-mail", () => {
     expect(await notices()).toMatchObject([{ priceCents: 8000, previousPriceCents: 9000 }]);
   });
 
+  it('tells what changed while a draft when the list publishes it with others, as the editor does', async () => {
+    const whey = await addProduct({ name: 'Whey', slug: 'whey', priceCents: 10000 });
+    const creatine = await addProduct({ name: 'Creatina', slug: 'creatina', priceCents: 5000, status: 'DRAFT' });
+    await like(whey.id);
+    await edit(whey.id, { status: 'DRAFT', priceCents: 8000 });
+    expect(await notices()).toEqual([]);
+
+    const response = await call('PUT', '/api/stores/lessari/products/status', owner, { ids: [whey.id, creatine.id], status: 'ACTIVE' });
+
+    expect(response.json()).toEqual({ changed: 2 });
+    expect(await notices()).toMatchObject([{ priceCents: 8000, previousPriceCents: 10000 }]);
+  });
+
   it('reads everything again before sending: unliked or sold out again since, nothing goes, and it is done', async () => {
     const whey = await addProduct({ name: 'Whey', slug: 'whey', priceCents: 10000 });
     const beta = await addProduct({ name: 'Beta', slug: 'beta', priceCents: 5000 });
