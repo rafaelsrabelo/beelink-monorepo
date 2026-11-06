@@ -39,32 +39,29 @@ export interface StorefrontSearchProps {
   /** A page whose whole purpose is the search may take the caret; a header must never steal it. */
   autoFocus?: boolean
   /**
-   * `inherit` borrows the page's own colours, which is right on a page that is already the shop's
-   * background. `panel` paints the bar for the header, which is painted in the shop's header colour,
-   * and the button in the brand toned against it — the brand alone vanishes on a header painted in
-   * the brand.
+   * Where the bar sits, for the colour of its focus ring: `inherit` is a page in the shop's own
+   * background, `panel` the header, painted in the shop's header colour — where the brand alone
+   * vanishes on a header painted in the brand.
    */
   tone?: "inherit" | "panel"
   messages?: UiMessages
 }
 
 /**
- * The bar's classes, shared with the live search so the two are one thing to look at. 44px on a
- * phone, where it is pressed with a thumb and has the line to itself; 40px from `shop-md`, beside
- * the header's other controls (36px), where 44 read as the heaviest thing in the row. The field is
- * 16px on a phone: below that, iOS zooms the page into whatever is tapped.
+ * The bar's classes, shared with the live search so the two are one thing to look at: a pill in the
+ * page's quiet fill, 48px high everywhere, with the magnifier inside it on the left in the muted
+ * text colour — never the brand's, which made it read as a second button beside the field. The
+ * field is 16px: below that, iOS zooms the page into whatever is tapped.
  *
  * The scope is `StorefrontSearchScopeSelect`: as wide as the chosen name, never more than 7rem.
  */
-export const SEARCH_BAR = "flex h-11 w-full min-w-0 overflow-hidden rounded-[10px] shop-md:h-10"
-export const SEARCH_FIELD = "min-w-0 flex-1 border-0 bg-transparent px-3 text-base text-shop-on-background outline-none shop-md:text-sm"
-export const SEARCH_BUTTON = "flex w-12 shrink-0 items-center justify-center shop-md:w-11"
+export const SEARCH_BAR = "flex h-12 w-full min-w-0 items-center overflow-hidden rounded-full bg-shop-fill focus-within:outline-2 focus-within:outline-offset-0"
+export const SEARCH_FIELD = "h-full min-w-0 flex-1 border-0 bg-transparent pe-4 text-base text-shop-on-background outline-none placeholder:text-shop-muted"
+export const SEARCH_BUTTON = "flex h-full w-11 shrink-0 items-center justify-center ps-2 text-shop-muted hover:text-shop-on-background"
 
-/** The button's paint, by tone. */
-export function searchButtonStyle(tone: "inherit" | "panel") {
-  return tone === "panel"
-    ? { backgroundColor: "var(--shop-primary-on-header)", color: "var(--shop-on-primary-on-header)" }
-    : { backgroundColor: "var(--shop-primary)", color: "var(--shop-on-primary)" }
+/** The ring a focused bar draws, toned for where it sits; the bar itself carries no brand. */
+export function searchBarStyle(tone: "inherit" | "panel") {
+  return { outlineColor: tone === "panel" ? "var(--shop-primary-on-header)" : "var(--shop-primary)" }
 }
 
 /**
@@ -75,7 +72,9 @@ export function searchButtonStyle(tone: "inherit" | "panel") {
  * filters a list in memory leaves behind. It also has to work before any JavaScript arrives, which
  * is why the scope travels in a hidden field of the form and the button is a real submit.
  *
- * A bar with the scope's button on the left, the field, and a button with the magnifier. The accessible name and the placeholder are two different sentences
+ * A bar with the scope's button on the left, the magnifier — which is the submit — and the field.
+ * The magnifier comes before the field in the source too, so the tab order is the order drawn. The
+ * accessible name and the placeholder are two different sentences
  * on purpose: a placeholder is gone the moment someone types, so it can never be the only name a
  * field has (WCAG 3.3.2). The label wraps the field instead of pointing at an id, because a page
  * may render this twice and two controls answering to one id is a duplicate id, not a second
@@ -100,9 +99,13 @@ export function StorefrontSearch({
       action={action}
       role="search"
       className={cn(SEARCH_BAR, "flex-1")}
-      style={{ backgroundColor: "var(--shop-background)", color: "var(--shop-on-background)", borderColor: "var(--shop-frame)" }}
+      style={searchBarStyle(tone)}
     >
       {scopes?.length ? <StorefrontSearchScopeSelect scopes={scopes} value={scope} messages={messages} /> : null}
+
+      <button type="submit" aria-label={text.searchAction} className={SEARCH_BUTTON}>
+        <SearchIcon aria-hidden="true" className="size-5" strokeWidth={2} />
+      </button>
 
       <label className="flex min-w-0 flex-1">
         <span className="sr-only">{text.search}</span>
@@ -119,10 +122,6 @@ export function StorefrontSearch({
       {Object.entries(hidden ?? {}).map(([key, pinned]) => (
         <input key={key} type="hidden" name={key} value={pinned} />
       ))}
-
-      <button type="submit" aria-label={text.searchAction} className={SEARCH_BUTTON} style={searchButtonStyle(tone)}>
-        <SearchIcon aria-hidden="true" className="size-[18px]" strokeWidth={2} />
-      </button>
     </form>
   )
 }

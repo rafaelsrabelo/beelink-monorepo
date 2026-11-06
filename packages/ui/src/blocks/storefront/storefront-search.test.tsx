@@ -102,8 +102,8 @@ describe("StorefrontSearch", () => {
       const form = screen.getByRole("search")
       expect(screen.getByRole("combobox", { name: "Buscar em" })).toHaveTextContent("Todos")
       expect(form.querySelector('input[type="hidden"][name="categoria"]')).toHaveValue("")
-      // The scope first, then the field: the order they are read and tabbed in.
-      expect([...form.querySelectorAll("button, input[type=search]")].map((control) => control.getAttribute("aria-label") ?? control.getAttribute("type"))).toEqual(["Buscar em", "search", "Buscar"])
+      // The scope, the magnifier, then the field: the order they are drawn, read and tabbed in.
+      expect([...form.querySelectorAll("button, input[type=search]")].map((control) => control.getAttribute("aria-label") ?? control.getAttribute("type"))).toEqual(["Buscar em", "Buscar", "search"])
       expect(container.querySelector("select:not([aria-hidden='true'])")).toBeNull()
     })
 
@@ -127,11 +127,13 @@ describe("StorefrontSearch", () => {
     })
 
     // 44px on a phone, 40px beside the header's other controls.
-    it("is a lighter bar from shop-md: 40px tall, with a 44px button", () => {
+    it("is a quiet pill, 48px tall, with the magnifier inside it and never in the brand's colour", () => {
       renderSearch({ scopes })
 
-      expect(screen.getByRole("search")).toHaveClass("h-11", "shop-md:h-10")
-      expect(screen.getByRole("button", { name: "Buscar" })).toHaveClass("w-12", "shop-md:w-11")
+      expect(screen.getByRole("search")).toHaveClass("h-12", "rounded-full", "bg-shop-fill")
+      const magnifier = screen.getByRole("button", { name: "Buscar" })
+      expect(magnifier).toHaveClass("text-shop-muted")
+      expect(magnifier.getAttribute("style")).toBeNull()
     })
 
     it("draws no select when there is nothing to narrow to", () => {
