@@ -31,7 +31,7 @@ export interface StorefrontConsentGateProps {
  * any other gets its pages and nothing else — no notice, no state, and so no cookie ever written.
  *
  * After the pages, because the notice is sticky to the foot of the screen and must rest, at the
- * page's end, in its own place under the footer. Its wrapper is `display: contents`: it carries the
+ * page's end, past the footer's last line — over room the footer keeps for it (`globals.css`). Its wrapper is `display: contents`: it carries the
  * shop's `--shop-*` variables and typeface — the layout is outside the element that sets them — but
  * draws no box, so the notice sticks within the whole shop and not within a wrapper its own height.
  */

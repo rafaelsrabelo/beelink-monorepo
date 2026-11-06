@@ -87,7 +87,8 @@ export function StorefrontFooter({
   const text = messages.storefront
 
   return (
-    <footer className="w-full" style={{ backgroundColor: "var(--shop-footer)", color: "var(--shop-on-footer)" }}>
+    // `data-shop-footer`: where the cookie notice rests at the page's end (`globals.css`).
+    <footer data-shop-footer="" className="w-full" style={{ backgroundColor: "var(--shop-footer)", color: "var(--shop-on-footer)" }}>
       <div className={cn(BAND, "flex flex-col gap-10 py-12 shop-sm:flex-row shop-sm:justify-between")}>
         <div className="flex max-w-xs flex-col gap-4">
           {/* Same rule as the masthead: the logo replaces the name, and says it. */}

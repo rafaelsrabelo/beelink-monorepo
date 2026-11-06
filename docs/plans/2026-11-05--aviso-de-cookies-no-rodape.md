@@ -48,3 +48,18 @@ da loja.
   `gtag` na vitrine (Z3) nunca foi feito: `googleAnalyticsId` não é lido em lugar nenhum do web. Ligar o GA, sob
   o mesmo consentimento, e citar o Google no aviso é outro trabalho, com outra frase na política de privacidade.
 - **O aviso da landing da Beelink**, que já fica no pé da tela, com as cores da Beelink.
+
+## Adendo — 05/11/2026, a faixa branca sob o rodapé
+
+Visto em produção pelo Rafael em `mutantesuplementos.com.br`: no fim da página, o aviso repousava "no seu
+próprio lugar, sob o rodapé" — e esse lugar é uma faixa do fundo da página (branco), fora da área pintada da
+loja. O rodapé roxo terminava, abria uma faixa branca, e o cartão ficava solto nela.
+
+**Correção:** o rodapé guarda embaixo, na própria cor, a altura que o aviso diz ter (`--shop-notice-height`,
+que este plano já publicava), e o aviso sobe essa mesma altura para repousar ali (`data-shop-footer` no
+`<footer>`, duas regras em `globals.css`). Continua sem cobrir nenhuma linha do rodapé — o anel do cartão o
+separa de um rodapé na cor do cabeçalho, como este plano previa — e sem faixa branca. Uma página sem rodapé
+(sem *chrome*) fica como estava: subir ali cobriria o último botão da página.
+
+Conferido na própria Mutante, com as regras injetadas no navegador, em 1440 e em 390 px: sem faixa branca, o
+"© 2026" à vista, e no meio da página o aviso continua no pé da tela.
