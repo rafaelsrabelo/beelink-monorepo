@@ -19,6 +19,8 @@ import { quotedCashbackOf } from '../cashback/cashback-earning.js';
 import { earningPartsOf, priceOrder, type PricedOrder, type PricingCustomer, type PricingInput } from './order-pricing.js';
 import { deliveryTermsOf, OrderShipping } from './order-shipping.js';
 import { orderError } from './orders.constants.js';
+import { storedCodeOf } from '../promotions/coupon-verdict.js';
+import { shownCoupons } from '../promotions/shop-offers.js';
 
 type QuoteInput = Omit<PricingInput, 'lines' | 'lock'> & {
   items: readonly CreateOrderItemInput[];
@@ -45,12 +47,25 @@ export class OrderQuotes {
   ) {}
 
   /**
-   * The visitor's cart with the shop's promotions. No coupon: this door would tell anyone which
-   * codes exist. Nobody is identified, so a promotion for a first purchase is announced, not applied.
+   * The visitor's cart with the shop's promotions, and with a coupon the shop shows in its window — the
+   * first-order banner's, which buying with no account takes straight to the cart. Any other code is
+   * dropped before pricing: this door is open to anyone, and it tells nobody whether a code exists.
+   * Nobody is identified, so a first purchase is not refused here (`CouponStanding.firstPurchase`
+   * null); the order reads it by the buyer's phone, and a promotion for one is announced, not applied.
    */
   async forCart(storeSlug: string, dto: CartQuoteDto): Promise<OrderQuote> {
     const storeId = await this.stores.publicStoreId(storeSlug);
-    return this.quote({ storeId, items: dto.items, onSaleOnly: true, fulfillment: dto.fulfillment ?? 'DELIVERY', deliveryFeeCents: null, manualDiscountCents: 0, couponCode: null, customer: null, at: new Date() });
+    const at = new Date();
+    const couponCode = dto.couponCode ? await this.shownCodeOf(storeId, dto.couponCode, at) : null;
+    return this.quote({ storeId, items: dto.items, onSaleOnly: true, fulfillment: dto.fulfillment ?? 'DELIVERY', deliveryFeeCents: null, manualDiscountCents: 0, couponCode, customer: null, at });
+  }
+
+  /** The code as stored, when it is one of the shop's shown coupons in force; null for any other. */
+  private async shownCodeOf(storeId: string, typed: string, at: Date): Promise<string | null> {
+    const wanted = storedCodeOf(typed);
+    if (!wanted) return null;
+    const shown = await shownCoupons(this.prisma, storeId, at, this.prisma.coupon.fields.maxUses);
+    return shown.some((coupon) => coupon.code === wanted) ? wanted : null;
   }
 
   /**

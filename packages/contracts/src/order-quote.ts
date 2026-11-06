@@ -136,11 +136,17 @@ export interface CustomerCartQuotePayload {
   useCashback?: boolean;
 }
 
-/** The visitor's cart, priced with the shop's promotions. No coupon: that takes a signed-in customer. */
+/** The visitor's cart, priced with the shop's promotions — and with a coupon the shop shows in its window. */
 export interface CartQuotePayload {
   items: CreateOrderItemInput[];
   /** Absent is a delivery. */
   fulfillment?: OrderFulfillment;
+  /**
+   * A coupon the shop shows in its window ("Mostrar este cupom na loja") — the first-order banner's.
+   * Any other code is not looked at here and the cart is priced without it: whether a code exists is
+   * told to nobody unidentified. A first purchase is read at the order, by the buyer's phone.
+   */
+  couponCode?: string | null;
 }
 
 /** The signed-in customer's cart, with the coupon they typed: the answer says whether it is taken. */

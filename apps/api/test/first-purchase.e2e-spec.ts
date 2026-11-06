@@ -291,6 +291,20 @@ describe('a first purchase', () => {
       expect((await checkoutQuote({ couponCode: 'PRIMEIRA10' })).coupon).toMatchObject({ status: 'APPLIED' });
     });
 
+    // The first-order banner takes a visitor straight to the cart with its coupon: buying asks no account.
+    it('is taken in a visitor’s cart when the shop shows it, and no other code is looked at there', async () => {
+      await welcomeCoupon({ shownInStore: true });
+      await made<Coupon>('coupons', { code: 'SEGREDO20', kind: 'PERCENT', percentBps: 2000, startsAt: daysFromNow(-1) });
+      const visitorWith = (couponCode: string) => pricedAt('/api/stores/lessari/cart/quote', undefined, { couponCode });
+
+      // 10% of 43970, up to the cent: nobody is identified, so no first purchase is refused yet.
+      expect(await visitorWith('primeira10')).toMatchObject({ coupon: { status: 'APPLIED', code: 'PRIMEIRA10' }, couponDiscountCents: 4397, totalCents: 39573 });
+      // A code the shop does not show, and one that does not exist, are priced alike: as no code at all.
+      for (const code of ['SEGREDO20', 'NAOEXISTE']) {
+        expect(await visitorWith(code)).toMatchObject({ coupon: null, couponDiscountCents: 0, totalCents: 43970 });
+      }
+    });
+
     it('goes to one of two orders the same customer places with it at once', async () => {
       await welcomeCoupon();
 

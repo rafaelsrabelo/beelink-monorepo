@@ -155,10 +155,12 @@ describe("an order's discounts", () => {
       ]);
     });
 
-    it('takes no coupon, and refuses what an order would: a line the shop does not sell', async () => {
+    // Only a coupon the shop shows in its window is taken here (the first-order banner's): any other is not looked at.
+    it('takes no coupon it does not show — priced as none, saying nothing of it — and refuses what an order would', async () => {
       await coupon({});
       const withCoupon = await call('POST', '/api/stores/lessari/cart/quote', undefined, { items: CART(), couponCode: 'BEMVINDO10' });
-      expect(withCoupon.statusCode).toBe(400);
+      expect(withCoupon.statusCode).toBe(200);
+      expect(withCoupon.json<OrderQuote>()).toMatchObject({ coupon: null, couponDiscountCents: 0 });
 
       const theirs = await variantOf(await made<Product>('products', { name: 'Da outra', priceCents: 1000 }, 'outra'));
       const foreign = await call('POST', '/api/stores/lessari/cart/quote', undefined, { items: [{ variantId: theirs, quantity: 1 }] });
