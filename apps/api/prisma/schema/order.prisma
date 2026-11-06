@@ -46,6 +46,10 @@ model Order {
   /// NoAction and not Restrict: checked at the end of the statement, so deleting the whole shop,
   /// which cascades to its customers and its orders together, still goes through.
   customer   Customer         @relation(fields: [customerId], references: [id], onDelete: NoAction)
+  /// The purchase session that placed it (plan 2026-11-06--whatsapp-primeiro): a WhatsApp the shop knew,
+  /// going on without the account. That session reads the orders that carry its id, and no other. Null
+  /// for every order placed any other way. No table behind it: the id lives in the session's token.
+  purchaseSessionId String? @db.Uuid
   status     OrderStatus
   fulfillment OrderFulfillment
   /// A label for how the two of them settle it; nothing is charged by the product.
@@ -176,6 +180,7 @@ model Order {
   @@index([storeId, placedAt])
   @@index([storeId, status])
   @@index([customerId, placedAt])
+  @@index([customerId, purchaseSessionId])
   @@index([paymentDueAt])
   /// "Sales by origin" with no period, and "which orders came by this campaign"; a period's report rides `[storeId, placedAt]`.
   @@index([storeId, utmSource, utmMedium, utmCampaign])

@@ -93,6 +93,44 @@ export interface CustomerCheckoutPayload {
  */
 export type CustomerCheckoutAnswer = { kind: "SESSION"; session: AuthSession } | { kind: "CODE_SENT" };
 
+/** The checkout's first question (plan 2026-11-06--whatsapp-primeiro): the WhatsApp, the mask allowed. */
+export interface CustomerCheckoutPhonePayload {
+  phone: string;
+}
+
+/**
+ * A purchase session: the shop's record of a WhatsApp it knows, for this purchase alone — never the
+ * account. It prices the cart, places the order on that record and reads the orders it placed; it
+ * reads no name, e-mail, CPF, history or cashback. Two hours, not renewed.
+ */
+export interface PurchaseSession {
+  accessToken: string;
+  /** ISO-8601. */
+  accessTokenExpiresAt: string;
+}
+
+/**
+ * A WhatsApp the shop knows goes on with a purchase session (`RECOGNIZED`); any other is asked a name
+ * and an e-mail (`NEW`, then `CustomerCheckoutPayload`). Like the e-mail's answer, the one place a
+ * number is said to be a shop's customer.
+ */
+export type CustomerCheckoutPhoneAnswer = { kind: "RECOGNIZED"; purchase: PurchaseSession } | { kind: "NEW" };
+
+/** A saved address as a purchase session sees it: enough to choose it, never to read it. */
+export interface CustomerPurchaseAddress {
+  id: string;
+  /** "Rua Tib•••, 12•• — Fortaleza/CE": the street's first letters, the number's first digits, the city. */
+  line: string;
+  isDefault: boolean;
+}
+
+/** What a purchase session reads of its record: the addresses to deliver to, masked, and when it ends. */
+export interface CustomerPurchase {
+  addresses: CustomerPurchaseAddress[];
+  /** ISO-8601. */
+  expiresAt: string;
+}
+
 /** The six digits e-mailed to the account the checkout found, for its session. */
 export interface CustomerCheckoutCodePayload {
   email: string;
