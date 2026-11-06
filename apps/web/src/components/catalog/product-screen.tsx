@@ -8,6 +8,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 
 // UI
 import { buttonVariants } from "@harness-monorepo/ui/components/button"
+import { ProductBulkBar } from "@harness-monorepo/ui/blocks/catalog/product-bulk-bar"
 import { PRODUCT_CASHBACK_FIELD_ID } from "@harness-monorepo/ui/blocks/catalog/product-cashback-field"
 import { ProductTable } from "@harness-monorepo/ui/blocks/catalog/product-table"
 import { EMPTY_PRODUCT_FILTERS, ProductToolbar, type ProductFilters } from "@harness-monorepo/ui/blocks/catalog/product-toolbar"
@@ -17,17 +18,24 @@ import { ConfirmDelete } from "@harness-monorepo/ui/blocks/shared/confirm-delete
 import { format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
+// Types
+import type { WebMessages } from "@/locales"
+
 // App
 import { AppLink } from "@/components/app-link"
+import { storeErrorCopy } from "@/components/store/store-error-copy"
 import { storefrontRoutes } from "@/lib/storefront-routes"
 import { useDebouncedValue } from "@/services/addresses/use-debounced-value"
 import { useDeleteProduct, useProductCategories, useProducts } from "@/services/catalog/catalog-hooks"
 import { useGivesCashbackByProduct } from "@/services/cashback/cashback-hooks"
 import { useStore } from "@/services/stores/store-hooks"
+import { productTableItemOf } from "./product-table-items"
+import { useProductSelection } from "./use-product-selection"
 
 export interface ProductScreenProps {
   slug: string
   messages: UiMessages
+  web: WebMessages
 }
 
 /** A beat after the last keystroke. Long enough that typing a name is one request, not eleven. */
@@ -57,7 +65,7 @@ function filtersFrom(params: URLSearchParams): ProductFilters {
  * click outside can throw away — so it moved to `products/new` and `products/<id>`, which are
  * addresses you can open in a tab and come back to.
  */
-export function ProductScreen({ slug, messages }: ProductScreenProps) {
+export function ProductScreen({ slug, messages, web }: ProductScreenProps) {
   const router = useRouter()
   const params = useSearchParams()
   const text = messages.catalog.products
@@ -113,6 +121,7 @@ export function ProductScreen({ slug, messages }: ProductScreenProps) {
   const nameById = new Map((categories.data ?? []).map((row) => [row.id, row.name]))
   const filtered = filters !== EMPTY_PRODUCT_FILTERS && Object.values(filters).some((value) => value !== "")
   const routes = store.data ? storefrontRoutes(store.data) : null
+  const chosen = useProductSelection(slug, rows.map((row) => row.id))
 
   /** Writes the filters into the address. Any change but the page itself returns to page one. */
   function apply(next: ProductFilters, nextPage = 1) {
@@ -142,6 +151,7 @@ export function ProductScreen({ slug, messages }: ProductScreenProps) {
       // The last row of a page that is not the first leaves a page with nothing on it, and a pager
       // pointing at it. Stepping back is what the person was about to do anyway.
       onSuccess: () => {
+        chosen.forget(productId)
         if (rows.length === 1 && page > 1) apply(filters, page - 1)
       },
     })
@@ -194,29 +204,10 @@ export function ProductScreen({ slug, messages }: ProductScreenProps) {
           </div>
         ) : (
           <ProductTable
-            products={rows.map((product) => ({
-              id: product.id,
-              name: product.name,
-              sku: product.sku,
-              priceCents: product.priceCents,
-              compareAtPriceCents: product.compareAtPriceCents,
-              imageUrl: product.images[0]?.url ?? null,
-              categoryName: product.category
-                ? (nameById.get(product.category.id) ?? product.category.name)
-                : null,
-              status: product.status,
-              soldOut: product.soldOut,
-              origin: product.origin,
-              trackStock: product.trackStock,
-              stockQuantity: product.stockQuantity,
-              // A draft has no page on the shop window — the public read filters on ACTIVE — so
-              // the eye must not point at a 404. A sold-out product does still have one.
-              viewHref:
-                product.status === "DRAFT" || !routes ? null : routes.product(product.slug),
-              // What a carrier lacks to quote it (BEELINK-184); the API says nothing for a shop with no carrier.
-              carrierGap: products.data?.carrierGaps?.[product.id] ?? null,
-              cashbackRateBps: product.cashbackRateBps,
-            }))}
+            products={rows.map((product) =>
+              productTableItemOf(product, { categoryNames: nameById, pageOf: routes?.product ?? null, carrierGaps: products.data?.carrierGaps }),
+            )}
+            selection={chosen.selection}
             onEdit={(productId) => router.push(`/admin/${slug}/products/${productId}`)}
 
             onAddCashback={byProduct ? (productId) => router.push(`/admin/${slug}/products/${productId}#${PRODUCT_CASHBACK_FIELD_ID}`) : undefined}
@@ -242,6 +233,16 @@ export function ProductScreen({ slug, messages }: ProductScreenProps) {
           onPageChange={(next) => apply(filters, next)}
         />
       </div>
+
+      <ProductBulkBar
+        count={chosen.count}
+        onActivate={() => chosen.apply("ACTIVE")}
+        onDraft={() => chosen.apply("DRAFT")}
+        onClear={chosen.clear}
+        pending={chosen.pending}
+        error={storeErrorCopy(chosen.error, web)}
+        messages={messages}
+      />
     </div>
   )
 }

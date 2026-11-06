@@ -1,6 +1,7 @@
 // Libs
 import { fireEvent, render, screen } from "@testing-library/react"
-import { describe, expect, it } from "vitest"
+import userEvent from "@testing-library/user-event"
+import { describe, expect, it, vi } from "vitest"
 
 // Locales
 import { en } from "../../locales/en"
@@ -10,37 +11,43 @@ import { expectNoA11yViolations } from "../../test/a11y"
 import { StorefrontSearchSuggestions, type StorefrontSearchSuggestionsProps, type StorefrontSuggestion } from "./storefront-search-suggestions"
 
 const suggestions: StorefrontSuggestion[] = [
-  { id: "1", label: "Whey Concentrado", href: "/loja/produtos/whey", price: "R$ 139,90" },
-  { id: "2", label: "Whey Isolado", href: "/loja/produtos/iso", imageUrl: "https://example.test/iso.jpg", price: null },
+  { id: "1", label: "Whey Concentrado", href: "/loja/produtos/whey", price: "R$ 139,90", wasPrice: "R$ 159,90", hasOptions: false, onAdd: () => {} },
+  { id: "2", label: "Whey Isolado", href: "/loja/produtos/iso", imageUrl: "https://example.test/iso.jpg", price: null, hasOptions: true, onAdd: () => {} },
 ]
 
 function renderList(overrides: Partial<StorefrontSearchSuggestionsProps> = {}) {
-  return render(<StorefrontSearchSuggestions listId="lista" optionId={(index) => `lista-${index}`} suggestions={suggestions} active={-1} {...overrides} />)
+  return render(
+    <StorefrontSearchSuggestions listId="lista" cellId={(row, column) => `lista-${row}-${column}`} suggestions={suggestions} activeRow={-1} activeColumn={0} {...overrides} />,
+  )
 }
 
 describe("StorefrontSearchSuggestions", () => {
-  it("is a named listbox of options, each under the id the field points at", () => {
+  it("is a named grid, a row per product, each cell under the id the field points at", () => {
     renderList()
 
-    expect(screen.getByRole("listbox", { name: "Sugestões da busca" })).toHaveAttribute("id", "lista")
-    expect(screen.getAllByRole("option").map((option) => option.id)).toEqual(["lista-0", "lista-1"])
-    expect(screen.getByRole("option", { name: /Whey Concentrado.*R\$ 139,90/ })).toBeInTheDocument()
+    expect(screen.getByRole("grid", { name: "Sugestões da busca" })).toHaveAttribute("id", "lista")
+    expect(screen.getAllByRole("row")).toHaveLength(2)
+    expect(screen.getAllByRole("gridcell").map((cell) => cell.id)).toEqual(["lista-0-0", "lista-0-1", "lista-1-0"])
+    expect(screen.getByRole("gridcell", { name: /Whey Concentrado.*R\$ 139,90.*R\$ 159,90/ })).toBeInTheDocument()
   })
 
-  it("marks the row the arrow keys are on, and no other", () => {
-    renderList({ active: 1 })
+  it("marks the cell the arrow keys are on, and no other", () => {
+    renderList({ activeRow: 0, activeColumn: 1 })
 
-    expect(screen.getAllByRole("option").map((option) => option.getAttribute("aria-selected"))).toEqual(["false", "true"])
+    expect(screen.getAllByRole("gridcell").map((cell) => cell.getAttribute("aria-selected"))).toEqual(["false", "true", "false"])
   })
 
-  /**
-   * An option containing an anchor is an interactive control inside one — axe fails it, and a
-   * screen reader reads two things where the visitor sees one.
-   */
-  it("keeps the options free of controls of their own", () => {
-    renderList()
+  /** A product with options is chosen on its page: its row has no "+" to press. */
+  it("offers a "+" only beside a product the cart can take as it is, and it adds without taking the focus", async () => {
+    const onAdd = vi.fn()
+    renderList({ suggestions: [{ ...suggestions[0]!, onAdd }, suggestions[1]!] })
 
-    for (const option of screen.getAllByRole("option")) expect(option.querySelector("a, button, input")).toBeNull()
+    const add = screen.getByRole("button", { name: "Adicionar Whey Concentrado ao carrinho" })
+    expect(add).toHaveAttribute("tabindex", "-1")
+    expect(screen.queryByRole("button", { name: /Whey Isolado/ })).not.toBeInTheDocument()
+    expect(fireEvent.mouseDown(add)).toBe(false)
+    await userEvent.click(add)
+    expect(onAdd).toHaveBeenCalledOnce()
   })
 
   /** A list that only shows the first few has to say where the rest are. */
@@ -72,11 +79,11 @@ describe("StorefrontSearchSuggestions", () => {
   it("renders in English when the screen hands it the English dictionary", () => {
     renderList({ messages: en, total: 18, seeAllHref: "/shop/search?q=whey" })
 
-    expect(screen.getByRole("listbox", { name: en.storefront.searchSuggestionsLabel })).toBeInTheDocument()
+    expect(screen.getByRole("grid", { name: en.storefront.searchSuggestionsLabel })).toBeInTheDocument()
   })
 
   it("has no accessibility violations", async () => {
-    const { container } = renderList({ active: 0, total: 18, seeAllHref: "/loja/busca?q=whey" })
+    const { container } = renderList({ activeRow: 0, activeColumn: 1, total: 18, seeAllHref: "/loja/busca?q=whey" })
 
     await expectNoA11yViolations(container)
   })

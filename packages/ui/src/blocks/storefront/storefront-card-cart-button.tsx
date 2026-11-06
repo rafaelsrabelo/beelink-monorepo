@@ -25,6 +25,8 @@ export interface StorefrontCardCartButtonProps {
    * since it draws no word.
    */
   size?: "pill" | "icon"
+  /** -1 where focus stays elsewhere and points here: the search's list, whose field keeps it. */
+  tabIndex?: number
   messages?: UiMessages
 }
 
@@ -42,7 +44,7 @@ const CHIP = "flex h-8 items-center rounded-full border border-shop-primary bg-s
  * On a compact card — the product page's "Você também pode gostar" — it is the same action as a
  * round "+" (`size="icon"`), and "Ver opções" as a chip: never a "+" that would open a page.
  */
-export function StorefrontCardCartButton({ name, hasOptions, onAdd, size = "pill", messages = defaultMessages }: StorefrontCardCartButtonProps) {
+export function StorefrontCardCartButton({ name, hasOptions, onAdd, size = "pill", tabIndex, messages = defaultMessages }: StorefrontCardCartButtonProps) {
   const text = messages.storefront
   const [added, setAdded] = useState(false)
 
@@ -67,6 +69,7 @@ export function StorefrontCardCartButton({ name, hasOptions, onAdd, size = "pill
     <>
       <button
         type="button"
+        {...(tabIndex !== undefined ? { tabIndex } : {})}
         onClick={() => {
           onAdd()
           setAdded(true)

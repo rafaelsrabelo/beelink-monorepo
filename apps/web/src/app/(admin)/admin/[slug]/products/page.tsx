@@ -8,7 +8,7 @@ import { getMessages } from "@/lib/locale"
  */
 export default async function ProductsPage({ params }: PageProps<"/admin/[slug]/products">) {
   const { slug } = await params
-  const { ui } = await getMessages()
+  const { ui, web } = await getMessages()
 
-  return <ProductScreen slug={slug} messages={ui} />
+  return <ProductScreen slug={slug} messages={ui} web={web} />
 }

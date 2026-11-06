@@ -18,6 +18,7 @@ import { useDebouncedValue } from "@/services/addresses/use-debounced-value"
 import { DEBOUNCE_MS, useStorefrontSearch } from "@/services/storefront/storefront-hooks"
 import { useShopAddress } from "@/components/storefront/shop-address-provider"
 import { storefrontRoutes } from "@/lib/storefront-routes"
+import { useAddToCart } from "./use-add-to-cart"
 
 export interface StorefrontSearchLiveProps {
   slug: string
@@ -61,6 +62,7 @@ export function StorefrontSearchLive({
 
   const routes = storefrontRoutes({ ...useShopAddress(slug), routeWords })
   const money = new Intl.NumberFormat(locale, { style: "currency", currency: "BRL" })
+  const add = useAddToCart()
 
   // Formatted here and not in the block: what money looks like is a decision about a locale, and a
   // block that formatted it would need to know which one before it could render a price.
@@ -70,6 +72,10 @@ export function StorefrontSearchLive({
     href: routes.product(product.slug),
     imageUrl: product.imageUrl,
     price: money.format(product.priceCents / 100),
+    wasPrice: product.compareAtPriceCents ? money.format(product.compareAtPriceCents / 100) : null,
+    // Into the cart from the list, as a card's "+" puts it: only a product known to sell no combinations.
+    ...(product.hasOptions !== undefined ? { hasOptions: product.hasOptions } : {}),
+    onAdd: () => add({ productId: product.id, variantId: null, qty: 1 }, { name: product.name, unitPriceCents: product.priceCents }),
   }))
 
   return (

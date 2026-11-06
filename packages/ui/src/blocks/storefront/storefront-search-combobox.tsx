@@ -11,9 +11,9 @@ import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
-import { SEARCH_BAR, SEARCH_BUTTON, SEARCH_FIELD, searchButtonStyle } from "./storefront-search"
+import { SEARCH_BAR, SEARCH_BUTTON, SEARCH_FIELD, searchBarStyle } from "./storefront-search"
 import { StorefrontSearchScopeSelect, type StorefrontSearchScope } from "./storefront-search-scope"
-import { StorefrontSearchSuggestions, type StorefrontSuggestion } from "./storefront-search-suggestions"
+import { canAddFromList, StorefrontSearchSuggestions, type StorefrontSuggestion } from "./storefront-search-suggestions"
 
 // Declared beside the list that draws them; re-exported because screens import it from here.
 export type { StorefrontSuggestion } from "./storefront-search-suggestions"
@@ -50,11 +50,12 @@ export interface StorefrontSearchComboboxProps {
  * of a working form, never the feature itself — which is also why the search page stays: it is
  * the address a person can bookmark and a crawler can follow.
  *
- * The accessibility here is the combobox pattern, and the part that is easy to get wrong is where
- * focus lives. It never leaves the field: the arrow keys move `aria-activedescendant` over the
- * options while the caret stays put, because a list that steals focus is a list you cannot keep
- * typing into. Enter opens the active option if there is one and submits the form if there is not,
- * which is the behaviour of every search box a visitor has already used.
+ * The accessibility here is the combobox pattern with a grid for its popup, and the part that is
+ * easy to get wrong is where focus lives. It never leaves the field: up and down move
+ * `aria-activedescendant` over the products, and right and left between a product and its "+",
+ * while the caret stays put — a list that steals focus is a list you cannot keep typing into. Enter
+ * opens the product, or presses its "+", and submits the form when nothing is active, which is the
+ * behaviour of every search box a visitor has already used.
  *
  * The list is an answer to typing, and nothing else opens it. It used to open whenever there were
  * suggestions to show — so the results page, which hands the term back to this field, drew it over
@@ -84,9 +85,16 @@ export function StorefrontSearchCombobox({
 }: StorefrontSearchComboboxProps) {
   const text = messages.storefront
   const listId = useId()
-  const optionId = (index: number) => `${listId}-option-${index}`
+  const cellId = (row: number, column: 0 | 1) => `${listId}-cell-${row}-${column}`
 
   const [active, setActive] = useState(-1)
+  const [column, setColumn] = useState<0 | 1>(0)
+
+  /** Back to the field: no product, and its first cell whenever one is next. */
+  function unselect() {
+    setActive(-1)
+    setColumn(0)
+  }
   // Closed until someone types: a term handed back by the page is not a question being asked.
   const [dismissed, setDismissed] = useState(true)
 
@@ -95,7 +103,7 @@ export function StorefrontSearchCombobox({
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key === "Escape") {
       setDismissed(true)
-      setActive(-1)
+      unselect()
       return
     }
 
@@ -104,6 +112,7 @@ export function StorefrontSearchCombobox({
       event.preventDefault()
       setDismissed(false)
       setActive(0)
+      setColumn(0)
       return
     }
 
@@ -117,13 +126,30 @@ export function StorefrontSearchCombobox({
       const step = event.key === "ArrowDown" ? 1 : -1
       const next = (active + step + suggestions.length + 1) % (suggestions.length + 1)
       setActive(next === suggestions.length ? -1 : next)
+      // A row with no "+" has one cell, and the next row's "+" is not where the visitor was.
+      if (next === suggestions.length || !canAddFromList(suggestions[next])) setColumn(0)
+      return
+    }
+
+    // Right and left move between a product and its "+" — and only then: otherwise they are the
+    // caret's, inside what is being typed.
+    if (active >= 0 && event.key === "ArrowRight" && column === 0 && canAddFromList(suggestions[active])) {
+      event.preventDefault()
+      setColumn(1)
+      return
+    }
+    if (active >= 0 && event.key === "ArrowLeft" && column === 1) {
+      event.preventDefault()
+      setColumn(0)
       return
     }
 
     if (event.key === "Enter" && active >= 0) {
       // Let the form submit when nothing is highlighted; only take Enter when it means "this one".
       event.preventDefault()
-      window.location.assign(suggestions[active].href)
+      // The "+" is pressed as a pointer presses it, so the cart says "added" the same way.
+      if (column === 1) document.getElementById(cellId(active, 1))?.querySelector("button")?.click()
+      else window.location.assign(suggestions[active]!.href)
     }
   }
 
@@ -136,12 +162,16 @@ export function StorefrontSearchCombobox({
         // Sent: the page is leaving, and the list must not sit over it while it does.
         onSubmit={() => {
           setDismissed(true)
-          setActive(-1)
+          unselect()
         }}
         className={SEARCH_BAR}
-        style={{ backgroundColor: "var(--shop-background)", color: "var(--shop-on-background)" }}
+        style={searchBarStyle(tone)}
       >
         {scopes?.length ? <StorefrontSearchScopeSelect scopes={scopes} value={scope} onValueChange={(next) => onScopeChange?.(next)} messages={messages} /> : null}
+
+        <button type="submit" aria-label={text.searchAction} className={SEARCH_BUTTON}>
+          <SearchIcon aria-hidden="true" className="size-5" strokeWidth={2} />
+        </button>
 
         <label className="flex min-w-0 flex-1">
           <span className="sr-only">{text.search}</span>
@@ -154,34 +184,41 @@ export function StorefrontSearchCombobox({
               // An emptied field asks nothing: Escape clears a search field in Chrome, and the
               // suggestions of the term just erased would otherwise open again until they settle.
               setDismissed(event.target.value.trim() === "")
-              setActive(-1)
+              unselect()
             }}
             onKeyDown={onKeyDown}
             // A press on a row or on "ver todos" keeps the focus here (their `mousedown`), so this
             // is only ever the visitor leaving the search.
             onBlur={() => {
               setDismissed(true)
-              setActive(-1)
+              unselect()
             }}
             autoFocus={autoFocus}
             placeholder={text.searchPlaceholder}
             role="combobox"
+            aria-haspopup="grid"
             aria-expanded={open}
             aria-controls={listId}
             aria-autocomplete="list"
-            aria-activedescendant={active >= 0 ? optionId(active) : undefined}
+            aria-activedescendant={active >= 0 ? cellId(active, column) : undefined}
             autoComplete="off"
             className={SEARCH_FIELD}
           />
         </label>
-
-        <button type="submit" aria-label={text.searchAction} className={SEARCH_BUTTON} style={searchButtonStyle(tone)}>
-          <SearchIcon aria-hidden="true" className="size-[18px]" strokeWidth={2} />
-        </button>
       </form>
 
       {open ? (
-        <StorefrontSearchSuggestions listId={listId} optionId={optionId} suggestions={suggestions} pending={pending} active={active} total={total} seeAllHref={seeAllHref} messages={messages} />
+        <StorefrontSearchSuggestions
+          listId={listId}
+          cellId={cellId}
+          suggestions={suggestions}
+          pending={pending}
+          activeRow={active}
+          activeColumn={column}
+          total={total}
+          seeAllHref={seeAllHref}
+          messages={messages}
+        />
       ) : null}
     </div>
   )

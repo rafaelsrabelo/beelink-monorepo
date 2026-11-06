@@ -64,15 +64,16 @@ describe("StorefrontSearchCombobox", () => {
       renderBox({ value: "whey" })
 
       expect(screen.getByRole("combobox")).toHaveAttribute("aria-expanded", "false")
-      expect(screen.queryByRole("listbox")).not.toBeInTheDocument()
+      expect(screen.queryByRole("grid")).not.toBeInTheDocument()
     })
 
-    it("opens once someone types, and announces itself as a combobox with a list", async () => {
+    it("opens once someone types, and announces itself as a combobox with a grid", async () => {
       await typed()
 
       expect(screen.getByRole("combobox")).toHaveAttribute("aria-expanded", "true")
-      expect(screen.getByRole("listbox")).toHaveAccessibleName("Sugestões da busca")
-      expect(screen.getAllByRole("option")).toHaveLength(2)
+      expect(screen.getByRole("combobox")).toHaveAttribute("aria-haspopup", "grid")
+      expect(screen.getByRole("grid")).toHaveAccessibleName("Sugestões da busca")
+      expect(screen.getAllByRole("gridcell")).toHaveLength(2)
     })
 
     it("closes on Escape and leaves the field alone", async () => {
@@ -80,7 +81,7 @@ describe("StorefrontSearchCombobox", () => {
 
       await user.keyboard("{Escape}")
 
-      expect(screen.queryByRole("listbox")).not.toBeInTheDocument()
+      expect(screen.queryByRole("grid")).not.toBeInTheDocument()
       expect(screen.getByRole("combobox")).toHaveAttribute("aria-expanded", "false")
       expect(screen.getByRole("combobox")).toHaveValue("whey")
     })
@@ -91,7 +92,7 @@ describe("StorefrontSearchCombobox", () => {
 
       await user.tab()
 
-      expect(screen.queryByRole("listbox")).not.toBeInTheDocument()
+      expect(screen.queryByRole("grid")).not.toBeInTheDocument()
     })
 
     // Chrome clears a search field on Escape: the list of the term just erased must not open again.
@@ -100,20 +101,20 @@ describe("StorefrontSearchCombobox", () => {
 
       await user.clear(screen.getByRole("combobox"))
 
-      expect(screen.queryByRole("listbox")).not.toBeInTheDocument()
+      expect(screen.queryByRole("grid")).not.toBeInTheDocument()
     })
 
     it("comes back on the arrow down, on its first row", async () => {
       const { user } = await typed()
       await user.keyboard("{Escape}{ArrowDown}")
 
-      expect(screen.getByRole("combobox").getAttribute("aria-activedescendant")).toBe(screen.getAllByRole("option")[0].id)
+      expect(screen.getByRole("combobox").getAttribute("aria-activedescendant")).toBe(screen.getAllByRole("gridcell")[0].id)
     })
 
     it("draws no list at all when there is nothing to suggest", async () => {
       await typed({ suggestions: [] })
 
-      expect(screen.queryByRole("listbox")).not.toBeInTheDocument()
+      expect(screen.queryByRole("grid")).not.toBeInTheDocument()
     })
   })
 
@@ -126,7 +127,7 @@ describe("StorefrontSearchCombobox", () => {
 
       expect(sent).toHaveBeenCalledTimes(1)
       expect(new FormData(container.querySelector("form")!).get("q")).toBe("whey")
-      expect(screen.queryByRole("listbox")).not.toBeInTheDocument()
+      expect(screen.queryByRole("grid")).not.toBeInTheDocument()
     })
 
     it("carries the category chosen", async () => {
@@ -147,7 +148,7 @@ describe("StorefrontSearchCombobox", () => {
       const { user, container } = await typed()
       const sent = submissionsOf(container)
 
-      await user.hover(screen.getAllByRole("option")[0])
+      await user.hover(screen.getAllByRole("gridcell")[0])
       await user.keyboard("{Enter}")
 
       expect(screen.getByRole("combobox")).not.toHaveAttribute("aria-activedescendant")
@@ -159,7 +160,7 @@ describe("StorefrontSearchCombobox", () => {
       const sent = submissionsOf(container)
 
       await user.keyboard("{ArrowDown}")
-      expect(screen.getAllByRole("option")[0]).toHaveAttribute("aria-selected", "true")
+      expect(screen.getAllByRole("gridcell")[0]).toHaveAttribute("aria-selected", "true")
       await user.keyboard("{Enter}")
 
       expect(sent).not.toHaveBeenCalled()
@@ -177,8 +178,8 @@ describe("StorefrontSearchCombobox", () => {
     await user.keyboard("{ArrowDown}")
 
     expect(field).toHaveFocus()
-    expect(field.getAttribute("aria-activedescendant")).toBe(screen.getAllByRole("option")[0].id)
-    expect(screen.getAllByRole("option")[0]).toHaveAttribute("aria-selected", "true")
+    expect(field.getAttribute("aria-activedescendant")).toBe(screen.getAllByRole("gridcell")[0].id)
+    expect(screen.getAllByRole("gridcell")[0]).toHaveAttribute("aria-selected", "true")
   })
 
   it("reports what was typed, so the screen owns the term", async () => {
@@ -239,12 +240,47 @@ describe("StorefrontSearchCombobox", () => {
     })
   })
 
+  /** The design's "+": a product the cart can take as it is goes in from the list, by keyboard too. */
+  describe("the \"+\" beside a product", () => {
+    const addable = (onAdd: () => void): StorefrontSuggestion[] => [
+      { ...suggestions[0]!, hasOptions: false, onAdd },
+      { ...suggestions[1]!, hasOptions: true, onAdd },
+    ]
+
+    it("is reached with the arrow right, pressed with Enter, and leaves the list open", async () => {
+      const onAdd = vi.fn()
+      const { user, container } = await typed({ suggestions: addable(onAdd) })
+      const sent = submissionsOf(container)
+      const field = screen.getByRole("combobox", { name: "Buscar nesta loja" })
+
+      await user.keyboard("{ArrowDown}{ArrowRight}")
+      expect(field.getAttribute("aria-activedescendant")).toMatch(/-cell-0-1$/)
+      await user.keyboard("{Enter}")
+
+      expect(onAdd).toHaveBeenCalledOnce()
+      expect(sent).not.toHaveBeenCalled()
+      expect(field).toHaveFocus()
+      expect(screen.getByRole("grid")).toBeInTheDocument()
+    })
+
+    it("is not there on a product with options, so the arrows stay on the product and in the text", async () => {
+      const { user } = await typed({ suggestions: addable(vi.fn()) })
+      const field = screen.getByRole("combobox", { name: "Buscar nesta loja" })
+
+      await user.keyboard("{ArrowDown}{ArrowDown}{ArrowRight}")
+      expect(field.getAttribute("aria-activedescendant")).toMatch(/-cell-1-0$/)
+
+      await user.keyboard("{ArrowUp}{ArrowRight}{ArrowDown}")
+      expect(field.getAttribute("aria-activedescendant")).toMatch(/-cell-1-0$/)
+    })
+  })
+
   it("has no accessibility violations, closed and open", async () => {
     const { container, user } = renderBox({ total: 18, seeAllHref: "/loja/busca?q=whey", scopes: [{ value: "whey", label: "Whey" }] })
     await expectNoA11yViolations(container)
 
     await user.type(screen.getByRole("combobox", { name: "Buscar nesta loja" }), "whey")
-    expect(screen.getByRole("listbox")).toBeInTheDocument()
+    expect(screen.getByRole("grid")).toBeInTheDocument()
     await expectNoA11yViolations(container)
   })
 })

@@ -74,6 +74,8 @@ It shows the store's brand, its catalogue grouped by category, and a product's d
 
 A showcase — a row of products on a page — offers **"ver tudo"** only when it leads somewhere with more than the row already shows: its category, for a category's showcase, and the whole catalogue for any other. A link over every product there is promises what is not there.
 
+The **search** is the header's protagonist: the widest thing in it, right after the logo. While someone types it suggests products with their price, and a product sold one way only goes into the cart from there, with no page in between; one with options is chosen on its page.
+
 A shop window that is briefly out of date is acceptable; a shop window that is slow or unreadable is not.
 
 ## The panel
@@ -90,6 +92,7 @@ Two things in the panel's frame move by themselves, and they answer different qu
 - Whether a customer sees it is **two facts, not one**, and the product keeps them apart on purpose.
   - Its **status** is what the shopkeeper intends: *active*, or a *draft* nobody but them can see. A draft is something being written, not something that ran out.
   - Its **stock** is what the shelf says. A shop may choose not to count a product at all — most here sell made to order — and one that is not counted is never sold out. A shop that does count and reaches zero has a product that is **sold out**, which is a different thing from a draft and is fixed a different way.
+- The shopkeeper may put **several products on sale, or back to draft, at once** from the list: they tick products — one by one or a whole page — across pages, and the choice is applied to all of them or to none.
 - A product is in the shop window when it is active **and** not sold out. A draft is nowhere. A sold-out product leaves the window, the category and the search, but **keeps its own page**, marked sold out and with no way to order: that address is what a shopkeeper sends on WhatsApp, and a link that starts answering "not found" is the most visible failure this product can produce.
 - A **category** also belongs to a store; a product sits in one. Both products and categories carry an **order the shopkeeper chooses** — the shop window shows them in that order, because the shopkeeper knows what they want to sell first. A new product goes last. The shopkeeper arranges the products among all of them at once, as a list or as the shop window draws them, and nothing changes for a visitor until the order is saved. One order holds for the whole shop: a category shows its products in it, and so does every showcase but the two with an order of their own, the newest first and the hand-picked. A visitor may still sort by price. A draft or a sold-out product keeps its place without being shown.
 - A category may carry a **picture**. On the shop's front page the categories are drawn with the picture and the name under it or, where the shopkeeper says so, as **the picture alone** — for artwork that already carries its words, where a name beside it is the name said twice. A category with no picture is drawn with its name either way: it is never an empty square and never left out.
