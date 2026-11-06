@@ -50,9 +50,11 @@ export async function configureApp(app: NestFastifyApplication): Promise<void> {
   });
   await app.register(cors, { origin: env.CORS_ORIGINS });
 
-  // The uploads route is the only multipart one. The ceiling here is the plugin's own backstop —
-  // it stops reading rather than buffering whatever arrives — and the controller is what turns a
-  // truncated read into 413. One more byte than the limit, so a file exactly at it still passes.
+  // Two routes take multipart: an image upload, and a menu to read into products. The ceiling here
+  // is the plugin's own backstop — it stops reading rather than buffering whatever arrives — and
+  // each controller is what turns a truncated read into 413. One more byte than the limit, so a
+  // file exactly at it still passes. The menu's route raises it for its own call alone
+  // (`request.file({ limits })` is merged over these), to its own ten megabytes.
   await app.register(multipart, { limits: { fileSize: MAX_UPLOAD_BYTES + 1, files: 1, fields: 4 } });
 
   // Registered before Nest declares its routes, which is what lets a route opt in with @RouteConfig.

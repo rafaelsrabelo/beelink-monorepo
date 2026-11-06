@@ -111,7 +111,7 @@ export interface SignedInCall {
   path: string
   method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE"
   body?: unknown
-  /** Passed straight through, for the one call that carries a file. See `ApiCall.rawBody`. */
+  /** Passed straight through, for the calls that carry a file — an image, a menu. See `ApiCall.rawBody`. */
   rawBody?: { stream: ReadableStream<Uint8Array>; contentType: string }
 }
 

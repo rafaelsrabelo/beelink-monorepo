@@ -113,6 +113,18 @@ const envSchema = z.object({
   UPLOAD_RATE_LIMIT_WINDOW: z.string().default('1 minute'),
 
   /**
+   * Claude, which reads a shop's menu — a PDF or a photo of it — into products the shopkeeper then
+   * reviews. Optional: without it the read answers 501 PRODUCT_IMPORT_NOT_CONFIGURED and nothing
+   * else changes. Server-side only, like every billable key here.
+   */
+  ANTHROPIC_API_KEY: blankAsAbsent(z.string().min(1)),
+  /** Which model reads. A variable so a cheaper one can be tried, once measured, without a deploy of code. */
+  PRODUCT_IMPORT_MODEL: z.string().min(1).default('claude-opus-5-5'),
+  /** Per IP. One read costs real money — around a real for a menu of ten pages — so it is held tight. */
+  PRODUCT_IMPORT_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(5),
+  PRODUCT_IMPORT_RATE_LIMIT_WINDOW: z.string().default('10 minutes'),
+
+  /**
    * Per IP, on the one anonymous write in the product: a visitor sending a site's contact form.
    * Sized for a person who mistypes and tries again, not for a robot — the trap handles the robot.
    */

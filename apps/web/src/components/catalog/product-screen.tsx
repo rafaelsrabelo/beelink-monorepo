@@ -167,6 +167,7 @@ export function ProductScreen({ slug, messages }: ProductScreenProps) {
         */}
         <div className="flex flex-wrap gap-2">
           <AppLink href={`/admin/${slug}/products/order`} className={buttonVariants({ variant: "outline" })}>{text.order.open}</AppLink>
+          <AppLink href={`/admin/${slug}/products/import`} className={buttonVariants({ variant: "outline" })}>{text.import.open}</AppLink>
           <AppLink href={`/admin/${slug}/products/new`} className={buttonVariants()}>{text.create}</AppLink>
         </div>
       </header>
