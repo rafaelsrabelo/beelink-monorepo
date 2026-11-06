@@ -11,6 +11,7 @@ import { runningShelfPromotions, shelfSaleOf } from '../promotions/shelf-sale.js
 import { ROUTE_WORDS } from '../catalog/catalog.constants.js';
 import { isSoldOut } from '../catalog/catalog.visibility.js';
 import { SHOWCASE_CARD_SELECT, shelfOf, showcaseQuery, toShowcaseCard } from '../catalog/showcase.query.js';
+import { ON_THE_SHELF_WHERE } from '../catalog/catalog.visibility.js';
 import { itemsOf } from './page.mapper.js';
 import { NO_SLUGS, slideTargetsOf, type SlugsByEntity } from './page-links.js';
 import { NO_SHELVES, toPublicSection, type PageLookups, type ShelvesByComponent } from './page-public.mapper.js';
@@ -108,8 +109,11 @@ async function shelvesOf(db: PrismaService, storeId: string, sections: readonly 
   const categoryIds = showcases.flatMap((showcase) =>
     showcase.source === 'CATEGORY' && showcase.sourceCategoryId ? [showcase.sourceCategoryId] : [],
   );
+  // A hand-picked or an on-sale showcase's "ver tudo" leads to the whole catalogue, whose size its own
+  // query cannot tell: counted once for the page, and only when one of them is on it.
+  const toCatalogue = (showcase: (typeof showcases)[number]) => showcase.source === 'SELECTION' || showcase.source === 'ON_SALE';
 
-  const [categories, shelves] = await Promise.all([
+  const [categories, shelves, catalogueSize] = await Promise.all([
     categoryIds.length
       ? db.productCategory.findMany({
           where: { id: { in: categoryIds }, storeId, isActive: true },
@@ -119,10 +123,13 @@ async function shelvesOf(db: PrismaService, storeId: string, sections: readonly 
     Promise.all(
       showcases.map(async (showcase) => {
         const query = showcaseQuery(storeId, showcase, priceField, onSale);
-        const rows = query ? await db.product.findMany({ ...query, select: SHOWCASE_CARD_SELECT }) : [];
-        return [showcase, shelfOf(showcase, rows, promotions)] as const;
+        // One past the limit: `shelfOf` cuts it off, and its being there is what "there is more" means.
+        const rows = query ? await db.product.findMany({ ...query, take: query.take + 1, select: SHOWCASE_CARD_SELECT }) : [];
+        const products = shelfOf(showcase, rows, promotions);
+        return [showcase, products, rows.length > products.length] as const;
       }),
     ),
+    showcases.some(toCatalogue) ? db.product.count({ where: { storeId, AND: [ON_THE_SHELF_WHERE] } }) : 0,
   ]);
 
   const categoryOf = new Map(
@@ -130,9 +137,13 @@ async function shelvesOf(db: PrismaService, storeId: string, sections: readonly 
   );
 
   return new Map(
-    shelves.map(([showcase, products]) => [
+    shelves.map(([showcase, products, beyondLimit]) => [
       showcase.id,
-      { products, category: showcase.sourceCategoryId ? (categoryOf.get(showcase.sourceCategoryId) ?? null) : null },
+      {
+        products,
+        category: showcase.sourceCategoryId ? (categoryOf.get(showcase.sourceCategoryId) ?? null) : null,
+        more: toCatalogue(showcase) ? catalogueSize > products.length : beyondLimit,
+      },
     ]),
   );
 }
