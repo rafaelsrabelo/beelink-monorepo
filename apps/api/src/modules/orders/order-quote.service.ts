@@ -59,7 +59,7 @@ export class OrderQuotes {
    */
   async forCustomer(storeSlug: string, buyer: Buyer, dto: CustomerOrderQuoteDto): Promise<OrderQuote> {
     const { storeId, customerId, purchaseId } = await this.buyers.at(storeSlug, buyer);
-    return this.quote({
+    const quote = await this.quote({
       storeId,
       items: dto.items,
       onSaleOnly: true,
@@ -72,6 +72,8 @@ export class OrderQuotes {
       cashback: dto.useCashback && !purchaseId ? 'MAX' : 'NONE',
       shippingTo: { customerId, addressId: dto.addressId?.toLowerCase() ?? null, choice: dto.shipping },
     });
+    // Not even the balance: how much credit someone has is not for whoever typed their WhatsApp.
+    return purchaseId ? { ...quote, cashbackUse: null } : quote;
   }
 
   /** The panel's sale as registering it would price it — drafts included, at the day it was sold. */

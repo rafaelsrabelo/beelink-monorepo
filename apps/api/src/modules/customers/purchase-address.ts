@@ -1,5 +1,5 @@
 // Types
-import type { CustomerPurchaseAddress } from '@harness-monorepo/contracts';
+import type { CustomerPurchaseAddress, OrderDeliveryAddress } from '@harness-monorepo/contracts';
 import type { CustomerAddressModel } from '../../generated/prisma/models.js';
 
 const HIDDEN = '•••';
@@ -34,4 +34,22 @@ export function purchaseAddressOf(address: Pick<CustomerAddressModel, 'id' | 'st
   const street = address.street ? [maskedStreet(address.street), address.number ? maskedNumber(address.number) : null].filter(Boolean).join(', ') : HIDDEN;
   const place = [address.city, address.state].filter(Boolean).join('/');
   return { id: address.id, line: place ? `${street} — ${place}` : street, isDefault: address.isDefault };
+}
+
+/**
+ * Where an order a purchase session placed goes, as that session reads it back: masked as the address
+ * it chose was, and nobody's name. Otherwise a delivery placed to a masked address would answer the
+ * whole of it to whoever typed the WhatsApp. The shop reads the order whole, in its panel.
+ */
+export function maskedDeliveryOf(address: OrderDeliveryAddress): OrderDeliveryAddress {
+  return {
+    recipientName: '',
+    zipCode: null,
+    street: maskedStreet(address.street),
+    number: address.number ? maskedNumber(address.number) : null,
+    complement: null,
+    neighborhood: null,
+    city: address.city,
+    state: address.state,
+  };
 }

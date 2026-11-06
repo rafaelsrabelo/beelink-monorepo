@@ -9,6 +9,7 @@ import type { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { Buyers, type Buyer } from '../customers/buyers.service.js';
 import { CustomersService } from '../customers/customers.service.js';
+import { maskedDeliveryOf } from '../customers/purchase-address.js';
 import { CUSTOMER_ORDER_INCLUDE, toCustomerOrder, toCustomerOrderSummary } from './customer-order.mapper.js';
 import type { ListCustomerOrdersDto, PlaceCustomerOrderDto } from './dto/customer-order.dto.js';
 import { settleCancellation } from './order-cancellation.js';
@@ -271,7 +272,8 @@ export class CustomerOrdersService {
   private async read(storeId: string, customerId: string, number: number, purchaseId: string | null = null): Promise<CustomerOrder> {
     const order = await this.prisma.order.findFirst({ where: { storeId, customerId, number, ...(purchaseId ? { purchaseSessionId: purchaseId } : {}) }, include: CUSTOMER_ORDER_INCLUDE });
     if (!order) throw notFound(number);
-    return toCustomerOrder(order);
+    const read = toCustomerOrder(order);
+    return purchaseId && read.deliveryAddress ? { ...read, deliveryAddress: maskedDeliveryOf(read.deliveryAddress) } : read;
   }
 }
 
