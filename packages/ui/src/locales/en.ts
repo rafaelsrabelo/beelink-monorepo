@@ -927,6 +927,8 @@ export const en: UiMessages = {
     shelfFailed: "We couldn't load the products right now.",
     shelfFailedHint: "It may be the connection. Try again in a moment.",
     shelfRetry: "Try again",
+    loadMore: "See more products",
+    loadMoreFailed: "More products could not be loaded just now.",
     productsHeading: "Products",
     productCount: "{count} products",
     productCountOne: "1 product",

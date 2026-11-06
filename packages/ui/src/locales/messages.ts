@@ -1186,6 +1186,10 @@ export interface UiMessages {
     shelfFailed: string
     shelfFailedHint: string
     shelfRetry: string
+    /** The way to the next page of a shelf: what a visitor with no script, and a crawler, follow. */
+    loadMore: string
+    /** Under a shelf whose next page would not load; the visitor's place is kept. */
+    loadMoreFailed: string
     productsHeading: string
     /**
      * "{count} produtos", under the catalogue's title and on a category's card. One pair serves
