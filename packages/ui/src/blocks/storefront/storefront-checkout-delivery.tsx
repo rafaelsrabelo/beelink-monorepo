@@ -10,6 +10,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import type { StorefrontCheckoutAddress, StorefrontCheckoutChoice, StorefrontCheckoutShipping } from "./storefront-checkout-choices"
+import { StorefrontCpfField } from "./storefront-cpf-field"
 
 /** The address form as the checkout opens it. */
 export interface StorefrontCheckoutAddressForm {
@@ -139,24 +140,14 @@ export function StorefrontCheckoutDelivery({
         </fieldset>
       ) : null}
       {delivering && chosen && recipientDocument ? (
-        <div className="ml-7 flex flex-col gap-1 text-xs">
-          <label htmlFor={`${id}-document`} className="font-semibold">
-            {text.checkoutRecipientDocument}
-          </label>
-          <input
-            id={`${id}-document`}
-            inputMode="numeric"
-            autoComplete="off"
-            placeholder="000.000.000-00"
-            value={recipientDocument.value}
-            aria-describedby={`${id}-document-hint`}
-            onChange={(event) => recipientDocument.onChange(event.target.value)}
-            className="h-10 rounded-[10px] border border-shop-line bg-shop-background px-3 text-sm"
-          />
-          <span id={`${id}-document-hint`} className="text-shop-muted">
-            {text.checkoutRecipientDocumentHint}
-          </span>
-        </div>
+        <StorefrontCpfField
+          label={text.checkoutRecipientDocument}
+          hint={text.checkoutRecipientDocumentHint}
+          value={recipientDocument.value}
+          onChange={recipientDocument.onChange}
+          className="ml-7"
+          messages={messages}
+        />
       ) : null}
     </>
   )

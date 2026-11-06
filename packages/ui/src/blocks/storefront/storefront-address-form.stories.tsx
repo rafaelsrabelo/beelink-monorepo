@@ -45,5 +45,10 @@ export const SemBusca: Story = { args: { onZipCodeLookup: undefined } }
 /** Recusado pela loja. */
 export const Recusado: Story = { args: { error: "Confira o endereço: o CEP com 8 números, a rua, a cidade e a UF com 2 letras." } }
 
-/** O do checkout: o CEP primeiro, só o que a entrega pede, e "Cancelar" fecha ali mesmo. */
+/** O do checkout: só o CEP; o resto aparece preenchido quando o CEP é encontrado. "Cancelar" fecha ali mesmo. */
 export const NoCheckout: Story = { args: { compact: true, cancelHref: undefined, onCancel: () => {}, offerDefault: false } }
+
+/** No checkout, com um CEP que a busca não conhece: o resto do endereço aparece vazio, para digitar. */
+export const NoCheckoutCepDesconhecido: Story = {
+  args: { compact: true, cancelHref: undefined, onCancel: () => {}, offerDefault: false, onZipCodeLookup: async (): Promise<StorefrontZipCodeLookup> => ({ status: "not-found" }) },
+}

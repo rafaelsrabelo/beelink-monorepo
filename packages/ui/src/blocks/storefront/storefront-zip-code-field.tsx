@@ -25,6 +25,8 @@ export interface StorefrontZipCodeFieldProps {
   onLookup?: (zipCode: string) => Promise<StorefrontZipCodeLookup>
   /** What a found CEP knows, for the form to write into its own fields. */
   onFound: (found: StorefrontZipCodeFound) => void
+  /** The service does not know the CEP, or did not answer: the rest of the address is typed by hand. */
+  onMissed?: () => void
   /** Opened by the shopper's own tap: the keyboard comes up on the CEP. Never on a page's load. */
   autoFocus?: boolean
   inputClassName: string
@@ -46,7 +48,7 @@ function maskOf(digits: string): string {
  * service does not know, and the service not answering, each have their own sentence, and the
  * address is still typed by hand.
  */
-export function StorefrontZipCodeField({ defaultValue, onLookup, onFound, autoFocus = false, inputClassName, labelClassName, messages = defaultMessages }: StorefrontZipCodeFieldProps) {
+export function StorefrontZipCodeField({ defaultValue, onLookup, onFound, onMissed, autoFocus = false, inputClassName, labelClassName, messages = defaultMessages }: StorefrontZipCodeFieldProps) {
   const text = messages.storefront
   const id = useId()
   const input = useRef<HTMLInputElement>(null)
@@ -72,6 +74,7 @@ export function StorefrontZipCodeField({ defaultValue, onLookup, onFound, autoFo
     }
     setLookup({ pending: false, said: found.status === "invalid" ? text.addressLookupInvalid : found.status === "not-found" ? text.addressLookupNotFound : text.addressLookupFailed })
     input.current?.focus()
+    if (found.status !== "invalid") onMissed?.()
   }
 
   function typed(event: ChangeEvent<HTMLInputElement>) {

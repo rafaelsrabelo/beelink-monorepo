@@ -1,19 +1,10 @@
 /**
- * The two masks of the landing's courier form (BEELINK-322): a CPF and a Brazilian mobile, written
+ * The masks of the landing's courier form (BEELINK-322) — a Brazilian mobile here, the CPF's in `lib/cpf.ts` — written
  * as a person writes them while they type. Pure functions of what is in the field — typed a key at a
  * time or pasted whole — and never ending in punctuation, so a backspace always takes a digit.
  */
 
 const digitsOf = (typed: string) => typed.replace(/\D/g, "")
-
-/** `000.000.000-00`: eleven digits, and what is typed past them is left out. */
-export function maskCpf(typed: string): string {
-  const digits = digitsOf(typed).slice(0, 11)
-  const groups = [digits.slice(0, 3), digits.slice(3, 6), digits.slice(6, 9)].filter(Boolean).join(".")
-  const check = digits.slice(9)
-
-  return check ? `${groups}-${check}` : groups
-}
 
 /**
  * A mobile's eleven digits out of what was typed: the area code and the nine of the number.

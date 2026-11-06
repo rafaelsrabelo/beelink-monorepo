@@ -261,6 +261,30 @@ describe("the checkout of a shop that charges online (BEELINK-205)", () => {
     expect(ordersSent(fetched)[0]).toMatchObject({ paymentChannel: "ONLINE", paymentMethod: "PIX", recipientDocument: "52998224725" })
   })
 
+  it("writes the CPF as 000.000.000-00 while it is typed, and holds the order on eleven digits that are no CPF", async () => {
+    const fetched = network()
+    renderCart({ ...ana, cpf: null })
+    fireEvent.click(payNow().getByRole("radio", { name: /^Pix/ }))
+    const field = screen.getByLabelText("Seu CPF")
+
+    fireEvent.change(field, { target: { value: "1234567890" } })
+    expect(field).toHaveValue("123.456.789-0")
+    expect(field).not.toHaveAttribute("aria-invalid")
+
+    // One digit off: said under the field at once, and the order is not sent to be refused by the API.
+    fireEvent.change(field, { target: { value: "123.456.789-00" } })
+    expect(field).toHaveAttribute("aria-invalid", "true")
+    expect(screen.getByRole("alert")).toHaveTextContent("CPF inválido: confira os números digitados.")
+    fireEvent.click(screen.getByRole("button", { name: "Fechar pedido e pagar" }))
+    expect(ordersSent(fetched)).toEqual([])
+
+    fireEvent.change(field, { target: { value: "529.982.247-25" } })
+    expect(field).not.toHaveAttribute("aria-invalid")
+    fireEvent.click(screen.getByRole("button", { name: "Fechar pedido e pagar" }))
+    await waitFor(() => expect(ordersSent(fetched)).toHaveLength(1))
+    expect(ordersSent(fetched)[0]).toMatchObject({ recipientDocument: "52998224725" })
+  })
+
   it("switches online off under the least charge, saying why, and leaves the shop's labels to choose", async () => {
     network({ quote: { totalCents: 499 } })
     renderCart(ana)

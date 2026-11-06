@@ -10,6 +10,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // UI
 import { formatCents } from "@harness-monorepo/ui/blocks/storefront/storefront-price"
+import { isCpf } from "@harness-monorepo/ui/lib/cpf"
 
 // App
 import { useCartOffers } from "./use-cart-offers"
@@ -107,6 +108,8 @@ export function useCartCheckout({ slug, view, shopper, paymentMethods, paymentOp
   const askCpf = (carrier !== null || paysOnline) && shopper !== null && !shopper.cpf
   const cpfField = askCpf ? { value: cpf, onChange: setCpf } : null
   const cpfDigits = cpf.replace(/\D/g, "")
+  // Its check digits too: eleven that are no CPF would only be refused by the API once the order is sent.
+  const cpfOk = isCpf(cpfDigits)
   // What keeps the delivery's step open: the shop takes no way now, no address yet, a place it does not reach, a carrier's CPF.
   const deliveryIssue =
     shipping && !shipping.delivery && !shipping.pickup
@@ -115,12 +118,12 @@ export function useCartCheckout({ slug, view, shopper, paymentMethods, paymentOp
         ? text.checkoutAddressMissing
         : delivering && shipping && shipping.ways.length === 0
           ? shipping.note
-          : carrier && askCpf && cpfDigits.length !== 11
+          : carrier && askCpf && !cpfOk
             ? text.checkoutRecipientDocumentIssue
             : null
   const blocked =
     deliveryIssue ??
-    (plan.offlineMethods.length === 0 && plan.online?.unavailable ? plan.online.unavailable : askCpf && cpfDigits.length !== 11 ? text.checkoutPayerDocumentIssue : null)
+    (plan.offlineMethods.length === 0 && plan.online?.unavailable ? plan.online.unavailable : askCpf && !cpfOk ? text.checkoutPayerDocumentIssue : null)
   const sent = {
     ...(delivering
       ? {

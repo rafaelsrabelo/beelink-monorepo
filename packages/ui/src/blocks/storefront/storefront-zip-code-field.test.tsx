@@ -112,4 +112,18 @@ describe("StorefrontZipCodeField", () => {
     await userEvent.type(screen.getByLabelText("CEP"), "99999999")
     await expectNoA11yViolations(container)
   })
+
+  it("tells the form the address is to be typed when the CEP is unknown or the service is down — never for one too short", async () => {
+    const onMissed = vi.fn()
+    const onLookup = vi.fn<(zipCode: string) => Promise<StorefrontZipCodeLookup>>().mockResolvedValueOnce({ status: "not-found" }).mockResolvedValueOnce({ status: "unavailable" })
+    render(zipField({ onLookup, onMissed }))
+
+    await userEvent.click(screen.getByRole("button", { name: "Buscar CEP" }))
+    expect(onMissed).not.toHaveBeenCalled()
+
+    await userEvent.type(screen.getByLabelText("CEP"), "99999999")
+    expect(onMissed).toHaveBeenCalledTimes(1)
+    await userEvent.click(screen.getByRole("button", { name: "Buscar CEP" }))
+    expect(onMissed).toHaveBeenCalledTimes(2)
+  })
 })

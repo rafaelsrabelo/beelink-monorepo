@@ -487,6 +487,8 @@ export interface UiMessages {
     checkoutPayerDocument: string
     checkoutPayerDocumentHint: string
     checkoutPayerDocumentIssue: string
+    /** Under a checkout's CPF, once its eleven digits are typed and are no CPF. */
+    checkoutDocumentInvalid: string
     checkoutPayOnline: string
     checkoutBelowMinimumGone: string
     /** After an order charged online is placed: its payment is the next screen (BEELINK-205). */

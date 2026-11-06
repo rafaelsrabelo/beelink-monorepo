@@ -4,6 +4,9 @@ import { z } from "zod"
 // Locales
 import type { LandingCourierFieldValue, LandingVehicleValue, UiMessages } from "@harness-monorepo/ui/locales/messages"
 
+// UI
+import { isCpf } from "@harness-monorepo/ui/lib/cpf"
+
 // Block
 import { mobileDigitsOf } from "./landing-courier-masks"
 
@@ -41,26 +44,6 @@ const EMAIL_MAX_LENGTH = 254
 export function isFullName(typed: string): boolean {
   const name = typed.trim().replace(/\s+/g, " ")
   return name.length <= NAME_MAX_LENGTH && /^\S+(?: \S+)+$/.test(name)
-}
-
-/**
- * Whether what was typed is a CPF, whichever points and dash are around its digits: eleven of them,
- * not one digit repeated — `111.111.111-11` passes the arithmetic and belongs to nobody — and both
- * check digits right, each the sum of the digits before it weighted from 10 (then 11) down to 2,
- * times ten, modulo eleven, a ten counting as zero.
- *
- * The API's own rule (`shared/http/cpf.ts`), restated: this package cannot import it. It spares a
- * person a round trip for a mistyped digit; the API still has the last word.
- */
-export function isCpf(typed: string): boolean {
-  const digits = typed.replace(/\D/g, "")
-  if (digits.length !== 11 || /^(\d)\1{10}$/.test(digits)) return false
-  const check = (length: number) => {
-    let sum = 0
-    for (let index = 0; index < length; index += 1) sum += Number(digits[index]) * (length + 1 - index)
-    return ((sum * 10) % 11) % 10
-  }
-  return check(9) === Number(digits[9]) && check(10) === Number(digits[10])
 }
 
 /**

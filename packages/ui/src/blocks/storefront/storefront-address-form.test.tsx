@@ -127,6 +127,60 @@ describe("StorefrontAddressForm", () => {
     expect(onCancel).toHaveBeenCalledOnce()
   })
 
+  describe("the checkout's, with a lookup: the CEP first, and the rest once it is known", () => {
+    const fortaleza = async () => ({ status: "found" as const, street: "Rua Tibúrcio Cavalcante", neighborhood: "Meireles", city: "Fortaleza", state: "CE" })
+    const checkout = (props: Partial<StorefrontAddressFormProps> = {}) => form({ compact: true, cancelHref: undefined, onCancel: () => {}, onZipCodeLookup: fortaleza, ...props })
+
+    it("asks only the CEP, with no button to use an address that is not there yet", () => {
+      render(checkout())
+
+      expect(screen.getByLabelText("CEP")).toBeVisible()
+      for (const label of ["Rua", "Número", "Complemento", "Bairro", "Cidade", "UF"]) expect(screen.getByLabelText(label)).not.toBeVisible()
+      expect(screen.queryByRole("button", { name: "Usar este endereço" })).toBeNull()
+      expect(screen.getByRole("button", { name: "Cancelar" })).toBeVisible()
+    })
+
+    it("shows the rest filled once the CEP is found, and moves on to the number", async () => {
+      render(checkout())
+
+      await userEvent.type(screen.getByLabelText("CEP"), "60160230")
+
+      expect(screen.getByLabelText("Rua")).toBeVisible()
+      expect(screen.getByLabelText("Rua")).toHaveValue("Rua Tibúrcio Cavalcante")
+      expect(screen.getByLabelText("Cidade")).toHaveValue("Fortaleza")
+      expect(screen.getByLabelText("Número")).toHaveFocus()
+      expect(screen.getByRole("button", { name: "Usar este endereço" })).toBeVisible()
+    })
+
+    it("shows the rest empty, to be typed, when the CEP is unknown or the lookup is down — and nothing before a whole CEP", async () => {
+      render(checkout({ onZipCodeLookup: async () => ({ status: "not-found" }) }))
+
+      await userEvent.type(screen.getByLabelText("CEP"), "6016")
+      await userEvent.tab()
+      expect(screen.getByLabelText("Rua")).not.toBeVisible()
+
+      await userEvent.type(screen.getByLabelText("CEP"), "9999")
+      expect(screen.getByRole("status")).toHaveTextContent("Não achamos esse CEP.")
+      expect(screen.getByLabelText("Rua")).toBeVisible()
+      expect(screen.getByLabelText("Rua")).toHaveValue("")
+    })
+
+    it("shows a written address whole", () => {
+      render(checkout({ address: { ...blank, zipCode: "60160230", street: "Rua Tibúrcio Cavalcante", city: "Fortaleza", state: "CE" } }))
+
+      expect(screen.getByLabelText("Rua")).toBeVisible()
+      expect(screen.getByRole("button", { name: "Usar este endereço" })).toBeVisible()
+    })
+
+    it("has no accessibility violations, before the CEP and after it", async () => {
+      const { container } = render(checkout())
+      await expectNoA11yViolations(container)
+
+      await userEvent.type(screen.getByLabelText("CEP"), "60160230")
+      await expectNoA11yViolations(container)
+    })
+  })
+
   it("has no accessibility violations", async () => {
     const { container } = render(form({ onZipCodeLookup: async () => ({ status: "not-found" }), error: "Confira o endereço." }))
     await expectNoA11yViolations(container)

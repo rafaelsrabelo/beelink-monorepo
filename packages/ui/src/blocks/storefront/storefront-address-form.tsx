@@ -1,7 +1,10 @@
 "use client"
 
 // React
-import { useId, useRef } from "react"
+import { useEffect, useId, useRef, useState } from "react"
+
+// UI
+import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
@@ -41,7 +44,9 @@ export interface StorefrontAddressFormProps {
   onCancel?: () => void
   /**
    * The checkout's own: the CEP first and only what a delivery needs — no name for the address,
-   * nobody else receiving, no default to choose — saved as the address the order goes to.
+   * nobody else receiving, no default to choose — saved as the address the order goes to. With a
+   * lookup and nothing written yet, the CEP stands alone: the rest of the address appears once the
+   * CEP was found — filled — or the service could not tell it — to be typed.
    */
   compact?: boolean
   /** Opened by the shopper's own tap: the keyboard comes up on the CEP. */
@@ -86,16 +91,28 @@ export function StorefrontAddressForm({
   const text = messages.storefront
   const headingId = useId()
   const form = useRef<HTMLFormElement>(null)
+  // An address already written — one being edited — is shown whole, and so is any form with no lookup to wait for.
+  const [revealed, setRevealed] = useState(!compact || !onZipCodeLookup || Boolean(address.zipCode || address.street))
+  // A field to move on to once the rest of the address is drawn: hidden, it takes no focus.
+  const focusAfterReveal = useRef(false)
 
   const input = (name: string) => form.current?.elements.namedItem(name) as HTMLInputElement | null
+  const nextField = () => NEXT_AFTER_LOOKUP.map(input).find((field) => field !== null && field.value === "") ?? input("number")
+
+  useEffect(() => {
+    if (!revealed || !focusAfterReveal.current) return
+    focusAfterReveal.current = false
+    nextField()?.focus()
+  }, [revealed])
 
   function found(parts: StorefrontZipCodeFound) {
     for (const part of LOOKED_UP) {
       const field = input(part)
       if (field && parts[part]) field.value = parts[part]
     }
-    const next = NEXT_AFTER_LOOKUP.map(input).find((field) => field !== null && field.value === "")
-    ;(next ?? input("number"))?.focus()
+    if (revealed) return nextField()?.focus()
+    focusAfterReveal.current = true
+    setRevealed(true)
   }
 
   const field = (name: keyof StorefrontAddressFormValues, label: string, extra: Record<string, string | number | boolean> = {}, hint?: string) => (
@@ -111,7 +128,7 @@ export function StorefrontAddressForm({
   return (
     <section
       aria-labelledby={headingId}
-      className={`flex w-full flex-col rounded-xl border border-shop-line bg-shop-background text-shop-on-background ${compact ? "gap-4 p-4" : "max-w-3xl gap-5 p-6"}`}
+      className={cn("flex w-full flex-col rounded-xl border border-shop-line bg-shop-background text-shop-on-background", compact ? "gap-3 p-4" : "max-w-3xl gap-5 p-6")}
     >
       <h2 id={headingId} className="text-base font-bold">
         {compact ? text.checkoutAddressFormTitle : address.id ? text.addressFormEdit : text.addressFormNew}
@@ -123,7 +140,7 @@ export function StorefrontAddressForm({
         </p>
       ) : null}
 
-      <form ref={form} action={action} method="post" className="grid grid-cols-6 gap-4">
+      <form ref={form} action={action} method="post" className={cn("grid grid-cols-6", compact ? "gap-x-3 gap-y-2.5" : "gap-4")}>
         {Object.entries(hidden).map(([name, value]) => (
           <input key={name} type="hidden" name={name} value={value} />
         ))}
@@ -145,18 +162,20 @@ export function StorefrontAddressForm({
             defaultValue={address.zipCode}
             {...(onZipCodeLookup ? { onLookup: onZipCodeLookup } : {})}
             onFound={found}
+            onMissed={() => setRevealed(true)}
             autoFocus={autoFocus}
             inputClassName={INPUT}
             labelClassName="text-sm font-medium"
             messages={messages}
           />
         </div>
-        <div className="col-span-6">{field("street", text.accountStreet, { required: true, maxLength: 160, autoComplete: "address-line1" })}</div>
-        <div className="col-span-2">{field("number", text.accountNumber, { maxLength: 20 })}</div>
-        <div className="col-span-4">{field("complement", text.accountComplement, { maxLength: 80, autoComplete: "address-line2" })}</div>
-        <div className={compact ? "col-span-6" : "col-span-6 shop-sm:col-span-3"}>{field("neighborhood", text.accountNeighborhood, { maxLength: 80 })}</div>
-        <div className={compact ? "col-span-4" : "col-span-4 shop-sm:col-span-2"}>{field("city", text.accountCity, { required: true, maxLength: 80, autoComplete: "address-level2" })}</div>
-        <div className={compact ? "col-span-2" : "col-span-2 shop-sm:col-span-1"}>
+        {/* In the form while hidden: a found CEP writes into them before they are shown. */}
+        <div hidden={!revealed} className="col-span-6">{field("street", text.accountStreet, { required: true, maxLength: 160, autoComplete: "address-line1" })}</div>
+        <div hidden={!revealed} className="col-span-2">{field("number", text.accountNumber, { maxLength: 20 })}</div>
+        <div hidden={!revealed} className="col-span-4">{field("complement", text.accountComplement, { maxLength: 80, autoComplete: "address-line2" })}</div>
+        <div hidden={!revealed} className={compact ? "col-span-6" : "col-span-6 shop-sm:col-span-3"}>{field("neighborhood", text.accountNeighborhood, { maxLength: 80 })}</div>
+        <div hidden={!revealed} className={compact ? "col-span-4" : "col-span-4 shop-sm:col-span-2"}>{field("city", text.accountCity, { required: true, maxLength: 80, autoComplete: "address-level2" })}</div>
+        <div hidden={!revealed} className={compact ? "col-span-2" : "col-span-2 shop-sm:col-span-1"}>
           {field("state", text.accountState, { required: true, maxLength: 2, pattern: "[A-Za-z]{2}", title: text.addressStateFormat, autoComplete: "address-level1" })}
         </div>
 
@@ -168,9 +187,12 @@ export function StorefrontAddressForm({
         ) : null}
 
         <div className="col-span-6 flex flex-wrap items-center gap-4">
-          <button type="submit" className="h-12 grow rounded-xl bg-shop-primary px-6 text-base font-semibold text-shop-on-primary transition-opacity hover:opacity-90">
-            {compact ? text.checkoutAddressUse : text.addressSave}
-          </button>
+          {/* Not before the address is drawn: a hidden required field would hold the post and say nothing. */}
+          {revealed ? (
+            <button type="submit" className="h-12 grow rounded-xl bg-shop-primary px-6 text-base font-semibold text-shop-on-primary transition-opacity hover:opacity-90">
+              {compact ? text.checkoutAddressUse : text.addressSave}
+            </button>
+          ) : null}
           {onCancel ? (
             <button type="button" onClick={onCancel} className="min-h-11 text-sm font-semibold text-shop-muted hover:underline">
               {text.addressCancel}

@@ -1,48 +1,11 @@
 // Libs
 import { describe, expect, it } from "vitest"
 
+// UI
+import { maskCpf } from "@harness-monorepo/ui/lib/cpf"
+
 // Block
-import { maskCpf, maskField, maskMobile } from "./landing-courier-masks"
-
-describe("maskCpf", () => {
-  it.each([
-    ["", ""],
-    ["5", "5"],
-    ["529", "529"],
-    ["5299", "529.9"],
-    ["529982", "529.982"],
-    ["5299822", "529.982.2"],
-    ["529982247", "529.982.247"],
-    ["5299822472", "529.982.247-2"],
-    ["52998224725", "529.982.247-25"],
-  ])("writes %j as %j while it is typed, and never ends in punctuation", (typed, shown) => {
-    expect(maskCpf(typed)).toBe(shown)
-  })
-
-  it.each([
-    ["52998224725", "529.982.247-25"],
-    ["529.982.247-25", "529.982.247-25"],
-    ["529 982 247 25", "529.982.247-25"],
-    [" 529.982.247/25 ", "529.982.247-25"],
-    ["CPF: 529.982.247-25", "529.982.247-25"],
-  ])("reads %j pasted whole as %j", (pasted, shown) => {
-    expect(maskCpf(pasted)).toBe(shown)
-  })
-
-  it("leaves out what is typed past the eleventh digit", () => {
-    expect(maskCpf("529.982.247-259")).toBe("529.982.247-25")
-    expect(maskCpf("5299822472599999")).toBe("529.982.247-25")
-  })
-
-  it("writes its own output again as it is", () => {
-    for (const typed of ["5", "529.9", "529.982.2", "529.982.247-2", "529.982.247-25"]) expect(maskCpf(typed)).toBe(typed)
-  })
-
-  it("keeps nothing that is not a digit", () => {
-    expect(maskCpf("abc")).toBe("")
-    expect(maskCpf("5a2b9")).toBe("529")
-  })
-})
+import { maskField, maskMobile } from "./landing-courier-masks"
 
 describe("maskMobile", () => {
   it.each([
