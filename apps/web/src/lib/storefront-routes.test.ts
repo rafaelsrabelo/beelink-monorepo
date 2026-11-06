@@ -90,6 +90,19 @@ describe("a landing page's address", () => {
   })
 })
 
+describe("the checkout's address (plan 2026-11-06--carrinho-e-checkout)", () => {
+  it("is a page of its own, apart from the cart, and `checkout` whatever words the shop speaks", () => {
+    const words = { products: "products", categories: "categories", search: "search", cart: "cart", signIn: "login", verifyEmail: "verify-email", resetPassword: "reset-password", account: "account", accountTabs: { orders: "orders", favorites: "favorites", reviews: "reviews", cashback: "cashback", profile: "profile", messages: "messages" } }
+    const english = storefrontRoutes({ slug: "mutante", routeWords: words })
+
+    expect(routes.checkout()).toBe("/mutante/checkout")
+    expect(routes.checkout()).not.toBe(routes.cart())
+    expect(english.checkout()).toBe("/mutante/checkout")
+    expect(sectionOf("checkout", words)).toEqual({ kind: "checkout" })
+    expect(sectionOf("cart", words)).toEqual({ kind: "cart" })
+  })
+})
+
 describe("the sign-in page's addresses", () => {
   it("is a route word of its own, with its faces and its way back in the address", () => {
     const shop = { slug: "loja", routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha", account: "conta", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", cashback: "cashback", profile: "perfil", messages: "conversas" } } }
@@ -191,6 +204,7 @@ describe("a shop at its own domain (BEELINK-283)", () => {
       routes.search("seda", { category: "blusas" }),
       routes.cart(),
       routes.cart({ reordered: 14, trimmed: true }),
+      routes.checkout(),
       routes.signIn(),
       routes.signIn({ mode: "criar", back: routes.cart() }),
       routes.verifyEmail({ token: "t", back: routes.home }),

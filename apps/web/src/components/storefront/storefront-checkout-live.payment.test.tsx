@@ -13,7 +13,8 @@ import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 // App
 import { CART_COOKIE, decodeCart } from "@/lib/cart-cookie"
 import { CartProvider } from "./cart-provider"
-import { StorefrontCartLive, type StorefrontCartLiveProps } from "./storefront-cart-live"
+import { CartStepper } from "./cart-stepper.fixtures"
+import { StorefrontCheckoutLive, type StorefrontCheckoutLiveProps } from "./storefront-checkout-live"
 import { TrackingContext } from "./tracking/use-track"
 
 const mocks = vi.hoisted(() => ({ refresh: vi.fn(), push: vi.fn(), track: vi.fn() }))
@@ -87,30 +88,30 @@ function Told({ children }: { children: ReactNode }) {
  * (plan 2026-11-06--checkout-em-etapas): the pick-up they start on goes on, and these tests are about
  * what comes after it.
  */
-function renderCart(shopper: CustomerProfile, props: Partial<StorefrontCartLiveProps> = {}, qty = 3) {
+function renderCart(shopper: CustomerProfile, props: Partial<StorefrontCheckoutLiveProps> = {}, qty = 3) {
   const view = renderAt(shopper, props, qty)
   const onward = screen.queryByRole("button", { name: "Continuar para o pagamento" })
   if (onward) fireEvent.click(onward)
   return view
 }
 
-function renderAt(shopper: CustomerProfile, props: Partial<StorefrontCartLiveProps> = {}, qty = 3) {
+function renderAt(shopper: CustomerProfile, props: Partial<StorefrontCheckoutLiveProps> = {}, qty = 3) {
   return render(
     <QueryClientProvider client={new QueryClient()}>
       <CartProvider slug="loja" lines={[{ productId: blusa.id, variantId: null, qty }]}>
-        <StorefrontCartLive
+        <CartStepper name="Blusa" productId={blusa.id} />
+        <StorefrontCheckoutLive
           slug="loja"
           products={[blusa]}
-          hrefs={{ [blusa.id]: "/loja/produtos/blusa" }}
           continueHref="/loja/produtos"
-          goneOnArrival={false}
+          cartHref="/loja/carrinho"
           shopName="Loja"
           whatsapp="5511999998888"
           routeWords={routeWords}
           paymentMethods={["MONEY", "PIX"]}
           paymentOptions={BOTH}
           shopper={shopper}
-          identityHrefs={{ signInHref: "/loja/entrar", signUpHref: "/loja/entrar?modo=criar", editHref: "/loja/conta/perfil", addAddressHref: "/loja/conta/perfil?endereco=novo", cartHref: "/loja/carrinho" }}
+          identityHrefs={{ signInHref: "/loja/entrar", signUpHref: "/loja/entrar?modo=criar", editHref: "/loja/conta/perfil", addAddressHref: "/loja/conta/perfil?endereco=novo", checkoutHref: "/loja/checkout" }}
           locale="pt-BR"
           messages={ptBR}
           {...props}
@@ -128,7 +129,7 @@ const payNow = () => within(screen.getByRole("group", { name: "Pagar agora" }))
 const priced = () => waitFor(() => expect(optionsOf("Parcelas")[0]).toMatch(/^1x de R\$/))
 
 beforeEach(() => {
-  window.history.replaceState(null, "", "/loja/carrinho")
+  window.history.replaceState(null, "", "/loja/checkout")
   network()
 })
 
@@ -149,7 +150,7 @@ describe("the checkout, as it is told (BEELINK-272)", () => {
     renderCart(ana)
     expect(told("InitiateCheckout")).toEqual([{ name: "InitiateCheckout", ...cart }])
 
-    fireEvent.click(screen.getByRole("button", { name: /Aumentar|Adicionar mais|mais/i }))
+    fireEvent.click(screen.getByRole("button", { name: "Aumentar a quantidade de Blusa" }))
 
     expect(told("InitiateCheckout")).toHaveLength(1)
     expect(told("AddToCart")).toEqual([])

@@ -22,16 +22,18 @@ export interface CartPriceControlsProps {
   signedOut: boolean
   /** What the shop gives a first order, as a visitor may be told of it — never a code; null says nothing. */
   signedOutBenefit?: string | null
+  /** The coupon's field waits behind "Inserir cupom de desconto" until it is asked for, or a coupon is in force. */
+  collapsed?: boolean
   /** The order is on its way, or there is nothing to order. */
   disabled: boolean
-  /** Runs a change of the price's terms: the cart's page forgets what it said of the last order. */
+  /** Runs a change of the price's terms: the checkout forgets what it said of the last order. */
   onChange: (change: () => void) => void
   locale: string
   messages: UiMessages
 }
 
 /**
- * What the shopper sets about the cart's price, over the checkout: the coupon's field (BEELINK-194),
+ * What the shopper sets about the cart's price, in the cart and over the checkout's steps: the coupon's field (BEELINK-194),
  * the coupons the shop shows for them to take and, for one with credit at the shop, "Usar meu
  * cashback" (BEELINK-244). Each change prices the cart again; the totals above are the answer.
  *
@@ -43,7 +45,7 @@ export interface CartPriceControlsProps {
  * closed the shop's first-purchase notice is reminded of their coupon. Applied, the call is gone
  * and the list is whole again, with the one in force marked.
  */
-export function CartPriceControls({ pricing: { coupon, credit }, offers = [], signedOut, signedOutBenefit = null, disabled, onChange, locale, messages }: CartPriceControlsProps) {
+export function CartPriceControls({ pricing: { coupon, credit }, offers = [], signedOut, signedOutBenefit = null, collapsed = false, disabled, onChange, locale, messages }: CartPriceControlsProps) {
   const money = (cents: number) => formatCents(cents, locale, "BRL")
   // A visitor is told of no code, and a coupon in force is the answer already.
   const call = signedOut || coupon.applied ? null : cartCouponCallOf(offers, locale, messages.storefront.offers)
@@ -55,6 +57,7 @@ export function CartPriceControls({ pricing: { coupon, credit }, offers = [], si
         signedOut={signedOut}
         signedOutBenefit={signedOutBenefit}
         call={call}
+        collapsed={collapsed}
         applied={coupon.applied}
         holding={coupon.holding}
         pending={coupon.pending}

@@ -16,21 +16,21 @@ import { LEGAL_ROUTES } from "@/lib/legal-routes"
 
 export interface CheckoutIdentityInput {
   slug: string
-  /** Who is buying, as the cart's address left it; null where nobody is asked — a shopper or a visitor already identified. */
+  /** Who is buying, as the checkout's address left it; null where nobody is asked — a shopper or a visitor already identified. */
   identity: CheckoutIdentityState | null
-  /** The cart's own address, as the shop spells it. */
-  cartHref: string
+  /** The checkout's own address, as the shop spells it. */
+  checkoutHref: string
   /** The coupon the summary shows: the way back carries it. */
   coupon: string | null
-  /** Signing in and signing up, optional, each coming back to the cart with the coupon. */
+  /** Signing in and signing up, optional, each coming back to the checkout with the coupon. */
   signInHref: string
   signUpHref: string
   messages: UiMessages
 }
 
 /** Where every visitor's form lands back: the checkout, with the coupon. */
-export function checkoutBackOf(cartHref: string, coupon: string | null): string {
-  return pathWithCoupon(`${cartHref}#${CHECKOUT_ANCHOR}`, coupon)
+export function checkoutBackOf(checkoutHref: string, coupon: string | null): string {
+  return pathWithCoupon(`${checkoutHref}#${CHECKOUT_ANCHOR}`, coupon)
 }
 
 /**
@@ -38,14 +38,14 @@ export function checkoutBackOf(cartHref: string, coupon: string | null): string 
  * `/[slug]/api/customer/checkout/identificar`, which opens their purchase session and lands back on the
  * checkout (`#finalizar`) with the coupon. Null where nobody is to be asked.
  */
-export function useCheckoutIdentity({ slug, identity, cartHref, coupon, signInHref, signUpHref, messages }: CheckoutIdentityInput): ReactNode {
+export function useCheckoutIdentity({ slug, identity, checkoutHref, coupon, signInHref, signUpHref, messages }: CheckoutIdentityInput): ReactNode {
   return useMemo(() => {
     if (!identity) return null
     return (
       <StorefrontCheckoutIdentity
         email={identity.email}
         action={`/${slug}/api/customer/checkout/identificar`}
-        hidden={{ retorno: checkoutBackOf(cartHref, coupon) }}
+        hidden={{ retorno: checkoutBackOf(checkoutHref, coupon) }}
         hrefs={{ signIn: signInHref, signUp: signUpHref, terms: LEGAL_ROUTES.terms, privacy: LEGAL_ROUTES.privacy }}
         error={identity.error}
         // Inside the checkout's first step, which says "Seus dados" itself.
@@ -54,5 +54,5 @@ export function useCheckoutIdentity({ slug, identity, cartHref, coupon, signInHr
         messages={messages}
       />
     )
-  }, [slug, identity, cartHref, coupon, signInHref, signUpHref, messages])
+  }, [slug, identity, checkoutHref, coupon, signInHref, signUpHref, messages])
 }

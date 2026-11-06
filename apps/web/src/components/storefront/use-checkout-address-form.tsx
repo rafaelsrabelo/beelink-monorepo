@@ -13,14 +13,14 @@ import { StorefrontAddressEditor } from "./storefront-address-editor"
 import { pathWithCoupon } from "@/lib/cart-coupon"
 import { ADDRESSES_MAX, BLANK_ADDRESS, DELIVER_TO_KEY } from "@/lib/saved-address"
 
-/** The checkout's anchor: a way back to the cart lands on it, not on the page's top, below the lines on a phone. */
+/** The checkout's steps: a way back to the checkout lands on them, not on the page's top, over the summary and the coupon. */
 export const CHECKOUT_ANCHOR = "finalizar"
 
 export interface CheckoutAddressFormInput {
   slug: string
   shopper: Pick<CustomerProfile, "name" | "addresses"> | null
-  /** The cart's own address, as the shop spells it. */
-  cartHref: string
+  /** The checkout's own address, as the shop spells it. */
+  checkoutHref: string
   /** The coupon the summary shows as applied: the way back carries it, or it would go missing on the way. */
   coupon: string | null
   /** Why the address last sent from here was refused, already a sentence; null with none. */
@@ -40,13 +40,13 @@ export interface CheckoutAddressFormInput {
  * the sentence. Null where a form here could not be saved — nobody signed in, or the addresses
  * already at the API's cap — and the checkout keeps its link to the profile tab, which says so.
  */
-export function useCheckoutAddressForm({ slug, shopper, cartHref, coupon, error, visitor = false, messages }: CheckoutAddressFormInput): StorefrontCheckoutAddressForm | null {
+export function useCheckoutAddressForm({ slug, shopper, checkoutHref, coupon, error, visitor = false, messages }: CheckoutAddressFormInput): StorefrontCheckoutAddressForm | null {
   const name = shopper?.name ?? null
   const full = !visitor && (shopper?.addresses.length ?? 0) >= ADDRESSES_MAX
 
   return useMemo(() => {
     if (name === null || full) return null
-    const back = pathWithCoupon(`${cartHref}#${CHECKOUT_ANCHOR}`, coupon)
+    const back = pathWithCoupon(`${checkoutHref}#${CHECKOUT_ANCHOR}`, coupon)
     return {
       startOpen: error !== null,
       draw: ({ autoFocus, onCancel }) => (
@@ -65,5 +65,5 @@ export function useCheckoutAddressForm({ slug, shopper, cartHref, coupon, error,
         />
       ),
     } satisfies StorefrontCheckoutAddressForm
-  }, [slug, name, full, visitor, cartHref, coupon, error, messages])
+  }, [slug, name, full, visitor, checkoutHref, coupon, error, messages])
 }

@@ -23,6 +23,12 @@ export const SEARCH_KEY = "q"
  */
 export const PAGE_KEY = "pagina"
 
+/**
+ * The checkout's segment: `checkout` in every vocabulary, as `lp` is. It is the word shops across the
+ * web use for that page, and the API reserves it, so no category can take it.
+ */
+const CHECKOUT_SEGMENT = "checkout"
+
 /** The sign-in page's three faces, in the address: nothing is `entrar`. */
 export type SignInMode = "entrar" | "criar" | "senha"
 export const MODE_KEY = "modo"
@@ -100,6 +106,7 @@ export type StorefrontSection =
   | { kind: "categories" }
   | { kind: "search" }
   | { kind: "cart" }
+  | { kind: "checkout" }
   | { kind: "signIn" }
   | { kind: "verifyEmail" }
   | { kind: "resetPassword" }
@@ -268,6 +275,12 @@ export function storefrontRoutes(shop: StorefrontShop) {
       }),
 
     /**
+     * The checkout, a page of its own and apart from the cart (who buys, where it goes, how it is paid
+     * and the button), with none of the shop's header around it. The cart's "Finalizar compra" leads here.
+     */
+    checkout: () => `${base}/${CHECKOUT_SEGMENT}`,
+
+    /**
      * Where a shopper signs in — or, by `mode`, signs up (`criar`) or asks for a new password
      * (`senha`). `back` is where they return to afterwards, a path inside this shop.
      */
@@ -349,6 +362,7 @@ export function sectionOf(segment: string, routeWords: StorefrontRouteWords): St
   if (segment === routeWords.categories) return { kind: "categories" }
   if (segment === routeWords.search) return { kind: "search" }
   if (segment === routeWords.cart) return { kind: "cart" }
+  if (segment === CHECKOUT_SEGMENT) return { kind: "checkout" }
   if (segment === routeWords.signIn) return { kind: "signIn" }
   // Spelled by the API since BEELINK-149; a shop read from the cache in the minute before has none.
   if (routeWords.verifyEmail && segment === routeWords.verifyEmail) return { kind: "verifyEmail" }

@@ -219,6 +219,8 @@ export interface UiMessages {
     cartSubtotal: string
     /** The summary's last row, said once something was taken off. */
     cartTotal: string
+    /** The cart's last row, where the delivery is not chosen yet: the checkout prices it. */
+    cartEstimatedTotal: string
     /** The delivery fee's row in the cart's summary (BEELINK-178). */
     cartDelivery: string
     cartDeliveryFree: string
@@ -242,6 +244,20 @@ export interface UiMessages {
     cartUnavailable: string
     /** Lines whose product left the shop, taken out when the page opened. */
     cartGone: string
+    /** Under the cart's amounts: the delivery is priced in the checkout, where the address is. */
+    cartShippingAtCheckout: string
+    /** The cart's button on to the checkout, a page of its own. */
+    cartCheckout: string
+    /** The checkout's title, for a reader and for the tab. */
+    checkoutTitle: string
+    /** Beside the bag, in the checkout's bar. */
+    checkoutSecure: string
+    /** `{count}` — the checkout's summary, closed on a phone: "Resumo (3)". */
+    checkoutSummaryToggle: string
+    /** `{qty}` — a line's quantity in the checkout's summary, which reads the lines and changes none. */
+    checkoutSummaryQty: string
+    /** Back to the cart, where the lines are changed. */
+    checkoutEditCart: string
     couponLabel: string
     couponPlaceholder: string
     couponApply: string
@@ -253,6 +269,8 @@ export interface UiMessages {
     couponApplied: string
     /** A visitor is told where the code goes: only a signed-in customer's is checked. */
     couponSignedOut: string
+    /** The checkout's coupon, closed: the field waits behind it. */
+    couponOpen: string
     /** Why a code is not taken; `BELOW_MINIMUM` takes `{value}`. */
     couponRefusals: Record<CouponRefusalValue, string>
     /** Added to `NOT_APPLICABLE` on a pick-up, the one case it has a remedy for. */

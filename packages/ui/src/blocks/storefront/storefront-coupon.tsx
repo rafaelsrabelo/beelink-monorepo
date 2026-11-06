@@ -4,7 +4,7 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from "react"
 
 // Libs
-import { TicketCheckIcon } from "lucide-react"
+import { TicketCheckIcon, TicketIcon } from "lucide-react"
 
 // Locales
 import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
@@ -41,6 +41,12 @@ export interface StorefrontCouponProps {
   signedOutBenefit?: string | null
   /** A coupon this customer may take on this cart, called to over the field while none is in force (BEELINK-311); null with none. */
   call?: CartCouponCall | null
+  /**
+   * The field waits behind "Inserir cupom de desconto", as the checkout draws it: most orders have no
+   * code, and an open field above the steps is a question every one of them is asked. A coupon in
+   * force, a refusal or one to call to opens it.
+   */
+  collapsed?: boolean
   messages?: UiMessages
 }
 
@@ -69,6 +75,7 @@ export function StorefrontCoupon({
   signedOut = false,
   signedOutBenefit = null,
   call = null,
+  collapsed = false,
   messages = defaultMessages,
 }: StorefrontCouponProps) {
   const text = messages.storefront
@@ -78,6 +85,14 @@ export function StorefrontCoupon({
   const remove = useRef<HTMLButtonElement>(null)
   /** Set by a press here, so focus moves only for what the shopper did — never on the first draw. */
   const acted = useRef(false)
+  const [opened, setOpened] = useState(false)
+
+  // Opened by its button: the field the button gave way to is where the code is typed.
+  useEffect(() => {
+    if (!opened || !acted.current) return
+    acted.current = false
+    input.current?.focus()
+  }, [opened])
 
   useEffect(() => {
     if (pending || !acted.current) return
@@ -98,6 +113,25 @@ export function StorefrontCoupon({
   }
 
   const code = typed.trim()
+  // Once a coupon was in force, refused or called to, the field stays: taking one off goes back to it.
+  if (collapsed && !opened && (applied || error || call)) setOpened(true)
+  const shut = collapsed && !opened && !applied && !error && !call
+
+  if (shut) {
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          acted.current = true
+          setOpened(true)
+        }}
+        className="flex min-h-11 items-center gap-2 self-start text-sm font-semibold text-shop-primary-ink hover:underline"
+      >
+        <TicketIcon aria-hidden="true" className="size-4" />
+        {text.couponOpen}
+      </button>
+    )
+  }
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
