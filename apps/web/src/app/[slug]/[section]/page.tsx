@@ -35,8 +35,7 @@ import { OVERVIEW_FAVORITES } from "@/lib/overview-parts"
 import { customerOrdersAt, customerReorderAt } from "@/lib/customer-orders"
 import { reorderNoticeOf } from "@/lib/reorder-view"
 import { ADDRESS_ERROR_KEY, ADDRESS_KEY, checkoutAddressesOf, checkoutAddressIdOf, DELIVER_TO_KEY, NEW_ADDRESS } from "@/lib/saved-address"
-import { cartInvitationOf, pathWithQuery } from "@/lib/offer-strip"
-import { shopBaseOf } from "@/lib/shop-address"
+import { cartFirstOrderOf } from "@/lib/offer-strip"
 import { shopShareOf } from "@/lib/shop-share"
 import { offTheAirAt, unavailableMetadata } from "@/lib/shop-unavailable"
 import { purchaseAt, shopperAt } from "@/lib/shopper"
@@ -166,7 +165,7 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
       shopper={shopper}
       body={catalogue ? { layout: "flush", surface: "canvas" } : undefined}
       // On a shelf alone — the catalogue, a category, the search: the cart, the account and the sign-in pages show none.
-      notice={catalogue ? <StorefrontOffers store={store} back={pathWithQuery(`${shopBaseOf(store)}/${encodeURIComponent(section)}`, query)} messages={ui} /> : undefined}
+      notice={catalogue ? <StorefrontOffers store={store} messages={ui} /> : undefined}
       // The shopper's area draws its own front (6c): the greeting is its heading, and there is no band.
       pageHeader={place.section.kind === "account" ? undefined : <StorefrontSectionBand place={place} routes={routes} {...(catalogue ? { catalogue } : {})} locale={locale} />}
       messages={ui}
@@ -227,7 +226,7 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
           arrival={reorderNotice ? <StorefrontReorderNotice {...reorderNotice} messages={ui} /> : undefined}
           served={served}
           servedOffers={servedOffers}
-          signedOutBenefit={publicOffers ? cartInvitationOf(publicOffers.firstPurchase, locale, ui) : null}
+          signedOutBenefit={publicOffers ? cartFirstOrderOf(publicOffers.firstOrder, locale, ui) : null}
           coupon={couponIn(paramOf(query[COUPON_KEY]))}
           locale={locale}
           messages={ui}

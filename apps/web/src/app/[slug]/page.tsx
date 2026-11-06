@@ -93,7 +93,7 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
       year={new Date().getFullYear()}
       shopper={await shopperAt(slug)}
       // Under the header: the invitation to open an account, or a shopper's first-order benefit.
-      notice={<StorefrontOffers store={store} back={routes.home} messages={ui} />}
+      notice={<StorefrontOffers store={store} messages={ui} />}
       messages={ui}
       blocks={
         <>

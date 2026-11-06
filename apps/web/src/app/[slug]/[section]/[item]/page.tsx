@@ -138,7 +138,7 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
       year={new Date().getFullYear()}
       shopper={await shopperAt(slug)}
       // In the flow, at the top: it never reaches the buy bar a phone keeps at the bottom.
-      notice={<StorefrontOffers store={store} back={routes.product(product.slug)} messages={ui} />}
+      notice={<StorefrontOffers store={store} messages={ui} />}
       // 5b draws its own rhythm: a 14px trail strip, then the three columns, then the lower sections.
       body={{ layout: "flush" }}
       messages={ui}
