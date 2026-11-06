@@ -83,6 +83,8 @@ Two things in the panel's frame move by themselves, and they answer different qu
 ## Catalogue
 
 - A **product** belongs to a store. It has a name, a description, a price and images.
+- A photo is **not required**. A product with none is drawn everywhere a photo goes — the shop window, its page, the cart, an order, the panel — with **bee-link's own picture**, the same for every shop. That picture is never stored on the product: the first photo the shopkeeper adds takes its place everywhere at once.
+- A shopkeeper may **import products from a document** — a PDF of the menu or catalogue, or a photo of it. An AI reads it, and nothing is created until the shopkeeper has reviewed what was read: they untick, rename, price and file each product, and only then import. What is imported goes on sale at once, with its categories and its flavours or sizes. A name the shop already has is refused, as it is when a product is written by hand.
 - Whether a customer sees it is **two facts, not one**, and the product keeps them apart on purpose.
   - Its **status** is what the shopkeeper intends: *active*, or a *draft* nobody but them can see. A draft is something being written, not something that ran out.
   - Its **stock** is what the shelf says. A shop may choose not to count a product at all — most here sell made to order — and one that is not counted is never sold out. A shop that does count and reaches zero has a product that is **sold out**, which is a different thing from a draft and is fixed a different way.

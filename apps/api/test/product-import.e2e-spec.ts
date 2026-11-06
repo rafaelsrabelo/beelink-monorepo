@@ -149,7 +149,7 @@ describe('product import', () => {
       return (await call('GET', `/api/stores/dindin-da-leia/products/${productId}`, owner)).json<ProductDetail>();
     }
 
-    it('creates drafts, reuses a category by its name and makes a new one once, and prices each flavour', async () => {
+    it('creates products on sale, reuses a category by its name and makes a new one once, and prices each flavour', async () => {
       const picoles = (await call('POST', '/api/stores/dindin-da-leia/product-categories', owner, { name: 'Picolés' })).json<ProductCategory>();
 
       const response = await commit(owner, [
@@ -170,7 +170,7 @@ describe('product import', () => {
       expect(result.productIds).toHaveLength(3);
 
       const [uva, gourmet, simples] = await Promise.all(result.productIds.map(detail));
-      expect([uva!.status, gourmet!.status, simples!.status]).toEqual(['DRAFT', 'DRAFT', 'DRAFT']);
+      expect([uva!.status, gourmet!.status, simples!.status]).toEqual(['ACTIVE', 'ACTIVE', 'ACTIVE']);
       expect(uva!.category?.id).toBe(picoles.id);
       expect(simples!.category?.id).toBe(gourmet!.category?.id);
 

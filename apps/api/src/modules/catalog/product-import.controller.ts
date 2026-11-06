@@ -97,7 +97,7 @@ export class ProductImportController {
   }
 
   @Post()
-  @ApiOperation({ summary: 'Create the confirmed products as drafts, with their categories and options, all or none' })
+  @ApiOperation({ summary: 'Create the confirmed products, on sale, with their categories and options, all or none' })
   @ApiCreatedResponse({ type: ProductImportResultResponse })
   @ApiBadRequestResponse({ description: 'PRODUCT_OPTION_DUPLICATE · CATALOG_SLUG_EMPTY · CATALOG_SLUG_RESERVED · BAD_REQUEST (over 100 products)' })
   @ApiNotFoundResponse({ description: 'PRODUCT_CATEGORY_NOT_FOUND' })

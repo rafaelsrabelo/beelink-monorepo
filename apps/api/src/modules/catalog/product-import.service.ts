@@ -81,7 +81,7 @@ export class ProductImportService {
   }
 
   /**
-   * Everything the shopkeeper confirmed, created as drafts in one transaction: if one product is
+   * Everything the shopkeeper confirmed, created on sale in one transaction: if one product is
    * refused, none is created, so trying again after a failure never leaves half a menu behind.
    */
   async commit(storeSlug: string, userId: string, dto: ProductImportDto): Promise<ProductImportResult> {

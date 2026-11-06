@@ -2700,7 +2700,7 @@ export const en: UiMessages = {
         readingHint: "Reading the document. This can take up to a minute.",
         reviewTitle: "Check before importing",
         reviewHint:
-          "Fix what the AI misread and untick what you do not want. Products come in as drafts with no photo: add the photos and publish them afterwards.",
+          "Fix what the AI misread and untick what you do not want. Ticked products go on sale in the shop at once. Those with no photo show the default picture until you add theirs.",
         includeFor: "Import {name}",
         nameFor: "Name of {name}",
         priceFor: "Price of {name}",

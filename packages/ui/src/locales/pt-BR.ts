@@ -2701,7 +2701,7 @@ export const ptBR: UiMessages = {
         readingHint: "Lendo o documento. Isso pode levar até um minuto.",
         reviewTitle: "Confira antes de importar",
         reviewHint:
-          "Corrija o que a IA leu errado e desmarque o que não quer. Os produtos entram como rascunho e sem foto: depois você coloca as fotos e publica.",
+          "Corrija o que a IA leu errado e desmarque o que não quer. Os produtos marcados entram já à venda na loja. Os que estão sem foto aparecem com a imagem padrão até você colocar a deles.",
         includeFor: "Importar {name}",
         nameFor: "Nome de {name}",
         priceFor: "Preço de {name}",

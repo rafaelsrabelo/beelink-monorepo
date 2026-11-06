@@ -35,7 +35,7 @@ export interface ProductImportScreenProps {
  * because a reload there would have to read the menu again, and every read is billed.
  *
  * The rows are the form's fields, held here; the drafts they start from are the read's answer.
- * Once imported, the list opens on its drafts, which is where the photos are added next.
+ * Once imported, the list opens, where the new products already are — on sale.
  */
 export function ProductImportScreen({ slug, ui, web }: ProductImportScreenProps) {
   const router = useRouter()
@@ -63,7 +63,7 @@ export function ProductImportScreen({ slug, ui, web }: ProductImportScreenProps)
     if (!payload) return
 
     save.mutate(payload, {
-      onSuccess: () => router.push(`/admin/${slug}/products?status=DRAFT` as Parameters<typeof router.push>[0]),
+      onSuccess: () => router.push(`/admin/${slug}/products` as Parameters<typeof router.push>[0]),
     })
   }
 

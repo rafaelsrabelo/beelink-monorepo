@@ -68,8 +68,9 @@ export async function createImportedProduct(tx: Db, item: ProductImportItemDto, 
       name: item.name,
       description: item.description ?? null,
       categoryId: place.categoryId,
-      // Always a draft: it has no photo yet, and nothing reaches the shop window by accident.
-      status: 'DRAFT',
+      // On sale at once: the shopkeeper reviewed every row, and a product with no photo is drawn
+      // with bee-link's picture (packages/ui lib/product-image) until it has one.
+      status: 'ACTIVE',
       ...perUnit,
       maxPriceCents: perUnit.priceCents,
       position: place.position,

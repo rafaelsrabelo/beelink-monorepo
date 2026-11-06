@@ -7,9 +7,8 @@ import { forwardSignedIn, readJsonBody, refuseCrossOrigin } from "@/lib/bff"
 import { revalidateStore } from "@/lib/revalidate"
 
 /**
- * The drafts the shopkeeper confirmed, created. They are drafts and serve nobody, but a category
- * may be created with them, and a new category is something the shop window lists — so a 201
- * drops what it cached, as a product's creation does.
+ * The products the shopkeeper confirmed, created on sale — with the categories made for them — so a
+ * 201 drops what the shop window cached, as a product's creation does.
  */
 export async function POST(
   request: NextRequest,
