@@ -2720,6 +2720,8 @@ export const ptBR: UiMessages = {
         again: "Escolher outro arquivo",
         missingPrices: "Há produtos marcados sem preço. Digite o preço ou desmarque a linha.",
         missingNames: "Há produtos marcados sem nome. Dê um nome com ao menos duas letras.",
+        nameTaken: "A loja já tem um produto com esse nome, ou ele se repete aqui. Mude o nome ou desmarque.",
+        repeatedNames: "Há produtos marcados com um nome que a loja já tem ou que se repete. Mude o nome ou desmarque a linha.",
         nothingSelected: "Marque ao menos um produto para importar.",
       },
       pager: {

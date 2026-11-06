@@ -2719,6 +2719,8 @@ export const en: UiMessages = {
         again: "Choose another file",
         missingPrices: "Some ticked products have no price. Type the price or untick the row.",
         missingNames: "Some ticked products have no name. Give each a name of two letters at least.",
+        nameTaken: "The shop already has a product with this name, or it repeats here. Change the name or untick it.",
+        repeatedNames: "Some ticked products have a name the shop already has or that repeats. Change the name or untick the row.",
         nothingSelected: "Tick at least one product to import.",
       },
       pager: {

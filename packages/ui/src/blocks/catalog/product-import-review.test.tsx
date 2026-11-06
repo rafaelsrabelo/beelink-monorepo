@@ -55,6 +55,36 @@ describe("ProductImportReview", () => {
     expect(screen.getByRole("button", { name: "Importar marcados (3)" })).toBeDisabled()
   })
 
+  it("waits for a ticked name the shop already has, or that two ticked rows share, and marks the rows", () => {
+    const { rerender } = render(
+      <ProductImportReview
+        rows={priced}
+        takenSlugs={["picole-de-uva"]}
+        categories={importCategories}
+        onChange={noop}
+        onSubmit={noop}
+        onRestart={noop}
+      />,
+    )
+
+    expect(screen.getByRole("textbox", { name: "Nome de Picolé de uva" })).toHaveAccessibleDescription(
+      "A loja já tem um produto com esse nome, ou ele se repete aqui. Mude o nome ou desmarque.",
+    )
+    expect(screen.getByRole("button", { name: "Importar marcados (3)" })).toBeDisabled()
+
+    rerender(
+      <ProductImportReview
+        rows={priced.map((row, index) => (index === 2 ? { ...row, name: "dindin GOURMET" } : row))}
+        categories={importCategories}
+        onChange={noop}
+        onSubmit={noop}
+        onRestart={noop}
+      />,
+    )
+    expect(screen.getByText("Há produtos marcados com um nome que a loja já tem ou que se repete. Mude o nome ou desmarque a linha.")).toBeInTheDocument()
+    expect(screen.getByRole("textbox", { name: "Nome de Dindin gourmet" })).toHaveAttribute("aria-invalid", "true")
+  })
+
   it("hands back the whole list with the one row changed", async () => {
     const onChange = vi.fn()
     render(<ProductImportReview rows={priced} categories={importCategories} onChange={onChange} onSubmit={noop} onRestart={noop} />)

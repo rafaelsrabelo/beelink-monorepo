@@ -22,6 +22,8 @@ export interface ProductImportRowProps {
   row: Row
   categories: readonly ProductCategoryOption[]
   onChange: (row: Row) => void
+  /** The shop already has this name, or another ticked row does: the review says which. */
+  nameTaken?: boolean
   disabled?: boolean
   messages?: UiMessages
 }
@@ -37,11 +39,19 @@ function valuesOf(option: NonNullable<Row["option"]>): string {
  * One product of the review. An unticked row stays editable, dimmed: ticking it back is one click,
  * and what was corrected in it is not lost.
  */
-export function ProductImportRow({ row, categories, onChange, disabled = false, messages = defaultMessages }: ProductImportRowProps) {
+export function ProductImportRow({
+  row,
+  categories,
+  onChange,
+  nameTaken = false,
+  disabled = false,
+  messages = defaultMessages,
+}: ProductImportRowProps) {
   const text = messages.catalog.products.import
   const label = row.name.trim() || text.nameHeader
   const priceMissing = row.include && centsFrom(row.price) === null
   const priceErrorId = `${row.key}-price-error`
+  const nameErrorId = `${row.key}-name-error`
 
   function set(patch: Partial<Row>) {
     onChange({ ...row, ...patch })
@@ -67,8 +77,15 @@ export function ProductImportRow({ row, categories, onChange, disabled = false, 
           value={row.name}
           disabled={disabled}
           aria-label={format(text.nameFor, { name: label })}
+          aria-invalid={nameTaken ? true : undefined}
+          aria-describedby={nameTaken ? nameErrorId : undefined}
           onChange={(event) => set({ name: event.target.value })}
         />
+        {nameTaken ? (
+          <p id={nameErrorId} className="text-destructive text-xs">
+            {text.nameTaken}
+          </p>
+        ) : null}
         {row.description ? <p className="text-muted-foreground line-clamp-2 text-xs">{row.description}</p> : null}
         {row.option ? (
           <p className="text-muted-foreground text-xs">

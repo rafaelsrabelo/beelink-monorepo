@@ -3197,6 +3197,9 @@ export interface UiMessages {
         missingPrices: string
         /** A ticked row whose name was cleared: a product needs two letters at least. */
         missingNames: string
+        /** Under a ticked row's name the shop already has, or another ticked row has: names are unique in a shop. */
+        nameTaken: string
+        repeatedNames: string
         nothingSelected: string
       }
       pager: {

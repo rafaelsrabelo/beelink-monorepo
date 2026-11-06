@@ -33,6 +33,11 @@ export const Pronta: Story = {
   args: { rows: importRows.map((row) => (row.price === "" ? { ...row, price: "7,00" } : row)) },
 }
 
+/** A name the shop already has: it waits to be renamed or unticked. */
+export const NomeQueALojaJaTem: Story = {
+  args: { rows: importRows.map((row) => (row.price === "" ? { ...row, price: "7,00" } : row)), takenSlugs: ["picole-de-uva"] },
+}
+
 export const Importando: Story = { args: { pending: true } }
 
 export const Recusada: Story = {
