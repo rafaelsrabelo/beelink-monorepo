@@ -94,7 +94,6 @@ export function StorefrontProductCard({
   linkComponent: Link = AnchorLink,
   messages = defaultMessages,
 }: StorefrontProductCardProps) {
-  const text = messages.storefront
   // What the visitor will choose on the product's page, said before they get there.
   const options = optionCountOf(product.optionSummary, locale)
 
