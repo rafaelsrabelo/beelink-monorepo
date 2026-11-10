@@ -49,6 +49,8 @@ export interface OrderDetailItem {
   discountCents: number
   /** The promotion's name as it was; null with none. */
   promotionName: string | null
+  /** On a kit's line (plan 2026-11-10--kits-monte-seu-kit): what went in each kit — what the shop puts together. */
+  kitParts?: readonly { productName: string; quantity: number }[]
 }
 
 /** An opened order: the wire's `Order`, as its page reads it. */

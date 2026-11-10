@@ -454,6 +454,23 @@ export interface UiMessages {
     checkoutStockNone: string
     checkoutProductGone: string
     checkoutProductGoneAny: string
+    /** A kit in the cart no longer stands as it was put together (plan 2026-11-10--kits-monte-seu-kit). */
+    checkoutKitInvalid: string
+    /** "Monte seu kit" on a kit's page (plan 2026-11-10--kits-monte-seu-kit). `{size}` — how many to pick. */
+    kitTitle: string
+    kitChoose: string
+    /** `{count}` `{size}` — announced as it changes. */
+    kitProgress: string
+    /** `{count}` — what the buy box says until the kit is whole. */
+    kitMissing: string
+    kitMissingOne: string
+    kitComplete: string
+    /** `{name}` — a stepper's buttons, and its group. */
+    kitAddPart: string
+    kitRemovePart: string
+    kitPart: string
+    /** A kit with nothing to be put together from: its category hidden or gone, or empty. */
+    kitEmpty: string
     checkoutPaymentGone: string
     checkoutAddressGone: string
     checkoutAddressChosenGone: string
@@ -1083,6 +1100,8 @@ export interface UiMessages {
     reorderLeft: string
     reorderOffSale: string
     reorderSoldOut: string
+    /** A kit's line: put together again on its page (plan 2026-11-10--kits-monte-seu-kit). */
+    reorderKit: string
     reorderLimitedOne: string
     reorderLimitedMany: string
     reorderFailed: string
