@@ -55,4 +55,12 @@ describe('reorderOf', () => {
     // Made to order has no stock to run out of.
     expect(reorderOf(1, [item({ quantity: 50 })], [variant({ trackStock: false, stockQuantity: 0 })]).lines[0]?.quantity).toBe(50);
   });
+
+  // Plan 2026-11-10--kits-monte-seu-kit: what went in a kit is chosen again on its page, never bought again blind.
+  it('leaves a kit out, to be put together again, and puts back the rest', () => {
+    const reorder = reorderOf(9, [item({ productName: 'Kit Festa', variantLabel: null, quantity: 1 }), item({ productId: 'p2', variantId: 'v2' })], [variant({ productIsKit: true }), variant({ id: 'v2', productId: 'p2' })]);
+
+    expect(reorder.lines).toEqual([{ productId: 'p2', variantId: 'v2', quantity: 2 }]);
+    expect(reorder.left).toEqual([{ productName: 'Kit Festa', variantLabel: null, reason: 'KIT', added: 0 }]);
+  });
 });

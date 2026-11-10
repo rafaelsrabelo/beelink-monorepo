@@ -290,4 +290,19 @@ describe("StorefrontProductDetail", () => {
       await expectNoA11yViolations(container)
     })
   })
+
+  // Plan 2026-11-10--kits-monte-seu-kit: a kit's page puts it together where a choice goes.
+  it("draws a kit's builder where a choice goes, and waits for the kit to be whole before adding", async () => {
+    const onAdd = vi.fn()
+    const { rerender } = renderProduct({ cart: { onAdd, href: "#" }, kit: { builder: <p>Monte seu kit aqui</p>, incomplete: "Escolha mais 8 itens para completar o kit.", key: "kit:" } })
+
+    expect(screen.getByText("Monte seu kit aqui")).toBeInTheDocument()
+    expect(screen.getAllByText("Escolha mais 8 itens para completar o kit.").length).toBeGreaterThan(0)
+
+    rerender(
+      <StorefrontProductDetail shopName="Lessari" homeHref="/lessari" name="Kit Festa" description={null} priceCents={13980} compareAtPriceCents={null} images={images} locale="pt-BR" cart={{ onAdd, href: "#" }} kit={{ builder: <p>Monte seu kit aqui</p>, incomplete: null, key: "kit:a*20" }} />,
+    )
+    await userEvent.click(screen.getAllByRole("button", { name: "Adicionar ao carrinho" })[0]!)
+    expect(onAdd).toHaveBeenCalledWith(null, 1)
+  })
 })

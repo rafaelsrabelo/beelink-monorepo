@@ -189,4 +189,15 @@ describe("StorefrontProductPurchase", () => {
 
     await expectNoA11yViolations(container)
   })
+
+  // Plan 2026-11-10--kits-monte-seu-kit: a kit is added once it is whole.
+  it("says what an incomplete kit is missing, adds nothing, and offers no bar to add it", async () => {
+    const { onAdd } = renderBox({ choosing: false, choiceKey: "kit:", incomplete: "Escolha mais 8 itens para completar o kit." })
+
+    expect(screen.getByText("Escolha mais 8 itens para completar o kit.")).toBeInTheDocument()
+    const add = screen.getByRole("button", { name: "Adicionar ao carrinho" })
+    expect(add).toBeDisabled()
+    await userEvent.click(add)
+    expect(onAdd).not.toHaveBeenCalled()
+  })
 })

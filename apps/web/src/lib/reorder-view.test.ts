@@ -21,13 +21,14 @@ describe("what the cart says after buying an order again", () => {
         { productName: "Creatina", variantLabel: null, reason: "OFF_SALE" as const, added: 0 },
         { productName: "Boné", variantLabel: null, reason: "LIMITED" as const, added: 1 },
         { productName: "Meia", variantLabel: null, reason: "LIMITED" as const, added: 2 },
+        { productName: "Kit Festa", variantLabel: null, reason: "KIT" as const, added: 0 },
       ],
     }
 
     expect(reorderNoticeOf({ number: 14, failed: false, trimmed: true }, reorder, ptBR)).toEqual({
       number: 14,
       outcome: "added",
-      left: ["Whey (Sabor: Uva) — esgotado", "Creatina — não está mais à venda", "Boné — só 1 disponível", "Meia — só 2 disponíveis"],
+      left: ["Whey (Sabor: Uva) — esgotado", "Creatina — não está mais à venda", "Boné — só 1 disponível", "Meia — só 2 disponíveis", "Kit Festa — é um kit — monte de novo na página dele"],
       trimmed: true,
     })
   })

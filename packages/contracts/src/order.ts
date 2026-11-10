@@ -557,7 +557,8 @@ export interface CustomerOrderPage {
  * (a draft, an archived or switched-off combination, a deleted product), none is left, or fewer
  * are left than the order had.
  */
-export type ReorderLeftReason = "OFF_SALE" | "SOLD_OUT" | "LIMITED";
+/** `KIT`: a kit's line, put together again on its page — what went in it is not bought again blind (plan 2026-11-10--kits-monte-seu-kit). */
+export type ReorderLeftReason = "OFF_SALE" | "SOLD_OUT" | "LIMITED" | "KIT";
 
 /** A line that goes into the cart again: the same combination, as many as the stock allows. */
 export interface CustomerReorderLine {

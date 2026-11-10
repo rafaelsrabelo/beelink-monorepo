@@ -73,6 +73,11 @@ export interface StorefrontProductDetailProps {
   cart?: { onAdd: (variantId: string | null, qty: number) => void; href: string }
   /** The rating line under the title, leading to the reviews; absent while there is none. */
   rating?: ReactNode
+  /**
+   * A kit's page (plan 2026-11-10--kits-monte-seu-kit): "Monte seu kit" where a choice goes, what is
+   * still missing — the buy box waits for it — and what is chosen, so an add counts for that choice.
+   */
+  kit?: { builder: ReactNode; incomplete: string | null; key: string }
   /** The heart for the combination chosen now (null while none is): on the photo, and last in the buy box, as 5b draws both. */
   favorite?: (variantId: string | null, look: "icon" | "text") => ReactNode
   /** "Avise-me" for a sold-out combination; absent, the page offers none. */
@@ -123,6 +128,7 @@ export function StorefrontProductDetail({
   initialVariantId,
   onVariantChange,
   cart,
+  kit,
   favorite,
   rating,
   restock,
@@ -210,7 +216,7 @@ export function StorefrontProductDetail({
           name={name}
           rating={rating}
           price={price}
-          picker={picker}
+          picker={kit?.builder ?? picker}
           description={description}
           {...(linkComponent ? { linkComponent } : {})}
           messages={messages}
@@ -224,7 +230,8 @@ export function StorefrontProductDetail({
           showPrice={showPrice}
           available={!unavailable}
           choosing={choosing}
-          choiceKey={variant?.id ?? "product"}
+          choiceKey={kit?.key ?? variant?.id ?? "product"}
+          incomplete={kit?.incomplete ?? null}
           showStock={showStock}
           cart={cart ? { onAdd: (qty) => cart.onAdd(variant?.id ?? null, qty), href: cart.href } : undefined}
           onNotify={restock && (variant ?? variants[0]) ? () => setAsking(true) : undefined}

@@ -316,4 +316,12 @@ describe("OrderDetail", () => {
     const { container } = render(<OrderDetail order={order} {...props} />)
     await expectNoA11yViolations(container)
   })
+
+  // Plan 2026-11-10--kits-monte-seu-kit: what the shop puts together.
+  it("says what went in a kit on its line", () => {
+    const kitLine = { ...order.items[0]!, id: "kit", productName: "Kit Festa", variantLabel: null, kitParts: [{ productName: "Ninho com Nutella", quantity: 12 }, { productName: "Paçoquinha", quantity: 8 }] }
+    render(<OrderDetail order={{ ...order, items: [kitLine] }} {...props} deliveryLine={null} />)
+
+    expect(screen.getByText("12× Ninho com Nutella · 8× Paçoquinha")).toBeInTheDocument()
+  })
 })

@@ -1,10 +1,11 @@
 "use client"
 
 // Types
-import type { PaymentMethod, PublicCashback, PublicProductDetail } from "@harness-monorepo/contracts"
+import type { PaymentMethod, PublicCashback, PublicProductDetail, StorefrontKitParts } from "@harness-monorepo/contracts"
 
 // UI
 import type { StorefrontInstallmentTerms } from "@harness-monorepo/ui/lib/installments"
+import { StorefrontKitBuilder } from "@harness-monorepo/ui/blocks/storefront/storefront-kit-builder"
 import { StorefrontProductDetail } from "@harness-monorepo/ui/blocks/storefront/storefront-product"
 import { PRODUCT_REVIEWS_ID } from "@harness-monorepo/ui/blocks/storefront/storefront-product-reviews"
 import { StorefrontRating } from "@harness-monorepo/ui/blocks/storefront/storefront-rating"
@@ -16,6 +17,7 @@ import { productCashbackRuleOf } from "@/lib/product-cashback"
 import { StorefrontFavoriteLive } from "./favorites/storefront-favorite-live"
 import { useTrackView } from "./tracking/use-track"
 import { useAddToCart } from "./use-add-to-cart"
+import { useKitBuilder } from "./use-kit-builder"
 import { useRestockRequest } from "@/services/storefront/storefront-hooks"
 
 /** The refusals a visitor can meet asking for a restock, as sentences picked on the server. */
@@ -32,6 +34,8 @@ export interface StorefrontProductLiveProps {
   shopName: string
   homeHref: string
   product: PublicProductDetail
+  /** What a kit's page puts it together from (plan 2026-11-10--kits-monte-seu-kit); null when the read failed, absent for any other product. */
+  kitParts?: StorefrontKitParts | null
   /** The combination the address asked for, read on the server so the page opens on it. */
   initialVariantId: string | null
   orderHref?: string
@@ -73,6 +77,7 @@ export function StorefrontProductLive({
   shopName,
   homeHref,
   product,
+  kitParts = null,
   initialVariantId,
   orderHref,
   cartHref,
@@ -88,6 +93,8 @@ export function StorefrontProductLive({
 }: StorefrontProductLiveProps) {
   const restock = useRestockRequest(slug)
   const add = useAddToCart()
+  // A kit's page puts it together, and its cart line carries what was chosen; a read that failed is a kit with nothing to choose from.
+  const kit = useKitBuilder(product.kit ? (kitParts ?? { size: product.kit.size, parts: [] }) : null, messages.storefront)
   useTrackView({ name: "ViewContent", product: { id: product.id, name: product.name, priceCents: product.priceCents, category: product.category?.name ?? null } }, product.id)
   // A request that never reached the API — offline, a dropped connection — has no code, and is still a
   // failure the visitor must be told about.
@@ -104,7 +111,13 @@ export function StorefrontProductLive({
       promotionName={product.promotionName}
       images={product.images}
       orderHref={orderHref}
-      cart={{ onAdd: (variantId, qty) => add({ productId: product.id, variantId, qty }, { name: product.name, unitPriceCents: priceOf(product, variantId) }), href: cartHref }}
+      cart={{
+        onAdd: (variantId, qty) => add({ productId: product.id, variantId, qty, ...(kit ? { kit: kit.chosen } : {}) }, { name: product.name, unitPriceCents: priceOf(product, variantId) }),
+        href: cartHref,
+      }}
+      {...(kit
+        ? { kit: { builder: <StorefrontKitBuilder size={kit.size} parts={kit.parts} counts={kit.counts} onChange={kit.setCount} messages={messages} />, incomplete: kit.incomplete, key: kit.key } }
+        : {})}
       rating={
         showRating && product.rating ? (
           <StorefrontRating average={product.rating.average} count={product.rating.count} reviewsHref={`#${PRODUCT_REVIEWS_ID}`} locale="pt-BR" size="product" linkComponent={AppLink} messages={messages} />

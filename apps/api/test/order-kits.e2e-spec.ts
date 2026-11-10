@@ -2,7 +2,7 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 
 // Types
-import type { ApiErrorBody, AuthSession, Order, OrderQuote, OrderStockDetails, ProductDetail, PublicProductDetail } from '@harness-monorepo/contracts';
+import type { ApiErrorBody, AuthSession, Order, OrderQuote, OrderStockDetails, ProductDetail, PublicProductDetail, StorefrontKitParts } from '@harness-monorepo/contracts';
 
 // App
 import { PrismaService } from '../src/shared/prisma/prisma.service.js';
@@ -84,6 +84,23 @@ describe('kits', () => {
 
     const plain = await call('PUT', `/api/stores/lessari/products/${kit.id}`, owner, { kit: null });
     expect(plain.json<ProductDetail>().kit).toBeNull();
+  });
+
+  it("lists what a kit is put together from: its category's products of one combination, a sold-out one marked, never a kit or another category's", async () => {
+    const trufados = (await call('POST', '/api/stores/lessari/product-categories', owner, { name: 'Trufados', parentId: dindins })).json<{ id: string }>().id;
+    const trufado = await variantOf(await addProduct({ name: 'Ninho Trufado', priceCents: 1020, categoryId: trufados }));
+    await prisma.productVariant.update({ where: { id: pacoca }, data: { trackStock: true, stockQuantity: 0 } });
+
+    const response = await call('GET', `/api/stores/lessari/catalog/${kit.slug}/kit`);
+    expect(response.statusCode).toBe(200);
+    const { size, parts } = response.json<StorefrontKitParts>();
+    expect(size).toBe(3);
+    expect(parts.map((part) => [part.name, part.variantId, part.available])).toEqual([
+      ['Ninho com Nutella', ninho, true],
+      ['Paçoquinha', pacoca, false],
+      ['Ninho Trufado', trufado, true],
+    ]);
+    expect((await call('GET', '/api/stores/lessari/catalog/whey/kit')).statusCode).toBe(404);
   });
 
   it('refuses options on a kit, and a kit of a product with options', async () => {

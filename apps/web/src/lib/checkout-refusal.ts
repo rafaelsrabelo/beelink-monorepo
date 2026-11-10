@@ -75,13 +75,17 @@ export function checkoutRefusalOf({ errorCode, details }: CheckoutRefusal, rows:
 
   switch (errorCode) {
     case "ORDER_STOCK_INSUFFICIENT": {
-      const items = shortagesIn(details).flatMap(({ variantId, available }) => {
-        const name = nameOf(variantId)
+      // A product chosen for a kit is on no line of its own: the API names it (plan 2026-11-10--kits-monte-seu-kit).
+      const items = shortagesIn(details).flatMap(({ variantId, available, productName }) => {
+        const name = nameOf(variantId) ?? (typeof productName === "string" ? productName : null)
         if (!name) return []
         return [available > 0 ? format(text.checkoutStockLeft, { name, left: String(available) }) : format(text.checkoutStockNone, { name })]
       })
       return items.length ? format(text.checkoutStockShort, { items: items.join("; ") }) : text.checkoutStockShortAny
     }
+    // A kit's products moved under it — its category, its size — since it was put together.
+    case "ORDER_KIT_INVALID":
+      return text.checkoutKitInvalid
     case "ORDER_VARIANT_INVALID": {
       const names = variantIdsIn(details).flatMap((variantId) => nameOf(variantId) ?? [])
       return names.length ? format(text.checkoutProductGone, { items: names.join("; ") }) : text.checkoutProductGoneAny

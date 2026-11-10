@@ -1,4 +1,5 @@
 // UI
+import { kitPartsTextOf } from "@harness-monorepo/ui/lib/kit-parts"
 import { discountLinesOf, type DiscountParts } from "@harness-monorepo/ui/lib/order-discounts"
 import { orderStatusLabelOf } from "@harness-monorepo/ui/lib/order-status-label"
 import { customerTotalText, feeLineOf } from "@harness-monorepo/ui/lib/order-total"
@@ -37,6 +38,15 @@ function discountMessageLines(order: DiscountParts, money: (cents: number) => st
 }
 
 /**
+ * A line's name as a message writes it: the combination, or — on a kit's line — what went in each kit
+ * (plan 2026-11-10--kits-monte-seu-kit), which is what the shop puts together from the message.
+ */
+function lineNameOf(item: { productName: string; variantLabel: string | null; kitParts?: readonly { productName: string; quantity: number }[] }): string {
+  const detail = kitPartsTextOf(item.kitParts) ?? item.variantLabel
+  return detail ? `${item.productName} (${detail})` : item.productName
+}
+
+/**
  * The order as the shop reads it on WhatsApp once it is placed: its number — the same the panel
  * shows — one line per item as the API priced it, what came off, the total, where it goes or that
  * it is picked up, the payment, and who ordered.
@@ -47,7 +57,7 @@ export function orderMessageOf({ shopName, order, customer, paid = false, locale
   const lines = order.items.map((item) =>
     format(text.orderLine, {
       qty: String(item.quantity),
-      name: item.variantLabel ? `${item.productName} (${item.variantLabel})` : item.productName,
+      name: lineNameOf(item),
       total: money(item.lineTotalCents),
     }),
   )
@@ -92,7 +102,7 @@ export function shopOrderMessageOf({ shopName, order, locale, messages }: ShopOr
   const lines = order.items.map((item) =>
     format(text.whatsappLine, {
       qty: String(item.quantity),
-      name: item.variantLabel ? `${item.productName} (${item.variantLabel})` : item.productName,
+      name: lineNameOf(item),
       total: money(item.lineTotalCents),
     }),
   )

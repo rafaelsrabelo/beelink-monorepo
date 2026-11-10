@@ -8,6 +8,7 @@ import type { StorefrontOrderStatusProps } from "@harness-monorepo/ui/blocks/sto
 import type { StorefrontOrderTrackingProps } from "@harness-monorepo/ui/blocks/storefront/storefront-order-tracking"
 
 // UI
+import { kitPartsTextOf } from "@harness-monorepo/ui/lib/kit-parts"
 import { customerCashbackLineOf } from "@harness-monorepo/ui/lib/cashback"
 import { discountLinesOf, linePromotionOf } from "@harness-monorepo/ui/lib/order-discounts"
 import { customerTotalText, feeLineOf } from "@harness-monorepo/ui/lib/order-total"
@@ -165,7 +166,7 @@ export function orderItemsOf(order: CustomerOrder, { routes, locale, messages }:
     href: item.productSlug ? routes.product(item.productSlug) : null,
     imageUrl: item.imageUrl,
     meta: [
-      item.variantLabel,
+      kitPartsTextOf(item.kitParts) ?? item.variantLabel,
       format(text.orderQty, { qty: String(item.quantity) }),
       item.quantity > 1 ? format(text.orderEach, { price: money(item.unitPriceCents) }) : null,
       linePromotionOf(item, money, messages.orders.discountRows),
