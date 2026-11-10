@@ -2,7 +2,7 @@
 import { headers } from "next/headers"
 
 // Types
-import type { CustomerSignInOptions, PublicLanding, StorefrontOffers, PublicProductCategory, PublicProductDetail, PublicProductReviews, PublicReviewListQuery, PublicStore, StorefrontCartProducts, StorefrontCatalog, StorefrontPaymentOptions, StorefrontSort } from "@harness-monorepo/contracts"
+import type { CustomerSignInOptions, PublicLanding, StorefrontOffers, PublicProductCategory, PublicProductDetail, PublicProductReviews, PublicReviewListQuery, PublicStore, StorefrontCartProducts, StorefrontCatalog, StorefrontKitParts, StorefrontPaymentOptions, StorefrontSort } from "@harness-monorepo/contracts"
 
 // App
 import { callPublicApi } from "./public-api"
@@ -275,4 +275,16 @@ export async function cartProductsAt(slug: string, productIds: readonly string[]
   if (!response.ok) return []
 
   return ((await response.json()) as StorefrontCartProducts).products
+}
+
+/**
+ * What a kit's page puts it together from (plan 2026-11-10--kits-monte-seu-kit): its category's
+ * products, as the catalogue has them — cached under its tag, so a product edited, sold out or added
+ * there is what the next visitor reads. Null when the read failed: the page says the kit cannot be
+ * put together now rather than break.
+ */
+export async function kitPartsAt(slug: string, productSlug: string): Promise<StorefrontKitParts | null> {
+  const response = await callPublicApi({ path: `/stores/${slug}/catalog/${encodeURIComponent(productSlug)}/kit`, tags: [catalogTag(slug)] }).catch(() => null)
+  if (!response?.ok) return null
+  return (await response.json()) as StorefrontKitParts
 }

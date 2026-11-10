@@ -187,4 +187,12 @@ describe("shopOrderMessageOf", () => {
     expect(message).not.toContain("Entrega:")
     expect(message).not.toContain("Desconto")
   })
+
+  // Plan 2026-11-10--kits-monte-seu-kit: the shop puts the kit together from the message.
+  it("says what went in a kit on its line", () => {
+    const kit = { productId: "p3", productSlug: "kit-festa", productName: "Kit Festa", variantLabel: null, imageUrl: null, unitPriceCents: 13980, quantity: 1, lineTotalCents: 13980, discountCents: 0, promotionName: null, kitParts: [{ productName: "Ninho com Nutella", variantLabel: null, quantity: 12 }, { productName: "Paçoquinha", variantLabel: null, quantity: 8 }] }
+    const message = orderMessageOf({ shopName: "Loja", order: { ...placed, items: [kit] }, customer: { name: "Bia", phone: null }, locale: "pt-BR", messages: ptBR })
+
+    expect(message).toContain("1× Kit Festa (12× Ninho com Nutella · 8× Paçoquinha)")
+  })
 })

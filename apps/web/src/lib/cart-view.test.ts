@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest"
 import type { PublicProductDetail } from "@harness-monorepo/contracts"
 
 // App
-import { cartViewOf, orderItemsOf, type CartRow } from "./cart-view"
+import { cartViewOf, orderItemsOf, rowKeyOf, type CartRow } from "./cart-view"
 
 const whey = {
   id: "p-whey",
@@ -97,3 +97,37 @@ describe("orderItemsOf", () => {
     expect(orderItemsOf(rows)).toEqual([{ variantId: "v1", quantity: 3 }])
   })
 })
+
+/** Plan 2026-11-10--kits-monte-seu-kit: a kit's line, read against its products. */
+describe("a kit's line", () => {
+  const flavour = (id: string, name: string, available = true) =>
+    ({ id, slug: id, name, imageUrl: null, soldOut: !available, options: [], variants: [{ id: `${id}-v`, optionValueIds: [], priceCents: 700, compareAtPriceCents: null, imageUrl: null, available }] }) as unknown as PublicProductDetail
+  const kit = { ...blusa, id: "p-kit", slug: "kit-festa", name: "Kit Festa", variants: [{ ...blusa.variants[0]!, id: "k-default", priceCents: 13980 }] } as unknown as PublicProductDetail
+  const ninho = flavour("p-ninho", "Ninho com Nutella")
+  const pacoca = flavour("p-pacoca", "Paçoquinha")
+  const line = (parts: [string, number][], qty = 1) => ({ productId: "p-kit", variantId: null, qty, kit: parts.map(([productId, partQty]) => ({ productId, qty: partQty })) })
+
+  it("says what went in it, prices it at the kit's price, and sends what was chosen with it", () => {
+    const view = cartViewOf([line([["p-ninho", 12], ["p-pacoca", 8]], 2)], [kit, ninho, pacoca])
+    const row = view.rows[0]!
+
+    expect(row).toMatchObject({ name: "Kit Festa", variantLabel: "12× Ninho com Nutella · 8× Paçoquinha", unitPriceCents: 13980, lineTotalCents: 27960, available: true })
+    expect(orderItemsOf(view.rows)).toEqual([{ variantId: "k-default", quantity: 2, kit: [{ variantId: "p-ninho-v", quantity: 12 }, { variantId: "p-pacoca-v", quantity: 8 }] }])
+  })
+
+  it("keeps two kits with other products in them on two lines, with two keys", () => {
+    const view = cartViewOf([line([["p-ninho", 20]]), line([["p-pacoca", 20]])], [kit, ninho, pacoca])
+
+    expect(orderItemsOf(view.rows)).toHaveLength(2)
+    expect(new Set(view.rows.map(rowKeyOf)).size).toBe(2)
+  })
+
+  it("is sold out while anything chosen for it ran out, and gone once anything chosen left the shop", () => {
+    expect(cartViewOf([line([["p-ninho", 20]])], [kit, flavour("p-ninho", "Ninho com Nutella", false)]).rows[0]?.available).toBe(false)
+
+    const gone = cartViewOf([line([["p-ninho", 12], ["p-pacoca", 8]])], [kit, ninho])
+    expect(gone.rows).toEqual([])
+    expect(gone.gone).toHaveLength(1)
+  })
+})
+

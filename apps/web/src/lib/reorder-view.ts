@@ -18,7 +18,9 @@ function leftLineOf(line: CustomerReorderLeft, text: UiMessages["storefront"]): 
       ? text.reorderOffSale
       : line.reason === "SOLD_OUT"
         ? text.reorderSoldOut
-        : line.added === 1
+        : line.reason === "KIT"
+          ? text.reorderKit
+          : line.added === 1
           ? text.reorderLimitedOne
           : format(text.reorderLimitedMany, { count: String(line.added) })
   return `${line.productName}${line.variantLabel ? ` (${line.variantLabel})` : ""} — ${why}`

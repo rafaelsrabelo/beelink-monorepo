@@ -88,4 +88,12 @@ describe("checkoutRefusalOf", () => {
     expect(checkoutRefusalOf({ errorCode: "STORE_UNAVAILABLE" }, rows, text, context)).toBe(text.checkoutShopUnavailable)
     expect(rereadsTheCart("STORE_UNAVAILABLE")).toBe(true)
   })
+
+  // Plan 2026-11-10--kits-monte-seu-kit: a product chosen for a kit is on no line of its own.
+  it("names a product chosen for a kit by the name the API gave, and says a kit changed under the cart", () => {
+    const short = checkoutRefusalOf({ errorCode: "ORDER_STOCK_INSUFFICIENT", details: { shortages: [{ variantId: "kit-part", available: 3, productName: "Ninho com Nutella" }] } }, rows, text, context)
+    expect(short).toContain("Ninho com Nutella")
+
+    expect(checkoutRefusalOf({ errorCode: "ORDER_KIT_INVALID" }, rows, text, context)).toBe(text.checkoutKitInvalid)
+  })
 })

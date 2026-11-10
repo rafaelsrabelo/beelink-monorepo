@@ -32,7 +32,7 @@ import { unavailableMetadata } from "@/lib/shop-unavailable"
 import { shopperAt } from "@/lib/shopper"
 import { siteOrigin } from "@/lib/site-origin"
 import { finishesOnWhatsAppOf } from "@/lib/checkout-payment"
-import { catalogueAt, navigationAt, paymentOptionsAt, productAt, shopAt } from "@/lib/storefront-data"
+import { catalogueAt, kitPartsAt, navigationAt, paymentOptionsAt, productAt, shopAt } from "@/lib/storefront-data"
 import { installmentTermsOf } from "@/lib/storefront-installments"
 import { sectionOf, storefrontRoutes } from "@/lib/storefront-routes"
 
@@ -115,7 +115,8 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
   // One more than a rail holds, since the product itself is among them.
   const related = product.category ? catalogueAt(slug, { category: product.category.slug, pageSize: 19 }).catch(() => null) : null
   // The menu on this page as on every other: cached under the catalogue's tag, like the product.
-  const [{ ui, web }, { categories, onSale }, paymentOptions] = await Promise.all([getMessages(), navigationAt(slug), paymentOptionsAt(slug)])
+  // A kit's page puts it together from its category (plan 2026-11-10--kits-monte-seu-kit), in the HTML.
+  const [{ ui, web }, { categories, onSale }, paymentOptions, kitParts] = await Promise.all([getMessages(), navigationAt(slug), paymentOptionsAt(slug), product.kit ? kitPartsAt(slug, product.slug) : null])
   const installments = installmentTermsOf(paymentOptions)
   const routes = storefrontRoutes(store)
   const layout = store.layoutSettings
@@ -191,6 +192,7 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
         shopName={store.name}
         homeHref={routes.home}
         product={product}
+        kitParts={kitParts}
         initialVariantId={typeof variant === "string" ? variant : null}
         orderHref={orderHref}
         cartHref={routes.cart()}
