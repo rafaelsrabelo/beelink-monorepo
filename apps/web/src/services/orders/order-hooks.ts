@@ -2,7 +2,7 @@
 
 // Libs
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import type { UseMutationResult, UseQueryResult } from "@tanstack/react-query"
+import type { QueryClient, UseMutationResult, UseQueryResult } from "@tanstack/react-query"
 
 // Types
 import type { CreateOrderPayload, Order, OrderDeliveryPayload, OrderListQuery, OrderPage, OrderQuote, OrderStatus, RefundOrderPayload, ShopOrderQuotePayload } from "@harness-monorepo/contracts"
@@ -76,22 +76,43 @@ export function useUpdateOrderStatus(slug: string, number: number): UseMutationR
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (status: OrderStatus) => updateOrderStatus(slug, number, status),
-    onSuccess: (order) => {
-      queryClient.setQueryData(orderKeys.detail(slug, number), order)
-      return Promise.all([
-        queryClient.invalidateQueries({ queryKey: orderKeys.lists(slug) }),
-        queryClient.invalidateQueries({ queryKey: customerKeys.store(slug) }),
-        // A move may take the order into or out of the open ones the menu counts (BEELINK-309) —
-        // read here too, not only at the channel's echo, which a panel without the channel never hears.
-        queryClient.invalidateQueries({ queryKey: panelCountsKeys.shop(slug) }),
-        // A delivery makes its cashback usable, and leaving it or cancelling takes it back (BEELINK-239).
-        queryClient.invalidateQueries({ queryKey: cashbackKeys.shop(slug) }),
-        // A cancelled order gives its counted lines back to the stock the catalogue shows.
-        ...(order.status === "CANCELLED" ? [queryClient.invalidateQueries({ queryKey: catalogKeys.products(slug) })] : []),
-      ])
-    },
+    onSuccess: (order) => afterMove(queryClient, slug, order),
     onError: () => queryClient.invalidateQueries({ queryKey: orderKeys.detail(slug, number) }),
   })
+}
+
+/** A move of any of the shop's orders, by its number: the manager's board accepts from a card. */
+export interface OrderMove {
+  number: number
+  status: OrderStatus
+}
+
+/** `useUpdateOrderStatus` for a screen of many orders, which reads the same things again. */
+export function useMoveOrder(slug: string): UseMutationResult<Order, Error, OrderMove> {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ number, status }: OrderMove) => updateOrderStatus(slug, number, status),
+    onSuccess: (order) => afterMove(queryClient, slug, order),
+    // A refused move means the board was stale: the lists are read again, with the order.
+    onError: (_error, { number }) =>
+      Promise.all([queryClient.invalidateQueries({ queryKey: orderKeys.lists(slug) }), queryClient.invalidateQueries({ queryKey: orderKeys.detail(slug, number) })]),
+  })
+}
+
+/** What an order's move changes besides the order itself, which replaces the one in the cache. */
+function afterMove(queryClient: QueryClient, slug: string, order: Order): Promise<unknown> {
+  queryClient.setQueryData(orderKeys.detail(slug, order.number), order)
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: orderKeys.lists(slug) }),
+    queryClient.invalidateQueries({ queryKey: customerKeys.store(slug) }),
+    // A move may take the order into or out of the open ones the menu counts (BEELINK-309) —
+    // read here too, not only at the channel's echo, which a panel without the channel never hears.
+    queryClient.invalidateQueries({ queryKey: panelCountsKeys.shop(slug) }),
+    // A delivery makes its cashback usable, and leaving it or cancelling takes it back (BEELINK-239).
+    queryClient.invalidateQueries({ queryKey: cashbackKeys.shop(slug) }),
+    // A cancelled order gives its counted lines back to the stock the catalogue shows.
+    ...(order.status === "CANCELLED" ? [queryClient.invalidateQueries({ queryKey: catalogKeys.products(slug) })] : []),
+  ])
 }
 
 /** What the refund's screen sends: the refund, and whether the order is cancelled with it. */

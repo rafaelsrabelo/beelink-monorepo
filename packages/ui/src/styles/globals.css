@@ -87,6 +87,24 @@
     }
 
     /*
+     * The order manager's bell (plan 2026-11-10--modo-gestor): an order waiting to be accepted
+     * swings its bell and pulses its ring in the brand's yellow. Both are `motion-safe:` at the use.
+     */
+    --animate-gestor-bell: gestor-bell 1s ease-in-out infinite;
+    @keyframes gestor-bell {
+        0%, 100% { transform: rotate(0deg); }
+        20% { transform: rotate(14deg); }
+        40% { transform: rotate(-12deg); }
+        60% { transform: rotate(8deg); }
+        80% { transform: rotate(-4deg); }
+    }
+    --animate-gestor-ring: gestor-ring 1.2s ease-in-out infinite;
+    @keyframes gestor-ring {
+        0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--header) 85%, transparent); }
+        50% { box-shadow: 0 0 0 10px color-mix(in oklch, var(--header) 0%, transparent); }
+    }
+
+    /*
      * The admin chrome, as its own namespace.
      *
      * A namespace and not a remap: `--border`, `--accent` and `--radius` are read by 11, 5 and 32

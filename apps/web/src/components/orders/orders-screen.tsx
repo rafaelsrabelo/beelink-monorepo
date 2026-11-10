@@ -120,9 +120,15 @@ export function OrdersScreen({ slug, messages, web }: OrdersScreenProps) {
           <h1 className="text-2xl font-semibold">{text.title}</h1>
           <p className="text-muted-foreground text-sm">{text.description}</p>
         </div>
-        <AppLink href={`/admin/${slug}/orders/new`} className={buttonVariants()}>
-          {text.newOrder}
-        </AppLink>
+        <div className="flex flex-wrap gap-2">
+          {/* The counter's own screen, with the bell (plan 2026-11-10--modo-gestor). */}
+          <AppLink href={`/admin/${slug}/gestor`} className={buttonVariants({ variant: "outline" })}>
+            {messages.gestor.open}
+          </AppLink>
+          <AppLink href={`/admin/${slug}/orders/new`} className={buttonVariants()}>
+            {text.newOrder}
+          </AppLink>
+        </div>
       </header>
 
       <div className="flex flex-col gap-3">
