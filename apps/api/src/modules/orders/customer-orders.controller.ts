@@ -117,7 +117,7 @@ export class CustomerOrdersController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "The cart as the shopper's order would be priced, and whether the coupon they typed is taken — with the reason when it is not" })
   @ApiOkResponse({ type: OrderQuoteResponse })
-  @ApiBadRequestResponse({ description: 'ORDER_VARIANT_INVALID · ORDER_ITEM_DUPLICATE · ORDER_TOTAL_TOO_LARGE' })
+  @ApiBadRequestResponse({ description: 'ORDER_VARIANT_INVALID · ORDER_ITEM_DUPLICATE · ORDER_KIT_INVALID · ORDER_TOTAL_TOO_LARGE' })
   @ApiTooManyRequestsResponse({ description: 'Too many quotes from this address' })
   quote(@Param('storeSlug') storeSlug: string, @CurrentBuyer() buyer: Buyer, @Body() dto: CustomerOrderQuoteDto): Promise<OrderQuote> {
     return this.quotes.forCustomer(storeSlug, buyer, dto);
@@ -130,7 +130,7 @@ export class CustomerOrdersController {
   @ApiOperation({ summary: "Place the cart as the shopper's order; it starts received, numbered and priced here — and, paid online, charged at the shop's Asaas account once it is written" })
   @ApiCreatedResponse({ type: CustomerOrderResponse })
   @ApiBadRequestResponse({
-    description: 'ORDER_DELIVERY_ADDRESS_MISSING · ORDER_ADDRESS_NOT_FOUND · ORDER_VARIANT_INVALID · ORDER_ITEM_DUPLICATE · ORDER_PAYMENT_NOT_ACCEPTED — the channel, the way or the instalments are not what the shop takes now · ORDER_PAYER_DOCUMENT_MISSING · ORDER_TOTAL_TOO_LARGE',
+    description: 'ORDER_DELIVERY_ADDRESS_MISSING · ORDER_ADDRESS_NOT_FOUND · ORDER_VARIANT_INVALID · ORDER_ITEM_DUPLICATE · ORDER_KIT_INVALID · ORDER_PAYMENT_NOT_ACCEPTED — the channel, the way or the instalments are not what the shop takes now · ORDER_PAYER_DOCUMENT_MISSING · ORDER_TOTAL_TOO_LARGE',
   })
   @ApiConflictResponse({ description: 'ORDER_STOCK_INSUFFICIENT — `details` is `OrderStockDetails` · ORDER_COUPON_REFUSED — `details` is `OrderCouponRefusedDetails` · ORDER_PAYMENT_BELOW_MINIMUM — `details` is `OrderPaymentBelowMinimumDetails`' })
   @ApiTooManyRequestsResponse({ description: 'Too many orders from this address' })

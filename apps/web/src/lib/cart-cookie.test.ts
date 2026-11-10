@@ -59,4 +59,45 @@ describe("the cart's lines", () => {
     expect(setLineQty(lines, uuid(1), uuid(1001), 5)[0]?.qty).toBe(5)
     expect(setLineQty(lines, uuid(1), uuid(1001), 0)).toEqual([line(2)])
   })
+
+  // Plan 2026-11-10--kits-monte-seu-kit: a kit's line carries what was chosen for it.
+  describe("a kit's line", () => {
+    const kit = (parts: [number, number][], qty = 1): CartLine => ({ productId: uuid(90), variantId: null, qty, kit: parts.map(([n, q]) => ({ productId: uuid(n), qty: q })) })
+
+    it("reads back what was chosen for it, ids whole again", () => {
+      const lines = [kit([[1, 12], [2, 8]]), line(3)]
+
+      expect(decodeCart(encodeCart(lines))).toEqual(lines)
+    })
+
+    it("is one line per choice: the same products add up however they were picked, other ones stand apart", () => {
+      const once = addLine([], kit([[1, 12], [2, 8]]))
+      const again = addLine(once, kit([[2, 8], [1, 12]]))
+      expect(again).toHaveLength(1)
+      expect(again[0]?.qty).toBe(2)
+      expect(addLine(again, kit([[1, 20]]))).toHaveLength(2)
+    })
+
+    it("changes or takes out the line of that choice alone", () => {
+      const lines = addLine(addLine([], kit([[1, 12], [2, 8]])), kit([[1, 20]]))
+      const kept = setLineQty(lines, uuid(90), null, 0, [{ productId: uuid(1), qty: 20 }])
+
+      expect(kept).toEqual([kit([[1, 12], [2, 8]])])
+    })
+
+    it("drops a kit whose products do not read, whole: part of a kit is another kit", () => {
+      const raw = `${encodeCart([kit([[1, 12]])]).split("*")[0]}*zero~${encodeCart([line(3)])}`
+
+      expect(decodeCart(raw)).toEqual([line(3)])
+    })
+
+    it("adds no line that would take the cookie past what a browser keeps", () => {
+      const big = (n: number) => ({ productId: uuid(500 + n), variantId: null, qty: 1, kit: Array.from({ length: 20 }, (_, at) => ({ productId: uuid(n * 100 + at), qty: 1 })) })
+      let lines: CartLine[] = []
+      for (let n = 0; n < 10; n += 1) lines = addLine(lines, big(n))
+
+      expect(lines.length).toBeLessThan(10)
+      expect(new TextEncoder().encode(cartCookieOf({ slug: "uma-loja-de-nome-comprido" }, lines, true)).length).toBeLessThan(4096)
+    })
+  })
 })

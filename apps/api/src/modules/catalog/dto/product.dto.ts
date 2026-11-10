@@ -71,6 +71,23 @@ export class ProductImageDto implements ProductImagePayload {
   optionValueIds?: string[];
 }
 
+/** A kit of one is a product; past 99 the page that puts it together is a spreadsheet. The database CHECKs the same. */
+const KIT_SIZE_MIN = 2;
+const KIT_SIZE_MAX = 99;
+
+/** How many a kit holds, and the category its items are picked from (plan 2026-11-10--kits-monte-seu-kit). */
+export class ProductKitDto {
+  @ApiProperty({ minimum: KIT_SIZE_MIN, maximum: KIT_SIZE_MAX, example: 20 })
+  @IsInt()
+  @Min(KIT_SIZE_MIN)
+  @Max(KIT_SIZE_MAX)
+  size!: number;
+
+  @ApiProperty({ format: 'uuid', description: 'A category of this shop: its products, and those of its subcategories, are what the kit is put together from.' })
+  @IsUUID()
+  categoryId!: string;
+}
+
 export class CreateProductDto implements CreateProductPayload {
   @ApiProperty({ example: 'Blusa Feminina Tomara Que Caia', minLength: 2, maxLength: PRODUCT_NAME_MAX_LENGTH })
   @IsString()
@@ -220,6 +237,16 @@ export class CreateProductDto implements CreateProductPayload {
   @ValidateNested({ each: true })
   @Type(() => ProductImageDto)
   images?: ProductImageDto[];
+
+  @ApiPropertyOptional({
+    type: () => ProductKitDto,
+    nullable: true,
+    description: 'Makes the product a kit (plan 2026-11-10--kits-monte-seu-kit); null makes it a product like any other. A kit keeps no stock of its own.',
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ProductKitDto)
+  kit?: ProductKitDto | null;
 }
 
 /**

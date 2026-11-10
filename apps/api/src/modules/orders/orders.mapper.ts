@@ -17,7 +17,8 @@ const customerSelect = { id: true, name: true, phone: true } as const;
  */
 export const ORDER_INCLUDE = {
   customer: { select: customerSelect },
-  items: { orderBy: { position: 'asc' } },
+  // What went in each kit, on a kit's line (plan 2026-11-10--kits-monte-seu-kit).
+  items: { orderBy: { position: 'asc' }, include: { kitParts: { orderBy: { position: 'asc' }, select: { productName: true, variantLabel: true, quantity: true } } } },
   events: { orderBy: { createdAt: 'asc' } },
   delivery: true,
   cashbackCredit: true,
@@ -72,6 +73,7 @@ export function toOrder(row: OrderRow): Order {
       lineTotalCents: item.lineTotalCents,
       discountCents: item.discountCents,
       promotionName: item.promotionName,
+      ...(item.kitParts.length ? { kitParts: item.kitParts } : {}),
     })),
     subtotalCents: row.subtotalCents,
     deliveryFeeCents: row.deliveryFeeCents,

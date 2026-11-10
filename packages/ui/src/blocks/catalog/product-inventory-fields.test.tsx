@@ -15,6 +15,7 @@ const base: ProductFormValues = {
   name: "", slug: "", description: "", price: "", compareAtPrice: "", cost: "", cashback: "",
   categoryId: "", status: "ACTIVE", origin: "", imageUrls: [], sku: "", barcode: "",
   trackStock: false, stock: "", weight: "", length: "", width: "", height: "",
+  isKit: false, kitSize: "", kitCategoryId: "",
 }
 
 function Controlled() {
@@ -49,5 +50,12 @@ describe("ProductInventoryFields", () => {
     const { container } = render(<Controlled />)
 
     await expectNoA11yViolations(container)
+  })
+
+  it("offers a kit no stock count of its own, and says why", () => {
+    render(<ProductInventoryFields value={{ ...base, isKit: true }} onChange={() => {}} kit />)
+
+    expect(screen.queryByLabelText(/Controlar estoque/)).toBeNull()
+    expect(screen.getByText("Um kit não tem estoque próprio: o estoque que conta é o de cada item escolhido.")).toBeInTheDocument()
   })
 })

@@ -24,6 +24,7 @@ function row(id: string): ShowcaseCardRow {
     id,
     slug: id,
     name: id,
+    kitSize: null,
     priceCents: 100,
     compareAtPriceCents: null,
     maxPriceCents: 150,

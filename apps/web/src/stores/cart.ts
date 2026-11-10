@@ -2,14 +2,15 @@
 import { createStore } from "zustand/vanilla"
 
 // App
-import { addLine, cartCookieOf, setLineQty, type CartLine } from "@/lib/cart-cookie"
+import { addLine, cartCookieOf, setLineQty, type CartKitPart, type CartLine } from "@/lib/cart-cookie"
 import type { ShopAddress } from "@/lib/shop-address"
 
 export interface CartState {
   lines: CartLine[]
   add: (line: CartLine) => void
-  setQty: (productId: string, variantId: string | null, qty: number) => void
-  remove: (productId: string, variantId: string | null) => void
+  /** A kit's line is named with what is in it: another kit of the same product is another line. */
+  setQty: (productId: string, variantId: string | null, qty: number, kit?: readonly CartKitPart[]) => void
+  remove: (productId: string, variantId: string | null, kit?: readonly CartKitPart[]) => void
   clear: () => void
 }
 
@@ -33,8 +34,8 @@ export function createCartStore(shop: ShopAddress, initial: readonly CartLine[])
     return {
       lines: [...initial],
       add: (line) => commit(addLine(get().lines, line)),
-      setQty: (productId, variantId, qty) => commit(setLineQty(get().lines, productId, variantId, qty)),
-      remove: (productId, variantId) => commit(setLineQty(get().lines, productId, variantId, 0)),
+      setQty: (productId, variantId, qty, kit) => commit(setLineQty(get().lines, productId, variantId, qty, kit)),
+      remove: (productId, variantId, kit) => commit(setLineQty(get().lines, productId, variantId, 0, kit)),
       clear: () => commit([]),
     }
   })

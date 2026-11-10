@@ -15,12 +15,12 @@ import { PricesChangeInterceptor } from '../promotions/prices-change.interceptor
 import { Public } from '../auth/auth.decorators.js';
 import { STOREFRONT_RATE_LIMIT } from '../stores/stores.constants.js';
 import { StoresService } from '../stores/stores.service.js';
-import type { PublicProductDetail } from '@harness-monorepo/contracts';
+import type { PublicProductDetail, StorefrontKitParts } from '@harness-monorepo/contracts';
 import type { StorefrontSort } from '@harness-monorepo/contracts';
 import { parseOptionFilters, STOREFRONT_SORTS } from './catalog-filters.js';
 import { PRODUCTS_PAGE_SIZE, PRODUCTS_PAGE_SIZE_MAX } from './catalog.constants.js';
 import { StorefrontCatalogResponse } from './dto/catalog.response.js';
-import { PublicProductDetailResponse } from './dto/variant.response.js';
+import { PublicProductDetailResponse, StorefrontKitPartsResponse } from './dto/variant.response.js';
 import { ProductCategoriesService } from './product-categories.service.js';
 import { ProductsService } from './products.service.js';
 import { StorefrontListingService } from './storefront-listing.service.js';
@@ -147,5 +147,17 @@ export class StorefrontController {
     const storeId = await this.stores.publicStoreId(storeSlug);
 
     return this.products.publicBySlug(storeId, productSlug);
+  }
+
+  @Get(':productSlug/kit')
+  @Public()
+  @RouteConfig({ rateLimit: STOREFRONT_RATE_LIMIT })
+  @ApiOperation({ summary: "What a kit's page puts it together from: its category's products, of one combination each" })
+  @ApiOkResponse({ type: StorefrontKitPartsResponse })
+  @ApiNotFoundResponse({ description: 'STORE_NOT_FOUND, or PRODUCT_NOT_FOUND — no kit at that address' })
+  async kit(@Param('storeSlug') storeSlug: string, @Param('productSlug') productSlug: string): Promise<StorefrontKitParts> {
+    const storeId = await this.stores.publicStoreId(storeSlug);
+
+    return this.products.publicKitParts(storeId, productSlug);
   }
 }

@@ -29,7 +29,7 @@ export class ShippingQuoteController {
   @RouteConfig({ rateLimit: STOREFRONT_RATE_LIMIT })
   @ApiOperation({ summary: "The shop's ways to get this cart to this address: its own delivery by distance, and pickup" })
   @ApiOkResponse({ type: ShippingQuoteResponse })
-  @ApiBadRequestResponse({ description: 'SHIPPING_DESTINATION_INVALID · ORDER_VARIANT_INVALID · ORDER_ITEM_DUPLICATE' })
+  @ApiBadRequestResponse({ description: 'SHIPPING_DESTINATION_INVALID · ORDER_VARIANT_INVALID · ORDER_ITEM_DUPLICATE · ORDER_KIT_INVALID' })
   @ApiNotFoundResponse({ description: 'STORE_NOT_FOUND' })
   @ApiTooManyRequestsResponse({ description: 'RATE_LIMITED' })
   quote(@Param('storeSlug') storeSlug: string, @Body() dto: ShippingQuoteDto): Promise<ShippingQuote> {

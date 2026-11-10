@@ -85,7 +85,7 @@ export function StorefrontCartLive({ slug, products, askedIds, hrefs, continueHr
 
   // A line the shop no longer sells is taken out of the cookie once, rather than asked for forever.
   useEffect(() => {
-    for (const line of gone) remove(line.productId, line.variantId)
+    for (const line of gone) remove(line.productId, line.variantId, line.kit)
   }, [gone, remove])
 
   // The cookie is written as the line goes in, so the page read again has it.
@@ -132,11 +132,11 @@ export function StorefrontCartLive({ slug, products, askedIds, hrefs, continueHr
         }
         onQtyChange={(key, qty) => {
           const row = byKey.get(key)
-          if (row) setQty(row.productId, row.variantId, qty)
+          if (row) setQty(row.productId, row.variantId, qty, row.kit?.parts)
         }}
         onRemove={(key) => {
           const row = byKey.get(key)
-          if (row) remove(row.productId, row.variantId)
+          if (row) remove(row.productId, row.variantId, row.kit?.parts)
         }}
         linkComponent={AppLink}
         messages={messages}

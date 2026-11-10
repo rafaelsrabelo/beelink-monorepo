@@ -83,7 +83,9 @@ model ProductCategory {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  products Product[]
+  products    Product[] @relation("ProductInCategory")
+  /// The kits whose items are chosen among this category's products (plan 2026-11-10--kits-monte-seu-kit).
+  kitProducts Product[] @relation("KitCategory")
 
   /// The showcases that draw this category. Deleting the category leaves them asking for another.
   showcases StoreComponent[]
@@ -109,12 +111,22 @@ model Product {
 
   /// SetNull, not Cascade: retiring a category must never delete what was in it.
   categoryId String?          @db.Uuid
-  category   ProductCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  category   ProductCategory? @relation("ProductInCategory", fields: [categoryId], references: [id], onDelete: SetNull)
 
   /// Normalised exactly as a category slug is, by the same function. A product and a category may
   /// share a slug — they live at different depths, so no URL is ambiguous.
   slug String @db.VarChar(120)
   name String @db.VarChar(160)
+
+  /// A kit (plan 2026-11-10--kits-monte-seu-kit): the customer picks this many units among the
+  /// products of `kitCategory`, a product as many times as they like, at the kit's own price — its
+  /// one variant's. 2 to 99 by a CHECK; null is a product like any other. A kit has no options and
+  /// keeps no stock of its own: what leaves the stock is each product chosen.
+  kitSize       Int?
+  /// Where a kit's items come from, a product added to it later included. Null — the category was
+  /// deleted — leaves a kit that cannot be put together until another is chosen.
+  kitCategoryId String?          @db.Uuid
+  kitCategory   ProductCategory? @relation("KitCategory", fields: [kitCategoryId], references: [id], onDelete: SetNull)
 
   description String?
 
@@ -209,6 +221,8 @@ model Product {
   restockRequests RestockRequest[]
   /// Order lines that named this product; an order keeps its photograph when the product goes.
   orderItems      OrderItem[]
+  /// Where it was chosen for a kit (plan 2026-11-10--kits-monte-seu-kit).
+  kitParts        OrderItemKitPart[]
   /// Shoppers who liked it (BEELINK-153); deleting the product takes their favourite with it.
   favorites       CustomerFavorite[]
   /// The e-mails its favourites owe (BEELINK-155).
@@ -222,6 +236,7 @@ model Product {
   /// Two shapes of read, two indexes: the whole shop's grid, and one category's.
   @@index([storeId, status, position])
   @@index([categoryId, status, position])
+  @@index([kitCategoryId])
   /// A NEWEST showcase: the shop's products on the shelf, most recently created first.
   @@index([storeId, status, createdAt])
   /// The search box: a substring match that a trigram index can serve.
@@ -376,6 +391,8 @@ model ProductVariant {
   restockRequests RestockRequest[]
   /// Order lines that named this variant; an order keeps its photograph when the variant goes.
   orderItems      OrderItem[]
+  /// Where it was chosen for a kit (plan 2026-11-10--kits-monte-seu-kit).
+  kitParts        OrderItemKitPart[]
   /// Favourites that named this combination (BEELINK-153); it is archived rather than deleted under them.
   favorites       CustomerFavorite[]
   /// Reviews of it, by those who bought this combination (BEELINK-156).

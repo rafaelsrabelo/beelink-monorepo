@@ -42,7 +42,7 @@ export class CustomerOffersController {
   @RouteConfig({ rateLimit: STOREFRONT_RATE_LIMIT })
   @ApiOperation({ summary: "The shopper's offers: whether an order of theirs stands, the first-order benefit to show, and the shown coupons the cart sent may take" })
   @ApiOkResponse({ type: CustomerOffersResponse })
-  @ApiBadRequestResponse({ description: 'ORDER_VARIANT_INVALID · ORDER_ITEM_DUPLICATE · ORDER_TOTAL_TOO_LARGE' })
+  @ApiBadRequestResponse({ description: 'ORDER_VARIANT_INVALID · ORDER_ITEM_DUPLICATE · ORDER_KIT_INVALID · ORDER_TOTAL_TOO_LARGE' })
   @ApiNotFoundResponse({ description: 'STORE_NOT_FOUND' })
   @ApiTooManyRequestsResponse({ description: 'RATE_LIMITED' })
   read(@Param('storeSlug') storeSlug: string, @CurrentBuyer() buyer: Buyer, @Body() dto: CustomerOffersDto): Promise<CustomerOffers> {

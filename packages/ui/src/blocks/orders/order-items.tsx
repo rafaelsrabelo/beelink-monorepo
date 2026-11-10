@@ -3,6 +3,7 @@ import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
+import { kitPartsTextOf } from "@harness-monorepo/ui/lib/kit-parts"
 import { discountLinesOf, linePromotionOf } from "@harness-monorepo/ui/lib/order-discounts"
 import { feeLineOf, orderTotalText } from "@harness-monorepo/ui/lib/order-total"
 import { windowText } from "@harness-monorepo/ui/lib/shipping"
@@ -49,10 +50,13 @@ export function OrderItems({ order, money, messages = defaultMessages }: OrderIt
       <ul className="divide-border flex flex-col divide-y">
         {order.items.map((item) => {
           const promotion = linePromotionOf(item, money, messages.orders.discountRows)
+          const kit = kitPartsTextOf(item.kitParts)
           return (
             <li key={item.id} className="flex items-start justify-between gap-3 py-2 first:pt-0">
               <span className="flex min-w-0 flex-col gap-0.5">
                 <span className="text-sm font-medium">{item.productName}</span>
+                {/* What the shop puts together: said before anything else of the line. */}
+                {kit ? <span className="text-xs font-medium">{kit}</span> : null}
                 {item.variantLabel || item.sku ? (
                   <span className="text-muted-foreground text-xs">{[item.variantLabel, item.sku].filter(Boolean).join(" · ")}</span>
                 ) : null}

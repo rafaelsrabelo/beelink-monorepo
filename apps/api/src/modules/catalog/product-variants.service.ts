@@ -1,5 +1,5 @@
 // Nest
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 
 // Types
 import type { ProductDetail } from '@harness-monorepo/contracts';
@@ -55,6 +55,10 @@ export class ProductVariantsService {
 
     const row = await this.prisma.$transaction(async (tx) => {
       await this.lockOwned(tx, storeId, productId);
+      // A kit is one thing at one price, put together from its category (plan 2026-11-10--kits-monte-seu-kit).
+      if (dto.options.length > 0 && (await tx.product.count({ where: { id: productId, kitSize: { not: null } } })) > 0) {
+        throw new ConflictException(catalogError('PRODUCT_KIT_OPTIONS', 'A kit has no options: its items are chosen from its category'));
+      }
 
       const options = await tx.productOption.findMany({ where: { productId }, include: { values: true } });
       const variants = await tx.productVariant.findMany({

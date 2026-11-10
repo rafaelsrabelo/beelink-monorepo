@@ -37,6 +37,12 @@ export interface ProductFormValues {
   length: string
   width: string
   height: string
+  /** A kit (plan 2026-11-10--kits-monte-seu-kit): the customer picks `kitSize` items from `kitCategoryId`. */
+  isKit: boolean
+  /** As typed; a whole number from 2 to 99 once it is a kit. */
+  kitSize: string
+  /** `""` is none chosen yet, as `categoryId`'s. */
+  kitCategoryId: string
 }
 
 export interface ProductCategoryOption {
@@ -74,4 +80,7 @@ export const EMPTY_PRODUCT: ProductFormValues = {
   length: "",
   width: "",
   height: "",
+  isKit: false,
+  kitSize: "",
+  kitCategoryId: "",
 }

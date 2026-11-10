@@ -297,7 +297,7 @@ describe("a shopper's order from the cart", () => {
     expect(refused.statusCode).toBe(409);
     const body = refused.json<ApiErrorBody>();
     expect(body.errorCode).toBe('ORDER_STOCK_INSUFFICIENT');
-    expect((body.details as OrderStockDetails).shortages).toEqual([{ variantId: whey, available: 1 }]);
+    expect((body.details as OrderStockDetails).shortages).toEqual([{ variantId: whey, available: 1, productName: 'Whey' }]);
     expect(await prisma.order.count()).toBe(0);
   });
 

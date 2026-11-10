@@ -214,13 +214,13 @@ export class CustomerOrdersService {
         archivedAt: true,
         trackStock: true,
         stockQuantity: true,
-        product: { select: { status: true, _count: { select: { options: true } } } },
+        product: { select: { status: true, kitSize: true, _count: { select: { options: true } } } },
       },
     });
     return reorderOf(
       number,
       order.items,
-      variants.map(({ product, ...variant }) => ({ ...variant, productStatus: product.status, productHasOptions: product._count.options > 0 })),
+      variants.map(({ product, ...variant }) => ({ ...variant, productStatus: product.status, productHasOptions: product._count.options > 0, productIsKit: product.kitSize !== null })),
     );
   }
 

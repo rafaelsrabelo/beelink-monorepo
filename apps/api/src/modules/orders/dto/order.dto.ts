@@ -26,6 +26,7 @@ import {
 // Types
 import type {
   CreateOrderItemInput,
+  KitPartInput,
   OrderDeliveryKind,
   OrderDeliveryPayload,
   OrderFulfillment,
@@ -111,6 +112,23 @@ export class OrderCustomerDto {
   phone?: string;
 }
 
+/** The most of one product in a kit, and the most products in one: a kit holds at most 99 items. */
+const KIT_ITEMS_MAX = 99;
+
+/** One product chosen for a kit (plan 2026-11-10--kits-monte-seu-kit), by its one variant. */
+export class KitPartDto implements KitPartInput {
+  @ApiProperty({ format: 'uuid' })
+  @IsUUID()
+  @lowerCase
+  variantId!: string;
+
+  @ApiProperty({ minimum: 1, maximum: KIT_ITEMS_MAX, description: 'How many of it go in each kit.' })
+  @IsInt()
+  @Min(1)
+  @Max(KIT_ITEMS_MAX)
+  quantity!: number;
+}
+
 export class OrderItemDto implements CreateOrderItemInput {
   @ApiProperty({ format: 'uuid' })
   @IsUUID()
@@ -122,6 +140,19 @@ export class OrderItemDto implements CreateOrderItemInput {
   @Min(1)
   @Max(ORDER_QUANTITY_MAX)
   quantity!: number;
+
+  @ApiPropertyOptional({
+    type: [KitPartDto],
+    maxItems: KIT_ITEMS_MAX,
+    description: "On a kit's line, what goes in each kit: products of its category, each once, adding up to its size. Refused on any other line (ORDER_KIT_INVALID).",
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(KIT_ITEMS_MAX)
+  @ValidateNested({ each: true })
+  @Type(() => KitPartDto)
+  kit?: KitPartDto[];
 }
 
 /** The way a delivery goes by: the shop's own, or a carrier's service by Melhor Envio's id (BEELINK-186). */

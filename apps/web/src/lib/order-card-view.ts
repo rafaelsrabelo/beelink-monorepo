@@ -4,6 +4,7 @@ import type { StorefrontOrderCardProps } from "@harness-monorepo/ui/blocks/store
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // UI
+import { kitPartsTextOf } from "@harness-monorepo/ui/lib/kit-parts"
 import { customerCashbackLineOf } from "@harness-monorepo/ui/lib/cashback"
 import { formatCents } from "@harness-monorepo/ui/blocks/storefront/storefront-price"
 import { customerTotalText } from "@harness-monorepo/ui/lib/order-total"
@@ -122,7 +123,7 @@ export function orderCardViewOf(order: CustomerOrderSummary, context: OrderCardC
       name: item.productName,
       href: item.productSlug ? routes.product(item.productSlug) : null,
       imageUrl: item.imageUrl,
-      meta: [item.variantLabel, format(text.orderQty, { qty: String(item.quantity) })].filter(Boolean).join(" · "),
+      meta: [kitPartsTextOf(item.kitParts) ?? item.variantLabel, format(text.orderQty, { qty: String(item.quantity) })].filter(Boolean).join(" · "),
       reviewHref: order.status === "DELIVERED" && item.productId && item.productSlug ? reviewHrefOf(routes, item.productId) : null,
     })),
     moreItems: order.moreItems,

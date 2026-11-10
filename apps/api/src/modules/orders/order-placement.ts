@@ -204,8 +204,10 @@ export class OrderPlacement {
           placedAt: placement.placedAt,
           stockTaken: true,
           items: {
-            create: lines.map(({ categoryIds: _categories, cashbackRateBps: _cashback, ...line }, position) => ({
+            create: lines.map(({ categoryIds: _categories, cashbackRateBps: _cashback, kitParts, ...line }, position) => ({
               ...line,
+              // What went in each kit, as it was named (plan 2026-11-10--kits-monte-seu-kit).
+              ...(kitParts ? { kitParts: { create: kitParts.map((part, at) => ({ ...part, position: at })) } } : {}),
               lineTotalCents: line.unitPriceCents * line.quantity,
               discountCents: priced.lineDiscounts[position]!.discountCents,
               promotionId: priced.lineDiscounts[position]!.promotion?.id ?? null,

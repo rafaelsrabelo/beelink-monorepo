@@ -44,6 +44,8 @@ export interface StorefrontProductPurchaseProps {
   showStock?: boolean
   /** Puts that many of the chosen combination in the cart, with the cart's address. */
   cart?: { onAdd: (qty: number) => void; href: string }
+  /** A kit still being put together (plan 2026-11-10--kits-monte-seu-kit): what is missing, said in place of the buttons; null when whole. */
+  incomplete?: string | null
   /** Opens "Avise-me" for a sold-out combination; absent, it offers nothing. */
   onNotify?: () => void
   /** The WhatsApp order, offered alone where there is no cart. */
@@ -85,6 +87,7 @@ export function StorefrontProductPurchase({
   choiceKey,
   showStock = true,
   cart,
+  incomplete = null,
   onNotify,
   orderHref,
   finishesOnWhatsApp = false,
@@ -129,7 +132,8 @@ export function StorefrontProductPurchase({
     setAddedFor(choiceKey)
   }
 
-  const act = available ? (cart ? add : undefined) : onNotify
+  // An incomplete kit has nothing to add yet: the bar over the page offers no button either.
+  const act = available ? (cart && !incomplete ? add : undefined) : onNotify
 
   return (
     <>
@@ -152,6 +156,13 @@ export function StorefrontProductPurchase({
                   {text.notifyMe}
                 </button>
               ) : null}
+            </>
+          ) : cart && incomplete ? (
+            <>
+              <p className="text-[13px] leading-[1.4] font-semibold text-shop-muted">{incomplete}</p>
+              <button type="button" disabled className={cn(BUY_PILL, "cursor-not-allowed bg-shop-primary text-shop-on-primary opacity-50")}>
+                {text.addToCart}
+              </button>
             </>
           ) : cart ? (
             <StorefrontBuyActions name={name} qty={qty} onQtyChange={setQty} added={added} onAdd={add} cartHref={cart.href} messages={messages} />

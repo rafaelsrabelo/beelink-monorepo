@@ -21,7 +21,8 @@ import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
-import type { ProductCategoryOption, ProductFormValues } from "./product-form-types"
+import type { ProductCategoryOption, ProductFormIssues, ProductFormValues } from "./product-form-types"
+import { ProductKitFields } from "./product-kit-fields"
 
 export interface ProductOrganizationFieldsProps {
   value: ProductFormValues
@@ -33,6 +34,9 @@ export interface ProductOrganizationFieldsProps {
    */
   onCreateCategory?: (name: string) => Promise<string>
   creatingCategory?: boolean
+  errors?: ProductFormIssues
+  /** Whether "Este produto é um kit" is offered: not on a product with variations, which a kit has none of. */
+  kitAllowed?: boolean
   disabled?: boolean
   messages?: UiMessages
 }
@@ -50,6 +54,8 @@ export function ProductOrganizationFields({
   categories,
   onCreateCategory,
   creatingCategory = false,
+  errors,
+  kitAllowed = false,
   disabled = false,
   messages = defaultMessages,
 }: ProductOrganizationFieldsProps) {
@@ -204,6 +210,7 @@ export function ProductOrganizationFields({
         </Select>
         <FieldDescription>{text.originHelp}</FieldDescription>
       </Field>
+      {kitAllowed || value.isKit ? <ProductKitFields value={value} onChange={onChange} categories={categories} errors={errors} disabled={disabled} messages={messages} /> : null}
     </div>
   )
 }

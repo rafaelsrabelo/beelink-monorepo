@@ -4,6 +4,7 @@ import type {
   ProductOption as WireProductOption,
   ProductVariant as WireProductVariant,
   PublicProductDetail,
+  PublicProductKit,
   PublicProductVariant,
 } from '@harness-monorepo/contracts';
 import type {
@@ -21,7 +22,12 @@ import type { ProductRow } from './catalog.mapper.js';
 
 export type ProductOptionRow = ProductOptionModel & { values: ProductOptionValueModel[] };
 export type ProductVariantRow = ProductVariantModel & { values: ProductVariantValueModel[] };
-export type ProductDetailRow = ProductRow & { options: ProductOptionRow[]; variants: ProductVariantRow[] };
+export type ProductDetailRow = ProductRow & {
+  options: ProductOptionRow[];
+  variants: ProductVariantRow[];
+  /** Absent where a detail is read with an include of its own: the kit is then said without its category. */
+  kitCategory?: { slug: string; name: string; isActive: boolean } | null;
+};
 
 /**
  * The editor's read: the product with its options and its current variants. Kept apart from
@@ -30,6 +36,8 @@ export type ProductDetailRow = ProductRow & { options: ProductOptionRow[]; varia
  */
 export const productDetailInclude = {
   ...productInclude,
+  // A kit's page names the category it is put together from (plan 2026-11-10--kits-monte-seu-kit).
+  kitCategory: { select: { slug: true, name: true, isActive: true } },
   options: {
     orderBy: [{ position: 'asc' }, { id: 'asc' }],
     include: { values: { orderBy: [{ position: 'asc' }, { id: 'asc' }] } },
@@ -109,5 +117,13 @@ export function toPublicProductDetail(row: ProductDetailRow): PublicProductDetai
             available: isVariantAvailable(variant),
           }) satisfies PublicProductVariant,
       ),
+    kit: publicKitOf(row),
   } satisfies PublicProductDetail;
+}
+
+/** A kit as a visitor reads it: a hidden or deleted category is none, and the kit cannot be put together. */
+function publicKitOf(row: ProductDetailRow): PublicProductKit | null {
+  if (row.kitSize === null) return null;
+  const category = row.kitCategory?.isActive ? { slug: row.kitCategory.slug, name: row.kitCategory.name } : null;
+  return { size: row.kitSize, category };
 }

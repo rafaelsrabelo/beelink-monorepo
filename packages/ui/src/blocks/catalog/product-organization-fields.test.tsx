@@ -20,6 +20,7 @@ const base: ProductFormValues = {
   name: "", slug: "", description: "", price: "", compareAtPrice: "", cost: "", cashback: "",
   categoryId: "", status: "ACTIVE", origin: "", imageUrls: [], sku: "", barcode: "",
   trackStock: false, stock: "", weight: "", length: "", width: "", height: "",
+  isKit: false, kitSize: "", kitCategoryId: "",
 }
 
 function Controlled({ onCreateCategory }: { onCreateCategory?: (name: string) => Promise<string> }) {

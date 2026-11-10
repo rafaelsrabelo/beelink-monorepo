@@ -250,6 +250,8 @@ export interface PublicProductVariant {
 export interface PublicProductDetail extends PublicProduct {
   options: ProductOption[];
   variants: PublicProductVariant[];
+  /** A kit's page puts it together from its category (plan 2026-11-10--kits-monte-seu-kit); null, or absent, on any other. */
+  kit?: PublicProductKit | null;
 }
 
 /**
@@ -402,9 +404,51 @@ export interface ProductCategory extends PublicProductCategory {
   updatedAt: string;
 }
 
+/**
+ * A kit (plan 2026-11-10--kits-monte-seu-kit): the customer picks `size` units among the products
+ * of a category, a product as many times as they like, at the kit's own price. A kit has no options
+ * and keeps no stock of its own.
+ */
+export interface ProductKit {
+  /** 2 to 99. */
+  size: number;
+  /** Where its items come from, a subcategory under it included; null once that category was deleted. */
+  categoryId: string | null;
+}
+
+/** A kit as the shop window reads it: how many to pick, and the category they are picked from. */
+export interface PublicProductKit {
+  size: number;
+  /** Null when the category is gone or hidden: the kit cannot be put together, and says so. */
+  category: { slug: string; name: string } | null;
+}
+
+/**
+ * `GET /stores/:slug/catalog/:productSlug/kit`: what a kit's page puts it together from (plan
+ * 2026-11-10--kits-monte-seu-kit) — the products of its category and of the subcategories under it,
+ * each of one combination and none a kit, in the shop's order. A sold-out one is listed, marked, so
+ * the page can say it ran out. Empty while the category is gone or hidden.
+ */
+export interface StorefrontKitParts {
+  size: number;
+  parts: StorefrontKitPart[];
+}
+
+export interface StorefrontKitPart {
+  productId: string;
+  /** Its one combination: what the order sends. */
+  variantId: string;
+  slug: string;
+  name: string;
+  imageUrl: string | null;
+  available: boolean;
+}
+
 /** A product as its owner edits it. */
 export interface Product extends PublicProduct, ProductStock, ProductParcel {
   position: number;
+  /** Null, or absent from an answer older than kits: a product like any other. */
+  kit?: ProductKit | null;
   /**
    * What the shopkeeper intends, and only half of what a visitor sees — the other half is stock.
    * A draft is visible to nobody but its owner; an active product is in the window unless its
@@ -526,6 +570,11 @@ export interface CreateProductPayload {
   cashbackRateBps?: number | null;
   /** Ordered as sent; the first becomes the card's image. */
   images?: ProductImagePayload[];
+  /**
+   * Makes the product a kit, or changes its kit; null makes it a product like any other. A kit keeps
+   * no stock of its own, so its count is switched off; one with options is refused (`PRODUCT_KIT_OPTIONS`).
+   */
+  kit?: { size: number; categoryId: string } | null;
 }
 
 export type UpdateProductPayload = Partial<CreateProductPayload>;
@@ -691,6 +740,8 @@ export type CatalogErrorCode =
   | "PRODUCT_SKU_TAKEN"
   /** A price or stock sent for a whole product that has options: those belong to its variants. */
   | "PRODUCT_HAS_OPTIONS"
+  /** A kit with options, either way round: a kit is one thing at one price, put together from its category. */
+  | "PRODUCT_KIT_OPTIONS"
   /** An option or value id that is not one of this product's. */
   | "PRODUCT_OPTION_NOT_FOUND"
   /** Two options with one name, or two values with one name in one option. */

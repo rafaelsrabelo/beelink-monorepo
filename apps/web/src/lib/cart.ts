@@ -29,10 +29,8 @@ export interface ServedCart {
 /** The cart page's data: the cookie's lines and the products they name, as the catalogue has them. */
 export async function cartAt(slug: string): Promise<ServedCart> {
   const lines = await cartLinesAt()
-  const products = await cartProductsAt(
-    slug,
-    lines.map((line) => line.productId),
-  )
+  // A kit's products too: its line reads their names and whether each can still be ordered.
+  const products = await cartProductsAt(slug, [...new Set(lines.flatMap((line) => [line.productId, ...(line.kit ?? []).map((part) => part.productId)]))])
 
   return { lines, products, gone: cartViewOf(lines, products).gone.length }
 }
