@@ -39,6 +39,19 @@ export interface OrderItem {
   discountCents: number;
   /** The promotion's name as it was; null with none. */
   promotionName: string | null;
+  /** On a kit's line (plan 2026-11-10--kits-monte-seu-kit): what was chosen for each kit, in the order chosen; absent or empty on any other line. */
+  kitParts?: OrderKitPart[];
+}
+
+/**
+ * One product chosen for a kit's line, as it was named then: how many of it go in each kit. The
+ * line's quantity is how many kits; the line's price is the kit's.
+ */
+export interface OrderKitPart {
+  productName: string;
+  variantLabel: string | null;
+  /** In each kit. */
+  quantity: number;
 }
 
 /** The coupon an order took, as it was: editing or pausing the coupon afterwards changes nothing here. */
@@ -242,6 +255,19 @@ export type OrderCustomerInput = { id: string } | { name: string; phone: string 
 export interface CreateOrderItemInput {
   variantId: string;
   quantity: number;
+  /**
+   * What goes in each kit, on a kit's line (plan 2026-11-10--kits-monte-seu-kit): products of the
+   * kit's category, each once, their quantities adding up to the kit's size. Required of a kit and
+   * refused of anything else (`ORDER_KIT_INVALID`). Two lines of one kit stand apart when what goes
+   * in them does.
+   */
+  kit?: KitPartInput[];
+}
+
+/** One product chosen for a kit, by its one variant: how many of it go in each kit. */
+export interface KitPartInput {
+  variantId: string;
+  quantity: number;
 }
 
 /**
@@ -383,6 +409,8 @@ export interface CustomerOrderItem {
   /** What a promotion took off this line; zero with none. */
   discountCents: number;
   promotionName: string | null;
+  /** On a kit's line: what was chosen for each kit; absent or empty on any other line. */
+  kitParts?: OrderKitPart[];
 }
 
 /** Who placed an order, as its customer is told: they did, from the cart, or the shop registered it. */
@@ -577,6 +605,11 @@ export type OrderErrorCode =
   /** A line the shop does not sell — another shop's, switched off, or off sale. Its `details` are `OrderVariantInvalidDetails`. */
   | "ORDER_VARIANT_INVALID"
   | "ORDER_ITEM_DUPLICATE"
+  /**
+   * A kit's line without what goes in it, with products outside its category or adding up to another
+   * size, or a kit's composition on a line that is no kit (plan 2026-11-10--kits-monte-seu-kit).
+   */
+  | "ORDER_KIT_INVALID"
   | "ORDER_PAYMENT_NOT_ACCEPTED"
   | "ORDER_PLACED_IN_FUTURE"
   | "ORDER_DISCOUNT_TOO_LARGE"
@@ -626,11 +659,21 @@ export interface OrderShippingChangedDetails {
 export interface OrderStockShortage {
   variantId: string;
   available: number;
+  /**
+   * The product's name, as the shop sells it now: a product chosen for a kit is on no line of the
+   * cart's own, and the cart names it by this. Absent from an answer older than kits.
+   */
+  productName?: string;
 }
 
 /** The `details` of `ORDER_STOCK_INSUFFICIENT`: every line short, not only the first. */
 export interface OrderStockDetails {
   shortages: OrderStockShortage[];
+}
+
+/** The `details` of `ORDER_KIT_INVALID`: the kit's own variant, so a cart can name the line. */
+export interface OrderKitInvalidDetails {
+  variantId: string;
 }
 
 /** The `details` of `ORDER_VARIANT_INVALID`: every line the shop does not sell, so a cart can name them. */

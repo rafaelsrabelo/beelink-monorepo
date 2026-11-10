@@ -1,5 +1,5 @@
 // Nest
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 // Types
 import type {
@@ -14,6 +14,7 @@ import type {
   OrderEvent,
   OrderFulfillment,
   OrderItem,
+  OrderKitPart,
   OrderOrigin,
   OrderPage,
   OrderPaymentChannel,
@@ -53,6 +54,13 @@ export class OrderDeliveryAddressResponse implements OrderDeliveryAddress {
   @ApiProperty({ nullable: true, type: String, description: 'Two letters, upper case.' }) state!: string | null;
 }
 
+/** One product chosen for a kit's line (plan 2026-11-10--kits-monte-seu-kit), as it was named then. */
+export class OrderKitPartResponse implements OrderKitPart {
+  @ApiProperty() productName!: string;
+  @ApiProperty({ nullable: true, type: String }) variantLabel!: string | null;
+  @ApiProperty({ minimum: 1, description: 'How many of it go in each kit.' }) quantity!: number;
+}
+
 export class OrderItemResponse implements OrderItem {
   @ApiProperty({ format: 'uuid' }) id!: string;
   @ApiProperty({ format: 'uuid', nullable: true, type: String, description: 'Null once the product was deleted.' })
@@ -66,6 +74,7 @@ export class OrderItemResponse implements OrderItem {
   @ApiProperty() lineTotalCents!: number;
   @ApiProperty({ description: 'What a promotion took off this line; zero with none.' }) discountCents!: number;
   @ApiProperty({ nullable: true, type: String, description: "The promotion's name as it was." }) promotionName!: string | null;
+  @ApiPropertyOptional({ type: [OrderKitPartResponse], description: "On a kit's line, what was chosen for each kit." }) kitParts?: OrderKitPartResponse[];
 }
 
 export class OrderCouponResponse implements OrderCoupon {

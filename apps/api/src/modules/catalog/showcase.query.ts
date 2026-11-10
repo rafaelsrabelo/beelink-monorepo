@@ -40,6 +40,7 @@ export const SHOWCASE_CARD_SELECT = {
   category: { select: { slug: true, parentId: true } },
   _count: { select: { options: true } },
   options: cardOptionSelect,
+  kitSize: true,
 } satisfies ProductSelect;
 
 export type ShowcaseCardRow = ProductGetPayload<{ select: typeof SHOWCASE_CARD_SELECT }>;
@@ -152,7 +153,8 @@ export function toShowcaseCard(row: ShowcaseCardRow): PublicProductCard {
     imageUrl: row.images[0]?.url ?? null,
     categorySlug: row.category?.slug ?? null,
     priceRange: { minCents: row.priceCents, maxCents: row.maxPriceCents },
-    hasOptions: row._count.options > 0,
+    // A kit is put together on its page: no card adds one without a choice.
+    hasOptions: row._count.options > 0 || row.kitSize !== null,
     imageUrls: row.images.map((image) => image.url),
     optionSummary: optionSummaryOf(row.options),
     rating: ratingOf(row.reviewCount, row.reviewRatingSum),

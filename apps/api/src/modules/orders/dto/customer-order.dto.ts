@@ -48,7 +48,7 @@ import {
   ORDERS_PAGE_MAX,
 } from '../orders.constants.js';
 import { cashbackCents, couponCode, OrderItemDto, shippingChoice } from './order.dto.js';
-import { OrderCouponResponse, OrderDeliveryAddressResponse, OrderDeliveryResponse } from './order.response.js';
+import { OrderCouponResponse, OrderDeliveryAddressResponse, OrderDeliveryResponse, OrderKitPartResponse } from './order.response.js';
 
 const SITUATIONS = Object.keys(CUSTOMER_ORDER_SITUATIONS) as CustomerOrderSituation[];
 const SIDES = ['CUSTOMER', 'SHOP'] as const satisfies readonly OrderPlacedBy[];
@@ -227,6 +227,7 @@ export class CustomerOrderItemResponse implements CustomerOrderItem {
   @ApiProperty() lineTotalCents!: number;
   @ApiProperty({ description: 'What a promotion took off this line; zero with none.' }) discountCents!: number;
   @ApiProperty({ nullable: true, type: String, description: "The promotion's name as it was." }) promotionName!: string | null;
+  @ApiPropertyOptional({ type: [OrderKitPartResponse], description: "On a kit's line, what was chosen for each kit." }) kitParts?: OrderKitPartResponse[];
 }
 
 export class CustomerOrderEventResponse implements CustomerOrderEvent {

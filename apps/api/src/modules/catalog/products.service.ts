@@ -188,6 +188,7 @@ export class ProductsService {
     assertPrices(dto.priceCents, dto.compareAtPriceCents ?? null);
     assertParcel(dto.lengthMm ?? null, dto.widthMm ?? null, dto.heightMm ?? null);
     if (dto.categoryId) await this.assertCategoryOwned(storeId, dto.categoryId);
+    if (dto.kit) await this.assertCategoryOwned(storeId, dto.kit.categoryId);
     // A product being created has no options, so no photo of it can name a value yet.
     await refuseForeignImageValues(this.prisma, null, dto.images);
 
@@ -202,8 +203,9 @@ export class ProductsService {
       costCents: dto.costCents ?? null,
       sku: dto.sku ?? null,
       barcode: dto.barcode ?? null,
-      trackStock: dto.trackStock ?? false,
-      stockQuantity: dto.stockQuantity ?? null,
+      // A kit keeps no stock of its own: what leaves the stock is each product chosen for it.
+      trackStock: dto.kit ? false : (dto.trackStock ?? false),
+      stockQuantity: dto.kit ? null : (dto.stockQuantity ?? null),
       weightGrams: dto.weightGrams ?? null,
       lengthMm: dto.lengthMm ?? null,
       widthMm: dto.widthMm ?? null,
@@ -221,6 +223,7 @@ export class ProductsService {
           status: dto.status ?? 'ACTIVE',
           origin: dto.origin ?? null,
           cashbackRateBps: dto.cashbackRateBps ?? null,
+          ...(dto.kit ? { kitSize: dto.kit.size, kitCategoryId: dto.kit.categoryId } : {}),
           ...perUnit,
           maxPriceCents: perUnit.priceCents,
           position: (last._max.position ?? -1) + 1,
@@ -245,6 +248,7 @@ export class ProductsService {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
     await this.owned(storeId, productId);
     if (dto.categoryId) await this.assertCategoryOwned(storeId, dto.categoryId);
+    if (dto.kit) await this.assertCategoryOwned(storeId, dto.kit.categoryId);
 
     const renaming = dto.slug !== undefined || dto.name !== undefined;
     let slug = dto.slug ?? '';
@@ -263,6 +267,11 @@ export class ProductsService {
         // them changes nothing. Without options they are its one variant's, and a patch equal to a
         // summary of a variant that is switched off is still a change to that variant.
         const perUnit = perUnitPatchOf(dto, hasOptions ? current : undefined);
+        // A kit is one thing at one price (plan 2026-11-10--kits-monte-seu-kit), and keeps no stock of
+        // its own: becoming one, or asked to count its stock, it counts none.
+        if (dto.kit && hasOptions) throw new ConflictException(catalogError('PRODUCT_KIT_OPTIONS', 'A product with options cannot be a kit'));
+        const kitAfter = dto.kit !== undefined ? dto.kit !== null : current.kitSize !== null;
+        if (kitAfter && (dto.kit || perUnit.trackStock)) Object.assign(perUnit, { trackStock: false, stockQuantity: null });
         // Uncounted stock has no quantity to agree with; the summary of mixed variants still has one.
         if (hasOptions && perUnit.stockQuantity === null && (perUnit.trackStock ?? current.trackStock) === false) {
           delete perUnit.stockQuantity;
@@ -298,6 +307,7 @@ export class ProductsService {
               : {}),
             ...(dto.description !== undefined ? { description: dto.description ?? null } : {}),
             ...(dto.categoryId !== undefined ? { categoryId: dto.categoryId ?? null } : {}),
+            ...(dto.kit !== undefined ? { kitSize: dto.kit?.size ?? null, kitCategoryId: dto.kit?.categoryId ?? null } : {}),
             ...(dto.status !== undefined ? { status: dto.status } : {}),
             ...(dto.origin !== undefined ? { origin: dto.origin } : {}),
             ...(dto.cashbackRateBps !== undefined ? { cashbackRateBps: dto.cashbackRateBps } : {}),

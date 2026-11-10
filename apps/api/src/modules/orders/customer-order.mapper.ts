@@ -26,6 +26,8 @@ export const CUSTOMER_ORDER_CARD_ITEMS = 3;
  */
 const itemInclude = {
   variant: { select: { imageUrl: true } },
+  // What went in each kit, on a kit's line (plan 2026-11-10--kits-monte-seu-kit).
+  kitParts: { orderBy: { position: 'asc' }, select: { productName: true, variantLabel: true, quantity: true } },
   product: { select: { slug: true, status: true, images: { orderBy: [{ position: 'asc' }, { id: 'asc' }], take: 1, select: { url: true } } } },
 } as const satisfies Prisma.OrderItemInclude;
 
@@ -58,6 +60,7 @@ function toItem(item: CustomerOrderRow['items'][number]): CustomerOrderItem {
     lineTotalCents: item.lineTotalCents,
     discountCents: item.discountCents,
     promotionName: item.promotionName,
+    ...(item.kitParts.length ? { kitParts: item.kitParts } : {}),
   };
 }
 

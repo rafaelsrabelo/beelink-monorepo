@@ -46,7 +46,7 @@ export class DeliveryController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "The shop's ways to get a sale to an address, as the shop window would quote them — drafts included, for a sale registered here" })
   @ApiOkResponse({ type: ShippingQuoteResponse })
-  @ApiBadRequestResponse({ description: 'SHIPPING_DESTINATION_INVALID · ORDER_VARIANT_INVALID · ORDER_ITEM_DUPLICATE' })
+  @ApiBadRequestResponse({ description: 'SHIPPING_DESTINATION_INVALID · ORDER_VARIANT_INVALID · ORDER_ITEM_DUPLICATE · ORDER_KIT_INVALID' })
   quote(@Param('storeSlug') storeSlug: string, @CurrentUser() current: AuthenticatedUser, @Body() dto: ShippingQuoteDto): Promise<ShippingQuote> {
     return this.quotes.forPanel(storeSlug, current.id, dto);
   }

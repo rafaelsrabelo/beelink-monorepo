@@ -37,7 +37,7 @@ export class CartQuoteController {
   @RouteConfig({ rateLimit: STOREFRONT_RATE_LIMIT })
   @ApiOperation({ summary: "A cart priced with the shop's promotions: each line's discount and the totals, and a first-purchase promotion announced" })
   @ApiOkResponse({ type: OrderQuoteResponse })
-  @ApiBadRequestResponse({ description: 'ORDER_VARIANT_INVALID · ORDER_ITEM_DUPLICATE · ORDER_TOTAL_TOO_LARGE' })
+  @ApiBadRequestResponse({ description: 'ORDER_VARIANT_INVALID · ORDER_ITEM_DUPLICATE · ORDER_KIT_INVALID · ORDER_TOTAL_TOO_LARGE' })
   @ApiNotFoundResponse({ description: 'STORE_NOT_FOUND' })
   @ApiTooManyRequestsResponse({ description: 'RATE_LIMITED' })
   quote(@Param('storeSlug') storeSlug: string, @Body() dto: CartQuoteDto): Promise<OrderQuote> {

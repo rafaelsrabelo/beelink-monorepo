@@ -183,7 +183,8 @@ export function toPublicProductCard(row: ProductCardRow): PublicProductCard {
     imageUrl: row.images[0]?.url ?? null,
     categorySlug: row.category?.slug ?? null,
     priceRange: { minCents: row.priceCents, maxCents: row.maxPriceCents },
-    ...(row._count ? { hasOptions: row._count.options > 0 } : {}),
+    // A kit is put together on its page: no card adds one without a choice.
+    ...(row._count ? { hasOptions: row._count.options > 0 || row.kitSize !== null } : {}),
     rating: ratingOf(row.reviewCount, row.reviewRatingSum),
   } satisfies PublicProductCard;
 }
@@ -231,6 +232,7 @@ export function toProduct(row: ProductRow): WireProduct {
     lengthMm: row.lengthMm,
     widthMm: row.widthMm,
     heightMm: row.heightMm,
+    kit: row.kitSize === null ? null : { size: row.kitSize, categoryId: row.kitCategoryId },
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   } satisfies WireProduct;

@@ -50,7 +50,7 @@ export class OrdersController {
   @ApiCreatedResponse({ type: OrderResponse })
   @ApiBadRequestResponse({
     description:
-      'ORDER_CUSTOMER_NOT_FOUND · ORDER_DELIVERY_ADDRESS_MISSING · ORDER_VARIANT_INVALID · ORDER_ITEM_DUPLICATE · ORDER_PAYMENT_NOT_ACCEPTED · ORDER_PLACED_IN_FUTURE · ORDER_DISCOUNT_TOO_LARGE · ORDER_TOTAL_TOO_LARGE',
+      'ORDER_CUSTOMER_NOT_FOUND · ORDER_DELIVERY_ADDRESS_MISSING · ORDER_VARIANT_INVALID · ORDER_ITEM_DUPLICATE · ORDER_KIT_INVALID · ORDER_PAYMENT_NOT_ACCEPTED · ORDER_PLACED_IN_FUTURE · ORDER_DISCOUNT_TOO_LARGE · ORDER_TOTAL_TOO_LARGE',
   })
   @ApiConflictResponse({ description: 'ORDER_STOCK_INSUFFICIENT · ORDER_COUPON_REFUSED — `details` is `OrderCouponRefusedDetails`' })
   create(
@@ -66,7 +66,7 @@ export class OrdersController {
   @ApiOperation({ summary: 'What a sale would be registered for: the promotions, the coupon and the typed discount, before it is an order' })
   @ApiOkResponse({ type: OrderQuoteResponse })
   @ApiBadRequestResponse({
-    description: 'ORDER_CUSTOMER_NOT_FOUND · ORDER_VARIANT_INVALID · ORDER_ITEM_DUPLICATE · ORDER_PLACED_IN_FUTURE · ORDER_DISCOUNT_TOO_LARGE · ORDER_TOTAL_TOO_LARGE',
+    description: 'ORDER_CUSTOMER_NOT_FOUND · ORDER_VARIANT_INVALID · ORDER_ITEM_DUPLICATE · ORDER_KIT_INVALID · ORDER_PLACED_IN_FUTURE · ORDER_DISCOUNT_TOO_LARGE · ORDER_TOTAL_TOO_LARGE',
   })
   quote(@Param('storeSlug') storeSlug: string, @CurrentUser() current: AuthenticatedUser, @Body() dto: ShopOrderQuoteDto): Promise<OrderQuote> {
     return this.quotes.forShop(storeSlug, current.id, dto);
