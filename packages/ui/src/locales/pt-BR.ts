@@ -2500,6 +2500,19 @@ export const ptBR: UiMessages = {
     deleteConfirm: "Excluir {name}? Isso não tem volta.",
   },
   catalog: {
+    kit: {
+      toggle: "Este produto é um kit",
+      toggleHint: "O cliente monta o kit na página do produto, escolhendo os itens de uma categoria — pode repetir. O preço é o deste produto.",
+      size: "Quantos itens o cliente escolhe",
+      sizeHint: "De 2 a 99. O botão de adicionar ao carrinho só libera quando o cliente completa o kit.",
+      category: "Itens da categoria",
+      categoryHint: "Os produtos dela, e das subcategorias, entram no kit — um produto novo entra sozinho.",
+      categoryNone: "Escolha uma categoria",
+      stockNote: "Um kit não tem estoque próprio: o estoque que conta é o de cada item escolhido.",
+      variationsNote: "Um kit não tem variações: o cliente escolhe os itens dele na página do produto.",
+      sizeInvalid: "Informe um número de 2 a 99.",
+      categoryMissing: "Escolha a categoria de onde vêm os itens do kit.",
+    },
     editor: {
       toolbar: "Formatação",
       bold: "Negrito",

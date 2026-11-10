@@ -157,6 +157,8 @@ export function ProductEditor({
           categories={categories}
           onCreateCategory={onCreateCategory}
           creatingCategory={creatingCategory}
+          errors={errors}
+          kitAllowed={!perCombination}
           disabled={pending}
           messages={messages}
         />
@@ -172,7 +174,7 @@ export function ProductEditor({
 
       {cashback ? <ProductCashbackField value={value} onChange={onChange} errors={errors} disabled={pending} messages={messages} /> : null}
 
-      {variations ? (
+      {variations && !value.isKit ? (
         <ProductSection title={sections.variations} hint={sections.variationsHint}>
           <ProductVariationsFields
             value={variations.value}
@@ -192,6 +194,7 @@ export function ProductEditor({
           value={value}
           onChange={onChange}
           perCombination={perCombination}
+          kit={value.isKit}
           disabled={pending}
           messages={messages}
         />

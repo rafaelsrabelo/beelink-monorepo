@@ -25,6 +25,8 @@ export interface ProductInventoryFieldsProps {
    * switch that says whether the shop counts at all stays here, for all of them.
    */
   perCombination?: boolean
+  /** A kit keeps no stock of its own (plan 2026-11-10--kits-monte-seu-kit): its count is not offered, and a sentence says why. */
+  kit?: boolean
   disabled?: boolean
   messages?: UiMessages
 }
@@ -40,6 +42,7 @@ export function ProductInventoryFields({
   value,
   onChange,
   perCombination = false,
+  kit = false,
   disabled = false,
   messages = defaultMessages,
 }: ProductInventoryFieldsProps) {
@@ -47,18 +50,22 @@ export function ProductInventoryFields({
 
   return (
     <div className="flex flex-col gap-4">
-      <Field orientation="horizontal">
-        <Checkbox
-          id="product-track-stock"
-          disabled={disabled}
-          checked={value.trackStock}
-          onCheckedChange={(checked) => onChange({ ...value, trackStock: checked })}
-        />
-        <FieldContent>
-          <FieldLabel htmlFor="product-track-stock">{fields.trackStockLabel}</FieldLabel>
-          <FieldDescription>{fields.trackStockHint}</FieldDescription>
-        </FieldContent>
-      </Field>
+      {kit ? (
+        <p className="text-muted-foreground text-sm">{messages.catalog.kit.stockNote}</p>
+      ) : (
+        <Field orientation="horizontal">
+          <Checkbox
+            id="product-track-stock"
+            disabled={disabled}
+            checked={value.trackStock}
+            onCheckedChange={(checked) => onChange({ ...value, trackStock: checked })}
+          />
+          <FieldContent>
+            <FieldLabel htmlFor="product-track-stock">{fields.trackStockLabel}</FieldLabel>
+            <FieldDescription>{fields.trackStockHint}</FieldDescription>
+          </FieldContent>
+        </Field>
+      )}
 
       {/* The count only exists while it is counted. Leaving it on screen, disabled, would ask the
           shopkeeper to read a number that means nothing. */}
@@ -66,7 +73,7 @@ export function ProductInventoryFields({
         <p className="text-muted-foreground text-sm">{messages.catalog.sections.perCombination}</p>
       ) : null}
 
-      {value.trackStock && !perCombination ? (
+      {value.trackStock && !perCombination && !kit ? (
         <Field>
           <FieldLabel htmlFor="product-stock">{fields.stockLabel}</FieldLabel>
           <Input

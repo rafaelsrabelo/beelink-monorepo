@@ -2499,6 +2499,19 @@ export const en: UiMessages = {
     deleteConfirm: "Delete {name}? This cannot be undone.",
   },
   catalog: {
+    kit: {
+      toggle: "This product is a kit",
+      toggleHint: "The customer puts the kit together on the product's page, picking items from one category — repeats allowed. The price is this product's.",
+      size: "How many items the customer picks",
+      sizeHint: "From 2 to 99. Adding to the cart unlocks once the kit is complete.",
+      category: "Items from the category",
+      categoryHint: "Its products, and its subcategories', go in the kit — a new product joins by itself.",
+      categoryNone: "Choose a category",
+      stockNote: "A kit keeps no stock of its own: what counts is each item chosen.",
+      variationsNote: "A kit has no variations: the customer picks its items on the product's page.",
+      sizeInvalid: "Enter a number from 2 to 99.",
+      categoryMissing: "Choose the category the kit's items come from.",
+    },
     editor: {
       toolbar: "Formatting",
       bold: "Bold",

@@ -2914,6 +2914,24 @@ export interface UiMessages {
     deleteConfirm: string
   }
   catalog: {
+    /** A kit, in the product's editor (plan 2026-11-10--kits-monte-seu-kit): the customer puts it together from a category. */
+    kit: {
+      toggle: string
+      toggleHint: string
+      size: string
+      sizeHint: string
+      category: string
+      categoryHint: string
+      categoryNone: string
+      /** In the stock's section, in place of the stock's own fields: a kit keeps none. */
+      stockNote: string
+      /** In the variations' section, in place of its fields: a kit has none. */
+      variationsNote: string
+      /** The size is not a whole number from 2 to 99. */
+      sizeInvalid: string
+      /** No category chosen. */
+      categoryMissing: string
+    }
     /** The description's toolbar. What it writes is Markdown; see blocks/catalog/rich-text.ts. */
     editor: {
       toolbar: string
