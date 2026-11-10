@@ -13,7 +13,7 @@ import { approvalCheckedAtOf, approvalRecheckErrorOf, asaasCardOf, asaasConnectE
 
 const text = ptBR.integrations
 const connection: AsaasConnection = { available: true, environment: "SANDBOX", status: "CONNECTED", account: { name: "Lessari Moda LTDA", document: "**.222.333/0001-**" }, webhook: "REGISTERED", approval: "APPROVED", approvalCheckedAt: "2026-10-06T21:40:00.000Z", connectedAt: "2026-10-05T12:00:00.000Z" }
-const saved: AsaasSettings = { pix: true, card: false, maxInstallments: 6, offline: true, updatedAt: "2026-10-05T12:00:00.000Z" }
+const saved: AsaasSettings = { pix: true, card: false, maxInstallments: 6, offline: true, whatsappWhenPaid: true, updatedAt: "2026-10-05T12:00:00.000Z" }
 
 describe("asaasCardOf", () => {
   it("hands the card the connection as it stands, and says the sandbox by its environment", () => {
@@ -85,23 +85,28 @@ describe("paymentFormOf and paymentPayloadOf", () => {
   it("start the form from the settings, without when they were saved, and send them back as they are", () => {
     const form = paymentFormOf(saved)
 
-    expect(form).toEqual({ pix: true, card: false, maxInstallments: 6, offline: true })
-    expect(paymentPayloadOf(form, text.payments.issues)).toEqual({ payload: { pix: true, card: false, maxInstallments: 6, offline: true } })
+    expect(form).toEqual({ pix: true, card: false, maxInstallments: 6, offline: true, whatsappWhenPaid: true })
+    expect(paymentPayloadOf(form, text.payments.issues)).toEqual({ payload: { pix: true, card: false, maxInstallments: 6, offline: true, whatsappWhenPaid: true } })
+  })
+
+  it("reads an answer from before the WhatsApp choice existed as off", () => {
+    const { whatsappWhenPaid: _left, ...older } = saved
+    expect(paymentFormOf(older as AsaasSettings).whatsappWhenPaid).toBe(false)
   })
 
   /** The number is the shop's choice for when the card is on: off, it travels with the rest. */
   it("keeps the instalments of a card that is off", () => {
-    expect(paymentPayloadOf({ pix: true, card: false, maxInstallments: 10, offline: false }, text.payments.issues)).toEqual({ payload: { pix: true, card: false, maxInstallments: 10, offline: false } })
+    expect(paymentPayloadOf({ pix: true, card: false, maxInstallments: 10, offline: false, whatsappWhenPaid: false }, text.payments.issues)).toEqual({ payload: { pix: true, card: false, maxInstallments: 10, offline: false, whatsappWhenPaid: false } })
   })
 
   it("takes each way as the only one left on", () => {
     for (const ways of [{ pix: true, card: false, offline: false }, { pix: false, card: true, offline: false }, { pix: false, card: false, offline: true }]) {
-      expect(paymentPayloadOf({ ...ways, maxInstallments: 1 }, text.payments.issues)).toEqual({ payload: { ...ways, maxInstallments: 1 } })
+      expect(paymentPayloadOf({ ...ways, maxInstallments: 1, whatsappWhenPaid: false }, text.payments.issues)).toEqual({ payload: { ...ways, maxInstallments: 1, whatsappWhenPaid: false } })
     }
   })
 
   it("refuses every way switched off, before anything is sent", () => {
-    expect(paymentPayloadOf({ pix: false, card: false, maxInstallments: 3, offline: false }, text.payments.issues)).toEqual({ issue: text.payments.issues.none })
+    expect(paymentPayloadOf({ pix: false, card: false, maxInstallments: 3, offline: false, whatsappWhenPaid: true }, text.payments.issues)).toEqual({ issue: text.payments.issues.none })
   })
 })
 

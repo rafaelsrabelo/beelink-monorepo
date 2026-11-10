@@ -28,7 +28,7 @@ const TYPED = "$aact_hmlg_chave-de-teste"
 
 const never: AsaasConnection = { available: true, environment: "SANDBOX", status: "DISCONNECTED", account: null, webhook: null, approval: null, approvalCheckedAt: null, connectedAt: null }
 const connected: AsaasConnection = { ...never, status: "CONNECTED", account: { name: "Loja Teste LTDA", document: "**.222.333/0001-**" }, webhook: "SKIPPED", connectedAt: "2026-10-05T12:00:00.000Z" }
-const defaults: AsaasSettings = { pix: true, card: true, maxInstallments: 1, offline: true, updatedAt: null }
+const defaults: AsaasSettings = { pix: true, card: true, maxInstallments: 1, offline: true, whatsappWhenPaid: false, updatedAt: null }
 
 const connect = vi.fn()
 const forget = vi.fn()
@@ -103,7 +103,7 @@ describe("AsaasScreen (BEELINK-203), connected", () => {
     await userEvent.click(await screen.findByRole("option", { name: "Até 6x" }))
     await userEvent.click(screen.getByRole("button", { name: "Salvar" }))
 
-    expect(save).toHaveBeenCalledExactlyOnceWith({ pix: true, card: true, maxInstallments: 6, offline: false }, expect.anything())
+    expect(save).toHaveBeenCalledExactlyOnceWith({ pix: true, card: true, maxInstallments: 6, offline: false, whatsappWhenPaid: false }, expect.anything())
   })
 
   /** With every way off the shop could not be paid at all: said at once, and the API is not asked. */
@@ -121,7 +121,7 @@ describe("AsaasScreen (BEELINK-203), connected", () => {
     await userEvent.click(screen.getByRole("switch", { name: "Pix" }))
     expect(screen.queryByRole("alert")).toBeNull()
     await userEvent.click(screen.getByRole("button", { name: "Salvar" }))
-    expect(save).toHaveBeenCalledExactlyOnceWith({ pix: true, card: false, maxInstallments: 1, offline: false }, expect.anything())
+    expect(save).toHaveBeenCalledExactlyOnceWith({ pix: true, card: false, maxInstallments: 1, offline: false, whatsappWhenPaid: false }, expect.anything())
   })
 
   it("says it saved, says the API's refusal in words, and takes either back as a choice changes", async () => {

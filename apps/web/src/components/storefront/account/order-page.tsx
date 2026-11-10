@@ -32,9 +32,10 @@ import { reorderActionOf } from "@/lib/reorder-view"
 import { shopShareOf } from "@/lib/shop-share"
 import { purchaseAt, shopperAt } from "@/lib/shopper"
 import { siteOrigin } from "@/lib/site-origin"
-import { navigationAt, shopAt } from "@/lib/storefront-data"
+import { navigationAt, paymentOptionsAt, shopAt } from "@/lib/storefront-data"
 import { accountOrderNumberOf, BACK_KEY, paramOf, PAYMENT_KEY, RECEIPT_KEY, sectionOf, storefrontRoutes } from "@/lib/storefront-routes"
 import type { SectionQuery } from "@/lib/storefront-section"
+import { orderMessageOf, whatsappOrderHref } from "@/lib/whatsapp-order"
 import { OrderTalkLive } from "../conversations/order-talk-live"
 import { PurchaseTold } from "../tracking/purchase-told"
 import { OrderCancelLive } from "./order-cancel-live"
@@ -151,7 +152,14 @@ export async function OrderPage({ query, ...params }: OrderPageProps) {
     // An order settled with the shop has no payment screen: its page says how it was agreed.
     if (order.paymentChannel !== "ONLINE") redirect(routes.accountOrder(number) as Parameters<typeof redirect>[0])
     const profileHref = `${routes.accountTab("profile")}?${BACK_KEY}=${encodeURIComponent(here)}`
-    return frame(<OrderPaymentLive slug={store.slug} number={order.number} orderHref={routes.accountOrder(number)} profileHref={profileHref} order={facts} sale={purchaseOrderOf(order)} locale={context.locale} messages={ui} />)
+    // A shop that prepares the order from its WhatsApp asks it sent there once paid: the message is ready before the money is.
+    const whatsapp = store.socialNetworks.whatsapp?.replace(/\D/g, "") || null
+    const sendsPaid = whatsapp !== null && (await paymentOptionsAt(store.slug)).online?.whatsappWhenPaid === true
+    const customer = { name: customerName, phone: shopper?.phone ?? visitor?.phone ?? null }
+    const whatsappHref = sendsPaid ? whatsappOrderHref(whatsapp, orderMessageOf({ shopName: store.name, order, customer, paid: true, locale: context.locale, messages: ui })) : null
+    return frame(
+      <OrderPaymentLive slug={store.slug} number={order.number} orderHref={routes.accountOrder(number)} profileHref={profileHref} order={facts} sale={purchaseOrderOf(order)} whatsappHref={whatsappHref} locale={context.locale} messages={ui} />,
+    )
   }
 
   if (receipt) {

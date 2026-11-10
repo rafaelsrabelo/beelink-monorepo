@@ -19,7 +19,7 @@ const CONNECTION = "/api/stores/loja/integrations/asaas"
 
 const disconnected: AsaasConnection = { available: true, environment: "SANDBOX", status: "DISCONNECTED", account: null, webhook: null, approval: null, approvalCheckedAt: null, connectedAt: null }
 const connected: AsaasConnection = { ...disconnected, status: "CONNECTED", account: { name: "Lessari Moda LTDA", document: "**.222.333/0001-**" }, webhook: "SKIPPED", connectedAt: "2026-10-05T12:00:00.000Z" }
-const settings: AsaasSettings = { pix: true, card: true, maxInstallments: 1, offline: true, updatedAt: null }
+const settings: AsaasSettings = { pix: true, card: true, maxInstallments: 1, offline: true, whatsappWhenPaid: false, updatedAt: null }
 
 /** A client of the test's own, so what it keeps can be looked into; nothing is retried, as nothing here fails by chance. */
 function mount() {
@@ -163,7 +163,7 @@ describe("the rest of the shop's Asaas", () => {
   })
 
   it("saves the ways of paying whole, and keeps the answer as what they now are", async () => {
-    const saved: AsaasSettings = { pix: true, card: true, maxInstallments: 6, offline: false, updatedAt: "2026-10-05T12:00:00.000Z" }
+    const saved: AsaasSettings = { pix: true, card: true, maxInstallments: 6, offline: false, whatsappWhenPaid: false, updatedAt: "2026-10-05T12:00:00.000Z" }
     const fetched = vi.fn<Fetched>(async (_url, init) => Response.json(init?.method === "PUT" ? saved : settings))
     vi.stubGlobal("fetch", fetched)
     const { wrapper } = mount()
