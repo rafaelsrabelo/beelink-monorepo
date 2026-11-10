@@ -12,7 +12,7 @@ const TAKES = { connected: true, pix: true, card: true, maxInstallments: 6, offl
 
 describe("what a shop's checkout offers", () => {
   it("offers what a connected shop takes, with Asaas's least amounts", () => {
-    expect(paymentOptionsOf(TAKES)).toEqual({ online: { pix: true, card: true, maxInstallments: 6, minimumChargeCents: 500, minimumInstallmentCents: 500 }, offline: true });
+    expect(paymentOptionsOf(TAKES)).toEqual({ online: { pix: true, card: true, whatsappWhenPaid: false, maxInstallments: 6, minimumChargeCents: 500, minimumInstallmentCents: 500 }, offline: true });
   });
 
   it('is the checkout of before Asaas while the connection is not in good standing, whatever the shop chose', () => {
@@ -37,9 +37,14 @@ describe("what a shop's checkout offers", () => {
     expect(paymentOptionsOf({ ...TAKES, pix: false, card: false })).toEqual({ online: null, offline: true });
   });
 
+  it("says whether the shop asks an order paid online to be sent to its WhatsApp once paid", () => {
+    expect(paymentOptionsOf({ ...TAKES, whatsappWhenPaid: true }).online?.whatsappWhenPaid).toBe(true)
+    expect(paymentOptionsOf({ ...TAKES, connected: false, whatsappWhenPaid: true }).online).toBeNull()
+  });
+
   it('carries nothing of the account', () => {
     const answer = paymentOptionsOf({ ...TAKES, connectedAt: new Date() } as typeof TAKES);
     expect(Object.keys(answer).sort()).toEqual(['offline', 'online']);
-    expect(Object.keys(answer.online ?? {}).sort()).toEqual(['card', 'maxInstallments', 'minimumChargeCents', 'minimumInstallmentCents', 'pix']);
+    expect(Object.keys(answer.online ?? {}).sort()).toEqual(['card', 'maxInstallments', 'minimumChargeCents', 'minimumInstallmentCents', 'pix', 'whatsappWhenPaid']);
   });
 });

@@ -137,6 +137,25 @@ describe("StorefrontPaymentNotice", () => {
     expect(screen.getByRole("link", { name: "Ver pedido" })).toHaveAttribute("href", "/loja/conta/pedidos/14")
   })
 
+  // A shop that prepares the order from its WhatsApp: once paid, the message to it is the one call.
+  it("offers the shop's WhatsApp once paid, in a new tab, as its one call", async () => {
+    const { container } = render(<StorefrontPaymentNotice variant="paid" orderHref="/loja/conta/pedidos/14" whatsappHref="https://wa.me/5511999998888?text=Pedido" />)
+
+    expect(screen.getByRole("status")).toHaveTextContent("Agora envie o pedido para a loja pelo WhatsApp, para ela separar.")
+    const whatsapp = screen.getByRole("link", { name: "Enviar pedido no WhatsApp" })
+    expect(whatsapp).toHaveAttribute("href", "https://wa.me/5511999998888?text=Pedido")
+    expect(whatsapp).toHaveAttribute("target", "_blank")
+    expect(whatsapp).toHaveAttribute("rel", "noopener noreferrer")
+    expect(screen.getAllByRole("link")).toHaveLength(1)
+    await expectNoA11yViolations(container)
+  })
+
+  it("offers the WhatsApp on no notice but the paid one", () => {
+    render(<StorefrontPaymentNotice variant="pixExpired" orderHref="#" onAction={() => {}} whatsappHref="https://wa.me/5511999998888" />)
+
+    expect(screen.queryByRole("link", { name: "Enviar pedido no WhatsApp" })).toBeNull()
+  })
+
   it("holds the button, and says what it is doing, while a charge is being made", () => {
     render(<StorefrontPaymentNotice variant="pixExpired" orderHref="#" onAction={() => {}} pending />)
 

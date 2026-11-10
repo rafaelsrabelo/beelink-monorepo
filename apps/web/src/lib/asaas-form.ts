@@ -62,13 +62,14 @@ export function asaasConnectErrorOf(code: string, environment: AsaasEnvironment,
 
 /** The ways the shop is paid as the form starts from them: the settings, without when they were saved. */
 export function paymentFormOf(settings: AsaasSettings): PaymentSettingsFormValues {
-  return { pix: settings.pix, card: settings.card, maxInstallments: settings.maxInstallments, offline: settings.offline }
+  // An answer from before the choice existed says nothing of it: off.
+  return { pix: settings.pix, card: settings.card, maxInstallments: settings.maxInstallments, offline: settings.offline, whatsappWhenPaid: settings.whatsappWhenPaid ?? false }
 }
 
 /** What the form holds as the API takes it, or why not: with every way off the shop could not be paid at all. */
 export function paymentPayloadOf(value: PaymentSettingsFormValues, text: PaymentsText["issues"]): { payload: AsaasSettingsPayload } | { issue: string } {
   if (!value.pix && !value.card && !value.offline) return { issue: text.none }
-  return { payload: { pix: value.pix, card: value.card, maxInstallments: value.maxInstallments, offline: value.offline } }
+  return { payload: { pix: value.pix, card: value.card, maxInstallments: value.maxInstallments, offline: value.offline, whatsappWhenPaid: value.whatsappWhenPaid } }
 }
 
 /** The API's refusal of a save, in words. */

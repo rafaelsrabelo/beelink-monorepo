@@ -37,6 +37,7 @@ const INSTALLMENTS = Array.from({ length: PAYMENT_INSTALLMENTS_MAX }, (_, at) =>
  * to how many instalments, and paying on delivery or at pickup — a switch each, with what each one
  * means for the customer and for the shop under it. The instalments show only while the card is on;
  * the number is kept either way, so switching the card back on brings the shop's choice with it.
+ * While anything is paid online, a last switch says whether a paid order is sent to the shop's WhatsApp.
  */
 export function PaymentSettingsForm({ value, onChange, onSubmit, issue, pending = false, error, saved = false, messages = defaultMessages }: PaymentSettingsFormProps) {
   const text = messages.integrations.payments
@@ -117,6 +118,22 @@ export function PaymentSettingsForm({ value, onChange, onSubmit, issue, pending 
                 ) : null}
               </div>
             ))}
+            {/* Only of what is paid online: an order settled with the shop opens its WhatsApp already. */}
+            {value.pix || value.card ? (
+              <Field orientation="horizontal">
+                <FieldContent>
+                  <FieldLabel htmlFor={`${id}-whatsapp`}>{text.whatsappWhenPaid}</FieldLabel>
+                  <FieldDescription id={`${id}-whatsapp-help`}>{text.whatsappWhenPaidHint}</FieldDescription>
+                </FieldContent>
+                <Switch
+                  id={`${id}-whatsapp`}
+                  checked={value.whatsappWhenPaid}
+                  disabled={pending}
+                  aria-describedby={`${id}-whatsapp-help`}
+                  onCheckedChange={(on: boolean) => onChange({ ...value, whatsappWhenPaid: on })}
+                />
+              </Field>
+            ) : null}
           </div>
 
           {issue ? (

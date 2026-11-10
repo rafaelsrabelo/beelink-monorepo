@@ -60,6 +60,8 @@ export interface PaymentSettingsFormValues {
   maxInstallments: number
   /** Paying on delivery or at pickup, settled between the shop and the customer. */
   offline: boolean
+  /** An order paid online is sent to the shop's WhatsApp by the customer once paid. */
+  whatsappWhenPaid: boolean
 }
 
 /** The third parties the panel can offer, by the wire's name. Mirrors `IntegrationProvider`. */

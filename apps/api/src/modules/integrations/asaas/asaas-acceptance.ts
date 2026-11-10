@@ -26,6 +26,8 @@ export interface AsaasAcceptanceOf {
   maxInstallments: number;
   /** Paying on delivery or at pickup. Only means anything while `connected`. */
   offline: boolean;
+  /** An order paid online goes to the shop's WhatsApp too, once paid. Only means anything while `connected`. */
+  whatsappWhenPaid: boolean;
 }
 
 /**
@@ -53,8 +55,8 @@ export class AsaasAcceptance {
       this.prisma.storeIntegration.findUnique({ where: { storeId_provider: { storeId, provider: 'ASAAS' } }, select: { status: true, connectedAt: true, accountApproval: true } }),
       this.prisma.asaasSettings.findUnique({ where: { storeId } }),
     ]);
-    const { pix, card, maxInstallments, offline } = settings ?? ASAAS_SETTINGS_DEFAULTS;
+    const { pix, card, maxInstallments, offline, whatsappWhenPaid } = settings ?? ASAAS_SETTINGS_DEFAULTS;
     const keyed = asaasConfig() !== null && connection?.status === 'CONNECTED';
-    return { connected: keyed && chargesOnline(connection), connectedAt: keyed ? connection.connectedAt : null, pix, card, maxInstallments, offline };
+    return { connected: keyed && chargesOnline(connection), connectedAt: keyed ? connection.connectedAt : null, pix, card, maxInstallments, offline, whatsappWhenPaid };
   }
 }

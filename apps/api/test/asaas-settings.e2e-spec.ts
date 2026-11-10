@@ -81,8 +81,16 @@ describe('how a shop is paid through Asaas (BEELINK-203)', () => {
     const response = await call('GET', settings, owner);
 
     expect(response.statusCode).toBe(200);
-    expect(response.json<AsaasSettings>()).toEqual({ ...DEFAULT_CHOICES, updatedAt: null });
+    expect(response.json<AsaasSettings>()).toEqual({ ...DEFAULT_CHOICES, whatsappWhenPaid: false, updatedAt: null });
     expect(await prisma.asaasSettings.count()).toBe(0);
+  });
+
+  it('saves whether an order paid online goes to the WhatsApp, off until switched on, and keeps it through a save that does not name it', async () => {
+    expect((await save(CHOICES)).json<AsaasSettings>().whatsappWhenPaid).toBe(false);
+    expect((await save({ ...CHOICES, whatsappWhenPaid: true })).json<AsaasSettings>().whatsappWhenPaid).toBe(true);
+    expect((await save(CHOICES)).json<AsaasSettings>().whatsappWhenPaid).toBe(true);
+    expect((await save({ ...CHOICES, whatsappWhenPaid: 'yes' })).statusCode).toBe(400);
+    expect((await read()).whatsappWhenPaid).toBe(true);
   });
 
   it('saves the choices whole and reads them again, with no connection at all', async () => {

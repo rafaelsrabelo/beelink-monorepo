@@ -7,6 +7,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
+import { WhatsAppIcon } from "../store/store-brand-icons"
 
 /**
  * Where a payment stands when there is no charge to show: none was made, the last one ended, it is
@@ -32,6 +33,12 @@ export interface StorefrontPaymentNoticeProps {
   onAction?: () => void
   /** The action is on its way: nothing is pressed twice. */
   pending?: boolean
+  /**
+   * On `paid`, at a shop that asks a paid order to be sent to its WhatsApp: the link that opens it
+   * with the order's message — the screen's one call, in place of the way back to the order, which
+   * the layout around the notice already draws. Null otherwise.
+   */
+  whatsappHref?: string | null
   linkComponent?: LinkComponent
   messages?: UiMessages
 }
@@ -44,7 +51,7 @@ const PRIMARY = "flex h-11 items-center justify-center rounded-xl bg-shop-primar
  * the shop or the matter is closed. "Pagamento aprovado" is one of these: it is what the screen
  * turns into, under the shopper's eyes, once the payment is confirmed.
  */
-export function StorefrontPaymentNotice({ variant, orderHref, onAction, pending = false, linkComponent: Link = AnchorLink, messages = defaultMessages }: StorefrontPaymentNoticeProps) {
+export function StorefrontPaymentNotice({ variant, orderHref, onAction, pending = false, whatsappHref = null, linkComponent: Link = AnchorLink, messages = defaultMessages }: StorefrontPaymentNoticeProps) {
   const text = messages.storefront
   const words = {
     none: { icon: ClockIcon, title: text.paymentNoneTitle, body: text.paymentNoneBody, action: text.paymentCreate },
@@ -60,14 +67,21 @@ export function StorefrontPaymentNotice({ variant, orderHref, onAction, pending 
   }[variant]
   const Icon = words.icon
   const acts = words.action !== null && onAction !== undefined
+  const toWhatsapp = variant === "paid" ? whatsappHref : null
 
   return (
     // A status, so a screen reader hears the screen turn — a Pix into "Pagamento aprovado" — without being moved.
     <section role={variant === "unread" ? "alert" : "status"} className="flex flex-col items-center gap-3 rounded-2xl border border-shop-line bg-shop-background px-6 py-10 text-center">
       <Icon aria-hidden="true" className={variant === "paid" ? "size-10 text-shop-positive-ink" : "size-10 text-shop-muted"} strokeWidth={1.5} />
       <h2 className={variant === "paid" ? "text-xl font-extrabold text-shop-positive-ink" : "text-xl font-extrabold"}>{words.title}</h2>
-      <p className="text-sm text-shop-muted">{words.body}</p>
-      {acts ? (
+      <p className="text-sm text-shop-muted">{toWhatsapp ? text.paymentPaidWhatsappBody : words.body}</p>
+      {toWhatsapp ? (
+        // Another site, opened beside this one: the order's page — the layout's own link — stays here to come back to.
+        <a href={toWhatsapp} target="_blank" rel="noopener noreferrer" className={`${PRIMARY} mt-2 gap-2`}>
+          <WhatsAppIcon className="size-5" />
+          {text.paymentSendWhatsapp}
+        </a>
+      ) : acts ? (
         <button type="button" onClick={onAction} disabled={pending} aria-busy={pending || undefined} className={`${PRIMARY} mt-2`}>
           {pending && variant !== "unread" ? text.paymentCreating : words.action}
         </button>

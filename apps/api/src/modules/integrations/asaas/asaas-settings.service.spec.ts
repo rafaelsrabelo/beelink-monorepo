@@ -37,7 +37,7 @@ describe('AsaasSettingsService', () => {
   it('answers the defaults for a shop that never saved: Pix and card in full, and paying on delivery', async () => {
     const { service, stores } = build();
 
-    expect(await service.settings('lessari', 'owner')).toEqual({ pix: true, card: true, maxInstallments: 1, offline: true, updatedAt: null });
+    expect(await service.settings('lessari', 'owner')).toEqual({ pix: true, card: true, maxInstallments: 1, offline: true, whatsappWhenPaid: false, updatedAt: null });
     expect(stores.ownedStoreId).toHaveBeenCalledWith('lessari', 'owner');
   });
 
@@ -67,6 +67,17 @@ describe('AsaasSettingsService', () => {
   });
 
   /** The number is the shop's choice for when the card is on: switching the card off does not forget it. */
+  it('saves whether an order paid online goes to the WhatsApp, and leaves it as it was when a payload says nothing of it', async () => {
+    const { service, asaasSettings } = build({ storeId: STORE, pix: true, card: true, maxInstallments: 1, offline: true, whatsappWhenPaid: false, updatedAt: SAVED_AT });
+
+    expect((await service.save('lessari', 'owner', { pix: true, card: true, maxInstallments: 1, offline: true, whatsappWhenPaid: true })).whatsappWhenPaid).toBe(true);
+    // A panel loaded before the choice existed saves the rest, and turns nothing off.
+    const older = await service.save('lessari', 'owner', { pix: true, card: false, maxInstallments: 1, offline: true });
+
+    expect(asaasSettings.upsert.mock.calls[1]?.[0].update).toEqual({ pix: true, card: false, maxInstallments: 1, offline: true });
+    expect(older.whatsappWhenPaid).toBe(true);
+  });
+
   it('keeps the instalments of a card that is switched off', async () => {
     const { service, row } = build({ storeId: STORE, pix: true, card: true, maxInstallments: 10, offline: true, updatedAt: SAVED_AT });
 

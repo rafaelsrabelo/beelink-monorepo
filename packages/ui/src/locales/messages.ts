@@ -496,6 +496,10 @@ export interface UiMessages {
     /** The payment screen of one order (BEELINK-205). `{number}`. */
     paymentTitle: string
     paymentBack: string
+    /** "Pagamento aprovado", at a shop that asks a paid order to be sent to its WhatsApp: what to do now. */
+    paymentPaidWhatsappBody: string
+    /** The button that opens the shop's WhatsApp with the paid order's message. */
+    paymentSendWhatsapp: string
     paymentAmount: string
     paymentPixTitle: string
     paymentPixSteps: string
@@ -610,6 +614,8 @@ export interface UiMessages {
     orderPickup: string
     /** `{method}`. */
     orderPayment: string
+    /** `{method}` — the payment's line of a message sent once the order was paid online. */
+    orderPaymentPaid: string
     /** The shop's sign-in page (G2): its three faces, and what each one says. */
     signInTitle: string
     signUpTitle: string
@@ -4301,6 +4307,9 @@ export interface UiMessages {
       installmentsUpTo: string
       offline: string
       offlineHint: string
+      /** An order paid online is sent to the shop's WhatsApp by the customer once paid. */
+      whatsappWhenPaid: string
+      whatsappWhenPaidHint: string
       save: string
       saving: string
       saved: string

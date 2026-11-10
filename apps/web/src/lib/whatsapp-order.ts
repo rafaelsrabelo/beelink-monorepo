@@ -21,6 +21,8 @@ export interface OrderMessageInput {
   >
   /** Who placed it, as the shop keeps them: their name and phone go under the total. */
   customer: Pick<CustomerProfile, "name" | "phone">
+  /** Sent once it was paid online: the payment's line says so, and the shop prepares it on that word. */
+  paid?: boolean
   locale: string
   messages: UiMessages
 }
@@ -39,7 +41,7 @@ function discountMessageLines(order: DiscountParts, money: (cents: number) => st
  * shows — one line per item as the API priced it, what came off, the total, where it goes or that
  * it is picked up, the payment, and who ordered.
  */
-export function orderMessageOf({ shopName, order, customer, locale, messages }: OrderMessageInput): string {
+export function orderMessageOf({ shopName, order, customer, paid = false, locale, messages }: OrderMessageInput): string {
   const text = messages.storefront
   const money = (cents: number) => formatCents(cents, locale, "BRL")
   const lines = order.items.map((item) =>
@@ -63,7 +65,7 @@ export function orderMessageOf({ shopName, order, customer, locale, messages }: 
     // A delivery's fee not agreed yet stays out of the total: "+ frete" says so (BEELINK-170).
     format(text.orderTotal, { total: customerTotalText(money(order.totalCents), order, text.orderTotalPlusFee) }),
     order.fulfillment === "PICKUP" ? text.orderPickup : format(text.orderAddress, { address: address ?? "" }),
-    format(text.orderPayment, { method: messages.orders.payments[order.paymentMethod] }),
+    format(paid ? text.orderPaymentPaid : text.orderPayment, { method: messages.orders.payments[order.paymentMethod] }),
     format(text.orderCustomer, { name: customer.name }),
     ...(customer.phone ? [format(text.orderPhone, { phone: customer.phone })] : []),
   ].join("\n")

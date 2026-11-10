@@ -56,6 +56,9 @@ export const AguardandoFrete: Story = { args: { children: notice("awaitingTotal"
 /** O pagamento foi confirmado com a tela aberta. */
 export const Aprovado: Story = { args: { children: notice("paid") } }
 
+/** Aprovado, numa loja que recebe o pedido pago no WhatsApp: o botão leva a mensagem pronta para a loja separar. */
+export const AprovadoComWhatsApp: Story = { args: { children: <StorefrontPaymentNotice variant="paid" orderHref="#" whatsappHref="#" /> } }
+
 /** O valor voltou para o cliente. */
 export const Estornado: Story = { args: { children: notice("refunded") } }
 

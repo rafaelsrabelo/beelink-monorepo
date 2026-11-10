@@ -67,6 +67,21 @@ describe("PaymentSettingsForm", () => {
     expect(onChange).toHaveBeenLastCalledWith({ ...payments, card: true, maxInstallments: 10 })
   })
 
+  it("asks whether an order paid online goes to the shop's WhatsApp, while anything is paid online, and says what it means", async () => {
+    const onChange = vi.fn()
+    const { rerender } = render(<PaymentSettingsForm value={payments} onChange={onChange} onSubmit={noop} />)
+    const whatsapp = screen.getByRole("switch", { name: "Receber o pedido pago no WhatsApp" })
+
+    expect(whatsapp).not.toBeChecked()
+    expect(whatsapp).toHaveAccessibleDescription(/o cliente envia o pedido para o WhatsApp da loja/)
+    await userEvent.click(whatsapp)
+    expect(onChange).toHaveBeenLastCalledWith({ ...payments, whatsappWhenPaid: true })
+
+    // With nothing paid online there is no paid order to send.
+    rerender(<PaymentSettingsForm value={{ ...payments, pix: false, card: false }} onChange={onChange} onSubmit={noop} />)
+    expect(screen.queryByRole("switch", { name: "Receber o pedido pago no WhatsApp" })).toBeNull()
+  })
+
   it("says, as an alert, why what is chosen cannot be saved", () => {
     const issue = "Deixe pelo menos uma forma ligada: sem nenhuma, o cliente não tem como pagar."
     render(<PaymentSettingsForm value={{ ...payments, pix: false, card: false, offline: false }} onChange={noop} onSubmit={noop} issue={issue} />)

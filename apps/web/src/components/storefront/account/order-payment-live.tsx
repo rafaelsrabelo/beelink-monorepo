@@ -41,6 +41,12 @@ export interface OrderPaymentLiveProps {
   order: PaymentOrderFacts
   /** What the page read of the order as a sale: with the charge read here, whether it is a purchase to tell. */
   sale: PurchaseOrder
+  /**
+   * The shop's WhatsApp with the order's message, at a shop that asks a paid order to be sent there:
+   * once paid, the screen stays on "Pagamento aprovado" with it as its one call, rather than going on
+   * to the order by itself. Null, or absent, everywhere else.
+   */
+  whatsappHref?: string | null
   locale: string
   messages: UiMessages
 }
@@ -54,7 +60,7 @@ export interface OrderPaymentLiveProps {
  * That same moment is the order's purchase (BEELINK-273): told here on the API's word, once, and
  * never of a charge still to be paid.
  */
-export function OrderPaymentLive({ slug, number, orderHref, profileHref, order, sale, locale, messages }: OrderPaymentLiveProps) {
+export function OrderPaymentLive({ slug, number, orderHref, profileHref, order, sale, whatsappHref = null, locale, messages }: OrderPaymentLiveProps) {
   const text = messages.storefront
   const router = useRouter()
   const screenOf = (answer: CustomerOrderPaymentAnswer) => paymentScreenOf(answer.payment, order, new Date())
@@ -76,10 +82,11 @@ export function OrderPaymentLive({ slug, number, orderHref, profileHref, order, 
   const signedOut = (read.error instanceof ShopperOrderError && read.error.errorCode === "AUTH_UNAUTHENTICATED") || refused === "AUTH_UNAUTHENTICATED"
 
   useEffect(() => {
-    if (!paid) return
+    // The message is the shopper's to send: the screen waits for that press, with the order's page beside it.
+    if (!paid || whatsappHref) return
     const timer = setTimeout(() => router.replace(orderHref as Parameters<typeof router.replace>[0]), APPROVED_LINGER_MS)
     return () => clearTimeout(timer)
-  }, [paid, orderHref, router])
+  }, [paid, whatsappHref, orderHref, router])
 
   // The charge moved under the screen: it is read again — after a moment, when another request is still making it.
   useEffect(() => {
@@ -129,7 +136,7 @@ export function OrderPaymentLive({ slug, number, orderHref, profileHref, order, 
           messages={messages}
         />
       ) : (
-        <StorefrontPaymentNotice variant={screen.variant} orderHref={orderHref} onAction={screen.acts ? charge : undefined} pending={make.isPending} linkComponent={AppLink} messages={messages} />
+        <StorefrontPaymentNotice variant={screen.variant} orderHref={orderHref} onAction={screen.acts ? charge : undefined} pending={make.isPending} whatsappHref={whatsappHref} linkComponent={AppLink} messages={messages} />
       )}
     </StorefrontPaymentLayout>
   )

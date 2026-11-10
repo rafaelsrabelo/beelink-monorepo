@@ -85,9 +85,18 @@ export interface AsaasSettings {
   maxInstallments: number;
   /** Paying on delivery or at pickup, settled between the shop and the customer: what a shop with no Asaas does. */
   offline: boolean;
+  /**
+   * An order paid online is sent to the shop's WhatsApp too, by the customer, once Asaas confirmed the
+   * payment: the screen that says it was paid offers the message, as an order settled with the shop
+   * opens it. For a shop that prepares an order from that conversation. Off by default.
+   */
+  whatsappWhenPaid: boolean;
   /** ISO-8601; null until first saved. What is read until then are the defaults: Pix and card in full, and paying on delivery. */
   updatedAt: string | null;
 }
 
 /** `PUT /stores/:slug/integrations/asaas/settings`, whole. */
-export type AsaasSettingsPayload = Omit<AsaasSettings, "updatedAt">;
+export type AsaasSettingsPayload = Omit<AsaasSettings, "updatedAt" | "whatsappWhenPaid"> & {
+  /** Absent leaves it as it was: a panel loaded before the choice existed saves the rest without turning it off. */
+  whatsappWhenPaid?: boolean;
+};

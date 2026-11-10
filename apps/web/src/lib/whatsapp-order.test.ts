@@ -106,6 +106,14 @@ describe("the WhatsApp order", () => {
     expect(message).not.toContain("Celular:")
   })
 
+  it("says an order paid online was paid on the site, for the shop to prepare it on that word", () => {
+    const of = (paid: boolean) => orderMessageOf({ shopName: "Loja", order: { ...placed, paymentMethod: "PIX" }, customer: { name: "Bia", phone: null }, paid, locale: "pt-BR", messages: ptBR })
+
+    expect(of(true)).toContain("Pagamento: Pix — já pago pelo site")
+    expect(of(false)).toContain("Pagamento: Pix")
+    expect(of(false)).not.toContain("já pago")
+  })
+
   it("escapes the whole message into the link, line breaks and all", () => {
     expect(whatsappOrderHref("5511999998888", "Olá!\n2× Blusa & Saia")).toBe("https://wa.me/5511999998888?text=Ol%C3%A1!%0A2%C3%97%20Blusa%20%26%20Saia")
   })

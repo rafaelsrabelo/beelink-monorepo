@@ -156,6 +156,8 @@ export interface CustomerOrderPaymentAnswer {
 export interface StorefrontOnlinePayments {
   pix: boolean;
   card: boolean;
+  /** The shop asks an order paid online to be sent to its WhatsApp once paid (`AsaasSettings.whatsappWhenPaid`); absent is no. */
+  whatsappWhenPaid?: boolean;
   /** The most instalments a card is charged in, with no interest to the customer; 1 is in full only. */
   maxInstallments: number;
   /** Asaas's least charge, in whole cents: a closed total under it is not charged online. */

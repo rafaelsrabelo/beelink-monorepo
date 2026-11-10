@@ -30,5 +30,6 @@ export class AsaasSettingsResponse implements AsaasSettings {
   @ApiProperty() card!: boolean;
   @ApiProperty({ minimum: 1, maximum: 12, description: '1 is in full.' }) maxInstallments!: number;
   @ApiProperty({ description: 'Paying on delivery or at pickup.' }) offline!: boolean;
+  @ApiProperty({ description: "An order paid online is sent to the shop's WhatsApp by the customer once paid." }) whatsappWhenPaid!: boolean;
   @ApiProperty({ nullable: true, type: String, format: 'date-time', description: 'Null until first saved: the defaults.' }) updatedAt!: string | null;
 }

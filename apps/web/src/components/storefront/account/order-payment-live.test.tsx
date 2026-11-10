@@ -185,6 +185,22 @@ describe("OrderPaymentLive — the payment screen of an order", () => {
     expect(shop.count("GET")).toBe(2)
   })
 
+  // A shop that prepares the order from its WhatsApp: once paid, the screen waits for the message to be sent.
+  it("stays on approved with the shop's WhatsApp to send the order to, at a shop that asks it, rather than going on by itself", async () => {
+    handler({ reads: [answer(pix()), answer(pix({ status: "RECEIVED", pix: null, paidAt: NOW.toISOString() }))] })
+    renderScreen({ whatsappHref: "https://wa.me/5511999998888?text=Pedido%2014" })
+    await settle()
+    expect(screen.queryByRole("link", { name: "Enviar pedido no WhatsApp" })).toBeNull()
+
+    await pass(PAYMENT_POLL_MS)
+    expect(screen.getByRole("status")).toHaveTextContent("Pagamento aprovado")
+    expect(screen.getByRole("link", { name: "Enviar pedido no WhatsApp" })).toHaveAttribute("href", "https://wa.me/5511999998888?text=Pedido%2014")
+
+    await pass(APPROVED_LINGER_MS * 2)
+    expect(router.replace).not.toHaveBeenCalled()
+    expect(screen.getByRole("link", { name: "Ver pedido" })).toHaveAttribute("href", "/loja/conta/pedidos/14")
+  })
+
   // BEELINK-273: an order charged on the site is a purchase when it is paid, and not before.
   it("tells the order's purchase the moment the API says paid — once, under the order's id, worth what was charged — and nothing while it waits", async () => {
     handler({ reads: [answer(pix()), answer(pix({ status: "RECEIVED", pix: null, paidAt: NOW.toISOString() }))] })
