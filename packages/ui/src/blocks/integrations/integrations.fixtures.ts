@@ -61,7 +61,7 @@ export const asaasConnected: AsaasCardView = {
 
 export const asaasDisconnected: AsaasCardView = { ...asaasConnected, status: "DISCONNECTED", account: null, webhook: null, approval: null, connectedAt: null }
 
-export const payments: PaymentSettingsFormValues = { pix: true, card: true, maxInstallments: 3, offline: true }
+export const payments: PaymentSettingsFormValues = { pix: true, card: true, maxInstallments: 3, offline: true, whatsappWhenPaid: false }
 
 export const META_LOGO = "/brand/integrations/meta-icon.svg"
 
