@@ -42,3 +42,15 @@ cancelado.
    estoque de cada sabor, e gravam os sabores com o item.
 2. **Loja**: "Monte seu kit" na página do produto, o carrinho com a composição, e os sabores em todo lugar que mostra
    itens de pedido.
+
+## Revisto no mesmo dia: uma regra, e não uma categoria
+
+Rafael, ao ver o painel: "o kit só pode ter uma categoria? E se eu quiser várias categorias, ou todos os produtos?
+Hoje todos os produtos, exceto de uma categoria, podem ser pedidos". A categoria única virou uma regra, com três
+opções:
+
+- **Todos os produtos da loja.**
+- **Só destas categorias**, uma ou várias.
+- **Todos, menos estas categorias** — o caso da Dindin da Leia.
+
+Uma subcategoria acompanha a categoria marcada, um produto novo segue a regra sozinho, e nenhum kit entra em outro.

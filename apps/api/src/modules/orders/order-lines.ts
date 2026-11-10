@@ -53,7 +53,9 @@ export async function readOrderLines(db: Prisma.TransactionClient, storeId: stri
       productId: true,
       priceCents: true,
       sku: true,
-      product: { select: { name: true, categoryId: true, cashbackRateBps: true, kitSize: true, kitCategoryId: true, category: { select: { parentId: true } } } },
+      product: {
+        select: { name: true, categoryId: true, cashbackRateBps: true, kitSize: true, kitScope: true, kitCategories: { select: { categoryId: true } }, category: { select: { parentId: true } } },
+      },
       values: { select: { option: { select: { name: true, position: true } }, value: { select: { name: true } } } },
     },
   });
@@ -69,7 +71,16 @@ export async function readOrderLines(db: Prisma.TransactionClient, storeId: stri
     variants.map((variant) => {
       const categoryIds = [variant.product.categoryId, variant.product.category?.parentId].filter((id): id is string => typeof id === 'string');
       const variantLabel = variantLabelOf(variant.values.map((chosen) => ({ optionName: chosen.option.name, optionPosition: chosen.option.position, valueName: chosen.value.name })));
-      const kit: KitReadVariant = { id: variant.id, productId: variant.productId, productName: variant.product.name, variantLabel, kitSize: variant.product.kitSize, kitCategoryId: variant.product.kitCategoryId, categoryIds };
+      const kit: KitReadVariant = {
+        id: variant.id,
+        productId: variant.productId,
+        productName: variant.product.name,
+        variantLabel,
+        kitSize: variant.product.kitSize,
+        kitScope: variant.product.kitScope,
+        kitCategoryIds: variant.product.kitCategories.map((named) => named.categoryId),
+        categoryIds,
+      };
       return [variant.id, { variant, kit, categoryIds, variantLabel }] as const;
     }),
   );

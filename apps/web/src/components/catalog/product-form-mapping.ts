@@ -42,7 +42,8 @@ export const EMPTY_FORM: FormValues = {
   height: "",
   isKit: false,
   kitSize: "",
-  kitCategoryId: "",
+  kitScope: "ALL",
+  kitCategoryIds: [],
 }
 
 /** Centimetres as a person types them, millimetres on the wire. Null for an empty field. */
@@ -79,7 +80,8 @@ export function toForm(product: Product): FormValues {
     height: product.heightMm === null ? "" : String(product.heightMm / 10),
     isKit: Boolean(product.kit),
     kitSize: product.kit ? String(product.kit.size) : "",
-    kitCategoryId: product.kit?.categoryId ?? "",
+    kitScope: product.kit?.scope ?? "ALL",
+    kitCategoryIds: product.kit?.categoryIds ?? [],
   }
 }
 
@@ -93,11 +95,12 @@ function kitSizeOf(typed: string): number | null {
  * What the kit's fields are missing before the product is sent (plan 2026-11-10--kits-monte-seu-kit),
  * each in its field's words; null when it is no kit, or a whole one.
  */
-export function kitIssuesOf(value: FormValues, text: { sizeInvalid: string; categoryMissing: string }): Partial<Record<"kitSize" | "kitCategoryId", { message: string }>> | null {
+export function kitIssuesOf(value: FormValues, text: { sizeInvalid: string; categoryMissing: string }): Partial<Record<"kitSize" | "kitCategoryIds", { message: string }>> | null {
   if (!value.isKit) return null
   const issues = {
     ...(kitSizeOf(value.kitSize) === null ? { kitSize: { message: text.sizeInvalid } } : {}),
-    ...(value.kitCategoryId === "" ? { kitCategoryId: { message: text.categoryMissing } } : {}),
+    // Every product names no category; the other two name at least one.
+    ...(value.kitScope !== "ALL" && value.kitCategoryIds.length === 0 ? { kitCategoryIds: { message: text.categoryMissing } } : {}),
   }
   return Object.keys(issues).length ? issues : null
 }
@@ -124,7 +127,7 @@ export function fieldsOf(value: FormValues): UpdateProductPayload {
     origin: value.origin || null,
     images: value.imageUrls.map((url: string) => ({ url })),
     // Null makes it a product like any other; the fields were checked whole before anything is sent.
-    kit: value.isKit ? { size: kitSizeOf(value.kitSize) ?? 2, categoryId: value.kitCategoryId } : null,
+    kit: value.isKit ? { size: kitSizeOf(value.kitSize) ?? 2, scope: value.kitScope, categoryIds: value.kitScope === "ALL" ? [] : value.kitCategoryIds } : null,
   }
 }
 

@@ -83,9 +83,9 @@ model ProductCategory {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  products    Product[] @relation("ProductInCategory")
-  /// The kits whose items are chosen among this category's products (plan 2026-11-10--kits-monte-seu-kit).
-  kitProducts Product[] @relation("KitCategory")
+  products Product[]
+  /// The kits whose rule names this category (plan 2026-11-10--kits-monte-seu-kit).
+  kitRules ProductKitCategory[]
 
   /// The showcases that draw this category. Deleting the category leaves them asking for another.
   showcases StoreComponent[]
@@ -111,7 +111,7 @@ model Product {
 
   /// SetNull, not Cascade: retiring a category must never delete what was in it.
   categoryId String?          @db.Uuid
-  category   ProductCategory? @relation("ProductInCategory", fields: [categoryId], references: [id], onDelete: SetNull)
+  category   ProductCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   /// Normalised exactly as a category slug is, by the same function. A product and a category may
   /// share a slug — they live at different depths, so no URL is ambiguous.
@@ -119,14 +119,14 @@ model Product {
   name String @db.VarChar(160)
 
   /// A kit (plan 2026-11-10--kits-monte-seu-kit): the customer picks this many units among the
-  /// products of `kitCategory`, a product as many times as they like, at the kit's own price — its
+  /// products its rule lets in, a product as many times as they like, at the kit's own price — its
   /// one variant's. 2 to 99 by a CHECK; null is a product like any other. A kit has no options and
   /// keeps no stock of its own: what leaves the stock is each product chosen.
   kitSize       Int?
-  /// Where a kit's items come from, a product added to it later included. Null — the category was
-  /// deleted — leaves a kit that cannot be put together until another is chosen.
-  kitCategoryId String?          @db.Uuid
-  kitCategory   ProductCategory? @relation("KitCategory", fields: [kitCategoryId], references: [id], onDelete: SetNull)
+  /// Which products may go in it: every one, those of `kitCategories`, or every one but theirs. Set
+  /// with `kitSize` and only with it, by a CHECK.
+  kitScope      KitScope?
+  kitCategories ProductKitCategory[]
 
   description String?
 
@@ -236,7 +236,6 @@ model Product {
   /// Two shapes of read, two indexes: the whole shop's grid, and one category's.
   @@index([storeId, status, position])
   @@index([categoryId, status, position])
-  @@index([kitCategoryId])
   /// A NEWEST showcase: the shop's products on the shelf, most recently created first.
   @@index([storeId, status, createdAt])
   /// The search box: a substring match that a trigram index can serve.
@@ -250,6 +249,29 @@ model Product {
 /// the first row is the card's image, which cannot be two rows at once and so needs no partial
 /// unique index to defend it — the legacy used a trigger that rewrote the other rows instead of
 /// refusing the wrong write.
+/// Which products a kit lets in (plan 2026-11-10--kits-monte-seu-kit), as `Product.kitScope` reads it.
+enum KitScope {
+  /// Every product of the shop.
+  ALL
+  /// Those of the categories named, and of the subcategories under them.
+  ONLY
+  /// Every product but those of the categories named, and of the subcategories under them.
+  EXCEPT
+}
+
+/// A category a kit's rule names (plan 2026-11-10--kits-monte-seu-kit). A deleted category leaves the
+/// rule without it: a kit of `ONLY` it then lets nothing in until another is named.
+model ProductKitCategory {
+  productId  String          @db.Uuid
+  product    Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  categoryId String          @db.Uuid
+  category   ProductCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([productId, categoryId])
+  @@index([categoryId])
+  @@map("product_kit_categories")
+}
+
 model ProductImage {
   id        String  @id @default(uuid(7)) @db.Uuid
   productId String  @db.Uuid

@@ -20,6 +20,7 @@ describe('kits', () => {
   let prisma: PrismaService;
   let owner: AuthSession;
   let dindins: string;
+  let outros: string;
   let ninho: string;
   let pacoca: string;
   let whey: string;
@@ -40,12 +41,12 @@ describe('kits', () => {
     owner = await signUpAndSignIn(app, newEmail('leia'));
     await call('POST', '/api/stores', owner, shopBody('lessari'));
     dindins = (await call('POST', '/api/stores/lessari/product-categories', owner, { name: 'Dindins' })).json<{ id: string }>().id;
-    const outros = (await call('POST', '/api/stores/lessari/product-categories', owner, { name: 'Outros' })).json<{ id: string }>().id;
+    outros = (await call('POST', '/api/stores/lessari/product-categories', owner, { name: 'Outros' })).json<{ id: string }>().id;
     ninho = await variantOf(await addProduct({ name: 'Ninho com Nutella', priceCents: 700, categoryId: dindins }));
     pacoca = await variantOf(await addProduct({ name: 'Paçoquinha', priceCents: 1020, categoryId: dindins }));
     whey = await variantOf(await addProduct({ name: 'Whey', priceCents: 8990, categoryId: outros }));
     // Its stock switched on as it is created: a kit keeps none of its own, whatever was asked.
-    kit = await addProduct({ name: 'Kit Festa', priceCents: 1990, trackStock: true, stockQuantity: 3, kit: { size: 3, categoryId: dindins } });
+    kit = await addProduct({ name: 'Kit Festa', priceCents: 1990, trackStock: true, stockQuantity: 3, kit: { size: 3, scope: 'ONLY', categoryIds: [dindins] } });
     kitVariant = await variantOf(kit);
     await prisma.productVariant.update({ where: { id: ninho }, data: { trackStock: true, stockQuantity: 5 } });
   });
@@ -72,12 +73,12 @@ describe('kits', () => {
 
   const threeKit = (quantity = 1) => ({ variantId: kitVariant, quantity, kit: [{ variantId: ninho, quantity: 2 }, { variantId: pacoca, quantity: 1 }] });
 
-  it('makes a product a kit — its size and category — with no stock of its own, and tells the shop window what to put it together from', async () => {
-    expect(kit.kit).toEqual({ size: 3, categoryId: dindins });
+  it('makes a product a kit — its size and rule — with no stock of its own, and tells the shop window how many to pick', async () => {
+    expect(kit.kit).toEqual({ size: 3, scope: 'ONLY', categoryIds: [dindins] });
     expect(kit.trackStock).toBe(false);
 
     const page = (await call('GET', `/api/stores/lessari/catalog/${kit.slug}`)).json<PublicProductDetail>();
-    expect(page.kit).toEqual({ size: 3, category: { slug: 'dindins', name: 'Dindins' } });
+    expect(page.kit).toEqual({ size: 3 });
     // No card adds a kit without a choice.
     const listing = (await call('GET', '/api/stores/lessari/catalog')).json<{ products: { slug: string; hasOptions?: boolean }[] }>();
     expect(listing.products.find((product) => product.slug === kit.slug)?.hasOptions).toBe(true);
@@ -155,9 +156,35 @@ describe('kits', () => {
     expect(response.json<ApiErrorBody>()).toMatchObject({ errorCode: 'ORDER_KIT_INVALID' });
   });
 
-  it('refuses a kit whose category was deleted, which cannot be put together any more', async () => {
-    await prisma.product.update({ where: { id: kit.id }, data: { kitCategoryId: null } });
+  it("refuses a kit of some categories once they are all gone: it lets nothing in", async () => {
+    await prisma.productKitCategory.deleteMany({ where: { productId: kit.id } });
 
     expect((await place([threeKit()])).json<ApiErrorBody>()).toMatchObject({ errorCode: 'ORDER_KIT_INVALID' });
+  });
+
+  it('lets every product in, or every one but some categories\', as its rule says', async () => {
+    const withWhey = { variantId: kitVariant, quantity: 1, kit: [{ variantId: ninho, quantity: 2 }, { variantId: whey, quantity: 1 }] };
+
+    await call('PUT', `/api/stores/lessari/products/${kit.id}`, owner, { kit: { size: 3, scope: 'ALL' } });
+    expect((await place([withWhey])).statusCode).toBe(201);
+
+    const except = await call('PUT', `/api/stores/lessari/products/${kit.id}`, owner, { kit: { size: 3, scope: 'EXCEPT', categoryIds: [outros] } });
+    expect(except.json<ProductDetail>().kit).toEqual({ size: 3, scope: 'EXCEPT', categoryIds: [outros] });
+    expect((await place([withWhey])).json<ApiErrorBody>()).toMatchObject({ errorCode: 'ORDER_KIT_INVALID' });
+    expect((await place([threeKit()])).statusCode).toBe(201);
+
+    // A product of no category is one of "every one but", on the page as at the order.
+    const agua = await variantOf(await addProduct({ name: 'Água', priceCents: 300 }));
+    const parts = (await call('GET', `/api/stores/lessari/catalog/${kit.slug}/kit`)).json<StorefrontKitParts>().parts.map((part) => part.name);
+    expect(parts).toEqual(['Ninho com Nutella', 'Paçoquinha', 'Água']);
+    expect((await place([{ variantId: kitVariant, quantity: 1, kit: [{ variantId: agua, quantity: 3 }] }])).statusCode).toBe(201);
+  });
+
+  it('refuses a rule that names no category for some, or one for every product', async () => {
+    for (const rule of [{ size: 3, scope: 'ONLY' }, { size: 3, scope: 'EXCEPT', categoryIds: [] }, { size: 3, scope: 'ALL', categoryIds: [dindins] }]) {
+      const response = await call('PUT', `/api/stores/lessari/products/${kit.id}`, owner, { kit: rule });
+      expect(response.statusCode).toBe(400);
+      expect(response.json<ApiErrorBody>()).toMatchObject({ errorCode: 'PRODUCT_KIT_INVALID' });
+    }
   });
 });

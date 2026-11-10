@@ -1,9 +1,13 @@
 "use client"
 
+// React
+import { useId } from "react"
+
 // UI
-import { Field, FieldContent, FieldDescription, FieldError, FieldLabel } from "@harness-monorepo/ui/components/field"
+import { Checkbox } from "@harness-monorepo/ui/components/checkbox"
+import { Field, FieldContent, FieldDescription, FieldError, FieldLabel, FieldLegend, FieldSet } from "@harness-monorepo/ui/components/field"
 import { Input } from "@harness-monorepo/ui/components/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@harness-monorepo/ui/components/select"
+import { RadioGroup, RadioGroupItem } from "@harness-monorepo/ui/components/radio-group"
 import { Switch } from "@harness-monorepo/ui/components/switch"
 
 // Locales
@@ -22,17 +26,21 @@ export interface ProductKitFieldsProps {
   messages?: UiMessages
 }
 
+const SCOPES = ["ALL", "ONLY", "EXCEPT"] as const satisfies readonly ProductFormValues["kitScope"][]
+
 /**
  * "Este produto é um kit" (plan 2026-11-10--kits-monte-seu-kit): switched on, how many items the
- * customer picks and the category they come from. A kit keeps no stock of its own, so switching it on
- * switches the product's count off; the price stays the product's, as the pricing section sets it.
+ * customer picks and which products may go in — every one of the shop, only some categories', or
+ * every one but some categories'. A kit keeps no stock of its own, so switching it on switches the
+ * product's count off; the price stays the product's, as the pricing section sets it.
  */
 export function ProductKitFields({ value, onChange, categories, errors, disabled = false, messages = defaultMessages }: ProductKitFieldsProps) {
   const text = messages.catalog.kit
-  const nameOf = (id: string) => {
-    const category = categories.find((each) => each.id === id)
-    return category ? (category.parentName ? `${category.parentName} › ${category.name}` : category.name) : text.categoryNone
-  }
+  const id = useId()
+  const scopeLabel = { ALL: text.scopeAll, ONLY: text.scopeOnly, EXCEPT: text.scopeExcept }
+  const ticked = new Set(value.kitCategoryIds)
+  const tick = (categoryId: string, on: boolean) =>
+    onChange({ ...value, kitCategoryIds: on ? [...value.kitCategoryIds, categoryId] : value.kitCategoryIds.filter((each) => each !== categoryId) })
 
   return (
     <div className="flex flex-col gap-4 rounded-lg border p-4">
@@ -51,8 +59,8 @@ export function ProductKitFields({ value, onChange, categories, errors, disabled
       </Field>
 
       {value.isKit ? (
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field data-invalid={errors?.kitSize ? true : undefined}>
+        <>
+          <Field data-invalid={errors?.kitSize ? true : undefined} className="max-w-xs">
             <FieldLabel htmlFor="product-kit-size">{text.size}</FieldLabel>
             <Input
               id="product-kit-size"
@@ -69,30 +77,44 @@ export function ProductKitFields({ value, onChange, categories, errors, disabled
             {errors?.kitSize ? <FieldError>{errors.kitSize.message}</FieldError> : null}
           </Field>
 
-          <Field data-invalid={errors?.kitCategoryId ? true : undefined}>
-            <FieldLabel htmlFor="product-kit-category">{text.category}</FieldLabel>
-            <Select
-              disabled={disabled}
-              value={value.kitCategoryId === "" ? "none" : value.kitCategoryId}
-              onValueChange={(next: string | null) => onChange({ ...value, kitCategoryId: !next || next === "none" ? "" : next })}
-            >
-              <SelectTrigger id="product-kit-category" aria-invalid={errors?.kitCategoryId ? true : undefined} aria-describedby="product-kit-category-help">
-                {/* A render function: Base UI shows the raw value unless it is told how to read it. */}
-                <SelectValue>{(selected: string) => (selected === "none" || !selected ? text.categoryNone : nameOf(selected))}</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">{text.categoryNone}</SelectItem>
-                {categories.map((category) => (
-                  <SelectItem key={category.id} value={category.id}>
-                    {category.parentName ? `${category.parentName} › ${category.name}` : category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <FieldDescription id="product-kit-category-help">{text.categoryHint}</FieldDescription>
-            {errors?.kitCategoryId ? <FieldError>{errors.kitCategoryId.message}</FieldError> : null}
-          </Field>
-        </div>
+          <FieldSet>
+            <FieldLegend id={`${id}-scope`}>{text.scope}</FieldLegend>
+            <RadioGroup value={value.kitScope} onValueChange={(next) => onChange({ ...value, kitScope: next as ProductFormValues["kitScope"] })} disabled={disabled} aria-labelledby={`${id}-scope`} className="flex flex-col gap-2">
+              {SCOPES.map((scope) => (
+                <Field key={scope} orientation="horizontal">
+                  <RadioGroupItem id={`${id}-${scope}`} value={scope} />
+                  <FieldLabel htmlFor={`${id}-${scope}`} className="font-normal">
+                    {scopeLabel[scope]}
+                  </FieldLabel>
+                </Field>
+              ))}
+            </RadioGroup>
+          </FieldSet>
+
+          {value.kitScope === "ALL" ? null : (
+            <FieldSet data-invalid={errors?.kitCategoryIds ? true : undefined}>
+              <FieldLegend id={`${id}-categories`} variant="label">
+                {value.kitScope === "ONLY" ? text.categoriesOnly : text.categoriesExcept}
+              </FieldLegend>
+              <FieldDescription>{text.categoriesHint}</FieldDescription>
+              {categories.length === 0 ? (
+                <p className="text-muted-foreground text-sm">{text.categoriesNone}</p>
+              ) : (
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {categories.map((category) => (
+                    <Field key={category.id} orientation="horizontal">
+                      <Checkbox id={`${id}-category-${category.id}`} checked={ticked.has(category.id)} disabled={disabled} onCheckedChange={(on) => tick(category.id, on)} />
+                      <FieldLabel htmlFor={`${id}-category-${category.id}`} className="font-normal">
+                        {category.parentName ? `${category.parentName} › ${category.name}` : category.name}
+                      </FieldLabel>
+                    </Field>
+                  ))}
+                </div>
+              )}
+              {errors?.kitCategoryIds ? <FieldError>{errors.kitCategoryIds.message}</FieldError> : null}
+            </FieldSet>
+          )}
+        </>
       ) : null}
     </div>
   )
