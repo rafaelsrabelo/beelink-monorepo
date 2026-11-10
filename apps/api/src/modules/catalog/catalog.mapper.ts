@@ -79,11 +79,14 @@ export type ProductImageRow = ProductImageModel & { values: { valueId: string }[
 export type ProductRow = ProductModel & {
   images: ProductImageRow[];
   category: ProductCategoryRow | null;
+  /** The categories a kit's rule names (plan 2026-11-10--kits-monte-seu-kit); absent where it was not read. */
+  kitCategories?: { categoryId: string }[];
 };
 
 export const productInclude = {
   images: { orderBy: { position: 'asc' }, include: { values: { select: { valueId: true } } } },
   category: { include: productCategoryInclude },
+  kitCategories: { select: { categoryId: true } },
 } as const;
 
 /** A product's first option as a shelf reads it: its name and how many values it has. */
@@ -232,7 +235,7 @@ export function toProduct(row: ProductRow): WireProduct {
     lengthMm: row.lengthMm,
     widthMm: row.widthMm,
     heightMm: row.heightMm,
-    kit: row.kitSize === null ? null : { size: row.kitSize, categoryId: row.kitCategoryId },
+    kit: row.kitSize === null || row.kitScope === null ? null : { size: row.kitSize, scope: row.kitScope, categoryIds: (row.kitCategories ?? []).map((named) => named.categoryId) },
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   } satisfies WireProduct;

@@ -2939,16 +2939,24 @@ export interface UiMessages {
       toggleHint: string
       size: string
       sizeHint: string
-      category: string
-      categoryHint: string
-      categoryNone: string
+      /** Which products may go in it: every one, some categories', or every one but some categories'. */
+      scope: string
+      scopeAll: string
+      scopeOnly: string
+      scopeExcept: string
+      /** The categories `scopeOnly` lets in, and the ones `scopeExcept` leaves out. */
+      categoriesOnly: string
+      categoriesExcept: string
+      categoriesHint: string
+      /** A shop with no category yet: the two scopes that name some have none to name. */
+      categoriesNone: string
       /** In the stock's section, in place of the stock's own fields: a kit keeps none. */
       stockNote: string
       /** In the variations' section, in place of its fields: a kit has none. */
       variationsNote: string
       /** The size is not a whole number from 2 to 99. */
       sizeInvalid: string
-      /** No category chosen. */
+      /** No category ticked, on a scope that names some. */
       categoryMissing: string
     }
     /** The description's toolbar. What it writes is Markdown; see blocks/catalog/rich-text.ts. */

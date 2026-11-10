@@ -1,5 +1,5 @@
 // Nest
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 
 // Types
 import type {
@@ -11,7 +11,7 @@ import type {
   PublicProductDetail,
   StorefrontKitParts,
 } from '@harness-monorepo/contracts';
-import type { CreateProductDto, UpdateProductDto } from './dto/product.dto.js';
+import type { CreateProductDto, ProductKitDto, UpdateProductDto } from './dto/product.dto.js';
 import type { ReorderDto } from './dto/reorder.dto.js';
 import type { ProductWhereInput } from '../../generated/prisma/models/Product.js';
 
@@ -195,7 +195,7 @@ export class ProductsService {
     assertPrices(dto.priceCents, dto.compareAtPriceCents ?? null);
     assertParcel(dto.lengthMm ?? null, dto.widthMm ?? null, dto.heightMm ?? null);
     if (dto.categoryId) await this.assertCategoryOwned(storeId, dto.categoryId);
-    if (dto.kit) await this.assertCategoryOwned(storeId, dto.kit.categoryId);
+    if (dto.kit) await this.assertKitRule(storeId, dto.kit);
     // A product being created has no options, so no photo of it can name a value yet.
     await refuseForeignImageValues(this.prisma, null, dto.images);
 
@@ -230,7 +230,7 @@ export class ProductsService {
           status: dto.status ?? 'ACTIVE',
           origin: dto.origin ?? null,
           cashbackRateBps: dto.cashbackRateBps ?? null,
-          ...(dto.kit ? { kitSize: dto.kit.size, kitCategoryId: dto.kit.categoryId } : {}),
+          ...(dto.kit ? { kitSize: dto.kit.size, kitScope: dto.kit.scope, kitCategories: { create: kitCategoryRows(dto.kit) } } : {}),
           ...perUnit,
           maxPriceCents: perUnit.priceCents,
           position: (last._max.position ?? -1) + 1,
@@ -255,7 +255,7 @@ export class ProductsService {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
     await this.owned(storeId, productId);
     if (dto.categoryId) await this.assertCategoryOwned(storeId, dto.categoryId);
-    if (dto.kit) await this.assertCategoryOwned(storeId, dto.kit.categoryId);
+    if (dto.kit) await this.assertKitRule(storeId, dto.kit);
 
     const renaming = dto.slug !== undefined || dto.name !== undefined;
     let slug = dto.slug ?? '';
@@ -314,7 +314,10 @@ export class ProductsService {
               : {}),
             ...(dto.description !== undefined ? { description: dto.description ?? null } : {}),
             ...(dto.categoryId !== undefined ? { categoryId: dto.categoryId ?? null } : {}),
-            ...(dto.kit !== undefined ? { kitSize: dto.kit?.size ?? null, kitCategoryId: dto.kit?.categoryId ?? null } : {}),
+            // A kit's rule is replaced whole: its categories are the ones sent now, and none once it is no kit.
+            ...(dto.kit !== undefined
+              ? { kitSize: dto.kit?.size ?? null, kitScope: dto.kit?.scope ?? null, kitCategories: { deleteMany: {}, create: dto.kit ? kitCategoryRows(dto.kit) : [] } }
+              : {}),
             ...(dto.status !== undefined ? { status: dto.status } : {}),
             ...(dto.origin !== undefined ? { origin: dto.origin } : {}),
             ...(dto.cashbackRateBps !== undefined ? { cashbackRateBps: dto.cashbackRateBps } : {}),
@@ -379,6 +382,18 @@ export class ProductsService {
     return rows.map(toProduct);
   }
 
+  /**
+   * A kit's rule as it can stand (plan 2026-11-10--kits-monte-seu-kit): `ONLY` and `EXCEPT` name at
+   * least one category, `ALL` names none, and every one named is this shop's.
+   */
+  private async assertKitRule(storeId: string, kit: ProductKitDto): Promise<void> {
+    const named = kitCategoryRows(kit);
+    if ((kit.scope === 'ALL') !== (named.length === 0)) {
+      throw new BadRequestException(catalogError('PRODUCT_KIT_INVALID', kit.scope === 'ALL' ? 'A kit of every product names no category' : 'A kit of some categories, or of all but some, names at least one'));
+    }
+    for (const { categoryId } of named) await this.assertCategoryOwned(storeId, categoryId);
+  }
+
   private async assertCategoryOwned(storeId: string, categoryId: string): Promise<void> {
     const row = await this.prisma.productCategory.findFirst({
       where: { id: categoryId, storeId },
@@ -420,4 +435,9 @@ export class ProductsService {
 
     return error;
   }
+}
+
+/** A kit's categories, each once, as rows of its rule. */
+function kitCategoryRows(kit: Pick<ProductKitDto, 'categoryIds'>): { categoryId: string }[] {
+  return [...new Set(kit.categoryIds ?? [])].map((categoryId) => ({ categoryId }));
 }

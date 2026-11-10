@@ -2,7 +2,7 @@
 import { BadRequestException } from '@nestjs/common';
 
 // Types
-import type { CreateOrderItemInput, OrderKitInvalidDetails } from '@harness-monorepo/contracts';
+import type { CreateOrderItemInput, KitScope, OrderKitInvalidDetails } from '@harness-monorepo/contracts';
 
 // App
 import { orderError } from './orders.constants.js';
@@ -23,9 +23,17 @@ export interface KitReadVariant {
   productName: string;
   variantLabel: string | null;
   kitSize: number | null;
-  kitCategoryId: string | null;
-  /** The product's category and that category's parent: a product of a subcategory is of the kit's category too. */
+  kitScope: KitScope | null;
+  /** The categories the kit's rule names. */
+  kitCategoryIds: readonly string[];
+  /** The product's category and that category's parent: a product of a subcategory goes with the category it sits under. */
   categoryIds: readonly string[];
+}
+
+/** Whether a kit's rule lets a product in: every one, those of its categories, or every one but theirs. */
+export function kitLetsIn(kit: Pick<KitReadVariant, 'kitScope' | 'kitCategoryIds'>, product: Pick<KitReadVariant, 'categoryIds'>): boolean {
+  const named = product.categoryIds.some((id) => kit.kitCategoryIds.includes(id));
+  return kit.kitScope === 'ALL' || (kit.kitScope === 'ONLY' ? named : !named);
 }
 
 /**
@@ -40,9 +48,9 @@ export function lineKeyOf(item: CreateOrderItemInput): string {
 
 /**
  * The products chosen for a kit's line, checked against the kit (plan 2026-11-10--kits-monte-seu-kit):
- * each a product of the kit's category — or of a subcategory under it — and no kit itself, each once,
- * their quantities adding up to the kit's size. A line of anything else takes no composition.
- * Null for a line that is no kit. Every refusal is `ORDER_KIT_INVALID`, naming the kit's variant.
+ * each a product its rule lets in (`kitLetsIn`) and no kit itself, each once, their quantities adding
+ * up to the kit's size. A line of anything else takes no composition. Null for a line that is no kit.
+ * Every refusal is `ORDER_KIT_INVALID`, naming the kit's variant.
  */
 export function kitPartsOf(item: CreateOrderItemInput, variant: KitReadVariant, read: ReadonlyMap<string, KitReadVariant>): OrderKitPartLine[] | null {
   const parts = item.kit ?? [];
@@ -54,14 +62,13 @@ export function kitPartsOf(item: CreateOrderItemInput, variant: KitReadVariant, 
     return null;
   }
   if (!parts.length) throw refuse('A kit was sent without what goes in it');
-  if (variant.kitCategoryId === null) throw refuse('The kit has no category to be put together from');
   if (new Set(parts.map((part) => part.variantId)).size !== parts.length) throw refuse('A product appears twice in one kit');
   if (parts.reduce((sum, part) => sum + part.quantity, 0) !== variant.kitSize) throw refuse('What goes in the kit does not add up to its size');
 
   return parts.map((part) => {
     const chosen = read.get(part.variantId)!;
     if (chosen.kitSize !== null) throw refuse('A kit cannot go in a kit');
-    if (!chosen.categoryIds.includes(variant.kitCategoryId!)) throw refuse("A product is not of the kit's category");
+    if (!kitLetsIn(variant, chosen)) throw refuse('A product is not one the kit lets in');
     return { productId: chosen.productId, variantId: chosen.id, productName: chosen.productName, variantLabel: chosen.variantLabel, quantity: part.quantity };
   });
 }

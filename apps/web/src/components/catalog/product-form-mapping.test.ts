@@ -31,23 +31,25 @@ describe("the product's cashback as the wire takes it", () => {
 
 /** Plan 2026-11-10--kits-monte-seu-kit: a kit is put together from a category, at the product's price. */
 describe("a kit, as the editor holds it and the wire takes it", () => {
-  const text = { sizeInvalid: "Informe um número de 2 a 99.", categoryMissing: "Escolha a categoria de onde vêm os itens do kit." }
+  const text = { sizeInvalid: "Informe um número de 2 a 99.", categoryMissing: "Marque pelo menos uma categoria." }
 
   it("reads a kit into the form, and a product like any other as no kit", () => {
     const product = { name: "Kit Festa", slug: "kit-festa", description: null, priceCents: 13980, compareAtPriceCents: null, costCents: null, cashbackRateBps: null, category: null, status: "ACTIVE", origin: null, images: [], sku: null, barcode: null, trackStock: false, stockQuantity: null, weightGrams: null, lengthMm: null, widthMm: null, heightMm: null }
-    expect(toForm({ ...product, kit: { size: 20, categoryId: "c1" } } as unknown as Product)).toMatchObject({ isKit: true, kitSize: "20", kitCategoryId: "c1" })
-    expect(toForm(product as unknown as Product)).toMatchObject({ isKit: false, kitSize: "", kitCategoryId: "" })
+    expect(toForm({ ...product, kit: { size: 20, scope: "EXCEPT", categoryIds: ["c3"] } } as unknown as Product)).toMatchObject({ isKit: true, kitSize: "20", kitScope: "EXCEPT", kitCategoryIds: ["c3"] })
+    expect(toForm(product as unknown as Product)).toMatchObject({ isKit: false, kitSize: "", kitScope: "ALL", kitCategoryIds: [] })
   })
 
-  it("sends the kit's size and category, and null for a product that is no kit", () => {
-    expect(fieldsOf({ ...EMPTY_FORM, name: "Kit Festa", isKit: true, kitSize: "20", kitCategoryId: "c1" }).kit).toEqual({ size: 20, categoryId: "c1" })
+  it("sends the kit's size and rule, no category for every product, and null for a product that is no kit", () => {
+    expect(fieldsOf({ ...EMPTY_FORM, name: "Kit Festa", isKit: true, kitSize: "20", kitScope: "EXCEPT", kitCategoryIds: ["c3"] }).kit).toEqual({ size: 20, scope: "EXCEPT", categoryIds: ["c3"] })
+    expect(fieldsOf({ ...EMPTY_FORM, name: "Kit Festa", isKit: true, kitSize: "20", kitScope: "ALL", kitCategoryIds: ["c3"] }).kit).toEqual({ size: 20, scope: "ALL", categoryIds: [] })
     expect(fieldsOf({ ...EMPTY_FORM, name: "Whey" }).kit).toBeNull()
   })
 
   it("says what a kit is missing before anything is sent", () => {
-    expect(kitIssuesOf({ ...EMPTY_FORM, isKit: true }, text)).toEqual({ kitSize: { message: text.sizeInvalid }, kitCategoryId: { message: text.categoryMissing } })
-    for (const size of ["1", "100", "0", "2,5"]) expect(kitIssuesOf({ ...EMPTY_FORM, isKit: true, kitSize: size, kitCategoryId: "c1" }, text)).toEqual({ kitSize: { message: text.sizeInvalid } })
-    expect(kitIssuesOf({ ...EMPTY_FORM, isKit: true, kitSize: "20", kitCategoryId: "c1" }, text)).toBeNull()
+    expect(kitIssuesOf({ ...EMPTY_FORM, isKit: true, kitScope: "ONLY" }, text)).toEqual({ kitSize: { message: text.sizeInvalid }, kitCategoryIds: { message: text.categoryMissing } })
+    for (const size of ["1", "100", "0", "2,5"]) expect(kitIssuesOf({ ...EMPTY_FORM, isKit: true, kitSize: size }, text)).toEqual({ kitSize: { message: text.sizeInvalid } })
+    expect(kitIssuesOf({ ...EMPTY_FORM, isKit: true, kitSize: "20" }, text)).toBeNull()
+    expect(kitIssuesOf({ ...EMPTY_FORM, isKit: true, kitSize: "20", kitScope: "EXCEPT", kitCategoryIds: ["c3"] }, text)).toBeNull()
     expect(kitIssuesOf({ ...EMPTY_FORM, kitSize: "1" }, text)).toBeNull()
   })
 })

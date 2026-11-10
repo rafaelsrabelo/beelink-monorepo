@@ -26,6 +26,7 @@ import type {
   ProductOrigin,
   ProductStatus,
   UpdateProductPayload,
+  KitScope,
 } from '@harness-monorepo/contracts';
 
 // App
@@ -75,7 +76,11 @@ export class ProductImageDto implements ProductImagePayload {
 const KIT_SIZE_MIN = 2;
 const KIT_SIZE_MAX = 99;
 
-/** How many a kit holds, and the category its items are picked from (plan 2026-11-10--kits-monte-seu-kit). */
+const KIT_SCOPES = ['ALL', 'ONLY', 'EXCEPT'] as const satisfies readonly KitScope[];
+/** More named than a menu has: a shop of more categories than this names the few it leaves out. */
+const KIT_CATEGORIES_MAX = 50;
+
+/** How many a kit holds, and which products it lets in (plan 2026-11-10--kits-monte-seu-kit). */
 export class ProductKitDto {
   @ApiProperty({ minimum: KIT_SIZE_MIN, maximum: KIT_SIZE_MAX, example: 20 })
   @IsInt()
@@ -83,9 +88,16 @@ export class ProductKitDto {
   @Max(KIT_SIZE_MAX)
   size!: number;
 
-  @ApiProperty({ format: 'uuid', description: 'A category of this shop: its products, and those of its subcategories, are what the kit is put together from.' })
-  @IsUUID()
-  categoryId!: string;
+  @ApiProperty({ enum: KIT_SCOPES, description: 'ALL: every product of the shop. ONLY: those of `categoryIds`. EXCEPT: every one but theirs. A subcategory goes with the category it sits under.' })
+  @IsIn(KIT_SCOPES)
+  scope!: KitScope;
+
+  @ApiPropertyOptional({ type: [String], format: 'uuid', maxItems: KIT_CATEGORIES_MAX, description: "Categories of this shop: at least one on ONLY and EXCEPT, none on ALL (PRODUCT_KIT_INVALID)." })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(KIT_CATEGORIES_MAX)
+  @IsUUID('all', { each: true })
+  categoryIds?: string[];
 }
 
 export class CreateProductDto implements CreateProductPayload {

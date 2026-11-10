@@ -405,22 +405,27 @@ export interface ProductCategory extends PublicProductCategory {
 }
 
 /**
- * A kit (plan 2026-11-10--kits-monte-seu-kit): the customer picks `size` units among the products
- * of a category, a product as many times as they like, at the kit's own price. A kit has no options
- * and keeps no stock of its own.
+ * Which products a kit lets in (plan 2026-11-10--kits-monte-seu-kit): every one of the shop, those of
+ * the categories named, or every one but theirs — a subcategory goes with the category it sits under.
+ */
+export type KitScope = "ALL" | "ONLY" | "EXCEPT";
+
+/**
+ * A kit (plan 2026-11-10--kits-monte-seu-kit): the customer picks `size` units among the products its
+ * rule lets in, a product as many times as they like, at the kit's own price. A kit has no options
+ * and keeps no stock of its own; no kit goes in a kit.
  */
 export interface ProductKit {
   /** 2 to 99. */
   size: number;
-  /** Where its items come from, a subcategory under it included; null once that category was deleted. */
-  categoryId: string | null;
+  scope: KitScope;
+  /** The categories `ONLY` lets in or `EXCEPT` leaves out; empty on `ALL`. */
+  categoryIds: string[];
 }
 
-/** A kit as the shop window reads it: how many to pick, and the category they are picked from. */
+/** A kit as the shop window reads it: how many to pick. What may be picked is `GET …/kit`. */
 export interface PublicProductKit {
   size: number;
-  /** Null when the category is gone or hidden: the kit cannot be put together, and says so. */
-  category: { slug: string; name: string } | null;
 }
 
 /**
@@ -574,7 +579,7 @@ export interface CreateProductPayload {
    * Makes the product a kit, or changes its kit; null makes it a product like any other. A kit keeps
    * no stock of its own, so its count is switched off; one with options is refused (`PRODUCT_KIT_OPTIONS`).
    */
-  kit?: { size: number; categoryId: string } | null;
+  kit?: { size: number; scope: KitScope; categoryIds?: string[] } | null;
 }
 
 export type UpdateProductPayload = Partial<CreateProductPayload>;
@@ -740,8 +745,10 @@ export type CatalogErrorCode =
   | "PRODUCT_SKU_TAKEN"
   /** A price or stock sent for a whole product that has options: those belong to its variants. */
   | "PRODUCT_HAS_OPTIONS"
-  /** A kit with options, either way round: a kit is one thing at one price, put together from its category. */
+  /** A kit with options, either way round: a kit is one thing at one price, put together from what its rule lets in. */
   | "PRODUCT_KIT_OPTIONS"
+  /** A kit's rule that names no category for `ONLY` or `EXCEPT`, or names one on `ALL`. */
+  | "PRODUCT_KIT_INVALID"
   /** An option or value id that is not one of this product's. */
   | "PRODUCT_OPTION_NOT_FOUND"
   /** Two options with one name, or two values with one name in one option. */

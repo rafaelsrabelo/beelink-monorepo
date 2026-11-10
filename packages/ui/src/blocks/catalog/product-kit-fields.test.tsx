@@ -14,6 +14,7 @@ import { ProductKitFields } from "./product-kit-fields"
 const categories = [
   { id: "c1", name: "Dindins" },
   { id: "c2", name: "Trufados", parentName: "Dindins" },
+  { id: "c3", name: "Bebidas" },
 ]
 
 function Controlled({ start = EMPTY_PRODUCT, onChange, errors }: { start?: ProductFormValues; onChange?: (value: ProductFormValues) => void; errors?: ProductFormIssues }) {
@@ -41,7 +42,7 @@ describe("ProductKitFields", () => {
     expect(screen.queryByLabelText("Quantos itens o cliente escolhe")).toBeNull()
   })
 
-  it("switched on, asks how many items and from which category — and switches the product's own stock count off", async () => {
+  it("switched on, asks how many items and lets every product in — and switches the product's own stock count off", async () => {
     const onChange = vi.fn()
     render(<Controlled start={{ ...EMPTY_PRODUCT, trackStock: true }} onChange={onChange} />)
 
@@ -50,22 +51,42 @@ describe("ProductKitFields", () => {
 
     await userEvent.type(screen.getByLabelText("Quantos itens o cliente escolhe"), "2a0")
     expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ kitSize: "20" }))
-    expect(screen.getByLabelText("Itens da categoria")).toHaveAccessibleDescription(/um produto novo entra sozinho/)
+    expect(screen.getByRole("radio", { name: "Todos os produtos da loja" })).toBeChecked()
+    expect(screen.queryByRole("checkbox")).toBeNull()
+  })
+
+  it("names the categories that go in, or the ones left out, ticked one by one", async () => {
+    const onChange = vi.fn()
+    render(<Controlled start={{ ...EMPTY_PRODUCT, isKit: true, kitSize: "20" }} onChange={onChange} />)
+
+    await userEvent.click(screen.getByRole("radio", { name: "Todos, menos estas categorias" }))
+    expect(screen.getByRole("group", { name: "Categorias que ficam de fora" })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole("checkbox", { name: "Bebidas" }))
+    expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ kitScope: "EXCEPT", kitCategoryIds: ["c3"] }))
+
+    await userEvent.click(screen.getByRole("radio", { name: "Só destas categorias" }))
+    expect(screen.getByRole("group", { name: "Categorias que entram no kit" })).toBeInTheDocument()
+    expect(screen.getByRole("checkbox", { name: "Dindins › Trufados" })).not.toBeChecked()
   })
 
   it("says what is missing on each field", () => {
-    render(<Controlled start={{ ...EMPTY_PRODUCT, isKit: true }} errors={{ kitSize: { message: "Informe um número de 2 a 99." }, kitCategoryId: { message: "Escolha a categoria de onde vêm os itens do kit." } }} />)
+    render(
+      <Controlled
+        start={{ ...EMPTY_PRODUCT, isKit: true, kitScope: "ONLY" }}
+        errors={{ kitSize: { message: "Informe um número de 2 a 99." }, kitCategoryIds: { message: "Marque pelo menos uma categoria." } }}
+      />,
+    )
 
     expect(screen.getByLabelText("Quantos itens o cliente escolhe")).toHaveAttribute("aria-invalid", "true")
     expect(screen.getByText("Informe um número de 2 a 99.")).toBeInTheDocument()
-    expect(screen.getByText("Escolha a categoria de onde vêm os itens do kit.")).toBeInTheDocument()
+    expect(screen.getByText("Marque pelo menos uma categoria.")).toBeInTheDocument()
   })
 
   it("has no accessibility violations, off and on", async () => {
     const { container, rerender } = render(<ProductKitFields value={EMPTY_PRODUCT} onChange={() => {}} categories={categories} />)
     await expectNoA11yViolations(container)
 
-    rerender(<ProductKitFields value={{ ...EMPTY_PRODUCT, isKit: true, kitSize: "20", kitCategoryId: "c1" }} onChange={() => {}} categories={categories} />)
+    rerender(<ProductKitFields value={{ ...EMPTY_PRODUCT, isKit: true, kitSize: "20", kitScope: "EXCEPT", kitCategoryIds: ["c3"] }} onChange={() => {}} categories={categories} />)
     await expectNoA11yViolations(container)
   })
 })
