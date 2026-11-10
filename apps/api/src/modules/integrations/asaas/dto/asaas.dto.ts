@@ -1,9 +1,9 @@
 // Nest
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 // Libs
 import { Transform } from 'class-transformer';
-import { IsBoolean, IsInt, IsString, Length, Matches, Max, Min } from 'class-validator';
+import { IsBoolean, IsInt, IsOptional, IsString, Length, Matches, Max, Min } from 'class-validator';
 
 // Types
 import type { AsaasConnectPayload, AsaasSettingsPayload, IntegrationErrorCode } from '@harness-monorepo/contracts';
@@ -27,7 +27,10 @@ const INSTALLMENTS_MAX = 12;
 
 const settingsAnswering = { context: { errorCode: 'ASAAS_SETTINGS_INVALID' satisfies IntegrationErrorCode } };
 
-/** The whole of the choices: the panel's form saves them together, and a key left out is refused rather than reset. */
+/**
+ * The whole of the choices: the panel's form saves them together, and a key left out is refused rather
+ * than reset — but `whatsappWhenPaid`, which came later: a panel loaded before it saves without it.
+ */
 export class AsaasSettingsDto implements AsaasSettingsPayload {
   @ApiProperty({ description: 'Pix, charged at Asaas.' })
   @IsBoolean(settingsAnswering)
@@ -46,4 +49,9 @@ export class AsaasSettingsDto implements AsaasSettingsPayload {
   @ApiProperty({ description: 'Paying on delivery or at pickup, settled between the shop and the customer.' })
   @IsBoolean(settingsAnswering)
   offline!: boolean;
+
+  @ApiPropertyOptional({ description: "An order paid online is sent to the shop's WhatsApp by the customer once paid. Absent leaves it as it was." })
+  @IsOptional()
+  @IsBoolean(settingsAnswering)
+  whatsappWhenPaid?: boolean;
 }

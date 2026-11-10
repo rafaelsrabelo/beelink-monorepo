@@ -16,7 +16,7 @@ import { resetDatabase } from './support/reset-database.js';
 
 /** Not a key of anyone: the fake Asaas takes whatever it is handed. */
 const KEY = '$aact_hmlg_e2e-approval-key-0000000000000000000000';
-const ONLINE = { online: { pix: true, card: true, maxInstallments: 1, minimumChargeCents: 500, minimumInstallmentCents: 500 }, offline: true };
+const ONLINE = { online: { pix: true, card: true, whatsappWhenPaid: false, maxInstallments: 1, minimumChargeCents: 500, minimumInstallmentCents: 500 }, offline: true };
 const AS_BEFORE_ASAAS = { online: null, offline: true };
 const DAY_MS = 86_400_000;
 

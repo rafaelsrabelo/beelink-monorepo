@@ -197,7 +197,7 @@ describe("an order's charge at the shop's own Asaas account (BEELINK-204)", () =
       const response = await options();
 
       expect(response.statusCode).toBe(200);
-      expect(response.json<StorefrontPaymentOptions>()).toEqual({ online: { pix: true, card: true, maxInstallments: 6, minimumChargeCents: 500, minimumInstallmentCents: 500 }, offline: true });
+      expect(response.json<StorefrontPaymentOptions>()).toEqual({ online: { pix: true, card: true, whatsappWhenPaid: false, maxInstallments: 6, minimumChargeCents: 500, minimumInstallmentCents: 500 }, offline: true });
       expect(response.body).not.toContain(KEY);
       expect(asaas.calls).toEqual([]);
     });

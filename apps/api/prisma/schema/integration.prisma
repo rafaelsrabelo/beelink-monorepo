@@ -171,7 +171,10 @@ model AsaasSettings {
   /// Paying on delivery or at pickup, settled between the shop and the customer. One of the three is
   /// always on, by a CHECK.
   offline   Boolean  @default(true)
-  updatedAt DateTime @updatedAt
+  /// An order paid online is sent to the shop's WhatsApp by the customer once paid, as an order settled
+  /// with the shop is: for a shop that prepares the order from that conversation. Off by default.
+  whatsappWhenPaid Boolean  @default(false)
+  updatedAt        DateTime @updatedAt
 
   @@map("asaas_settings")
 }

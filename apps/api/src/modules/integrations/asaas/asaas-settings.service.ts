@@ -14,11 +14,11 @@ import { integrationError } from '../integrations.constants.js';
  * What a shop that never saved is paid with: Pix and card, and paying on delivery as before Asaas.
  * In full — an instalment's fee is the shop's, so going past one is the shop's own choice.
  */
-export const ASAAS_SETTINGS_DEFAULTS: AsaasSettings = { pix: true, card: true, maxInstallments: 1, offline: true, updatedAt: null };
+export const ASAAS_SETTINGS_DEFAULTS: AsaasSettings = { pix: true, card: true, maxInstallments: 1, offline: true, whatsappWhenPaid: false, updatedAt: null };
 
 function settingsOf(row: AsaasSettingsModel | null): AsaasSettings {
   if (!row) return ASAAS_SETTINGS_DEFAULTS;
-  return { pix: row.pix, card: row.card, maxInstallments: row.maxInstallments, offline: row.offline, updatedAt: row.updatedAt.toISOString() };
+  return { pix: row.pix, card: row.card, maxInstallments: row.maxInstallments, offline: row.offline, whatsappWhenPaid: row.whatsappWhenPaid, updatedAt: row.updatedAt.toISOString() };
 }
 
 /**
@@ -46,7 +46,13 @@ export class AsaasSettingsService {
       throw new BadRequestException(integrationError('ASAAS_SETTINGS_INVALID', 'At least one way of being paid stays on'));
     }
 
-    const data = { pix: payload.pix, card: payload.card, maxInstallments: payload.maxInstallments, offline: payload.offline };
+    const data = {
+      pix: payload.pix,
+      card: payload.card,
+      maxInstallments: payload.maxInstallments,
+      offline: payload.offline,
+      ...(payload.whatsappWhenPaid !== undefined ? { whatsappWhenPaid: payload.whatsappWhenPaid } : {}),
+    };
     return settingsOf(await this.prisma.asaasSettings.upsert({ where: { storeId }, create: { storeId, ...data }, update: data }));
   }
 }
