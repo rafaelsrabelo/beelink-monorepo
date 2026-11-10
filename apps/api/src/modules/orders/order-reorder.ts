@@ -21,6 +21,8 @@ export interface ReorderVariant {
   productStatus: 'ACTIVE' | 'DRAFT';
   /** Whether a shopper chooses a combination at all: a product without options is added by its product alone. */
   productHasOptions: boolean;
+  /** A kit (plan 2026-11-10--kits-monte-seu-kit): put together again on its page, never bought again blind. */
+  productIsKit?: boolean;
 }
 
 /**
@@ -40,6 +42,11 @@ export function reorderOf(number: number, items: readonly ReorderItem[], variant
 
     if (!variant || !variant.isActive || variant.archivedAt || variant.productStatus !== 'ACTIVE') {
       left.push({ ...named, reason: 'OFF_SALE', added: 0 });
+      continue;
+    }
+    // What went in it is the customer's to choose again: its products' stock and category may have moved.
+    if (variant.productIsKit) {
+      left.push({ ...named, reason: 'KIT', added: 0 });
       continue;
     }
     const stock = variant.trackStock ? Math.max(variant.stockQuantity ?? 0, 0) : Number.POSITIVE_INFINITY;

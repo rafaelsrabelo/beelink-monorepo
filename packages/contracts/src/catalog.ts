@@ -423,6 +423,27 @@ export interface PublicProductKit {
   category: { slug: string; name: string } | null;
 }
 
+/**
+ * `GET /stores/:slug/catalog/:productSlug/kit`: what a kit's page puts it together from (plan
+ * 2026-11-10--kits-monte-seu-kit) — the products of its category and of the subcategories under it,
+ * each of one combination and none a kit, in the shop's order. A sold-out one is listed, marked, so
+ * the page can say it ran out. Empty while the category is gone or hidden.
+ */
+export interface StorefrontKitParts {
+  size: number;
+  parts: StorefrontKitPart[];
+}
+
+export interface StorefrontKitPart {
+  productId: string;
+  /** Its one combination: what the order sends. */
+  variantId: string;
+  slug: string;
+  name: string;
+  imageUrl: string | null;
+  available: boolean;
+}
+
 /** A product as its owner edits it. */
 export interface Product extends PublicProduct, ProductStock, ProductParcel {
   position: number;

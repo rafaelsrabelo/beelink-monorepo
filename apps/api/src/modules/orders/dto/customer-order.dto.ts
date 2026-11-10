@@ -354,7 +354,7 @@ export class ListCustomerOrdersDto implements CustomerOrderListQuery {
   pageSize?: number;
 }
 
-const REORDER_LEFT_REASONS = ['OFF_SALE', 'SOLD_OUT', 'LIMITED'] as const satisfies readonly ReorderLeftReason[];
+const REORDER_LEFT_REASONS = ['OFF_SALE', 'SOLD_OUT', 'LIMITED', 'KIT'] as const satisfies readonly ReorderLeftReason[];
 
 export class CustomerReorderLineResponse implements CustomerReorderLine {
   @ApiProperty({ format: 'uuid' }) productId!: string;

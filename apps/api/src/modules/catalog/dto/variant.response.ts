@@ -10,6 +10,8 @@ import type {
   PublicProductDetail,
   PublicProductVariant,
   StorefrontCartProducts,
+  StorefrontKitPart,
+  StorefrontKitParts,
 } from '@harness-monorepo/contracts';
 
 // App
@@ -87,4 +89,20 @@ export class StorefrontCartProductsResponse implements StorefrontCartProducts {
     description: 'The active products among the ids asked, in their order; one drafted or gone is absent.',
   })
   products!: PublicProductDetailResponse[];
+}
+
+/** One product a kit may be put together from (plan 2026-11-10--kits-monte-seu-kit). */
+export class StorefrontKitPartResponse implements StorefrontKitPart {
+  @ApiProperty({ format: 'uuid' }) productId!: string;
+  @ApiProperty({ format: 'uuid', description: 'Its one combination: what the order sends.' }) variantId!: string;
+  @ApiProperty() slug!: string;
+  @ApiProperty() name!: string;
+  @ApiProperty({ nullable: true, type: String }) imageUrl!: string | null;
+  @ApiProperty({ description: 'False when sold out: listed, marked, and not to be chosen.' }) available!: boolean;
+}
+
+export class StorefrontKitPartsResponse implements StorefrontKitParts {
+  @ApiProperty({ minimum: 2, maximum: 99 }) size!: number;
+  @ApiProperty({ type: [StorefrontKitPartResponse], description: "The kit's category's products and its subcategories', of one combination each and none a kit, in the shop's order. Empty while the category is hidden or gone." })
+  parts!: StorefrontKitPartResponse[];
 }

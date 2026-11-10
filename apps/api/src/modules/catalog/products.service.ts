@@ -9,6 +9,7 @@ import type {
   ProductPage,
   ProductStockFilter,
   PublicProductDetail,
+  StorefrontKitParts,
 } from '@harness-monorepo/contracts';
 import type { CreateProductDto, UpdateProductDto } from './dto/product.dto.js';
 import type { ReorderDto } from './dto/reorder.dto.js';
@@ -24,6 +25,7 @@ import {
   PRODUCTS_PAGE_SIZE_MAX,
 } from './catalog.constants.js';
 import { productInclude, toProduct } from './catalog.mapper.js';
+import { kitPartsOf } from './kit-parts.js';
 import { imageRows, refuseForeignImageValues } from './product-images.js';
 import { assertParcel, assertPrices, skuTaken, uniqueViolationOn } from './product-rules.js';
 import { watchFavorites } from '../favorites/favorite-watch.js';
@@ -150,6 +152,11 @@ export class ProductsService {
     if (!row) throw new NotFoundException(catalogError('PRODUCT_NOT_FOUND', `No product at "${slug}"`));
 
     return promotedDetail(toPublicProductDetail(row), row, await runningShelfPromotions(this.prisma, storeId, new Date()));
+  }
+
+  /** What a kit's page puts it together from (plan 2026-11-10--kits-monte-seu-kit): see `kit-parts.ts`. */
+  publicKitParts(storeId: string, productSlug: string): Promise<StorefrontKitParts> {
+    return kitPartsOf(this.prisma, storeId, productSlug);
   }
 
   /**
