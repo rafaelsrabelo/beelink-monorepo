@@ -171,7 +171,8 @@ export function useNewOrder(slug: string, customer: OrderCustomerOption | null, 
     picker: {
       query: productQuery,
       onQueryChange: setProductQuery,
-      products: (products.data?.products ?? []).map(productOptionOf),
+      // A kit is put together on its page (plan 2026-11-10--kits-monte-seu-kit): a sale registered here takes none yet.
+      products: (products.data?.products ?? []).filter((product) => !product.kit).map(productOptionOf),
       searching: search !== productQuery.trim() || products.isFetching,
       onChoose: (product: OrderProductOption) => void choose(product),
       chosen: chosen ? { product: chosen, variants: detail.data ? variantOptionsOf(detail.data) : null } : null,

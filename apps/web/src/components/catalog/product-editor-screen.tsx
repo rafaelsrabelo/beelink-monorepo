@@ -24,7 +24,7 @@ import { useCreateProductCategory, useProduct, useProductCategories } from "@/se
 import { SaveProductError, useSaveProduct } from "@/services/catalog/use-save-product"
 import { useStore } from "@/services/stores/store-hooks"
 import { useImageUpload } from "@/services/uploads/upload-hooks"
-import { cashbackRateOf, EMPTY_FORM, fieldsOf, perUnitOf, toForm, type FormIssues, type FormValues } from "./product-form-mapping"
+import { cashbackRateOf, EMPTY_FORM, fieldsOf, kitIssuesOf, perUnitOf, toForm, type FormIssues, type FormValues } from "./product-form-mapping"
 import {
   hasCombinations,
   imagesPayloadOf,
@@ -129,6 +129,11 @@ export function ProductEditorScreen({ slug, productId, ui, web }: ProductEditorS
     // Refused only where it is asked: hidden, the field holds what was loaded, which the API took once.
     if (byProduct && cashbackRateOf(value.cashback) === undefined) {
       setErrors({ cashback: { message: text.cashbackInvalid } })
+      return
+    }
+    const kitIssues = kitIssuesOf(value, ui.catalog.kit)
+    if (kitIssues) {
+      setErrors(kitIssues)
       return
     }
     setErrors({})
