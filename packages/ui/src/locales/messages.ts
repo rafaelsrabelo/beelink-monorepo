@@ -4746,6 +4746,91 @@ export interface UiMessages {
     /** A read of the page's subscription that failed. */
     failed: string
   }
+  /** The order manager (plan 2026-11-10--modo-gestor): the shop's counter on one screen, with a bell. */
+  gestor: {
+    title: string
+    /** "{count}": the tab's title while orders wait, so a tab in the background still says so. */
+    titleRinging: string
+    /** The way in, from the panel. */
+    open: string
+    navLabel: string
+    nav: { orders: string; coupons: string; conversations: string }
+    backToPanel: string
+    sound: { on: string; off: string; hint: string; turnOn: string; turnOff: string; test: string }
+    /** The tap a browser asks before it plays a sound, which is also what keeps the screen on. */
+    start: { title: string; text: string; action: string }
+    board: {
+      title: string
+      intro: string
+      columns: { NEW: string; PREPARING: string; ON_THE_WAY: string; DONE: string }
+      emptyNew: string
+      emptyColumn: string
+      accept: string
+      refuse: string
+      acceptOrder: string
+      /** "{number}", "{total}". */
+      ringingTitle: string
+      /** "{customer}", "{fulfillment}", "{payment}", "{when}". */
+      ringingDetail: string
+      ringingHint: string
+      /** "{number}": an order's number on its card. */
+      cardNumber: string
+      /** "{count}": new orders waiting besides the one the banner names. */
+      moreWaiting: string
+      itemsOne: string
+      /** "{count}". */
+      itemsMany: string
+      failed: string
+      retry: string
+      newSale: string
+      allOrders: string
+      /** "{number}". */
+      refuseTitle: string
+      refuseText: string
+      refuseConfirm: string
+      refuseKeep: string
+    }
+    order: {
+      /** "{number}". */
+      title: string
+      close: string
+      tabs: { order: string; conversation: string }
+      failed: string
+    }
+    courier: { title: string; own: string; ownHint: string; send: string; soon: string; noAddress: string }
+    /** The message the shop's own courier is sent on WhatsApp, one line each. */
+    courierMessage: {
+      /** "{shop}", "{number}". */
+      heading: string
+      /** "{name}". */
+      customer: string
+      /** "{phone}". */
+      phone: string
+      /** "{address}". */
+      address: string
+      items: string
+      /** "{quantity}", "{name}". */
+      item: string
+      /** "{total}", "{method}". */
+      collect: string
+      paid: string
+      unpaidOnline: string
+      /** "{note}". */
+      note: string
+    }
+    coupons: {
+      title: string
+      intro: string
+      empty: string
+      create: string
+      edit: string
+      /** "{code}": the switch's name. */
+      switchLabel: string
+      failed: string
+      retry: string
+    }
+    conversations: { title: string; intro: string; empty: string; failed: string; retry: string }
+  }
 }
 
 /**
