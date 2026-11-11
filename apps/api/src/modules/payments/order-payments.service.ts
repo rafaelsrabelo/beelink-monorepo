@@ -10,12 +10,13 @@ import type { OrderPaymentModel } from '../../generated/prisma/models.js';
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { AsaasAcceptance, type AsaasAcceptanceOf } from '../integrations/asaas/asaas-acceptance.js';
 import { AsaasApproval } from '../integrations/asaas/asaas-approval.service.js';
-import { AsaasCharges, AsaasStoreUnavailable } from '../integrations/asaas/asaas-charges.service.js';
+import { AsaasCharges, AsaasStoreUnavailable, type AsaasPayer } from '../integrations/asaas/asaas-charges.service.js';
 import { AsaasConnectionService } from '../integrations/asaas/asaas-connection.service.js';
 import { AsaasOutcomeUnknown, AsaasRefused, AsaasThrottled, AsaasUnreachable } from '../integrations/asaas/asaas.client.js';
 import { isPaidPlan, methodOfPlan, planCreated, planServes, plansOf, rowServes, type ChargePlan, type WantedCharge } from './charge-plan.js';
 import { applyCharge, cancelRows, noteRefusal, noteStray, recordRefusal } from './payment-facts.js';
 import { PaymentNews } from './payment-news.js';
+import { payerOf } from './payment-payer.js';
 import { DEAD_STATUSES, holdsMoney, inReview, isLive, PAID_STATUSES, statusSaidBy, wasPaid } from './payment-status.js';
 import { PaymentSync } from './payment-sync.service.js';
 import { belowMinimumOf, brasiliaDayOf, dueDateOf, installmentsFor, isOnlineMethod } from './payment-terms.js';
@@ -27,7 +28,7 @@ interface Talk {
   want: WantedCharge;
   orderNumber: number;
   storeName: string;
-  payer: { id: string; name: string; cpf: string };
+  payer: AsaasPayer;
   connectedAt: Date | null;
   /** `Order.paymentClaimedUntil` as this request wrote it: what it is recognized by when renewed and let go. */
   until: Date;
@@ -226,6 +227,9 @@ export class OrderPayments implements OnModuleInit {
           totalCents: true,
           deliveryFeeCents: true,
           paymentClaimedUntil: true,
+          purchaseSessionId: true,
+          payerDocument: true,
+          payerName: true,
           customer: { select: { id: true, name: true, cpf: true } },
           store: { select: { name: true } },
           payments: { where: live },
@@ -245,12 +249,13 @@ export class OrderPayments implements OnModuleInit {
       if (standing && (inReview(standing.providerStatus) || rowServes(standing, want, now, acceptance.connectedAt))) return { standing };
 
       if (!acceptance.connected) throw unavailable();
-      if (!order.customer.cpf) throw conflict('PAYMENT_DOCUMENT_MISSING', "Paying online needs the customer's CPF");
+      const payer = payerOf(order);
+      if (!payer) throw conflict('PAYMENT_DOCUMENT_MISSING', "Paying online needs the payer's CPF");
       if (order.paymentClaimedUntil && order.paymentClaimedUntil > now) throw conflict('PAYMENT_IN_PROGRESS', "The order's charge is being made: read it again in a moment");
 
       const until = new Date(now.getTime() + CLAIM_MS);
       await tx.order.update({ where: { id: orderId }, data: { paymentClaimedUntil: until } });
-      return { storeId, want, orderNumber: order.number, storeName: order.store.name, payer: { ...order.customer, cpf: order.customer.cpf }, connectedAt: acceptance.connectedAt, until };
+      return { storeId, want, orderNumber: order.number, storeName: order.store.name, payer, connectedAt: acceptance.connectedAt, until };
     });
   }
 
