@@ -159,6 +159,7 @@ export const en: WebMessages = {
     CATALOG_SLUG_RESERVED: "One of the names is a word the shop's own addresses use. Change the name and try again.",
     PRODUCT_CATEGORY_NOT_FOUND: "One of the chosen categories no longer exists. Choose another and try again.",
     PRODUCT_CATEGORY_SLUG_TAKEN: "A category with that name was just created. Try importing again.",
+    PRODUCT_CATEGORY_SLUG_AFFILIATE: "One of the names is already one of the shop's affiliate links. Change the name and try again.",
     PRODUCT_IMPORT_NOT_CONFIGURED: "Importing from a PDF is not available in this environment yet.",
     PRODUCT_IMPORT_UNREADABLE:
       "We found no products in that document. Check it is the menu or catalogue, that it has no password, and try again.",
