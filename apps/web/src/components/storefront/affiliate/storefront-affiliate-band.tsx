@@ -4,8 +4,7 @@
 import { useSearchParams } from "next/navigation"
 
 // UI
-import { StorefrontAffiliateCard } from "@harness-monorepo/ui/blocks/storefront/storefront-affiliate-card"
-import { StorefrontAffiliateStrip } from "@harness-monorepo/ui/blocks/storefront/storefront-affiliate-strip"
+import { StorefrontAffiliateBanner } from "@harness-monorepo/ui/blocks/storefront/storefront-affiliate-banner"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
@@ -21,11 +20,11 @@ export interface StorefrontAffiliateBandProps {
 }
 
 /**
- * Whom the visitor came by, under the shop's header (IMPULSEIA-105): the card on the address their
- * affiliate's link arrived with — `/<shop>/<name>`, or `?afiliado=<name>` on any page, naming the
- * affiliate the shop credits — and the slim strip on every other page, until they close it, which
- * hides the strip and keeps the referral.
- * Nothing outside a shop's layout, and nothing for a visitor who came by nobody.
+ * Whom the visitor came by, under the shop's header (IMPULSEIA-105), in the band the shopkeeper drew:
+ * on the address their affiliate's link arrived with — `/<shop>/<name>`, or `?afiliado=<name>` on
+ * any page, naming the affiliate the shop credits — with the affiliate's phrase and no way to close
+ * it; on every other page without the phrase, until they close it, which hides the band and keeps
+ * the referral. Nothing outside a shop's layout, and nothing for a visitor who came by nobody.
  */
 export function StorefrontAffiliateBand({ arrivedBy = null, messages }: StorefrontAffiliateBandProps) {
   const shopReferral = useShopReferral()
@@ -40,11 +39,11 @@ export function StorefrontAffiliateBand({ arrivedBy = null, messages }: Storefro
   if (!referral) return null
   const { affiliate } = referral
 
-  if (asked?.toLowerCase() === affiliate.slug) return <StorefrontAffiliateCard name={affiliate.name} photoUrl={affiliate.photoUrl} tagline={affiliate.tagline} messages={messages} />
+  if (asked?.toLowerCase() === affiliate.slug) return <StorefrontAffiliateBanner name={affiliate.name} photoUrl={affiliate.photoUrl} tagline={affiliate.tagline} messages={messages} />
   if (referral.hidden || closed) return null
 
   return (
-    <StorefrontAffiliateStrip
+    <StorefrontAffiliateBanner
       name={affiliate.name}
       photoUrl={affiliate.photoUrl}
       onDismiss={() => {

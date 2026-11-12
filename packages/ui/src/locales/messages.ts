@@ -316,14 +316,16 @@ export interface UiMessages {
         keepShopping: string
       }
     }
-    /** Whom the visitor came by (IMPULSEIA-105): the card on arrival, the strip after, the line on the order. */
+    /** Whom the visitor came by (IMPULSEIA-105): the band under the shop's header, and the line on the order. */
     affiliate: {
-      /** The card's and the strip's accessible name. */
+      /** The band's accessible name. */
       region: string
-      /** Before the affiliate's whole name, on the card the link arrives at. */
-      cardLead: string
-      /** `{name}` — the affiliate's first name, on the strip of every other page. */
-      strip: string
+      /** Above the affiliate's whole name, on the band under the shop's header. */
+      bannerLead: string
+      /** The badge beside the name. It says nothing of anyone's gender. */
+      partner: string
+      /** The band's closing sentence: what the link does for the visitor's orders. */
+      bannerNote: string
       /** `{name}` — the first name, on the cart's and the checkout's line. */
       note: string
       /** `{name}` — the same, said of the order: the affiliate reads the buyer's name on it. */

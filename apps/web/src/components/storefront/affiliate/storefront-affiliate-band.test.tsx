@@ -34,43 +34,49 @@ afterEach(() => {
 })
 
 describe("whom the visitor came by, under the shop's header (IMPULSEIA-105)", () => {
-  it("draws the card, with the whole name and the phrase, on the address the link arrived with", () => {
+  it("draws the band, with the whole name and the phrase and no way to close it, on the address the link arrived with", () => {
     navigation.search = "?afiliado=JOAO&utm_source=instagram"
     shop(JOAO)
 
-    expect(screen.getByRole("region", { name: "Indicação" })).toHaveTextContent("Você chegou pela indicação de João Silva")
+    const band = screen.getByRole("region", { name: "Indicação" })
+    expect(band).toHaveTextContent("Você está na loja de")
+    expect(band).toHaveTextContent("João Silva")
+    expect(band).toHaveTextContent("Parceria oficial")
     expect(screen.getByText("“Meus favoritos”")).toBeInTheDocument()
-    // The card is a page's: it is not closed.
+    // The arrival is a page's: it is not closed.
     expect(screen.queryByRole("button")).toBeNull()
   })
 
-  it("draws the card at the link's own address, `/<shop>/<name>`, which carries no `?afiliado=`", () => {
+  it("draws the arrival's band at the link's own address, `/<shop>/<name>`, which carries no `?afiliado=`", () => {
     shop(JOAO, <StorefrontAffiliateBand arrivedBy="joao" messages={ptBR} />)
 
-    expect(screen.getByRole("region", { name: "Indicação" })).toHaveTextContent("Você chegou pela indicação de João Silva")
+    expect(screen.getByRole("region", { name: "Indicação" })).toHaveTextContent("João Silva")
+    expect(screen.getByText("“Meus favoritos”")).toBeInTheDocument()
   })
 
-  it("draws the strip, not the card, at a link's address naming an affiliate the shop no longer credits", () => {
+  it("draws the band without the phrase at a link's address naming an affiliate the shop no longer credits", () => {
     shop(JOAO, <StorefrontAffiliateBand arrivedBy="maria" messages={ptBR} />)
 
-    expect(screen.getByRole("region", { name: "Indicação" })).toHaveTextContent("Comprando pela indicação de João")
+    expect(screen.getByRole("region", { name: "Indicação" })).toHaveTextContent("João Silva")
+    expect(screen.queryByText("“Meus favoritos”")).toBeNull()
   })
 
-  it("draws the strip on every other page, and closes it for the browser's session without forgetting the affiliate", async () => {
-    // Another page, or the same link naming an affiliate the shop no longer credits: the strip.
+  it("draws the band on every other page, and closes it for the browser's session without forgetting the affiliate", async () => {
+    // Another page, or the same link naming an affiliate the shop no longer credits.
     navigation.search = "?afiliado=maria"
     // The browser reads back only the cookies of the path it is on.
     window.history.replaceState(null, "", "/lessari/produtos")
     shop(JOAO)
 
-    expect(screen.getByRole("region", { name: "Indicação" })).toHaveTextContent("Comprando pela indicação de João")
+    expect(screen.getByRole("region", { name: "Indicação" })).toHaveTextContent("João Silva")
+    expect(screen.queryByText("“Meus favoritos”")).toBeNull()
     await userEvent.click(screen.getByRole("button", { name: "Fechar indicação" }))
 
     expect(screen.queryByRole("region", { name: "Indicação" })).toBeNull()
     expect(document.cookie).toContain(`bl_affiliate_hidden=${ID}`)
   })
 
-  it("draws no strip for a referral the browser already closed, and still the line on the order", () => {
+  it("draws no band for a referral the browser already closed, and still the line on the order", () => {
     shop(
       { ...JOAO, hidden: true },
       <>
