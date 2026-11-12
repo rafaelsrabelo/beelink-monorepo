@@ -15,7 +15,7 @@ const noop = () => {}
 function SettingsScreen() {
   return (
     <div className="flex max-w-4xl flex-col gap-6">
-      <AffiliatesTabs active="settings" settingsHref="#configuracoes" tablesHref="#tabelas" />
+      <AffiliatesTabs active="settings" affiliatesHref="#afiliados" settingsHref="#configuracoes" tablesHref="#tabelas" />
       <AffiliateSettingsForm value={settings} onChange={noop} onSubmit={noop} calendar={calendar} />
     </div>
   )
@@ -52,7 +52,7 @@ export const ConfiguracoesRecusadas: Story = {
 export const Tabelas: Story = {
   render: () => (
     <div className="flex max-w-4xl flex-col gap-6">
-      <AffiliatesTabs active="tables" settingsHref="#configuracoes" tablesHref="#tabelas" />
+      <AffiliatesTabs active="tables" affiliatesHref="#afiliados" settingsHref="#configuracoes" tablesHref="#tabelas" />
       <CommissionTableList tables={tables} hrefOf={(id) => `#${id}`} onCreate={noop} onEdit={noop} onDelete={noop} />
     </div>
   ),

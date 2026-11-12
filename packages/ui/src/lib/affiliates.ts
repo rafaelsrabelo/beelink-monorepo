@@ -55,3 +55,97 @@ export interface CommissionRateRowView {
   /** What was typed is not what is saved: its save is offered. */
   changed: boolean
 }
+
+/** Where an affiliate stands with the shop (IMPULSEIA-104). Mirrors `AffiliateStatus`. */
+export type AffiliateStatusValue = "INVITED" | "ACTIVE" | "PAUSED" | "ENDED"
+
+/** In the order a standing runs: the list's tabs read them so. */
+export const AFFILIATE_STATUS_VALUES = ["INVITED", "ACTIVE", "PAUSED", "ENDED"] as const satisfies readonly AffiliateStatusValue[]
+
+/** An affiliate as the shop's list shows them. Dates arrive in words. */
+export interface AffiliateListItemView {
+  id: string
+  name: string
+  email: string
+  status: AffiliateStatusValue
+  tableName: string
+  /** "Convidado em 11 de nov." while invited, "Desde 12 de nov." after. */
+  since: string
+}
+
+/** A table an affiliate can be put on, as a select lists it. */
+export interface AffiliateTableOption {
+  id: string
+  name: string
+  /** "10%". */
+  rate: string
+}
+
+/** Inviting, as the dialog edits it: what was typed. */
+export interface AffiliateInviteFormValues {
+  name: string
+  email: string
+  tableId: string
+  phone: string
+  note: string
+}
+
+export type AffiliateInviteIssues = Partial<Record<"name" | "email" | "tableId" | "phone" | "note", string>>
+
+/** One affiliate, whole, its lines already in words. */
+export interface AffiliateRecordView {
+  name: string
+  email: string
+  /** As a person writes it; null when none was given. */
+  phone: string | null
+  status: AffiliateStatusValue
+  /** The whole link, `https://…/<loja>/<nome>`; null while invited. */
+  link: string | null
+  pixKey: string | null
+  /** "Versão 2, aceita em 12 de nov."; null while invited. */
+  terms: string | null
+  /** Invited, accepted, ended — each a sentence, in the order they happened. */
+  history: string[]
+  /** While invited: when it went out and until when it works. */
+  invite: string | null
+}
+
+/** The record's own form: the table, and the shop's note. */
+export interface AffiliateRecordFormValues {
+  tableId: string
+  note: string
+}
+
+export type AffiliateRecordIssues = Partial<Record<"tableId" | "note", string>>
+
+/** The invite as the person invited reads it, before accepting. Rates and dates arrive in words. */
+export interface AffiliateInvitationView {
+  storeName: string
+  storeLogoUrl: string | null
+  email: string
+  /** "10%". */
+  generalRate: string
+  /** Products with a rate of their own on the invite's table. */
+  products: { name: string; rate: string }[]
+  termsText: string | null
+  /** "18 de nov.". */
+  expires: string
+}
+
+/** Accepting, as the form edits it. `name` and `password` only when the account is made here. */
+export interface AffiliateAcceptanceFormValues {
+  slug: string
+  pixKey: string
+  name: string
+  password: string
+  agreed: boolean
+}
+
+export type AffiliateAcceptanceIssues = Partial<Record<"slug" | "pixKey" | "name" | "password" | "agreed", string>>
+
+/** What the `/name` field says under it while the person types. */
+export type AffiliateSlugHint =
+  | { kind: "idle" }
+  | { kind: "checking" }
+  | { kind: "available"; link: string }
+  | { kind: "unavailable"; message: string }

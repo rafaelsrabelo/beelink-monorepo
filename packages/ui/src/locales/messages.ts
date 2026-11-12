@@ -4090,7 +4090,7 @@ export interface UiMessages {
   affiliates: {
     title: string
     intro: string
-    tabs: { label: string; settings: string; tables: string }
+    tabs: { label: string; affiliates: string; settings: string; tables: string }
     settings: {
       title: string
       enabled: string
@@ -4172,6 +4172,103 @@ export interface UiMessages {
       /** `{name}`. */
       saved: string
     }
+    /** The shop's affiliates (IMPULSEIA-104), newest invited first. Dates arrive formatted. */
+    list: {
+      title: string
+      intro: string
+      invite: string
+      filterLabel: string
+      all: string
+      /** A tab's label, by status. */
+      tabs: { INVITED: string; ACTIVE: string; PAUSED: string; ENDED: string }
+      /** One affiliate's standing, as its badge says it. */
+      status: { INVITED: string; ACTIVE: string; PAUSED: string; ENDED: string }
+      name: string
+      standing: string
+      table: string
+      since: string
+      /** `{date}`. */
+      invitedOn: string
+      /** `{date}`. */
+      acceptedOn: string
+      /** `{name}`: names the way to an affiliate's record. */
+      open: string
+      empty: string
+      emptyHint: string
+      emptyFiltered: string
+      previous: string
+      next: string
+      /** `{from}`, `{to}`, `{total}`. */
+      range: string
+    }
+    /** Inviting someone, in a dialog. */
+    inviteDialog: {
+      title: string
+      description: string
+      name: string
+      email: string
+      emailHelp: string
+      table: string
+      tableHelp: string
+      phone: string
+      phoneHelp: string
+      note: string
+      noteHelp: string
+      submit: string
+      submitting: string
+      cancel: string
+      /** `{email}`. */
+      sent: string
+    }
+    /** One affiliate, whole. Dates arrive formatted. */
+    record: {
+      back: string
+      contact: string
+      email: string
+      phone: string
+      none: string
+      link: string
+      /** Said where the link will be, while the invite is open. */
+      linkPending: string
+      pixKey: string
+      terms: string
+      /** `{version}`, `{date}`. */
+      termsAccepted: string
+      dates: string
+      /** `{date}`. */
+      invitedOn: string
+      /** `{date}`. */
+      acceptedOn: string
+      /** `{date}`. */
+      endedOn: string
+      /** `{sent}`, `{expires}`. */
+      inviteOpen: string
+      condition: string
+      table: string
+      tableHelp: string
+      note: string
+      noteHelp: string
+      save: string
+      saving: string
+      saved: string
+      actions: string
+      resend: string
+      resending: string
+      /** `{email}`. */
+      resent: string
+      cancelInvite: string
+      pause: string
+      resume: string
+      end: string
+      busy: string
+      /** Said on an ended affiliate, where the actions were. */
+      endedHint: string
+      cancelConfirm: { title: string; question: string; detail: string; confirm: string; confirming: string }
+      endConfirm: { title: string; question: string; detail: string; confirm: string; confirming: string }
+      keep: string
+    }
+    /** What the invite and record forms refuse before they ask, by field. */
+    affiliateIssues: { name: string; email: string; phone: string; note: string; table: string }
     /** What a form refuses before it asks, by field. */
     issues: { attributionDays: string; payoutDelayDays: string; termsText: string; name: string; rate: string }
     /** The API's refusals, by its codes. */
@@ -4183,7 +4280,70 @@ export interface UiMessages {
       COMMISSION_TABLE_DEFAULT: string
       COMMISSION_TABLE_LIMIT: string
       COMMISSION_TABLE_IN_USE: string
+      AFFILIATE_INVALID: string
+      AFFILIATE_NOT_FOUND: string
+      AFFILIATE_EMAIL_TAKEN: string
+      AFFILIATE_STATUS_INVALID: string
+      AFFILIATE_INVITE_RECENTLY_SENT: string
       PRODUCT_NOT_FOUND: string
+      UNKNOWN: string
+    }
+    failed: string
+    retry: string
+  }
+  /**
+   * The invite to sell for a shop (IMPULSEIA-104), as the person invited reads it on bee-link's own
+   * site: the shop, the condition, the terms, and the way in. Rates and dates arrive formatted.
+   */
+  affiliateInvite: {
+    title: string
+    /** `{store}`. */
+    description: string
+    /** `{email}`. */
+    forEmail: string
+    condition: string
+    /** `{rate}`. */
+    general: string
+    generalHelp: string
+    products: string
+    terms: string
+    termsNone: string
+    /** `{date}`. */
+    expires: string
+    slug: string
+    /** `{link}`: the address the `/name` makes. */
+    slugHelp: string
+    slugChecking: string
+    slugAvailable: string
+    /** Why a `/name` cannot be kept, by the API's reason. */
+    slugReasons: { INVALID: string; RESERVED: string; TAKEN: string }
+    pixKey: string
+    pixKeyHelp: string
+    name: string
+    password: string
+    passwordHelp: string
+    acceptTerms: string
+    acceptCondition: string
+    signUp: string
+    accept: string
+    accepting: string
+    signIn: { title: string; body: string; action: string }
+    mismatch: { title: string; body: string; action: string; acting: string }
+    notFound: { title: string; body: string }
+    expired: { title: string; body: string }
+    termsChanged: string
+    done: { title: string; body: string; copy: string; copied: string; next: string }
+    issues: { slug: string; pixKey: string; name: string; password: string; terms: string }
+    errors: {
+      AFFILIATE_INVITE_NOT_FOUND: string
+      AFFILIATE_INVITE_EXPIRED: string
+      AFFILIATE_INVITE_EMAIL_MISMATCH: string
+      AFFILIATE_SLUG_UNAVAILABLE: string
+      AFFILIATE_ACCEPTANCE_INVALID: string
+      AFFILIATE_TERMS_CHANGED: string
+      AFFILIATE_ALREADY_LINKED: string
+      AUTH_EMAIL_TAKEN: string
+      RATE_LIMITED: string
       UNKNOWN: string
     }
     failed: string

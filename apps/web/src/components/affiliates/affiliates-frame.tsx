@@ -10,12 +10,12 @@ import { AppLink } from "@/components/app-link"
 
 export interface AffiliatesFrameProps {
   slug: string
-  active: "settings" | "tables"
+  active: "affiliates" | "settings" | "tables"
   messages: UiMessages
   children: ReactNode
 }
 
-/** The affiliate screens' heading and sections (IMPULSEIA-102), around whichever one is open. */
+/** The affiliate screens' heading and sections (IMPULSEIA-102, the list since IMPULSEIA-104), around whichever one is open. */
 export function AffiliatesFrame({ slug, active, messages, children }: AffiliatesFrameProps) {
   const text = messages.affiliates
 
@@ -27,6 +27,7 @@ export function AffiliatesFrame({ slug, active, messages, children }: Affiliates
       </header>
       <AffiliatesTabs
         active={active}
+        affiliatesHref={`/admin/${slug}/affiliates`}
         settingsHref={`/admin/${slug}/affiliates/settings`}
         tablesHref={`/admin/${slug}/affiliates/tables`}
         linkComponent={AppLink}
