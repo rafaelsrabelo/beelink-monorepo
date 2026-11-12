@@ -81,6 +81,8 @@ export class OrdersService {
       actor: 'SHOPKEEPER',
       userId,
       onSaleOnly: false,
+      // Chosen by the shopkeeper (IMPULSEIA-107): checked again inside, and refused aloud when it cannot credit.
+      affiliateChoice: dto.affiliateId ?? null,
       customerOf: (tx) => this.customerOf(tx, storeId, dto.customer),
     });
     this.realtime.publish({ storeId, customerId: order.customerId }, { type: 'order.created', orderNumber: order.number, placedBy: 'SHOP' });
@@ -104,6 +106,7 @@ export class OrdersService {
       ...(query.payment ? paymentFilterOf(query.payment) : {}),
       ...(query.status ? statusFilterOf(query.status) : {}),
       ...(query.customerId ? { customerId: query.customerId } : {}),
+      ...(query.affiliateId ? { affiliateId: query.affiliateId } : {}),
       ...(term
         ? {
             OR: [

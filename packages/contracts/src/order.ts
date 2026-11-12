@@ -245,6 +245,8 @@ export interface OrderListQuery {
   q?: string;
   /** One customer's orders only — their record's history. Another shop's customer finds none. */
   customerId?: string;
+  /** One affiliate's orders only (IMPULSEIA-107). Another shop's affiliate finds none. */
+  affiliateId?: string;
   page?: number;
   pageSize?: number;
 }
@@ -298,6 +300,12 @@ export interface CreateOrderPayload {
   note?: string;
   /** ISO-8601; absent is now. The past is allowed, the future is not. */
   placedAt?: string;
+  /**
+   * The affiliate the sale came by (IMPULSEIA-107): one of the shop's, active, with the programme on
+   * and crediting live (`AFFILIATE_ATTRIBUTION_CLOSED`, `AFFILIATE_STATUS_INVALID` otherwise). Absent
+   * or null credits nobody.
+   */
+  affiliateId?: string | null;
 }
 
 export interface UpdateOrderStatusPayload {

@@ -24,6 +24,7 @@ const overview: AffiliateProgramOverview = {
     { firstDay: "2026-11-11", lastDay: "2026-11-20", dueOn: "2026-11-30" },
     { firstDay: "2026-11-21", lastDay: "2026-11-30", dueOn: "2026-12-10" },
   ],
+  linksLive: true,
 }
 const mutate = vi.fn()
 

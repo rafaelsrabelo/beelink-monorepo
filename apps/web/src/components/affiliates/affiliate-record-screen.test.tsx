@@ -25,6 +25,7 @@ const overview: AffiliateProgramOverview = {
     { id: "t2", name: "Influencers", defaultRateBps: 1500, isDefault: false, productRateCount: 0, affiliateCount: 0 },
   ],
   periods: [],
+  linksLive: true,
 }
 const joao: ShopAffiliate = {
   id: "a1",

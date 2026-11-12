@@ -28,6 +28,7 @@ const overview: AffiliateProgramOverview = {
     { id: "t2", name: "Influencers", defaultRateBps: 1500, isDefault: false, productRateCount: 0, affiliateCount: 0 },
   ],
   periods: [],
+  linksLive: true,
 }
 const create = vi.fn()
 const update = vi.fn()

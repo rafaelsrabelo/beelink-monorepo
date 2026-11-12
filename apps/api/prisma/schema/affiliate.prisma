@@ -127,6 +127,10 @@ model Affiliate {
   orders      Order[]
   commissions AffiliateCommission[]
   entries     AffiliateEntry[]
+  /// What the shop paid them outside bee-link, and the orders moved to or away from them (IMPULSEIA-107).
+  payouts      AffiliatePayout[]
+  changesFrom  AffiliateAttributionChange[] @relation("AffiliateChangeFrom")
+  changesTo    AffiliateAttributionChange[] @relation("AffiliateChangeTo")
 
   @@unique([storeId, slug])
   @@unique([storeId, email], where: raw("(status <> 'ENDED'::\"AffiliateStatus\")"), map: "affiliates_live_email_key")
@@ -266,6 +270,14 @@ model AffiliateEntry {
   /// The order whose commission it moved; null for the shop's own lines (AF7).
   orderId     String?            @db.Uuid
   order       Order?             @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  /// The shop's words, on an ADJUSTED — required there, by a CHECK. The affiliate reads it too.
+  reason      String?            @db.VarChar(200)
+  /// Who wrote an ADJUSTED or a PAID_OUT (IMPULSEIA-107); null for the clock's lines.
+  actorId     String?            @db.Uuid
+  actor       User?              @relation("AffiliateEntryActor", fields: [actorId], references: [id], onDelete: SetNull)
+  /// The payment a PAID_OUT records — one line per payment, and one on every PAID_OUT, by a CHECK.
+  payoutId    String?            @unique @db.Uuid
+  payout      AffiliatePayout?   @relation(fields: [payoutId], references: [id], onDelete: NoAction)
   createdAt   DateTime           @default(now())
 
   /// The statement, newest first.
@@ -296,4 +308,62 @@ model AffiliateSaleNotice {
   /// What the outbox claims: owed and due.
   @@index([sentAt, nextAttemptAt])
   @@map("affiliate_sale_notices")
+}
+
+/// How a payment made outside bee-link went (IMPULSEIA-107).
+enum AffiliatePayoutMethod {
+  PIX
+  TRANSFER
+  CASH
+}
+
+/// A payment the shop made to an affiliate outside bee-link, recorded (IMPULSEIA-107, decision 9 of
+/// the epic): nothing moves here. Its PAID_OUT line takes it off the statement; never edited nor
+/// deleted — a mistake is answered by an adjustment.
+model AffiliatePayout {
+  id          String                @id @default(uuid(7)) @db.Uuid
+  storeId     String                @db.Uuid
+  store       Store                 @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  affiliateId String                @db.Uuid
+  affiliate   Affiliate             @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  /// 1 or more, by a CHECK.
+  amountCents Int
+  /// The day the shop paid, on its calendar.
+  paidOn      DateTime              @db.Date
+  method      AffiliatePayoutMethod
+  note        String?               @db.VarChar(200)
+  createdById String?               @db.Uuid
+  createdBy   User?                 @relation("AffiliatePayoutAuthor", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime              @default(now())
+
+  entry AffiliateEntry?
+
+  @@index([affiliateId, paidOn])
+  @@map("affiliate_payouts")
+}
+
+/// The shopkeeper moving an order to another affiliate, or off its own, while its commission was
+/// pending (IMPULSEIA-107, decision 7 of the epic): the order's history of whom it was credited to.
+/// The names are kept as they were, so the line reads the same whatever becomes of either.
+model AffiliateAttributionChange {
+  id              String     @id @default(uuid(7)) @db.Uuid
+  orderId         String     @db.Uuid
+  order           Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  storeId         String     @db.Uuid
+  store           Store      @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  /// Null when the order was credited to nobody before.
+  fromAffiliateId String?    @db.Uuid
+  fromAffiliate   Affiliate? @relation("AffiliateChangeFrom", fields: [fromAffiliateId], references: [id], onDelete: SetNull)
+  fromName        String?    @db.VarChar(120)
+  /// Null when it was taken off its affiliate.
+  toAffiliateId   String?    @db.Uuid
+  toAffiliate     Affiliate? @relation("AffiliateChangeTo", fields: [toAffiliateId], references: [id], onDelete: SetNull)
+  toName          String?    @db.VarChar(120)
+  reason          String     @db.VarChar(200)
+  actorId         String?    @db.Uuid
+  actor           User?      @relation("AffiliateChangeActor", fields: [actorId], references: [id], onDelete: SetNull)
+  createdAt       DateTime   @default(now())
+
+  @@index([orderId, createdAt])
+  @@map("affiliate_attribution_changes")
 }

@@ -25,6 +25,7 @@ const overview: AffiliateProgramOverview = {
     { id: "t2", name: "Influencers", defaultRateBps: 1500, isDefault: false, productRateCount: 0, affiliateCount: 0 },
   ],
   periods: [],
+  linksLive: true,
 }
 const page: ShopAffiliatePage = {
   affiliates: [{ id: "a1", name: "Maria Souza", email: "maria@exemplo.com", phone: null, slug: null, status: "INVITED", table: { id: "t1", name: "Padrão" }, invitedAt: "2026-11-11T13:00:00.000Z", acceptedAt: null }],

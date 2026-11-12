@@ -1,5 +1,5 @@
 // Types
-import type { AffiliateErrorCode, AffiliateProgramPayload, AffiliateStatus, AuthErrorCode, CatalogErrorCode } from '@harness-monorepo/contracts';
+import type { AffiliateErrorCode, AffiliatePayoutMethod, AffiliateProgramPayload, AffiliateStatus, AuthErrorCode, CatalogErrorCode, OrderErrorCode } from '@harness-monorepo/contracts';
 
 /**
  * What a programme reads the first time its owner opens it (IMPULSEIA-101): switched off, so nothing
@@ -30,8 +30,12 @@ export const COMMISSION_TABLES_MAX = 50;
 
 export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** Every code this module answers: its own, and the two it shares with the catalogue and the accounts. */
-type AnsweredCode = AffiliateErrorCode | Extract<CatalogErrorCode, 'PRODUCT_NOT_FOUND'> | Extract<AuthErrorCode, 'AUTH_EMAIL_TAKEN'>;
+/** Every code this module answers: its own, and those it shares with the catalogue, the accounts and the orders. */
+type AnsweredCode =
+  | AffiliateErrorCode
+  | Extract<CatalogErrorCode, 'PRODUCT_NOT_FOUND'>
+  | Extract<AuthErrorCode, 'AUTH_EMAIL_TAKEN'>
+  | Extract<OrderErrorCode, 'ORDER_NOT_FOUND' | 'ORDER_CANCELLED'>;
 
 export function affiliateError<D extends object>(errorCode: AnsweredCode, message: string, details?: D): { errorCode: AnsweredCode; message: string; details?: D } {
   return details ? { errorCode, message, details } : { errorCode, message };
@@ -59,3 +63,17 @@ export const AFFILIATES_PAGE_MAX = 10_000;
 export function isForeignKeyViolation(error: unknown): boolean {
   return typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2003';
 }
+
+/** The shop's words on an adjustment, a payout's note, and why an order moved (IMPULSEIA-107); the columns are VARCHAR(200). */
+export const AFFILIATE_REASON_MIN = 3;
+export const AFFILIATE_REASON_MAX = 200;
+/** R$ 1.000.000,00 either way, the cap an order's own amounts have. */
+export const AFFILIATE_AMOUNT_MAX_CENTS = 100_000_000;
+/**
+ * What one affiliate's balance may reach either way, R$ 10.000.000,00: an adjustment past it is
+ * refused, well inside the 32-bit columns the balances and the statement are kept in.
+ */
+export const AFFILIATE_BALANCE_MAX_CENTS = 1_000_000_000;
+export const AFFILIATE_PAYOUT_METHODS = ['PIX', 'TRANSFER', 'CASH'] as const satisfies readonly AffiliatePayoutMethod[];
+export const AFFILIATE_STATEMENT_PAGE_SIZE = 20;
+export const AFFILIATE_STATEMENT_PAGE_SIZE_MAX = 100;

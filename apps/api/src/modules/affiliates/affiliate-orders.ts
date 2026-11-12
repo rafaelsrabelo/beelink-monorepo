@@ -1,4 +1,8 @@
+// Nest
+import { ConflictException, NotFoundException } from '@nestjs/common';
+
 // Types
+import type { AffiliateStatusDetails } from '@harness-monorepo/contracts';
 import type { Prisma } from '../../generated/prisma/client.js';
 import type { EarningParts } from '../cashback/cashback-earning.js';
 
@@ -8,7 +12,7 @@ import { brasiliaDayOf, dateColumnOf } from '../billing/billing-dates.js';
 import { payoutPeriodOf } from './affiliate-payout-calendar.js';
 import { commissionOf, zeroed } from './affiliate-commission.js';
 import { lockAffiliate, recountAffiliate } from './affiliate-ledger.js';
-import { AFFILIATE_PROGRAM_DEFAULTS } from './affiliates.constants.js';
+import { AFFILIATE_PROGRAM_DEFAULTS, UUID, affiliateError } from './affiliates.constants.js';
 
 type Tx = Prisma.TransactionClient;
 
@@ -36,7 +40,8 @@ export function placedAffiliateVisitOf(sent: { affiliateId: string | null; visit
 /** The affiliate an order placed now is credited to, with what working out the commission needs. */
 export interface Attribution {
   affiliateId: string;
-  visitedAt: Date;
+  /** Null when the shopkeeper chose the affiliate (IMPULSEIA-107): no visit brought the order. */
+  visitedAt: Date | null;
   email: string;
   phone: string | null;
   tableName: string;
@@ -69,6 +74,33 @@ export async function attributionOf(tx: Tx, storeId: string, visit: PlacedAffili
   };
 }
 
+const attributionSelect = {
+  id: true,
+  status: true,
+  email: true,
+  phone: true,
+  table: { select: { name: true, defaultRateBps: true } },
+  store: { select: { affiliateProgram: { select: { enabled: true } } } },
+} as const satisfies Prisma.AffiliateSelect;
+
+/**
+ * The affiliate the shopkeeper names for an order (IMPULSEIA-107) — a sale registered in the panel, or
+ * an order moved to them. Unlike a link's visit, a choice that cannot credit is refused aloud: the
+ * shopkeeper asked for it. It credits only where a link would — links live, the programme on, the
+ * affiliate this shop's and `ACTIVE` — since the buyer's name reaches the affiliate either way.
+ */
+export async function chosenAttributionOf(tx: Tx, storeId: string, affiliateId: string): Promise<Attribution> {
+  const affiliate = UUID.test(affiliateId) ? await tx.affiliate.findFirst({ where: { id: affiliateId, storeId }, select: attributionSelect }) : null;
+  if (!affiliate) throw new NotFoundException(affiliateError('AFFILIATE_NOT_FOUND', 'No such affiliate in this shop'));
+  if (!env.AFFILIATE_LINKS_ENABLED || !affiliate.store.affiliateProgram?.enabled) {
+    throw new ConflictException(affiliateError('AFFILIATE_ATTRIBUTION_CLOSED', 'Orders are not credited to affiliates here now'));
+  }
+  if (affiliate.status !== 'ACTIVE') {
+    throw new ConflictException(affiliateError<AffiliateStatusDetails>('AFFILIATE_STATUS_INVALID', `Not credited while ${affiliate.status}`, { status: affiliate.status }));
+  }
+  return { affiliateId: affiliate.id, visitedAt: null, email: affiliate.email, phone: affiliate.phone, tableName: affiliate.table.name, defaultRateBps: affiliate.table.defaultRateBps };
+}
+
 /**
  * Placed: the commission is worked out at the affiliate's table as it is now, and waits on the
  * delivery. An own purchase — the customer's e-mail or phone the affiliate's — owes nothing and tells
@@ -76,13 +108,15 @@ export async function attributionOf(tx: Tx, storeId: string, visit: PlacedAffili
  */
 export async function holdOrderCommission(
   tx: Tx,
-  order: { storeId: string; orderId: string; customerId: string; contactEmail: string | null; attribution: Attribution; parts: EarningParts; productIds: readonly string[] },
+  order: { storeId: string; orderId: string; customerId: string; contactEmail: string | null; attribution: Attribution; parts: EarningParts; productIds: readonly (string | null)[] },
 ): Promise<void> {
   const { attribution } = order;
   await lockAffiliate(tx, attribution.affiliateId);
 
   const table = await tx.affiliate.findUniqueOrThrow({ where: { id: attribution.affiliateId }, select: { tableId: true } });
-  const own = await tx.commissionTableRate.findMany({ where: { tableId: table.tableId, productId: { in: [...order.productIds] } }, select: { productId: true, rateBps: true } });
+  // A product deleted since the order — moved to an affiliate later — pays the table's rate.
+  const products = order.productIds.filter((id): id is string => id !== null);
+  const own = await tx.commissionTableRate.findMany({ where: { tableId: table.tableId, productId: { in: products } }, select: { productId: true, rateBps: true } });
   const worked = commissionOf(order.parts, order.productIds, { defaultRateBps: attribution.defaultRateBps, byProduct: new Map(own.map((rate) => [rate.productId, rate.rateBps])) });
 
   // The e-mail typed at a purchase without an account, else the account's; the phone of the customer's record.

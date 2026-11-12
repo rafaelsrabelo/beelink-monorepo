@@ -118,4 +118,18 @@ export class StoreAffiliatesController {
   end(@Param('storeSlug') storeSlug: string, @Param('affiliateId') affiliateId: string, @CurrentUser() current: AuthenticatedUser): Promise<ShopAffiliate> {
     return this.affiliates.end(storeSlug, current.id, affiliateId);
   }
+
+  @Delete(':affiliateId/photo')
+  @ApiOperation({ summary: "Take the affiliate's photo off the shop window" })
+  @ApiOkResponse({ type: ShopAffiliateResponse })
+  removePhoto(@Param('storeSlug') storeSlug: string, @Param('affiliateId') affiliateId: string, @CurrentUser() current: AuthenticatedUser): Promise<ShopAffiliate> {
+    return this.affiliates.clear(storeSlug, current.id, affiliateId, 'photoUrl');
+  }
+
+  @Delete(':affiliateId/tagline')
+  @ApiOperation({ summary: "Take the affiliate's phrase off the shop window" })
+  @ApiOkResponse({ type: ShopAffiliateResponse })
+  removeTagline(@Param('storeSlug') storeSlug: string, @Param('affiliateId') affiliateId: string, @CurrentUser() current: AuthenticatedUser): Promise<ShopAffiliate> {
+    return this.affiliates.clear(storeSlug, current.id, affiliateId, 'tagline');
+  }
 }

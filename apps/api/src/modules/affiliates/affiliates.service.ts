@@ -5,6 +5,7 @@ import { Injectable } from '@nestjs/common';
 import type { AffiliateProgramOverview } from '@harness-monorepo/contracts';
 
 // App
+import { env } from '../../shared/config/env.js';
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { brasiliaDayOf } from '../billing/billing-dates.js';
 import { StoresService } from '../stores/stores.service.js';
@@ -64,6 +65,7 @@ export class AffiliatesService {
       program: toAffiliateProgram(program),
       tables: tables.map(toCommissionTableSummary),
       periods: payoutPeriodsOfMonth(brasiliaDayOf(new Date()), program.payoutDelayDays),
+      linksLive: env.AFFILIATE_LINKS_ENABLED,
     };
   }
 }

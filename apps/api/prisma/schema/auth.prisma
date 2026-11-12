@@ -41,6 +41,10 @@ model User {
   chargingNotice ChargingNotice?
   /// The shops this account sells for (IMPULSEIA-103).
   affiliations Affiliate[]
+  /// What they wrote on a shop's affiliates' books (IMPULSEIA-107).
+  affiliateEntriesWritten AffiliateEntry[]             @relation("AffiliateEntryActor")
+  affiliatePayoutsWritten AffiliatePayout[]            @relation("AffiliatePayoutAuthor")
+  affiliateChangesMade    AffiliateAttributionChange[] @relation("AffiliateChangeActor")
 
   @@unique([storeId, email])
   // The composite above leaves bee-link's accounts unconstrained — Postgres counts every null
