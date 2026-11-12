@@ -221,8 +221,9 @@ export const en: UiMessages = {
     },
     affiliate: {
       region: "Referral",
-      cardLead: "You came here on the recommendation of",
-      strip: "Shopping on {name}'s recommendation",
+      bannerLead: "You are in the shop of",
+      partner: "Official partner",
+      bannerNote: "What you buy through this link counts for this referral.",
       note: "Recommended by {name}",
       noteDetail: "{name} will see your name on this order.",
       dismiss: "Close referral",

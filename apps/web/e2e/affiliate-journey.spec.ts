@@ -91,14 +91,18 @@ test.describe("a shop's affiliate, in the browser", () => {
 
     await test.step("a visitor who follows the link is told whose recommendation brought them, everywhere it counts", async () => {
       await visitor.goto(`/${slug}/maria`)
-      await expect(visitor).toHaveURL(new RegExp(`/${slug}\\?afiliado=maria`))
-      await expect(visitor.getByText("Você chegou pela indicação de")).toBeVisible()
-      await expect(visitor.getByText("Maria Souza").first()).toBeVisible()
+      // The link keeps its own address: the shop's home is drawn there, with the name in it.
+      await expect(visitor).toHaveURL(new RegExp(`/${slug}/maria$`))
+      const band = visitor.getByRole("region", { name: "Indicação" })
+      await expect(band.getByText("Você está na loja de")).toBeVisible()
+      await expect(band.getByText("Maria Souza")).toBeVisible()
+      await expect(band.getByText("Parceria oficial")).toBeVisible()
       await expect.poll(async () => (await visitor.context().cookies()).some((cookie) => cookie.name === "bl_affiliate")).toBe(true)
 
       await visitor.goto(`/${slug}/produtos/${productSlug}`)
-      // The strip speaks of the affiliate by their first name; the arrival card, by the whole of it.
-      await expect(visitor.getByText(/^Comprando pela indicação de Maria/)).toBeVisible()
+      // Every page after the arrival wears the same band, which the visitor may close.
+      await expect(visitor.getByRole("region", { name: "Indicação" }).getByText("Maria Souza")).toBeVisible()
+      await expect(visitor.getByRole("button", { name: "Fechar indicação" })).toBeVisible()
       await visitor.getByRole("button", { name: "Adicionar ao carrinho" }).first().click()
 
       await visitor.goto(`/${slug}/carrinho`)
