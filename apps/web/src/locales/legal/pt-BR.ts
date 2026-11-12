@@ -16,11 +16,11 @@ export interface LegalTexts {
  * keeps or shares is a new version of these texts, with a new `version`.
  */
 export const legalTexts = {
-  version: "2026-11-12",
+  version: "2026-11-13",
   terms: {
     lang: "pt-BR",
     title: "Termos de uso",
-    effective: "Vigente desde 12 de novembro de 2026",
+    effective: "Vigente desde 13 de novembro de 2026",
     intro: [
       "Estes Termos de uso são as regras para usar o bee-link. Eles explicam o que a plataforma faz, o que ela não faz e o que se espera de cada pessoa que a usa.",
       "Eles valem para três públicos: o lojista, que cria uma conta no painel para publicar a sua loja; o afiliado, que uma loja convida para vender pelo link dela e que entra com uma conta do bee-link; e o cliente, que cria uma conta numa loja para comprar dela. Quando uma regra vale só para um deles, o texto diz.",
@@ -388,7 +388,7 @@ export const legalTexts = {
   privacy: {
     lang: "pt-BR",
     title: "Política de privacidade",
-    effective: "Vigente desde 12 de novembro de 2026",
+    effective: "Vigente desde 13 de novembro de 2026",
     intro: [
       "Esta Política de privacidade explica quais dados pessoais o bee-link trata, para quê, com quem os compartilha, por quanto tempo os guarda e como você exerce os seus direitos, conforme a Lei Geral de Proteção de Dados (Lei nº 13.709/2018, a LGPD).",
       "Ela vale para os lojistas, para os afiliados das lojas, para os clientes das lojas, para quem se candidata a fazer entregas e para quem visita o site do bee-link ou uma loja sem criar conta. Ao criar uma conta, ou ao definir uma senha pelo link enviado por e-mail, ou ao enviar o cadastro de entregador, você declara que leu esta Política. Isso vale também para quem cria a conta pelo convite de afiliado de uma loja.",
@@ -458,6 +458,7 @@ export const legalTexts = {
             kind: "list",
             items: [
               "o nome, o e-mail, o telefone e o CPF com que a loja cadastrou você, e uma nota que a loja pode anotar e que você não vê;",
+              "o tipo do seu documento de identidade, isto é, RG, CNH, CIN, RNE/CRNM ou passaporte, e a foto ou o PDF da frente e do verso dele, quando a loja os envia, no convite ou depois;",
               "a tabela de comissão em que a loja colocou você, a situação do vínculo, isto é, convidado, ativo, pausado ou encerrado, e as datas do convite, do aceite e do encerramento;",
               "o nome que você escolheu para o seu link, a versão dos termos do programa da loja que você aceitou, com a data do aceite, e a chave Pix, se você a informou;",
               "a foto e a frase que você escolher para aparecer na vitrine da loja;",
@@ -468,6 +469,10 @@ export const legalTexts = {
           {
             kind: "paragraph",
             text: "A loja vê tudo isso no painel, inclusive a chave Pix e o CPF, porque é ela quem paga. Você vê o mesmo na área do afiliado, menos a nota da loja e quem fez cada ajuste, e o seu CPF só em parte, mascarado. O seu CPF nunca aparece na vitrine nem nos e-mails. O e-mail, o telefone e o CPF também servem para reconhecer uma compra que você mesmo faça na loja, que não gera comissão. O seu nome, a sua foto e a sua frase são públicos: aparecem na vitrine da loja para quem chega pelo seu link.",
+          },
+          {
+            kind: "paragraph",
+            text: "As fotos do seu documento são guardadas de forma privada e só a loja as vê, no painel, por links que deixam de funcionar em poucos minutos. Elas não aparecem na área do afiliado, na vitrine, nos e-mails nem nos registros do servidor, e servem para a loja conferir quem é você antes de pagar comissões. Uma foto enviada durante um convite e não usada é apagada em até um dia; quando a loja envia um documento novo, as fotos anteriores são apagadas; e um convite cancelado antes do aceite leva as fotos junto.",
           },
           {
             kind: "paragraph",
@@ -616,7 +621,7 @@ export const legalTexts = {
             kind: "list",
             items: [
               "provedor de e-mail, hoje a Purelymail: entrega os e-mails do bee-link, inclusive os enviados em nome das lojas, e por isso recebe o endereço e o conteúdo de cada um;",
-              "Cloudinary: guarda as imagens que os lojistas enviam, como logos e fotos de produtos; o navegador de quem visita uma loja carrega essas imagens direto da Cloudinary, que recebe dados técnicos da conexão, como o endereço IP;",
+              "Cloudinary: guarda as imagens que os lojistas enviam, como logos e fotos de produtos; o navegador de quem visita uma loja carrega essas imagens direto da Cloudinary, que recebe dados técnicos da conexão, como o endereço IP; guarda também, de forma privada e fora do alcance de qualquer link público, as fotos do documento de identidade dos afiliados;",
               "MapTiler: recebe o endereço que o lojista digita na busca de endereço do painel e fornece o mapa dessas telas, que o navegador do lojista carrega direto dela;",
               "OpenStreetMap, pelo serviço Nominatim: recebe o endereço da loja para calcular a posição dela no mapa;",
               "ViaCEP: recebe o CEP digitado no endereço da loja ou num endereço de entrega da sua conta, a partir do servidor do bee-link e sem o seu IP, para preencher rua, bairro e cidade;",
@@ -808,7 +813,7 @@ export const legalTexts = {
           },
           {
             kind: "paragraph",
-            text: "A contagem diária das visitas pelo link de um afiliado é guardada por 13 meses e depois apagada. O vínculo de um afiliado com uma loja, depois de encerrado, continua guardado com os pedidos, o extrato e os pagamentos, porque é a história do que a loja deveu e pagou. Um convite cancelado antes do aceite é apagado.",
+            text: "A contagem diária das visitas pelo link de um afiliado é guardada por 13 meses e depois apagada. O vínculo de um afiliado com uma loja, depois de encerrado, continua guardado com os pedidos, o extrato e os pagamentos, porque é a história do que a loja deveu e pagou. Um convite cancelado antes do aceite é apagado. As fotos do documento de identidade do afiliado ficam guardadas enquanto o vínculo com a loja existir, inclusive depois de encerrado, e são apagadas quando a loja as troca por outras ou cancela o convite.",
           },
           {
             kind: "paragraph",
