@@ -237,6 +237,8 @@ describe('a page locked for want of payment (BEELINK-223)', () => {
       expect((await call('PUT', '/api/stores/padaria/subscription', owner, { cycle: 'MONTHLY' })).json<ApiErrorBody>().errorCode).toBe('BILLING_ACCOUNT_REQUIRED');
       expect((await call('GET', '/api/billing/plans')).statusCode).toBe(200);
       expect((await call('GET', '/api/billing/account', owner)).statusCode).toBe(200);
+      // The affiliate's own area answers a locked page (IMPULSEIA-108): here its owner sells for nobody, which is the area's own answer and not the lock's.
+      expect((await call('GET', '/api/affiliate/stores/padaria', owner)).json<ApiErrorBody>().errorCode).toBe('AFFILIATE_NOT_FOUND');
       expect((await call('GET', '/api/users/me', owner)).statusCode).toBe(200);
       expect((await call('GET', '/api/stores/mine', owner)).json<Store[]>().map((store) => store.slug)).toEqual(['padaria']);
       expect((await call('POST', '/api/stores', owner, { name: 'Adega', slug: 'adega', type: 'ECOMMERCE', socialNetworks: { whatsapp: '(11) 99999-8888' } })).statusCode).toBe(201);
