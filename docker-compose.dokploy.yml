@@ -180,6 +180,10 @@ services:
       - ASAAS_PLATFORM_API_KEY
       - ASAAS_PLATFORM_WEBHOOK_TOKEN
 
+      # An affiliate's link crediting anyone (IMPULSEIA-105). Left out, or `false`: no link credits, no
+      # cookie is written. Set to `true` only with the privacy policy that tells of the cookie (AF9).
+      - AFFILIATE_LINKS_ENABLED
+
       # A shop's own domain (BEELINK-281): the server's public IPv4, which a domain's A record must be,
       # and whether a check also asks https://<domain>. Without the first, no domain can be saved.
       # The last names the platform's other hosts, which no shop may take.

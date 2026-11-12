@@ -47,6 +47,8 @@ export default defineConfig({
       // A shop's own domain switched on, at a documentation address: its suite stands a fake DNS and
       // a fake probe in for the network, and no other suite reaches the routes that would ask either.
       SHOP_DOMAIN_TARGET_IPS: '203.0.113.10',
+      // An affiliate's link credits someone (IMPULSEIA-105); the suite of a deployment without it turns it off.
+      AFFILIATE_LINKS_ENABLED: 'true',
     },
   },
 });
