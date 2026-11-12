@@ -40,6 +40,16 @@ describe("an arrival by an affiliate's link (IMPULSEIA-105)", () => {
     expect(fetched).toHaveBeenCalledWith("/lessari/api/affiliate-arrival", expect.objectContaining({ body: '{"slug":"joao"}' }))
   })
 
+  it("tells the name the page hands over, at the link's own address that carries no `?afiliado=`", async () => {
+    window.history.replaceState(null, "", "/lessari/joao?utm_source=instagram")
+    const fetched = arriving(200)
+
+    render(<StorefrontAffiliateArrival slug="lessari" name="joao" />)
+
+    await waitFor(() => expect(router.refresh).toHaveBeenCalledOnce())
+    expect(fetched).toHaveBeenCalledWith("/lessari/api/affiliate-arrival", expect.objectContaining({ body: '{"slug":"joao"}' }))
+  })
+
   it("draws nothing again for a link that credits nobody", async () => {
     window.history.replaceState(null, "", "/lessari/produtos/whey?afiliado=joao")
     const fetched = arriving(204)

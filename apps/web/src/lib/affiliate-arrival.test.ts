@@ -2,24 +2,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 // App
-import { affiliateArrivalHref, arriveByLink } from "./affiliate-arrival"
+import { arriveByLink } from "./affiliate-arrival"
 
 afterEach(() => vi.unstubAllGlobals())
-
-describe("where an affiliate's link leads", () => {
-  it("is the shop's front door with the affiliate's name", () => {
-    expect(affiliateArrivalHref("/lessari", "joao", {})).toBe("/lessari?afiliado=joao")
-    expect(affiliateArrivalHref("/", "joao", {})).toBe("/?afiliado=joao")
-  })
-
-  it("is the shop alone for a link that credits nobody", () => {
-    expect(affiliateArrivalHref("/lessari", null, {})).toBe("/lessari")
-  })
-
-  it("carries what else the address said, and never a second affiliate", () => {
-    expect(affiliateArrivalHref("/lessari", "joao", { utm_source: "instagram", afiliado: "maria", tag: ["a", "b"], vazio: undefined })).toBe("/lessari?utm_source=instagram&tag=a&tag=b&afiliado=joao")
-  })
-})
 
 describe("telling the shop of an arrival", () => {
   it("posts the name to the shop's own handler, with the shop's cookies, and says whether it was kept", async () => {

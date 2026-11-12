@@ -12,26 +12,31 @@ import { AFFILIATE_KEY } from "@/lib/affiliate-cookie"
 
 export interface StorefrontAffiliateArrivalProps {
   slug: string
+  /**
+   * The affiliate the page's own address names — `/<shop>/<name>`, the shop's front door drawn at an
+   * affiliate's link. Absent, the address's `?afiliado=` is read instead.
+   */
+  name?: string
 }
 
 /**
- * Tells the shop that the visitor arrived by an affiliate's link (IMPULSEIA-105): `?afiliado=` on
- * the address a page loaded with, which `/<shop>/<name>` leads to.
+ * Tells the shop that the visitor arrived by an affiliate's link (IMPULSEIA-105): `/<shop>/<name>`,
+ * whose page hands the name over, or `?afiliado=` on the address any page loaded with.
  *
- * In the shop's layout, like `StorefrontOrigin`, so it sees the address of the landing and of nothing
- * after it. In the browser and not on the server, because a link's preview fetches the address
+ * The shop's layout holds one, like `StorefrontOrigin`, so it sees the address of the landing and of
+ * nothing after it; the front door drawn at a link's address holds the other, with the name. In the browser and not on the server, because a link's preview fetches the address
  * without running the page, and must count no visit. When the shop kept the affiliate the page is
  * drawn again, so the layout reads the cookie it now holds: the card on this address, the strip on
  * the next. The name stays in the address; reading the page again is not counted twice, which is
  * the shop's handler's to tell (`bl_affiliate` already holding the same affiliate, just now).
  */
-export function StorefrontAffiliateArrival({ slug }: StorefrontAffiliateArrivalProps) {
+export function StorefrontAffiliateArrival({ slug, name }: StorefrontAffiliateArrivalProps) {
   const router = useRouter()
   /** The address this page already told: an effect run twice is one arrival. */
   const told = useRef<string | null>(null)
 
   const settle = useEffectEvent(async () => {
-    const asked = new URLSearchParams(window.location.search).get(AFFILIATE_KEY)
+    const asked = name ?? new URLSearchParams(window.location.search).get(AFFILIATE_KEY)
     if (!asked || told.current === window.location.href) return
     told.current = window.location.href
 
@@ -40,7 +45,7 @@ export function StorefrontAffiliateArrival({ slug }: StorefrontAffiliateArrivalP
 
   useEffect(() => {
     void settle()
-  }, [slug])
+  }, [slug, name])
 
   return null
 }

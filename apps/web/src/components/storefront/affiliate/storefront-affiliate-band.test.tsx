@@ -44,6 +44,18 @@ describe("whom the visitor came by, under the shop's header (IMPULSEIA-105)", ()
     expect(screen.queryByRole("button")).toBeNull()
   })
 
+  it("draws the card at the link's own address, `/<shop>/<name>`, which carries no `?afiliado=`", () => {
+    shop(JOAO, <StorefrontAffiliateBand arrivedBy="joao" messages={ptBR} />)
+
+    expect(screen.getByRole("region", { name: "Indicação" })).toHaveTextContent("Você chegou pela indicação de João Silva")
+  })
+
+  it("draws the strip, not the card, at a link's address naming an affiliate the shop no longer credits", () => {
+    shop(JOAO, <StorefrontAffiliateBand arrivedBy="maria" messages={ptBR} />)
+
+    expect(screen.getByRole("region", { name: "Indicação" })).toHaveTextContent("Comprando pela indicação de João")
+  })
+
   it("draws the strip on every other page, and closes it for the browser's session without forgetting the affiliate", async () => {
     // Another page, or the same link naming an affiliate the shop no longer credits: the strip.
     navigation.search = "?afiliado=maria"

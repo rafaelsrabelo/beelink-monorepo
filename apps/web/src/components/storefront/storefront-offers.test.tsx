@@ -337,7 +337,8 @@ describe("StorefrontOffers", () => {
       const naming = (pattern: RegExp) => files(src).filter((file) => pattern.test(readFileSync(file, "utf8"))).map((file) => file.slice(src.length + 1)).sort()
 
       expect(naming(/<StorefrontPopupLive$/m)).toEqual(["components/storefront/storefront-offers.tsx"])
-      expect(naming(/<StorefrontOffers store=/)).toEqual(["app/[slug]/[section]/[item]/page.tsx", "app/[slug]/[section]/page.tsx", "app/[slug]/page.tsx"])
+      // The home's is `StorefrontHome`, drawn at the shop's own address and at an affiliate's link (IMPULSEIA-105).
+      expect(naming(/<StorefrontOffers store=/)).toEqual(["app/[slug]/[section]/[item]/page.tsx", "app/[slug]/[section]/page.tsx", "components/storefront/storefront-home.tsx"])
       // The panel and its design preview are another tree altogether.
       expect(naming(/StorefrontPopupLive|<StorefrontOffers store=/).filter((file) => file.startsWith("app/(admin)") || file.startsWith("components/design"))).toEqual([])
     })

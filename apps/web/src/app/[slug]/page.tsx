@@ -2,22 +2,13 @@
 import { notFound } from "next/navigation"
 import type { Metadata } from "next"
 
-// UI
 // App
 import { ShopUnavailable } from "@/components/storefront/shop-unavailable"
-import { StorefrontFrame } from "@/components/storefront/storefront-frame"
-import { StorefrontOffers } from "@/components/storefront/storefront-offers"
-import { contactCopyOf } from "@/components/storefront/storefront-contact-copy"
-import { StorefrontSections } from "@/components/storefront/storefront-sections"
-import { orderHrefOf } from "@/components/storefront/storefront-links"
+import { StorefrontHome } from "@/components/storefront/storefront-home"
 import { getMessages } from "@/lib/locale"
-import { shopShareOf } from "@/lib/shop-share"
+import { homeMetadataOf } from "@/lib/shop-home-metadata"
 import { unavailableMetadata } from "@/lib/shop-unavailable"
-import { shopperAt } from "@/lib/shopper"
-import { siteOrigin } from "@/lib/site-origin"
-import { navigationAt, paymentOptionsAt, shopAt } from "@/lib/storefront-data"
-import { installmentTermsOf } from "@/lib/storefront-installments"
-import { storefrontRoutes } from "@/lib/storefront-routes"
+import { shopAt } from "@/lib/storefront-data"
 
 /**
  * A shop's front door, at its own address.
@@ -46,16 +37,7 @@ export async function generateMetadata({ params }: PageProps<"/[slug]">): Promis
   if (!store) return {}
   if (store.unavailable) return unavailableMetadata(store)
 
-  const home = storefrontRoutes(store).home
-  const description = store.description ?? undefined
-
-  // The shop's own name and words, not a product's: this page is indexed as the shop.
-  return {
-    title: store.name,
-    description,
-    alternates: { canonical: home },
-    openGraph: shopShareOf(store, { origin: await siteOrigin(), path: home, title: store.name, description }),
-  }
+  return homeMetadataOf(store)
 }
 
 export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
@@ -68,56 +50,5 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
   // Its page stopped paying (BEELINK-223): nothing of the catalogue is asked for, and nothing is sold.
   if (store.unavailable) return <ShopUnavailable store={store} messages={(await getMessages()).ui} />
 
-  const [{ ui, web }, { categories, onSale }, paymentOptions] = await Promise.all([
-    getMessages(),
-    // A site has no catalogue to ask for. The empty answer is what its page draws with anyway.
-    store.type === "INSTITUTIONAL" ? { categories: [], onSale: false } : navigationAt(slug),
-    paymentOptionsAt(slug),
-  ])
-  const installments = installmentTermsOf(paymentOptions)
-
-  const routes = storefrontRoutes(store)
-  const layout = store.layoutSettings
-
-  return (
-    <StorefrontFrame
-      store={store}
-      categories={categories}
-      onSale={onSale}
-      // No pitch band. It used to sit right under the cover — the shop's name, a line about the
-      // shop and a WhatsApp button — and the shop owner was right that it reads as a profile page
-      // rather than a landing page: three lines of prose between the cover and the first thing for
-      // sale. The name is in the header and the WhatsApp is in the footer and on every product.
-      // No cover and no promises band from the frame: on this page they are blocks, and which one
-      // comes first is the shopkeeper's answer rather than this file's.
-      year={new Date().getFullYear()}
-      shopper={await shopperAt(slug)}
-      // Under the header: the invitation to open an account, or a shopper's first-order benefit.
-      notice={<StorefrontOffers store={store} messages={ui} />}
-      messages={ui}
-      blocks={
-        <>
-          {/*
-            The page's heading, for the accessibility tree only. A landing page whose heading is a
-            logo is a page a screen reader opens with no idea whose shop it is.
-          */}
-          <h1 className="sr-only">{store.name}</h1>
-          <StorefrontSections
-            sections={store.sections}
-            primary={store.colors.primary}
-            categories={categories}
-            routes={routes}
-            showPrice={layout.showProductPrice ?? true}
-            {...(installments ? { installments } : {})}
-            showBadge={layout.showProductBadges ?? true}
-            showRating={layout.showProductRating ?? true}
-            quickAdd={layout.showQuickAdd ?? true}
-            contact={{ slug, whatsappHref: orderHrefOf(store) ?? null, copy: contactCopyOf(web) }}
-            messages={ui}
-          />
-        </>
-      }
-    >
-    </StorefrontFrame>
-  )
+  return <StorefrontHome slug={slug} store={store} />
 }
