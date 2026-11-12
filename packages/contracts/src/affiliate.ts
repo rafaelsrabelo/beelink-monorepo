@@ -1,5 +1,6 @@
 // Types
 import type { AuthSession } from "./auth.js";
+import type { OrderStatus } from "./order.js";
 
 /**
  * A shop's affiliate programme (IMPULSEIA-100): people who sell through the shop's link and earn a
@@ -145,7 +146,9 @@ export type AffiliateErrorCode =
   /** A payout of nothing, out of range, dated in the future or with an unknown method. */
   | "AFFILIATE_PAYOUT_INVALID"
   /** A payout past what is available: `details` is `AffiliatePayoutExceedsDetails`. An advance is an adjustment. */
-  | "AFFILIATE_PAYOUT_EXCEEDS_BALANCE";
+  | "AFFILIATE_PAYOUT_EXCEEDS_BALANCE"
+  /** The affiliate's own data out of its range: a Pix key of no known shape, a phone, a photo not uploaded here, a phrase past 100. */
+  | "AFFILIATE_PROFILE_INVALID";
 
 /**
  * Where an affiliate stands with a shop (IMPULSEIA-103): invited and not yet in; selling; paused —
@@ -521,4 +524,147 @@ export interface AffiliateOwed {
   awaitingDeliveryCents: number;
   /** Every affiliate with something owed, pending or short, the most owed first. */
   affiliates: AffiliateOwedRow[];
+}
+
+/* ── the affiliate's own area (IMPULSEIA-108) ─────────────────────────────────── */
+
+/**
+ * One shop an account sells for, as `/afiliado` lists it: the standing the area reads there — the
+ * live one, or the latest ended — and what the shop owes on it.
+ */
+export interface AffiliateShop {
+  store: { slug: string; name: string; logoUrl: string | null };
+  /** Their `/name` at the shop. */
+  slug: string;
+  status: Exclude<AffiliateStatus, "INVITED">;
+  /** May be below zero: what the next payment is short by. */
+  availableCents: number;
+  pendingCents: number;
+}
+
+/** What the affiliate keeps of themselves at one shop: how the shop pays them, and what its window shows. */
+export interface AffiliateProfile {
+  /** Normalised: an e-mail, a random key, `+55…`, or a CPF's or a CNPJ's digits. */
+  pixKey: string | null;
+  /** Digits only, with the country code. */
+  phone: string | null;
+  photoUrl: string | null;
+  /** Up to 100 characters. */
+  tagline: string | null;
+}
+
+/** A patch of the affiliate's own data: a key left out is left alone, null clears it. An ended affiliate changes only the Pix key and the phone. */
+export interface AffiliateProfilePayload {
+  pixKey?: string | null;
+  phone?: string | null;
+  /** An address the uploads route answered. */
+  photoUrl?: string | null;
+  tagline?: string | null;
+}
+
+/** The affiliate's numbers over the last `days` days, today included, on Brasília's calendar. */
+export interface AffiliateNumbers {
+  days: number;
+  /** Visits through their link. */
+  visits: number;
+  /** Orders credited to them, placed in the period, cancelled ones left out. */
+  orders: number;
+  /** Of those, the ones delivered. */
+  sales: number;
+  /** The commissions of those orders, the reversed left out. */
+  commissionCents: number;
+}
+
+/** What the shop will pay next. */
+export interface AffiliateNextPayment {
+  /** Owed now — the balance, when above zero — which the shop pays outside bee-link. */
+  availableCents: number;
+  /** The nearest due day among the commissions still waiting for theirs, and what falls due that day; null when none has a day yet. */
+  next: { dueOn: string; amountCents: number } | null;
+}
+
+/** `GET /affiliate/stores/:storeSlug`: the affiliate's front page at one shop. */
+export interface AffiliateHome {
+  store: { slug: string; name: string; logoUrl: string | null };
+  affiliate: {
+    id: string;
+    name: string;
+    slug: string;
+    status: Exclude<AffiliateStatus, "INVITED">;
+    /** Their table, as its rate stands: products may pay their own on it. */
+    table: { name: string; defaultRateBps: number };
+  };
+  /** Whether their links credit anyone now: active, the programme on, and links live in this deployment. */
+  linksCredit: boolean;
+  /** The path of their link, `/<loja>/<nome>`: the site's origin goes in front. Null once ended. */
+  linkPath: string | null;
+  pendingCents: number;
+  availableCents: number;
+  payment: AffiliateNextPayment;
+  numbers: AffiliateNumbers;
+  profile: AffiliateProfile;
+}
+
+/** A product with the link that credits the affiliate, and what it pays them. */
+export interface AffiliateProductLink {
+  productId: string;
+  name: string;
+  imageUrl: string | null;
+  priceCents: number;
+  /** The product's own on their table, or the table's. */
+  rateBps: number;
+  /** `/<loja>/<produtos>/<slug>?afiliado=<nome>`: the site's origin goes in front. */
+  path: string;
+}
+
+/** `GET /affiliate/stores/:storeSlug/products?q=&page=`: the shop's products on the shelf, by name. */
+export interface AffiliateProductPage {
+  products: AffiliateProductLink[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+/** An order credited to the affiliate, as they read it: who bought, by name alone — never how to reach them. */
+export interface AffiliateOrder {
+  number: number;
+  /** ISO-8601. */
+  placedAt: string;
+  status: OrderStatus;
+  customerName: string;
+  items: { name: string; variantLabel: string | null; quantity: number }[];
+  commission: {
+    status: AffiliateCommissionStatus;
+    baseCents: number;
+    commissionCents: number;
+    zeroReason: AffiliateCommissionZeroReason | null;
+    /** `YYYY-MM-DD`; null until delivered. */
+    dueOn: string | null;
+  };
+}
+
+/** `GET /affiliate/stores/:storeSlug/orders?page=`: newest first. */
+export interface AffiliateOrderPage {
+  orders: AffiliateOrder[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+/** A payment the shop registered, as the affiliate reads it. */
+export interface AffiliateReceivedPayout {
+  id: string;
+  amountCents: number;
+  /** `YYYY-MM-DD`. */
+  paidOn: string;
+  method: AffiliatePayoutMethod;
+  note: string | null;
+}
+
+/** `GET /affiliate/stores/:storeSlug/payouts?page=`: newest paid first. */
+export interface AffiliatePayoutPage {
+  payouts: AffiliateReceivedPayout[];
+  total: number;
+  page: number;
+  pageSize: number;
 }

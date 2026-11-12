@@ -3455,6 +3455,8 @@ export interface UiMessages {
     noStore: string
     createStore: string
     language: string
+    /** The account sells for a shop too (IMPULSEIA-108): the way into their own area. */
+    affiliateArea: string
     signOut: string
   }
   store: {
@@ -4513,6 +4515,102 @@ export interface UiMessages {
       RATE_LIMITED: string
       UNKNOWN: string
     }
+    failed: string
+    retry: string
+  }
+  /**
+   * The affiliate's own area (IMPULSEIA-108), on bee-link's site: the shops an account sells for, and
+   * at each one the links, the numbers, the orders, the statement, the payouts and their own data.
+   * Amounts, dates and rates arrive formatted; the statement's lines are `affiliates.money`'s.
+   */
+  affiliateArea: {
+    title: string
+    brand: string
+    account: { menu: string; panel: string; signOut: string }
+    shops: {
+      title: string
+      intro: string
+      empty: { title: string; body: string }
+      available: string
+      pending: string
+      /** `{store}`: names the way into one shop's page. */
+      open: string
+    }
+    /** Back to the list of shops, from one shop's page. */
+    back: string
+    tabs: { label: string; home: string; products: string; orders: string; statement: string; profile: string }
+    home: {
+      available: string
+      availableHelp: string
+      pending: string
+      pendingHelp: string
+      /** `{amount}`: what the next payment is short by. */
+      negative: string
+      next: string
+      /** `{date}` · `{amount}`. */
+      nextOn: string
+      nextNone: string
+      link: string
+      linkHelp: string
+      copyLink: string
+      /** `{table}` · `{rate}`. */
+      table: string
+      paused: string
+      ended: string
+      notCrediting: string
+      /** `{days}`. */
+      numbers: string
+      visits: string
+      orders: string
+      sales: string
+      commission: string
+    }
+    copy: { action: string; done: string; /** `{name}`: what is copied. */ label: string }
+    products: {
+      title: string
+      intro: string
+      search: string
+      empty: string
+      none: string
+      /** `{rate}`. */
+      rate: string
+    }
+    orders: {
+      title: string
+      intro: string
+      empty: string
+      /** `{number}`. */
+      number: string
+      /** `{amount}`. */
+      base: string
+      ownPurchase: string
+      states: { PENDING: string; AVAILABLE: string; REVERSED: string }
+      /** `{date}`. */
+      dueOn: string
+      awaitingDelivery: string
+    }
+    payouts: { title: string; empty: string }
+    statementIntro: string
+    pager: { previous: string; next: string; /** `{from}`–`{to}` de `{total}`. */ range: string }
+    profile: {
+      title: string
+      intro: string
+      pixKey: string
+      pixKeyHelp: string
+      phone: string
+      phoneHelp: string
+      photo: string
+      photoHelp: string
+      tagline: string
+      /** `{count}` of 100. */
+      taglineHelp: string
+      endedNote: string
+      save: string
+      saving: string
+      saved: string
+    }
+    errors: { AFFILIATE_PROFILE_INVALID: string; AFFILIATE_STATUS_INVALID: string; AFFILIATE_NOT_FOUND: string; UNKNOWN: string }
+    notFound: { title: string; body: string; action: string }
     failed: string
     retry: string
   }

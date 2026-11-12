@@ -337,9 +337,28 @@ model AffiliatePayout {
   createdAt   DateTime              @default(now())
 
   entry AffiliateEntry?
+  /// The e-mail it owes its affiliate (IMPULSEIA-108).
+  notice AffiliatePayoutNotice?
 
   @@index([affiliateId, paidOn])
   @@map("affiliate_payouts")
+}
+
+/// The e-mail a payout owes its affiliate (IMPULSEIA-108): one per payout, by the unique key. An
+/// outbox: written by the transaction that records the payout, sent by `AffiliatePayoutMailer` on its
+/// own clock — at once after the commit, and again every minute while it fails.
+model AffiliatePayoutNotice {
+  id            String          @id @default(uuid(7)) @db.Uuid
+  payoutId      String          @unique @db.Uuid
+  payout        AffiliatePayout @relation(fields: [payoutId], references: [id], onDelete: Cascade)
+  attempts      Int             @default(0)
+  nextAttemptAt DateTime        @default(now())
+  sentAt        DateTime?
+  createdAt     DateTime        @default(now())
+
+  /// What the outbox claims: owed and due.
+  @@index([sentAt, nextAttemptAt])
+  @@map("affiliate_payout_notices")
 }
 
 /// The shopkeeper moving an order to another affiliate, or off its own, while its commission was

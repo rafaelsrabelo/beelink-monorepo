@@ -1,5 +1,4 @@
 // Next
-import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 
 // UI
@@ -7,10 +6,9 @@ import { StoreEmptyState } from "@harness-monorepo/ui/blocks/store/store-empty-s
 
 // App
 import { AppLink } from "@/components/app-link"
-import { callApi } from "@/lib/api"
+import { affiliateShopCountOf, ownedShopCountOf } from "@/lib/account-reach"
 import { getMessages } from "@/lib/locale"
 import { requireUser } from "@/lib/session"
-import { ACCESS_COOKIE } from "@/lib/session-cookies"
 import { format } from "@/locales"
 
 /**
@@ -26,21 +24,14 @@ import { format } from "@/locales"
  * lives here is only the state before any shop exists, which is the one moment that belongs to the
  * account rather than to a shop.
  */
-async function shopCountOf(accessToken: string): Promise<number> {
-  const response = await callApi({ path: "/stores/mine", method: "GET", accessToken })
-
-  if (!response.ok) return 0
-
-  return ((await response.json()) as unknown[]).length
-}
-
 export default async function HomePage() {
   const user = await requireUser()
-  const jar = await cookies()
-  const shops = await shopCountOf(jar.get(ACCESS_COOKIE)?.value ?? "")
+  const shops = await ownedShopCountOf()
 
   // With a shop, the doorway decides: one walks through to it, several stop to be chosen between.
   if (shops > 0) redirect("/admin")
+  // With none but shops it sells for (IMPULSEIA-108), the account's place is its own area.
+  if ((await affiliateShopCountOf()) > 0) redirect("/afiliado")
 
   const { ui, web } = await getMessages()
 

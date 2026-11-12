@@ -17,6 +17,8 @@ export const RESERVED_SLUGS: readonly string[] = [
   'auth',
   'cart',
   'checkout',
+  // The affiliate's invite lives at `/afiliado/convite`, beside each shop's `/afiliado/<slug>` (IMPULSEIA-108).
+  'convite',
   'create',
   'create-store',
   'dashboard',

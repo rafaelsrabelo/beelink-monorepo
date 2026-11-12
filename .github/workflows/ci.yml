@@ -96,7 +96,9 @@ jobs:
     needs: changes
     if: needs.changes.outputs.api == 'true' || needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    # Both apps built, the API suite and the browser suite in one job: past 25 minutes once the
+    # affiliates suites landed (IMPULSEIA-108), and a timeout reads as "cancelled", not as a failure.
+    timeout-minutes: 40
     services:
       postgres:
         image: postgres:18-alpine

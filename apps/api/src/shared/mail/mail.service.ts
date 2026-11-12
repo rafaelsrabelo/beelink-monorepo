@@ -14,6 +14,7 @@ import type { AccountShop } from '../../modules/auth/account-scope.js';
 import { EMAIL_VERIFICATION_TTL_HOURS, PASSWORD_RESET_TTL_MINUTES } from '../../modules/auth/auth.constants.js';
 import { env } from '../config/env.js';
 import { affiliateInvite, type AffiliateInviteContent } from './affiliate-invite.template.js';
+import { affiliatePayout, type AffiliatePayoutContent } from './affiliate-payout.template.js';
 import { affiliateSale, affiliateSaleCancelled, type AffiliateSaleContent } from './affiliate-sale.template.js';
 import { cashbackExpiring, type CashbackExpiringContent } from './cashback-expiring.template.js';
 import { chargingNotice, type ChargingNoticeContent } from './charging-notice.template.js';
@@ -141,6 +142,14 @@ export class MailService implements OnApplicationBootstrap {
 
   async sendAffiliateSaleCancelled(to: string, content: Omit<AffiliateSaleContent, 'items'> & { wasAvailable: boolean }): Promise<boolean> {
     return this.send(to, affiliateSaleCancelled(content, `${env.WEB_URL}/afiliado`), content.shopName);
+  }
+
+  /**
+   * A payout the shop registered for the affiliate (IMPULSEIA-108), from the shop by name. The button
+   * opens their statement at that shop. Answers whether it went, for its outbox.
+   */
+  async sendAffiliatePayout(to: string, content: AffiliatePayoutContent, storeSlug: string): Promise<boolean> {
+    return this.send(to, affiliatePayout(content, `${env.WEB_URL}/afiliado/${encodeURIComponent(storeSlug)}?aba=extrato`), content.shopName);
   }
 
   /** One per lead, to the site's owner. The visitor's words travel escaped — see `leadReceived`. */

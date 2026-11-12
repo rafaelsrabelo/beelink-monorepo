@@ -4,7 +4,7 @@
 import type { ReactNode } from "react"
 
 // Libs
-import { CheckIcon, ChevronDownIcon, LogOutIcon, PlusIcon, StoreIcon } from "lucide-react"
+import { CheckIcon, ChevronDownIcon, HandshakeIcon, LogOutIcon, PlusIcon, StoreIcon } from "lucide-react"
 
 // UI
 import {
@@ -38,6 +38,8 @@ export interface AdminStoreMenuProps {
    * cookie and re-renders a route, and neither is this package's to do.
    */
   localeSlot?: ReactNode
+  /** The account sells for a shop too (IMPULSEIA-108): the way into its own area. Absent for one that does not. */
+  affiliateHref?: string
   linkComponent?: LinkComponent
   messages?: UiMessages
 }
@@ -67,6 +69,7 @@ export function AdminStoreMenu({
   onSignOut,
   signingOut = false,
   localeSlot,
+  affiliateHref,
   linkComponent: Link = AnchorLink,
   messages = defaultMessages,
 }: AdminStoreMenuProps) {
@@ -121,6 +124,13 @@ export function AdminStoreMenu({
           <p className="truncate text-sm font-medium">{user.name}</p>
           <p className="text-muted-foreground truncate text-xs">{user.email}</p>
         </div>
+
+        {affiliateHref ? (
+          <DropdownMenuItem render={<Link href={affiliateHref} />} className="gap-2">
+            <HandshakeIcon aria-hidden="true" className="text-muted-foreground size-4" />
+            {text.affiliateArea}
+          </DropdownMenuItem>
+        ) : null}
 
         {localeSlot ? (
           <>

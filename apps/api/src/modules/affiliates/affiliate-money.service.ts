@@ -12,7 +12,8 @@ import { StoresService } from '../stores/stores.service.js';
 import { lockAffiliate, recountAffiliate } from './affiliate-ledger.js';
 import { owedOf } from './affiliate-owed.js';
 import { AFFILIATE_BALANCE_MAX_CENTS, AFFILIATE_STATEMENT_PAGE_SIZE, UUID, affiliateError } from './affiliates.constants.js';
-import { toStatementEntry } from './affiliate-money.mapper.js';
+import { statementOf } from './affiliate-statement.js';
+import { AffiliatePayoutMailer } from './affiliate-payout-mailer.js';
 import type { AffiliateAdjustmentDto, AffiliatePayoutDto, AffiliateStatementQueryDto } from './dto/affiliate-money.dto.js';
 
 type Tx = Prisma.TransactionClient;
@@ -31,12 +32,13 @@ export class AffiliateMoneyService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly stores: StoresService,
+    private readonly payoutMailer: AffiliatePayoutMailer,
   ) {}
 
   async statement(storeSlug: string, userId: string, affiliateId: string, query: AffiliateStatementQueryDto): Promise<AffiliateStatement> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
     const affiliate = await this.affiliateOf(storeId, affiliateId);
-    return this.statementOf(affiliate.id, query.page ?? 1, query.pageSize ?? AFFILIATE_STATEMENT_PAGE_SIZE);
+    return statementOf(this.prisma, affiliate.id, query.page ?? 1, query.pageSize ?? AFFILIATE_STATEMENT_PAGE_SIZE);
   }
 
   /** The shop's correction, either way, with its reason — which the affiliate reads too. The balance may go below zero. */
@@ -53,7 +55,7 @@ export class AffiliateMoneyService {
       await tx.affiliateEntry.create({ data: { storeId, affiliateId: affiliate.id, kind: 'ADJUSTED', amountCents: dto.amountCents, reason: dto.reason, actorId: userId } });
       await recountAffiliate(tx, affiliate.id);
     });
-    return this.statementOf(affiliate.id, 1, AFFILIATE_STATEMENT_PAGE_SIZE);
+    return statementOf(this.prisma, affiliate.id, 1, AFFILIATE_STATEMENT_PAGE_SIZE);
   }
 
   /**
@@ -77,9 +79,12 @@ export class AffiliateMoneyService {
         data: { storeId, affiliateId: affiliate.id, amountCents: dto.amountCents, paidOn: dateColumnOf(paidOn), method: dto.method, note: dto.note, createdById: userId },
       });
       await tx.affiliateEntry.create({ data: { storeId, affiliateId: affiliate.id, kind: 'PAID_OUT', amountCents: -dto.amountCents, payoutId: payout.id, actorId: userId } });
+      // The affiliate's e-mail is owed by the same commit that records the payment (IMPULSEIA-108).
+      await tx.affiliatePayoutNotice.create({ data: { payoutId: payout.id } });
       await recountAffiliate(tx, affiliate.id);
     });
-    return this.statementOf(affiliate.id, 1, AFFILIATE_STATEMENT_PAGE_SIZE);
+    this.payoutMailer.dispatch();
+    return statementOf(this.prisma, affiliate.id, 1, AFFILIATE_STATEMENT_PAGE_SIZE);
   }
 
   /** What the shop owes, by due day, and each affiliate's part of it. */
@@ -122,22 +127,6 @@ export class AffiliateMoneyService {
     await lockAffiliate(tx, affiliateId);
     await recountAffiliate(tx, affiliateId);
     return (await tx.affiliate.findUniqueOrThrow({ where: { id: affiliateId }, select: { availableCents: true } })).availableCents;
-  }
-
-  private async statementOf(affiliateId: string, page: number, pageSize: number): Promise<AffiliateStatement> {
-    const [affiliate, entries, total] = await Promise.all([
-      this.prisma.affiliate.findUniqueOrThrow({ where: { id: affiliateId }, select: { pendingCents: true, availableCents: true } }),
-      this.prisma.affiliateEntry.findMany({
-        where: { affiliateId },
-        // The order they were written in, newest first: a uuid(7) is the instant it was made.
-        orderBy: { id: 'desc' },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-        include: { order: { select: { number: true } }, payout: true },
-      }),
-      this.prisma.affiliateEntry.count({ where: { affiliateId } }),
-    ]);
-    return { pendingCents: affiliate.pendingCents, availableCents: affiliate.availableCents, entries: entries.map(toStatementEntry), total, page, pageSize };
   }
 
   /** An affiliate of this shop's; another shop's, or none at all, is one answer. */

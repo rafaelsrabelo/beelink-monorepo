@@ -77,3 +77,11 @@ export const AFFILIATE_BALANCE_MAX_CENTS = 1_000_000_000;
 export const AFFILIATE_PAYOUT_METHODS = ['PIX', 'TRANSFER', 'CASH'] as const satisfies readonly AffiliatePayoutMethod[];
 export const AFFILIATE_STATEMENT_PAGE_SIZE = 20;
 export const AFFILIATE_STATEMENT_PAGE_SIZE_MAX = 100;
+
+/** The affiliate's own area (IMPULSEIA-108): its pages, the phrase the window shows, the search of its products, its numbers' window. */
+export const AFFILIATE_AREA_PAGE_SIZE = 20;
+export const AFFILIATE_AREA_PAGE_SIZE_MAX = 50;
+/** The column is VARCHAR(100). */
+export const AFFILIATE_TAGLINE_MAX = 100;
+export const PRODUCT_SEARCH_MAX = 80;
+export const AFFILIATE_NUMBERS_DAYS = 30;

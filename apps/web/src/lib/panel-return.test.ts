@@ -11,11 +11,16 @@ describe("the page to go back to after signing in", () => {
     expect(signInHrefOf("/admin/loja/orders")).toBe("/login?voltar=%2Fadmin%2Floja%2Forders")
   })
 
-  it("is the affiliate's invite, with its token — and nothing else under /afiliado (IMPULSEIA-104)", () => {
+  it("is the affiliate's invite, with its token (IMPULSEIA-104) — and nothing under it", () => {
     expect(panelReturnOf("/afiliado/convite?token=abc")).toBe("/afiliado/convite?token=abc")
     expect(signInHrefOf("/afiliado/convite?token=abc")).toBe("/login?voltar=%2Fafiliado%2Fconvite%3Ftoken%3Dabc")
-    expect(panelReturnOf("/afiliado")).toBeNull()
     expect(panelReturnOf("/afiliado/convite/outra")).toBeNull()
+  })
+
+  it("is a page of the affiliate's own area, with its section (IMPULSEIA-108)", () => {
+    expect(panelReturnOf("/afiliado")).toBe("/afiliado")
+    expect(panelReturnOf("/afiliado/loja-da-ana?aba=extrato")).toBe("/afiliado/loja-da-ana?aba=extrato")
+    expect(panelReturnOf("/afiliados")).toBeNull()
   })
 
   it("is never another site, a shop window or anything that is not a path", () => {
