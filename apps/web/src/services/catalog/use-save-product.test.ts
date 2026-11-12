@@ -38,6 +38,42 @@ afterEach(() => {
 })
 
 describe("saveProduct", () => {
+  /** IMPULSEIA-102 */
+  it("sends the product's commission on the default table last, once the product has its id", async () => {
+    const calls = answerInOrder({ status: 201, body: { ...detail, id: "novo" } }, { status: 200, body: { productId: "novo", rateBps: 1500 } })
+
+    await saveProduct("lessari", { ...base, productId: undefined, commission: { tableId: "t1", rateBps: 1500 } })
+
+    expect(calls).toHaveLength(2)
+    expect(calls[0]).toContain("POST /api/stores/lessari/products ")
+    expect(calls[1]).toBe('PUT /api/stores/lessari/affiliate-program/tables/t1/rates/novo {"rateBps":1500}')
+  })
+
+  it("drops the product's own commission with a delete, which answers no body", async () => {
+    const calls: string[] = []
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        calls.push(`${init?.method} ${url}`)
+        return init?.method === "DELETE" ? new Response(null, { status: 204 }) : Response.json(detail)
+      }),
+    )
+
+    await saveProduct("lessari", { ...base, commission: { tableId: "t1", rateBps: null } })
+
+    expect(calls).toEqual(["PUT /api/stores/lessari/products/p1", "DELETE /api/stores/lessari/affiliate-program/tables/t1/rates/p1"])
+  })
+
+  it("keeps the saved product when only its commission was refused, so the next save updates it", async () => {
+    answerInOrder({ status: 201, body: { ...detail, id: "novo" } }, { status: 400, body: { errorCode: "COMMISSION_TABLE_INVALID" } })
+
+    const failure = await saveProduct("lessari", { ...base, productId: undefined, commission: { tableId: "t1", rateBps: 99_999 } }).catch((error: unknown) => error)
+
+    expect(failure).toBeInstanceOf(SaveProductError)
+    expect((failure as SaveProductError).productId).toBe("novo")
+    expect((failure as SaveProductError).errorCode).toBe("COMMISSION_TABLE_INVALID")
+  })
+
   it("saves a product that sells one thing in one request, price included", async () => {
     const calls = answerInOrder()
 

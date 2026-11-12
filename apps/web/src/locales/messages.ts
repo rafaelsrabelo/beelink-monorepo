@@ -211,6 +211,7 @@ export interface WebMessages {
       /** The shop's promotions and its coupons (BEELINK-192). */
       promotions: string
       cashback: string
+      affiliates: string
       integrations: string
       /** The shop's reports (BEELINK-275): one today, the sales by origin. */
       reports: string

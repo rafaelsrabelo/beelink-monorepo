@@ -3010,6 +3010,8 @@ export interface UiMessages {
       perCombination: string
       cashback: string
       cashbackHint: string
+      commission: string
+      commissionHint: string
     }
     /** The variations editor: options, their values, and a row per combination. */
     variations: {
@@ -3306,6 +3308,11 @@ export interface UiMessages {
         stockUntracked: string
         cashback: string
         addCashback: string
+        commission: string
+        /** `{rate}`: a product with no rate of its own pays the default table's. */
+        commissionDefault: string
+        /** `{name}`. */
+        editCommission: string
       }
       /** Said when the price typed is not a number, or is zero. */
       priceInvalid: string
@@ -3314,6 +3321,10 @@ export interface UiMessages {
       cashbackLabel: string
       cashbackHelp: string
       cashbackInvalid: string
+      commissionLabel: string
+      /** `{rate}`: the default table's rate, which an empty field follows. */
+      commissionHelp: string
+      commissionInvalid: string
     }
 
     categories: {
@@ -4071,6 +4082,107 @@ export interface UiMessages {
       DELIVERY_SETTINGS_INVALID: string
       UNKNOWN: string
     }
+  }
+  /**
+   * The panel's affiliate programme (IMPULSEIA-102): its rules and its commission tables. Rates and
+   * dates arrive formatted.
+   */
+  affiliates: {
+    title: string
+    intro: string
+    tabs: { label: string; settings: string; tables: string }
+    settings: {
+      title: string
+      enabled: string
+      enabledHelp: string
+      attributionDays: string
+      attributionDaysHelp: string
+      payoutDelay: string
+      payoutDelayHelp: string
+      /** The unit after a days field. */
+      days: string
+      calendar: string
+      /** `{from}`, `{to}`, `{due}`: one period of the month, by its days, and the day it falls due. */
+      calendarRow: string
+      calendarHelp: string
+      terms: string
+      termsHelp: string
+      /** What an affiliate costs the shop, said beside the switch. */
+      price: string
+      save: string
+      saving: string
+      saved: string
+    }
+    tables: {
+      title: string
+      intro: string
+      create: string
+      /** Marks the table born with the programme. */
+      defaultBadge: string
+      /** `{rate}`: the table's own rate. */
+      rate: string
+      /** `{count}`: the products with a rate of their own on it. */
+      productRates: string
+      productRatesNone: string
+      /** `{name}`: names the way to a table's rates by product. */
+      open: string
+      openLabel: string
+      /** `{name}`. */
+      edit: string
+      /** `{name}`. */
+      delete: string
+      /** `{name}`. */
+      deleteConfirm: string
+      deleteHint: string
+      dialog: {
+        createTitle: string
+        editTitle: string
+        description: string
+        name: string
+        rate: string
+        rateHelp: string
+        create: string
+        save: string
+        saving: string
+        cancel: string
+      }
+    }
+    /** One table's rates, product by product. */
+    table: {
+      back: string
+      /** `{rate}`: the table's own rate. */
+      intro: string
+      search: string
+      empty: string
+      noResults: string
+      product: string
+      rate: string
+      /** `{rate}`: said under a product with no rate of its own here. */
+      follows: string
+      /** `{name}`: names the product's save button. */
+      save: string
+      saveLabel: string
+      /** `{name}`: names the button that drops the product's own rate. */
+      reset: string
+      resetLabel: string
+      /** `{name}`. */
+      saved: string
+    }
+    /** What a form refuses before it asks, by field. */
+    issues: { attributionDays: string; payoutDelayDays: string; termsText: string; name: string; rate: string }
+    /** The API's refusals, by its codes. */
+    errors: {
+      AFFILIATE_PROGRAM_INVALID: string
+      COMMISSION_TABLE_INVALID: string
+      COMMISSION_TABLE_NOT_FOUND: string
+      COMMISSION_TABLE_NAME_TAKEN: string
+      COMMISSION_TABLE_DEFAULT: string
+      COMMISSION_TABLE_LIMIT: string
+      PRODUCT_NOT_FOUND: string
+      UNKNOWN: string
+    }
+    failed: string
+    retry: string
   }
   integrations: {
     title: string

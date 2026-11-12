@@ -8,7 +8,7 @@ import type { ComponentProps, ReactNode } from "react"
 import { usePathname } from "next/navigation"
 
 // Libs
-import { ChartColumnIcon, CoinsIcon, HomeIcon, InboxIcon, LayoutTemplateIcon, MessageCircleIcon, PackageIcon, PercentIcon, PlugIcon, SettingsIcon, ShoppingBagIcon, StarIcon, TagsIcon, TicketIcon, UsersIcon } from "lucide-react"
+import { ChartColumnIcon, CoinsIcon, HandshakeIcon, HomeIcon, InboxIcon, LayoutTemplateIcon, MessageCircleIcon, PackageIcon, PercentIcon, PlugIcon, SettingsIcon, ShoppingBagIcon, StarIcon, TagsIcon, TicketIcon, UsersIcon } from "lucide-react"
 
 // Types
 import type { User } from "@harness-monorepo/contracts"
@@ -182,6 +182,7 @@ export function AppShell({ user, ui, web, locale, prefs, children }: AppShellPro
                   item(nav.promotions, "/promotions", <PercentIcon />, "prefix"),
                   item(nav.coupons, "/coupons", <TicketIcon />, "prefix"),
                   item(nav.cashback, "/cashback", <CoinsIcon />, "prefix"),
+                  item(nav.affiliates, "/affiliates", <HandshakeIcon />, "prefix"),
                   item(nav.integrations, "/integrations", <PlugIcon />, "prefix"),
                   item(nav.customers, "/customers", <UsersIcon />, "prefix"),
                   // One report today, the sales by origin (BEELINK-275): `/reports` leads to it, and

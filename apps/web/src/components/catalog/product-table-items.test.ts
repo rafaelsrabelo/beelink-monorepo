@@ -40,6 +40,12 @@ describe("productTableItemOf", () => {
     })
   })
 
+  it("carries the product's own commission on the default table, or none (IMPULSEIA-102)", () => {
+    expect(productTableItemOf(product, { ...context, commissionRates: new Map([["p1", 0]]) }).commissionRateBps).toBe(0)
+    expect(productTableItemOf(product, { ...context, commissionRates: new Map() }).commissionRateBps).toBeNull()
+    expect(productTableItemOf(product, context).commissionRateBps).toBeNull()
+  })
+
   it("points the eye at nothing for a draft, or before the shop is read", () => {
     expect(productTableItemOf({ ...product, status: "DRAFT" }, context).viewHref).toBeNull()
     expect(productTableItemOf(product, { ...context, pageOf: null }).viewHref).toBeNull()

@@ -10,6 +10,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { buttonVariants } from "@harness-monorepo/ui/components/button"
 import { ProductBulkBar } from "@harness-monorepo/ui/blocks/catalog/product-bulk-bar"
 import { PRODUCT_CASHBACK_FIELD_ID } from "@harness-monorepo/ui/blocks/catalog/product-cashback-field"
+import { PRODUCT_COMMISSION_FIELD_ID } from "@harness-monorepo/ui/blocks/catalog/product-commission-field"
 import { ProductTable } from "@harness-monorepo/ui/blocks/catalog/product-table"
 import { EMPTY_PRODUCT_FILTERS, ProductToolbar, type ProductFilters } from "@harness-monorepo/ui/blocks/catalog/product-toolbar"
 import { TablePager } from "@harness-monorepo/ui/blocks/catalog/table-pager"
@@ -27,6 +28,7 @@ import { storeErrorCopy } from "@/components/store/store-error-copy"
 import { storefrontRoutes } from "@/lib/storefront-routes"
 import { useDebouncedValue } from "@/services/addresses/use-debounced-value"
 import { useDeleteProduct, useProductCategories, useProducts } from "@/services/catalog/catalog-hooks"
+import { useDefaultCommissionTable } from "@/services/affiliates/affiliate-hooks"
 import { useGivesCashbackByProduct } from "@/services/cashback/cashback-hooks"
 import { useStore } from "@/services/stores/store-hooks"
 import { productTableItemOf } from "./product-table-items"
@@ -113,6 +115,7 @@ export function ProductScreen({ slug, messages, web }: ProductScreenProps) {
   // `products` — and `storefrontRoutes` is the only place in this app allowed to spell a segment.
   const store = useStore(slug)
   const byProduct = useGivesCashbackByProduct(slug)
+  const commission = useDefaultCommissionTable(slug)
   const remove = useDeleteProduct(slug)
 
   const rows = products.data?.products ?? []
@@ -205,17 +208,15 @@ export function ProductScreen({ slug, messages, web }: ProductScreenProps) {
         ) : (
           <ProductTable
             products={rows.map((product) =>
-              productTableItemOf(product, { categoryNames: nameById, pageOf: routes?.product ?? null, carrierGaps: products.data?.carrierGaps }),
+              productTableItemOf(product, { categoryNames: nameById, pageOf: routes?.product ?? null, carrierGaps: products.data?.carrierGaps, commissionRates: commission.rates }),
             )}
             selection={chosen.selection}
             onEdit={(productId) => router.push(`/admin/${slug}/products/${productId}`)}
-
             onAddCashback={byProduct ? (productId) => router.push(`/admin/${slug}/products/${productId}#${PRODUCT_CASHBACK_FIELD_ID}`) : undefined}
+            commission={commission.summary && commission.rates ? { defaultRateBps: commission.summary.defaultRateBps, onEdit: (productId) => router.push(`/admin/${slug}/products/${productId}#${PRODUCT_COMMISSION_FIELD_ID}`) } : undefined}
             onDelete={(productId) => setPendingDelete({ id: productId, name: rows.find((row) => row.id === productId)?.name ?? "" })}
             busyId={remove.isPending ? remove.variables : null}
-            {...(filtered
-              ? { emptyTitle: text.filters.noResults, emptyHint: text.filters.noResultsHint }
-              : {})}
+            {...(filtered ? { emptyTitle: text.filters.noResults, emptyHint: text.filters.noResultsHint } : {})}
             messages={messages}
           />
         )}

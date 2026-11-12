@@ -62,6 +62,7 @@ export const en: WebMessages = {
       reviews: "Reviews",
       promotions: "Promotions",
       cashback: "Cashback",
+      affiliates: "Affiliates",
       integrations: "Integrations",
       reports: "Reports",
       coupons: "Coupons",

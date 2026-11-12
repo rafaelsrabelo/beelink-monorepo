@@ -10,6 +10,8 @@ export interface ProductTableContext {
   /** The product's page on the shop window, from `storefrontRoutes`; null until the shop is read. */
   pageOf: ((productSlug: string) => string) | null
   carrierGaps: ProductPage["carrierGaps"] | undefined
+  /** Each product's own rate on the default table (IMPULSEIA-102); absent while the programme is off. */
+  commissionRates?: ReadonlyMap<string, number>
 }
 
 /** One product of the panel's list, as the table draws it. */
@@ -33,5 +35,6 @@ export function productTableItemOf(product: Product, context: ProductTableContex
     // What a carrier lacks to quote it (BEELINK-184); the API says nothing for a shop with no carrier.
     carrierGap: context.carrierGaps?.[product.id] ?? null,
     cashbackRateBps: product.cashbackRateBps,
+    commissionRateBps: context.commissionRates?.get(product.id) ?? null,
   }
 }

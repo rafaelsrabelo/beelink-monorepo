@@ -28,6 +28,7 @@ export const EMPTY_FORM: FormValues = {
   compareAtPrice: "",
   cost: "",
   cashback: "",
+  commission: "",
   categoryId: "",
   status: "ACTIVE",
   origin: "",
@@ -66,6 +67,8 @@ export function toForm(product: Product): FormValues {
     compareAtPrice: reaisFrom(product.compareAtPriceCents),
     cost: reaisFrom(product.costCents),
     cashback: product.cashbackRateBps === null ? "" : percentFrom(product.cashbackRateBps),
+    // The default table's, not the product's: the screen fills it once the table is read.
+    commission: "",
     categoryId: product.category?.id ?? "",
     status: product.status,
     origin: product.origin ?? "",

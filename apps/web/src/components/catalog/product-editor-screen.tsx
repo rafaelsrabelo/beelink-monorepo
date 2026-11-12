@@ -8,8 +8,10 @@ import { useRouter } from "next/navigation"
 
 // UI
 import { PRODUCT_CASHBACK_FIELD_ID } from "@harness-monorepo/ui/blocks/catalog/product-cashback-field"
+import { PRODUCT_COMMISSION_FIELD_ID } from "@harness-monorepo/ui/blocks/catalog/product-commission-field"
 import { ProductEditor } from "@harness-monorepo/ui/blocks/catalog/product-editor"
 import { Skeleton } from "@harness-monorepo/ui/components/skeleton"
+import { ratePercentOf } from "@harness-monorepo/ui/lib/cashback"
 import { centsFrom } from "@harness-monorepo/ui/lib/money"
 import { EMPTY_VARIATIONS, type VariationsValue } from "@harness-monorepo/ui/lib/variations"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
@@ -19,6 +21,9 @@ import type { WebMessages } from "@/locales"
 
 // App
 import { storeErrorCopy } from "@/components/store/store-error-copy"
+import { commissionRateOf } from "@/lib/affiliate-form"
+import { percentFrom } from "@/lib/discount-form"
+import { useDefaultCommissionTable } from "@/services/affiliates/affiliate-hooks"
 import { useGivesCashbackByProduct } from "@/services/cashback/cashback-hooks"
 import { useCreateProductCategory, useProduct, useProductCategories } from "@/services/catalog/catalog-hooks"
 import { SaveProductError, useSaveProduct } from "@/services/catalog/use-save-product"
@@ -41,6 +46,7 @@ export interface ProductEditorScreenProps {
   productId?: string
   ui: UiMessages
   web: WebMessages
+  locale: string
 }
 
 /**
@@ -50,7 +56,7 @@ export interface ProductEditorScreenProps {
  * the page knows when something is unsaved: the footer says so, Cancel asks, and closing the tab
  * gets the browser's own warning.
  */
-export function ProductEditorScreen({ slug, productId, ui, web }: ProductEditorScreenProps) {
+export function ProductEditorScreen({ slug, productId, ui, web, locale }: ProductEditorScreenProps) {
   const router = useRouter()
   const store = useStore(slug)
   const categories = useProductCategories(slug)
@@ -59,6 +65,9 @@ export function ProductEditorScreen({ slug, productId, ui, web }: ProductEditorS
   const createCategory = useCreateProductCategory(slug)
   const image = useImageUpload()
   const byProduct = useGivesCashbackByProduct(slug)
+  // The shop's affiliate programme on (IMPULSEIA-102): the product's own rate on the default table.
+  const commission = useDefaultCommissionTable(slug)
+  const ownRate = productId ? (commission.rates?.get(productId) ?? null) : null
 
   const [value, setValue] = useState<FormValues>(EMPTY_FORM)
   const [variations, setVariations] = useState<VariationsValue>(EMPTY_VARIATIONS)
@@ -77,8 +86,9 @@ export function ProductEditorScreen({ slug, productId, ui, web }: ProductEditorS
     form has painted, and the fields would visibly fill in a beat later. Keyed by id rather than by
     the object, so a background refetch of the same product does not overwrite what is being typed.
   */
-  if (existing.data && seeded !== existing.data.id) {
-    const form = toForm(existing.data)
+  // Seeded once the default table is read too, so the commission is part of what was loaded.
+  if (existing.data && seeded !== existing.data.id && !commission.pending) {
+    const form = { ...toForm(existing.data), commission: percentFrom(ownRate) }
     const draft = toVariationsDraft(existing.data, ui)
     setSeeded(existing.data.id)
     setValue(form)
@@ -98,14 +108,15 @@ export function ProductEditorScreen({ slug, productId, ui, web }: ProductEditorS
     return () => window.removeEventListener("beforeunload", warn)
   }, [dirty])
 
-  const loading = Boolean(productId) && existing.isPending
+  const loading = Boolean(productId) && (existing.isPending || commission.pending)
 
-  // The list's "Adicionar cashback" lands here with the field's id as the hash. The form is drawn
-  // after the product is read, later than the browser looks for the anchor, so the field is found here.
+  // The list's "Adicionar cashback" and its commission column land here with the field's id as the hash.
+  // The form is drawn after the product is read, later than the browser looks for the anchor, so the field is found here.
   useEffect(() => {
-    if (!byProduct || loading || window.location.hash !== `#${PRODUCT_CASHBACK_FIELD_ID}`) return
-    document.getElementById(PRODUCT_CASHBACK_FIELD_ID)?.focus()
-  }, [byProduct, loading])
+    const target = window.location.hash.slice(1)
+    if (loading || !((byProduct && target === PRODUCT_CASHBACK_FIELD_ID) || (commission.summary && target === PRODUCT_COMMISSION_FIELD_ID))) return
+    document.getElementById(target)?.focus()
+  }, [byProduct, commission.summary, loading])
 
   const list = `/admin/${slug}/products` as Parameters<typeof router.push>[0]
   const text = ui.catalog.products
@@ -131,6 +142,11 @@ export function ProductEditorScreen({ slug, productId, ui, web }: ProductEditorS
       setErrors({ cashback: { message: text.cashbackInvalid } })
       return
     }
+    const commissionRate = commissionRateOf(value.commission)
+    if (commission.summary && commissionRate === undefined) {
+      setErrors({ commission: { message: text.commissionInvalid } })
+      return
+    }
     const kitIssues = kitIssuesOf(value, ui.catalog.kit)
     if (kitIssues) {
       setErrors(kitIssues)
@@ -152,6 +168,11 @@ export function ProductEditorScreen({ slug, productId, ui, web }: ProductEditorS
           images: (saved) => imagesPayloadOf(value.imageUrls, variations, saved),
           hasCombinations: combinations,
         },
+        // Only what changed: the rate is the default table's, sent after the product is saved.
+        commission:
+          commission.summary && commissionRate !== undefined && value.commission.trim() !== loaded.value.commission
+            ? { tableId: commission.summary.id, rateBps: commissionRate }
+            : undefined,
       },
       {
         onSuccess: () => router.push(list),
@@ -206,6 +227,7 @@ export function ProductEditorScreen({ slug, productId, ui, web }: ProductEditorS
           errors: showIssues ? issues : undefined,
         }}
         cashback={byProduct}
+        commission={commission.summary ? { defaultRate: ratePercentOf(commission.summary.defaultRateBps, locale) } : undefined}
         dirty={dirty && !save.isSuccess}
         messages={ui}
       />

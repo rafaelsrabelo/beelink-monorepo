@@ -5,6 +5,8 @@ import { useMutation, useQueryClient, type UseMutationResult } from "@tanstack/r
 import type { ProductDetail, ProductImagePayload, UpdateProductPayload } from "@harness-monorepo/contracts"
 
 // App
+import { affiliateKeys } from "@/services/affiliates/affiliate-keys"
+import { saveProductCommission } from "@/services/affiliates/affiliate-requests"
 import { catalogKeys } from "./catalog-hooks"
 import { createProduct, replaceProductOptions, updateProduct, updateProductVariants } from "./catalog-requests"
 
@@ -30,6 +32,11 @@ export interface SaveProductVariables {
      */
     images: (saved: ProductDetail) => ProductImagePayload[]
   }
+  /**
+   * The product's commission on the shop's default table (IMPULSEIA-102), when it changed: a rate, or
+   * null to follow the table's again. Absent, nothing is sent.
+   */
+  commission?: { tableId: string; rateBps: number | null }
 }
 
 /** A save that failed after the product was created: the screen must not create it twice. */
@@ -71,7 +78,22 @@ export class SaveProductError extends Error {
  * id until the options are saved. Sent first as well, they would replace a gallery whose marks the
  * last request then writes again — and a save stopped between the two would leave them off.
  */
-export async function saveProduct(
+export async function saveProduct(slug: string, variables: SaveProductVariables): Promise<ProductDetail> {
+  const saved = await saveDescribedProduct(slug, variables)
+  const { commission } = variables
+  if (!commission) return saved
+
+  // Last, because a product being created has no id before: the rate is the default table's, not the product's.
+  try {
+    await saveProductCommission(slug, commission.tableId, saved.id, commission.rateBps)
+    return saved
+  } catch (error) {
+    // Everything before it went through, the options included.
+    throw new SaveProductError(error, saved, true)
+  }
+}
+
+async function saveDescribedProduct(
   slug: string,
   { productId, fields, perUnit, hadOptions, variations }: SaveProductVariables,
 ): Promise<ProductDetail> {
@@ -112,6 +134,7 @@ export function useSaveProduct(slug: string): UseMutationResult<ProductDetail, E
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: catalogKeys.products(slug) })
       queryClient.invalidateQueries({ queryKey: catalogKeys.categories(slug) })
+      queryClient.invalidateQueries({ queryKey: affiliateKeys.shop(slug) })
     },
   })
 }
