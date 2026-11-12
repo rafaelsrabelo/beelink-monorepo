@@ -125,7 +125,7 @@ export function reviewOf(input: {
 }): AffiliateReviewView {
   const { text, document } = input
   const sides = sidesOf(document.type)
-  const any = sides.some((side) => document[side] !== null)
+  const attached = sides.some((side) => document[side] !== null)
   return {
     name: input.person.name.trim(),
     email: input.person.email.trim(),
@@ -133,7 +133,7 @@ export function reviewOf(input: {
     commissionBase: input.base,
     commissionHint: input.startName ? format(text.commission.startsFrom, { name: input.startName }) : text.review.baseHint,
     rules: input.rules,
-    documentTitle: any ? format(text.review.document, { type: text.document.types[document.type] }) : text.review.noDocument,
-    documentLines: any ? sides.map((side) => ({ label: text.document.sides[side], status: document[side]?.fileName ?? text.review.notAttached })) : [{ label: text.document.later, status: "" }],
+    documentTitle: attached ? format(text.review.document, { type: text.document.types[document.type] }) : text.review.noDocument,
+    documentLines: attached ? sides.map((side) => ({ label: text.document.sides[side], status: document[side]?.fileName ?? text.review.notAttached })) : [{ label: text.document.later, status: "" }],
   }
 }
