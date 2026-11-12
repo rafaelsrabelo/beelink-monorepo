@@ -7,7 +7,7 @@ export default async function EditProductPage({
   params,
 }: PageProps<"/admin/[slug]/products/[productId]">) {
   const { slug, productId } = await params
-  const { ui, web } = await getMessages()
+  const { ui, web, locale } = await getMessages()
 
-  return <ProductEditorScreen slug={slug} productId={productId} ui={ui} web={web} />
+  return <ProductEditorScreen slug={slug} productId={productId} ui={ui} web={web} locale={locale} />
 }

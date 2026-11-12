@@ -10,7 +10,7 @@ import { getMessages } from "@/lib/locale"
  */
 export default async function NewProductPage({ params }: PageProps<"/admin/[slug]/products/new">) {
   const { slug } = await params
-  const { ui, web } = await getMessages()
+  const { ui, web, locale } = await getMessages()
 
-  return <ProductEditorScreen slug={slug} ui={ui} web={web} />
+  return <ProductEditorScreen slug={slug} ui={ui} web={web} locale={locale} />
 }
