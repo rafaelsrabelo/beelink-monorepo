@@ -365,12 +365,14 @@ describe("bee-link's legal texts (BEELINK-171)", () => {
       expect(policy("Controlador e operador")).toMatch(/Dados do afiliado de uma loja: o bee-link é o controlador dos dados da conta do afiliado, que é uma conta do bee-link[\s\S]*A loja é a controladora dos dados do vínculo dela com o afiliado[\s\S]*e o bee-link é o operador/)
     })
 
-    it("says what is kept of an affiliate, the Pix key, photo and phrase included, and who sees it", () => {
-      expect(affiliates).toMatch(/o nome e o e-mail com que a loja convidou você, o telefone[\s\S]*uma nota que a loja pode anotar e que você não vê/)
+    it("says what is kept of an affiliate, the CPF, Pix key, photo and phrase included, and who sees it", () => {
+      expect(affiliates).toMatch(/o nome, o e-mail, o telefone e o CPF com que a loja cadastrou você, e uma nota que a loja pode anotar e que você não vê/)
       expect(affiliates).toMatch(/o nome que você escolheu para o seu link, a versão dos termos do programa da loja que você aceitou, com a data do aceite, e a chave Pix/)
       expect(affiliates).toMatch(/a foto e a frase que você escolher para aparecer na vitrine da loja/)
       expect(affiliates).toMatch(/quantas visitas o seu link recebeu em cada dia, só como um número, sem nada de quem visitou/)
-      expect(affiliates).toMatch(/A loja vê tudo isso no painel, inclusive a chave Pix, porque é ela quem paga/)
+      expect(affiliates).toMatch(/A loja vê tudo isso no painel, inclusive a chave Pix e o CPF, porque é ela quem paga/)
+      expect(affiliates).toMatch(/o seu CPF só em parte, mascarado\. O seu CPF nunca aparece na vitrine nem nos e-mails/)
+      expect(affiliates).toMatch(/O e-mail, o telefone e o CPF também servem para reconhecer uma compra que você mesmo faça na loja, que não gera comissão/)
       expect(affiliates).toMatch(/O seu nome, a sua foto e a sua frase são públicos/)
       expect(affiliates).toMatch(/vale uma única vez, por 7 dias/)
     })

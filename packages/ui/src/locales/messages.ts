@@ -3325,6 +3325,8 @@ export interface UiMessages {
         commission: string
         /** `{rate}`: a product with no rate of its own pays the default table's. */
         commissionDefault: string
+        /** `{rate}`: a product with no rate of its own whose category has one on the default table. */
+        commissionCategory: string
         /** `{name}`. */
         editCommission: string
       }
@@ -3338,6 +3340,8 @@ export interface UiMessages {
       commissionLabel: string
       /** `{rate}`: the default table's rate, which an empty field follows. */
       commissionHelp: string
+      /** `{name}`, `{rate}`: the product's category's rate on the default table, which an empty field follows. */
+      commissionHelpCategory: string
       commissionInvalid: string
     }
 
@@ -4137,18 +4141,24 @@ export interface UiMessages {
       defaultBadge: string
       /** `{rate}`: the table's own rate. */
       rate: string
-      /** `{count}`: the products with a rate of their own on it. */
+      /** `{count}`, 2 or more: the products with a rate of their own on it. */
       productRates: string
+      productRatesOne: string
       productRatesNone: string
+      /** `{count}`, 2 or more: the categories with a rate of their own on it. */
+      categoryRates: string
+      categoryRatesOne: string
+      categoryRatesNone: string
       /** `{count}`, 2 or more. */
       affiliates: string
       affiliatesOne: string
       affiliatesNone: string
-      /** `{name}`: names the way to a table's rates by product. */
+      /** `{name}`: names the way to a table's rates — general, by category, by product. */
       open: string
       openLabel: string
       /** `{name}`. */
       edit: string
+      editLabel: string
       /** `{name}`. */
       delete: string
       /** `{name}`. */
@@ -4167,24 +4177,39 @@ export interface UiMessages {
         cancel: string
       }
     }
-    /** One table's rates, product by product. */
+    /** One table's rates: the general one, by category, by product. */
     table: {
       back: string
-      /** `{rate}`: the table's own rate. */
       intro: string
+      general: string
+      generalLabel: string
+      generalHelp: string
+      generalSaving: string
+      /** `{rate}`. */
+      generalSaved: string
+      byCategory: string
+      byCategoryHelp: string
+      categoriesEmpty: string
+      byProduct: string
+      byProductHelp: string
       search: string
       empty: string
       noResults: string
       product: string
       rate: string
-      /** `{rate}`: said under a product with no rate of its own here. */
+      /** `{rate}`: said under a product or a category with no rate of its own here, which pays the table's. */
       follows: string
+      /** `{name}`, `{rate}`: said under a product with no rate of its own whose category has one. */
+      followsCategory: string
       /** `{name}`: names the product's save button. */
       save: string
       saveLabel: string
-      /** `{name}`: names the button that drops the product's own rate. */
+      /** `{name}`: names the button that drops the row's own rate, back to the table's. */
       reset: string
       resetLabel: string
+      /** `{name}`: the same, for a product whose category has a rate: it goes back to the category's. */
+      resetCategory: string
+      resetCategoryLabel: string
       /** `{name}`. */
       saved: string
     }
@@ -4228,6 +4253,8 @@ export interface UiMessages {
       tableHelp: string
       phone: string
       phoneHelp: string
+      cpf: string
+      cpfHelp: string
       note: string
       noteHelp: string
       submit: string
@@ -4260,6 +4287,11 @@ export interface UiMessages {
       /** `{sent}`, `{expires}`. */
       inviteOpen: string
       condition: string
+      cpf: string
+      /** Under the phone and the CPF of an affiliate invited before they were asked. */
+      identityMissing: string
+      phoneHelp: string
+      cpfHelp: string
       table: string
       tableHelp: string
       note: string
@@ -4284,7 +4316,7 @@ export interface UiMessages {
       keep: string
     }
     /** What the invite and record forms refuse before they ask, by field. */
-    affiliateIssues: { name: string; email: string; phone: string; note: string; table: string }
+    affiliateIssues: { name: string; email: string; phone: string; cpf: string; note: string; table: string }
     /** What a form refuses before it asks, by field. */
     issues: { attributionDays: string; payoutDelayDays: string; termsText: string; name: string; rate: string }
     /** An order's affiliate (IMPULSEIA-107), on the order's page. Amounts and dates arrive formatted. */
@@ -4444,6 +4476,7 @@ export interface UiMessages {
       AFFILIATE_INVALID: string
       AFFILIATE_NOT_FOUND: string
       AFFILIATE_EMAIL_TAKEN: string
+      AFFILIATE_CPF_TAKEN: string
       AFFILIATE_STATUS_INVALID: string
       AFFILIATE_INVITE_RECENTLY_SENT: string
       PRODUCT_NOT_FOUND: string
@@ -4474,6 +4507,7 @@ export interface UiMessages {
     /** `{rate}`. */
     general: string
     generalHelp: string
+    categories: string
     products: string
     terms: string
     termsNone: string

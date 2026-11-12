@@ -24,8 +24,8 @@ vi.mock("@/services/affiliates/affiliate-hooks", () => ({
 const overview: AffiliateProgramOverview = {
   program: { enabled: true, attributionDays: 30, payoutDelayDays: 10, termsText: null, termsVersion: 0, updatedAt: "2026-11-11T12:00:00.000Z" },
   tables: [
-    { id: "t1", name: "Padrão", defaultRateBps: 1000, isDefault: true, productRateCount: 1, affiliateCount: 2 },
-    { id: "t2", name: "Influencers", defaultRateBps: 1500, isDefault: false, productRateCount: 0, affiliateCount: 0 },
+    { id: "t1", name: "Padrão", defaultRateBps: 1000, isDefault: true, productRateCount: 1, categoryRateCount: 0, affiliateCount: 2 },
+    { id: "t2", name: "Influencers", defaultRateBps: 1500, isDefault: false, productRateCount: 0, categoryRateCount: 0, affiliateCount: 0 },
   ],
   periods: [],
   linksLive: true,
@@ -50,7 +50,7 @@ describe("CommissionTablesScreen (IMPULSEIA-102)", () => {
   it("creates a table from the dialog, in the API's units", async () => {
     render(<CommissionTablesScreen slug="loja" locale="pt-BR" messages={ui} />)
 
-    expect(screen.getByRole("link", { name: "Percentuais por produto: Influencers" })).toHaveAttribute("href", "/admin/loja/affiliates/tables/t2")
+    expect(screen.getByRole("link", { name: "Personalizar os percentuais de Influencers" })).toHaveAttribute("href", "/admin/loja/affiliates/tables/t2")
     await userEvent.click(screen.getByRole("button", { name: "Nova tabela" }))
     const dialog = within(screen.getByRole("dialog", { name: "Nova tabela" }))
     await userEvent.type(dialog.getByLabelText("Nome"), "Amigos")

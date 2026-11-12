@@ -6,7 +6,7 @@ import { Transform } from 'class-transformer';
 import { IsBoolean, IsInt, IsString, Max, Min, MinLength, ValidateIf } from 'class-validator';
 
 // Types
-import type { AffiliateErrorCode, AffiliateProgramPayload, CommissionProductRatePayload, CommissionTablePayload } from '@harness-monorepo/contracts';
+import type { AffiliateErrorCode, AffiliateProgramPayload, CommissionCategoryRatePayload, CommissionProductRatePayload, CommissionTablePayload } from '@harness-monorepo/contracts';
 
 // App
 import { MaxCodePoints } from '../../../shared/http/max-code-points.js';
@@ -72,6 +72,14 @@ export class CommissionTableDto implements CommissionTablePayload {
 
 export class CommissionProductRateDto implements CommissionProductRatePayload {
   @ApiProperty({ minimum: 0, maximum: COMMISSION_BPS_MAX, example: 0, description: "Replaces the table's rate for this product; 0 pays it nothing." })
+  @IsInt(TABLE)
+  @Min(0, TABLE)
+  @Max(COMMISSION_BPS_MAX, TABLE)
+  rateBps!: number;
+}
+
+export class CommissionCategoryRateDto implements CommissionCategoryRatePayload {
+  @ApiProperty({ minimum: 0, maximum: COMMISSION_BPS_MAX, example: 1500, description: "Replaces the table's rate for the category's products that have no rate of their own; 0 pays them nothing." })
   @IsInt(TABLE)
   @Min(0, TABLE)
   @Max(COMMISSION_BPS_MAX, TABLE)

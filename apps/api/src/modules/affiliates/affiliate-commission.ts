@@ -10,10 +10,17 @@ import { lineSharesOf, shareCentsOf, weightedRateOf } from '../orders/products-s
  * the cashback is worked out on (`products-share.ts`). Rounded down to the cent.
  */
 
-/** An affiliate's table as an order reads it: its rate, and each product's own where it has one. */
+/** An affiliate's table as an order reads it: its rate, each category's own and each product's own where they have one. */
 export interface CommissionRates {
   defaultRateBps: number;
   byProduct: ReadonlyMap<string, number>;
+  byCategory: ReadonlyMap<string, number>;
+}
+
+/** The product a line names, with its category as it stands at the reading; null when the product is gone. */
+export interface CommissionProduct {
+  productId: string;
+  categoryId: string | null;
 }
 
 /** One line's commission: its rate then, what it took of the base, and of the commission. */
@@ -30,19 +37,24 @@ export interface OrderCommission {
   lines: CommissionLine[];
 }
 
-/** A product's rate on the table: its own, else the table's. A product gone since is the table's. */
-export function rateOf(rates: CommissionRates, productId: string | null): number {
-  return (productId !== null ? rates.byProduct.get(productId) : undefined) ?? rates.defaultRateBps;
+/**
+ * A product's rate on the table: its own, else its category's, else the table's — and no other
+ * precedence (the user's review, 12/11/2026). A product gone since pays the table's.
+ */
+export function rateOf(rates: CommissionRates, product: CommissionProduct | null): number {
+  if (product === null) return rates.defaultRateBps;
+  const byCategory = product.categoryId !== null ? rates.byCategory.get(product.categoryId) : undefined;
+  return rates.byProduct.get(product.productId) ?? byCategory ?? rates.defaultRateBps;
 }
 
 /**
  * The commission, line by line. `parts` are the very ones the order's cashback is worked out from
- * (`earningPartsOf`), whose lines' own rates are not read; `productIds` name each line's product, in
+ * (`earningPartsOf`), whose lines' own rates are not read; `products` name each line's product, in
  * the same order.
  */
-export function commissionOf(parts: EarningParts, productIds: readonly (string | null)[], rates: CommissionRates): OrderCommission {
+export function commissionOf(parts: EarningParts, products: readonly (CommissionProduct | null)[], rates: CommissionRates): OrderCommission {
   const baseCents = earningBaseOf(parts);
-  const lines = parts.lines.map((line, index) => ({ netCents: line.netCents, rateBps: rateOf(rates, productIds[index] ?? null) }));
+  const lines = parts.lines.map((line, index) => ({ netCents: line.netCents, rateBps: rateOf(rates, products[index] ?? null) }));
   const shares = lineSharesOf(lines, baseCents);
   return {
     baseCents,

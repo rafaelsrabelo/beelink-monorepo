@@ -24,7 +24,7 @@ const home: AffiliateHome = {
   availableCents: 3000,
   payment: { availableCents: 3000, next: { dueOn: "2026-11-30", amountCents: 12_000 } },
   numbers: { days: 30, visits: 48, orders: 6, sales: 4, commissionCents: 24_000 },
-  profile: { pixKey: null, phone: null, photoUrl: null, tagline: null },
+  profile: { pixKey: null, phone: null, maskedCpf: null, photoUrl: null, tagline: null },
 }
 
 describe("the affiliate's area in words (IMPULSEIA-108)", () => {
@@ -84,7 +84,7 @@ describe("the affiliate's area in words (IMPULSEIA-108)", () => {
   })
 
   it("sends only what changed, an emptied field as null", () => {
-    const saved = profileFormOf({ pixKey: "maria@pix.test", phone: "5511988887777", photoUrl: null, tagline: "Oi" })
+    const saved = profileFormOf({ pixKey: "maria@pix.test", phone: "5511988887777", maskedCpf: "***.982.247-**", photoUrl: null, tagline: "Oi" })
     expect(saved.phone).toBe("(11) 98888-7777")
 
     expect(profilePatchOf(saved, { ...saved, tagline: "  " })).toEqual({ tagline: null })

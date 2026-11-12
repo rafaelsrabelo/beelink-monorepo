@@ -17,6 +17,8 @@ export interface ProductCommissionFieldProps {
   onChange: (value: ProductFormValues) => void
   /** The default table's rate, already in words ("10%"), which an empty field follows. */
   defaultRate: string
+  /** The product's category's rate on the default table, in words, which an empty field follows instead; null when it has none. */
+  categoryRate?: { name: string; rate: string } | null
   errors?: ProductFormIssues
   disabled?: boolean
   messages?: UiMessages
@@ -30,7 +32,7 @@ export const PRODUCT_COMMISSION_FIELD_ID = "product-commission"
  * as typed, in a card of its own like the cashback's. Empty, the product pays the table's rate; 0
  * pays nothing.
  */
-export function ProductCommissionField({ value, onChange, defaultRate, errors, disabled = false, messages = defaultMessages }: ProductCommissionFieldProps) {
+export function ProductCommissionField({ value, onChange, defaultRate, categoryRate = null, errors, disabled = false, messages = defaultMessages }: ProductCommissionFieldProps) {
   const text = messages.catalog.products
   const sections = messages.catalog.sections
   const issue = errors?.commission
@@ -53,7 +55,9 @@ export function ProductCommissionField({ value, onChange, defaultRate, errors, d
         {issue ? (
           <FieldError id={`${PRODUCT_COMMISSION_FIELD_ID}-error`}>{issue.message}</FieldError>
         ) : (
-          <FieldDescription id={`${PRODUCT_COMMISSION_FIELD_ID}-help`}>{format(text.commissionHelp, { rate: defaultRate })}</FieldDescription>
+          <FieldDescription id={`${PRODUCT_COMMISSION_FIELD_ID}-help`}>
+            {categoryRate ? format(text.commissionHelpCategory, { name: categoryRate.name, rate: categoryRate.rate }) : format(text.commissionHelp, { rate: defaultRate })}
+          </FieldDescription>
         )}
       </Field>
     </ProductSection>

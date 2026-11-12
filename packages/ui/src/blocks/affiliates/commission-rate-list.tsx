@@ -15,7 +15,6 @@ import { CommissionRateRow } from "./commission-rate-row"
 export interface CommissionRateListProps {
   /** The page of products on screen. */
   rows: readonly CommissionRateRowView[]
-  defaultRateBps: number
   search: string
   onSearch: (search: string) => void
   onType: (productId: string, typed: string) => void
@@ -35,14 +34,20 @@ export interface CommissionRateListProps {
 
 /**
  * A commission table's rates, product by product (IMPULSEIA-102): each product's own rate here, or
- * the table's, which an empty field follows. A row is saved on its own, so a long catalogue is
- * edited a few products at a time.
+ * what an empty field follows — its category's, else the table's. A row is saved on its own, so a
+ * long catalogue is edited a few products at a time.
  */
-export function CommissionRateList({ rows, defaultRateBps, search, onSearch, onType, onSave, onReset, issues = {}, busyId = null, status, emptyText, locale = defaultLocale, messages = defaultMessages }: CommissionRateListProps) {
+export function CommissionRateList({ rows, search, onSearch, onType, onSave, onReset, issues = {}, busyId = null, status, emptyText, locale = defaultLocale, messages = defaultMessages }: CommissionRateListProps) {
   const text = messages.affiliates.table
 
   return (
-    <section aria-label={text.rate} className="bg-shell-surface border-shell-border flex flex-col gap-3 rounded-xl border p-4 shadow-xs sm:p-6">
+    <section aria-labelledby="commission-product-rates-title" className="bg-shell-surface border-shell-border flex flex-col gap-3 rounded-xl border p-4 shadow-xs sm:p-6">
+      <div className="flex flex-col gap-1">
+        <h3 id="commission-product-rates-title" className="font-semibold">
+          {text.byProduct}
+        </h3>
+        <p className="text-muted-foreground text-sm">{text.byProductHelp}</p>
+      </div>
       <InputGroup className="max-w-sm">
         <InputGroupAddon>
           <SearchIcon />
@@ -56,14 +61,13 @@ export function CommissionRateList({ rows, defaultRateBps, search, onSearch, onT
         <ul className="divide-y">
           {rows.map((row) => (
             <CommissionRateRow
-              key={row.productId}
+              key={row.id}
               row={row}
-              defaultRateBps={defaultRateBps}
-              onType={(typed) => onType(row.productId, typed)}
-              onSave={() => onSave(row.productId)}
-              onReset={() => onReset(row.productId)}
-              issue={issues[row.productId]}
-              busy={busyId === row.productId}
+              onType={(typed) => onType(row.id, typed)}
+              onSave={() => onSave(row.id)}
+              onReset={() => onReset(row.id)}
+              issue={issues[row.id]}
+              busy={busyId === row.id}
               locale={locale}
               messages={messages}
             />

@@ -6,6 +6,7 @@ import { useId } from "react"
 // UI
 import { Button } from "@harness-monorepo/ui/components/button"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@harness-monorepo/ui/components/field"
+import { Input } from "@harness-monorepo/ui/components/input"
 import { Textarea } from "@harness-monorepo/ui/components/textarea"
 
 // Locales
@@ -14,6 +15,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import type { AffiliateRecordFormValues, AffiliateRecordIssues, AffiliateTableOption } from "@harness-monorepo/ui/lib/affiliates"
+import { maskCpf } from "@harness-monorepo/ui/lib/cpf"
 import { AffiliateTableSelect } from "./affiliate-table-select"
 
 export interface AffiliateRecordFormProps {
@@ -23,6 +25,8 @@ export interface AffiliateRecordFormProps {
   tables: readonly AffiliateTableOption[]
   /** An ended affiliate's table no longer pays anything: the table stays shown, and does not change. */
   tableLocked?: boolean
+  /** Invited before the phone and the CPF were asked: say so, so the shop completes them. */
+  identityMissing?: boolean
   issues?: AffiliateRecordIssues
   pending?: boolean
   /** Nothing typed differs from what is saved: there is nothing to save. */
@@ -33,8 +37,8 @@ export interface AffiliateRecordFormProps {
   messages?: UiMessages
 }
 
-/** The shop's side of an affiliate (IMPULSEIA-104): the table they are on, and the shop's own note. */
-export function AffiliateRecordForm({ value, onChange, onSubmit, tables, tableLocked = false, issues = {}, pending = false, pristine = false, saved = false, error, messages = defaultMessages }: AffiliateRecordFormProps) {
+/** The shop's side of an affiliate (IMPULSEIA-104): their phone and CPF, the table they are on, and the shop's own note. */
+export function AffiliateRecordForm({ value, onChange, onSubmit, tables, tableLocked = false, identityMissing = false, issues = {}, pending = false, pristine = false, saved = false, error, messages = defaultMessages }: AffiliateRecordFormProps) {
   const text = messages.affiliates.record
   const id = useId()
 
@@ -51,6 +55,42 @@ export function AffiliateRecordForm({ value, onChange, onSubmit, tables, tableLo
         <h2 id={`${id}-title`} className="font-semibold">
           {text.condition}
         </h2>
+        {identityMissing ? <p className="text-muted-foreground -mt-3 text-sm">{text.identityMissing}</p> : null}
+
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field data-invalid={issues.phone ? true : undefined}>
+            <FieldLabel htmlFor={`${id}-phone`}>{text.phone}</FieldLabel>
+            <Input
+              id={`${id}-phone`}
+              type="tel"
+              inputMode="tel"
+              autoComplete="off"
+              placeholder={text.none}
+              value={value.phone}
+              disabled={pending}
+              aria-invalid={issues.phone ? true : undefined}
+              aria-describedby={`${id}-phone-help`}
+              onChange={(event) => onChange({ ...value, phone: event.target.value })}
+            />
+            {issues.phone ? <FieldError id={`${id}-phone-help`}>{issues.phone}</FieldError> : <FieldDescription id={`${id}-phone-help`}>{text.phoneHelp}</FieldDescription>}
+          </Field>
+
+          <Field data-invalid={issues.cpf ? true : undefined}>
+            <FieldLabel htmlFor={`${id}-cpf`}>{text.cpf}</FieldLabel>
+            <Input
+              id={`${id}-cpf`}
+              inputMode="numeric"
+              autoComplete="off"
+              placeholder={text.none}
+              value={value.cpf}
+              disabled={pending}
+              aria-invalid={issues.cpf ? true : undefined}
+              aria-describedby={`${id}-cpf-help`}
+              onChange={(event) => onChange({ ...value, cpf: maskCpf(event.target.value) })}
+            />
+            {issues.cpf ? <FieldError id={`${id}-cpf-help`}>{issues.cpf}</FieldError> : <FieldDescription id={`${id}-cpf-help`}>{text.cpfHelp}</FieldDescription>}
+          </Field>
+        </div>
 
         <Field data-invalid={issues.tableId ? true : undefined} className="max-w-sm">
           <FieldLabel htmlFor={`${id}-table`}>{text.table}</FieldLabel>

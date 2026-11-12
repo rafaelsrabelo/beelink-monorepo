@@ -54,7 +54,7 @@ export interface ProductEditorProps {
   /** The shop gives its cashback by product (BEELINK-313): the editor asks this product's rate. */
   cashback?: boolean
   /** The shop's affiliate programme is on (IMPULSEIA-102): the editor asks this product's commission, which empty follows `defaultRate`. */
-  commission?: { defaultRate: string }
+  commission?: { defaultRate: string; categoryRate?: { name: string; rate: string } | null }
   /** Something is not saved: the footer says so, and Cancel asks before throwing it away. */
   dirty?: boolean
   messages?: UiMessages
@@ -167,7 +167,7 @@ export function ProductEditor({
       </ProductSection>
 
       {cashback ? <ProductCashbackField value={value} onChange={onChange} errors={errors} disabled={pending} messages={messages} /> : null}
-      {commission ? <ProductCommissionField value={value} onChange={onChange} defaultRate={commission.defaultRate} errors={errors} disabled={pending} messages={messages} /> : null}
+      {commission ? <ProductCommissionField value={value} onChange={onChange} defaultRate={commission.defaultRate} categoryRate={commission.categoryRate ?? null} errors={errors} disabled={pending} messages={messages} /> : null}
 
       {variations && !value.isKit ? (
         <ProductSection title={sections.variations} hint={sections.variationsHint}>

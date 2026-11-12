@@ -3,6 +3,7 @@ import { NextRequest } from "next/server"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 // App
+import { DELETE as removeCategoryRate, PUT as setCategoryRate } from "./tables/[tableId]/category-rates/[categoryId]/route"
 import { DELETE as removeRate, PUT as setRate } from "./tables/[tableId]/rates/[productId]/route"
 import { DELETE as removeTable, GET as readTable, PUT as updateTable } from "./tables/[tableId]/route"
 import { POST as createTable } from "./tables/route"
@@ -74,6 +75,19 @@ describe("the shop's affiliate programme, for the panel (IMPULSEIA-102)", () => 
     expect(String(fetched.mock.calls[0]?.[0])).toContain("/stores/loja/affiliate-program/tables/t%201/rates/p%2F1")
     expect(JSON.parse(String(fetched.mock.calls[0]?.[1]?.body))).toEqual({ rateBps: 0 })
     expect((await removeRate(request("/api/stores/loja/affiliate-program/tables/t%201/rates/p%2F1", { method: "DELETE" }), rate)).status).toBe(204)
+  })
+
+  it("sets and drops a category's rate on a table, both ids escaped", async () => {
+    const fetched = vi.fn<Fetched>(async (_url, init) => (init?.method === "DELETE" ? new Response(null, { status: 204 }) : Response.json({ categoryId: "c/1", rateBps: 1500 })))
+    vi.stubGlobal("fetch", fetched)
+    const category = { params: Promise.resolve({ slug: "loja", tableId: "t 1", categoryId: "c/1" }) }
+
+    expect((await setCategoryRate(request("/api/stores/loja/affiliate-program/tables/t%201/category-rates/c%2F1", { method: "PUT", body: { rateBps: 1500 } }), category)).status).toBe(200)
+    expect(String(fetched.mock.calls[0]?.[0])).toContain("/stores/loja/affiliate-program/tables/t%201/category-rates/c%2F1")
+    expect(JSON.parse(String(fetched.mock.calls[0]?.[1]?.body))).toEqual({ rateBps: 1500 })
+    const removed = await removeCategoryRate(request("/api/stores/loja/affiliate-program/tables/t%201/category-rates/c%2F1", { method: "DELETE" }), category)
+    expect(removed.status).toBe(204)
+    expect(await removed.text()).toBe("")
   })
 
   it("refuses a request from another origin before reaching the API", async () => {

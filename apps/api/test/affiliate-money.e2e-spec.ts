@@ -21,6 +21,7 @@ import { AffiliateCommissionSweeper } from '../src/modules/affiliates/affiliate-
 import { AffiliateSaleMailer } from '../src/modules/affiliates/affiliate-sale-mailer.js';
 import { brasiliaDayOf, daysAfter, dateColumnOf, dayOfDateColumn, openOfBrasiliaDay } from '../src/modules/billing/billing-dates.js';
 import { PrismaService } from '../src/shared/prisma/prisma.service.js';
+import { affiliateIdentity } from './support/affiliate-identity.js';
 import { PASSWORD, newEmail, signUpAndSignIn, verifyEmailOf } from './support/auth-flow.js';
 import { createTestApp } from './support/create-test-app.js';
 import { clearInbox, tokenFromLink, waitForMessage } from './support/mailpit.js';
@@ -90,7 +91,7 @@ describe("the shop's money with its affiliates: an order's affiliate, the statem
   async function affiliate(slug: string, name: string): Promise<ShopAffiliate> {
     const email = newEmail(slug);
     const tableId = (await call('GET', '/api/stores/lessari/affiliate-program', owner)).json<AffiliateProgramOverview>().tables[0]!.id;
-    const invited = await call('POST', '/api/stores/lessari/affiliates', owner, { name, email, tableId });
+    const invited = await call('POST', '/api/stores/lessari/affiliates', owner, { ...affiliateIdentity(), name, email, tableId });
     const token = tokenFromLink((await waitForMessage(email.toLowerCase(), 10_000, 'convidou você')).Text, '/afiliado/convite');
     const accepted = await call('POST', `/api/affiliate-invites/${token}/sign-up`, undefined, { name, password: PASSWORD, slug, pixKey: `${slug}@pix.test`, termsVersion: 0 });
     if (accepted.statusCode !== 201) throw new Error(`sign-up answered ${accepted.statusCode}: ${accepted.payload}`);
@@ -312,7 +313,7 @@ describe("the shop's money with its affiliates: an order's affiliate, the statem
         expect(errorOf(await adjust(joao.id, amountCents, reason))).toBe('AFFILIATE_ADJUSTMENT_INVALID');
       }
       const tableId = (await call('GET', '/api/stores/lessari/affiliate-program', owner)).json<AffiliateProgramOverview>().tables[0]!.id;
-      const invited = (await call('POST', '/api/stores/lessari/affiliates', owner, { name: 'Ainda Convidada', email: newEmail('convidada'), tableId })).json<ShopAffiliate>();
+      const invited = (await call('POST', '/api/stores/lessari/affiliates', owner, { ...affiliateIdentity(), name: 'Ainda Convidada', email: newEmail('convidada'), tableId })).json<ShopAffiliate>();
       expect(errorOf(await adjust(invited.id, 100))).toBe('AFFILIATE_STATUS_INVALID');
       expect(errorOf(await call('GET', `/api/stores/lessari/affiliates/${MISSING}/statement`, owner))).toBe('AFFILIATE_NOT_FOUND');
     });

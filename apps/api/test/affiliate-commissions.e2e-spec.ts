@@ -10,6 +10,7 @@ import { payoutPeriodOf } from '../src/modules/affiliates/affiliate-payout-calen
 import { AffiliateSaleMailer } from '../src/modules/affiliates/affiliate-sale-mailer.js';
 import { brasiliaDayOf, dayOfDateColumn, openOfBrasiliaDay } from '../src/modules/billing/billing-dates.js';
 import { PrismaService } from '../src/shared/prisma/prisma.service.js';
+import { affiliateIdentity } from './support/affiliate-identity.js';
 import { PASSWORD, newEmail, signUpAndSignIn, verifyEmailOf } from './support/auth-flow.js';
 import { createTestApp } from './support/create-test-app.js';
 import { clearInbox, tokenFromLink, waitForMessage } from './support/mailpit.js';
@@ -83,7 +84,7 @@ describe("an order's affiliate commission: credited at the order, due by the cal
   /** An affiliate through the real door: invited by the shop, signed up by the invite's link. */
   async function affiliate(slug: string, email = newEmail(slug), shop = 'lessari', session = owner): Promise<ShopAffiliate & { email: string }> {
     const tableId = (await call('GET', `/api/stores/${shop}/affiliate-program`, session)).json<AffiliateProgramOverview>().tables[0]!.id;
-    const invited = await call('POST', `/api/stores/${shop}/affiliates`, session, { name: 'João Silva', email, tableId });
+    const invited = await call('POST', `/api/stores/${shop}/affiliates`, session, { ...affiliateIdentity(), name: 'João Silva', email, tableId });
     if (invited.statusCode !== 201) throw new Error(`POST affiliates answered ${invited.statusCode}: ${invited.payload}`);
     const token = tokenFromLink((await waitForMessage(email.toLowerCase(), 10_000, 'convidou você')).Text, '/afiliado/convite');
     const accepted = await call('POST', `/api/affiliate-invites/${token}/sign-up`, undefined, { name: 'João Silva', password: PASSWORD, slug, pixKey: null, termsVersion: 0 });
@@ -132,6 +133,23 @@ describe("an order's affiliate commission: credited at the order, due by the cal
         { rateBps: 2500, baseCents: 5000, commissionCents: 1250 },
       ]);
       expect((await expectBooksToHold(joao.id)).pendingCents).toBe(2250);
+    });
+
+    it("pays a product its own rate, else its category's, else the table's", async () => {
+      const suplementos = (await call('POST', '/api/stores/lessari/product-categories', owner, { name: 'Suplementos' })).json<{ id: string }>();
+      await prisma.product.updateMany({ where: { name: { in: ['Whey', 'Creatina'] } }, data: { categoryId: suplementos.id } });
+      const table = (await call('GET', '/api/stores/lessari/affiliate-program', owner)).json<AffiliateProgramOverview>().tables[0]!;
+      await call('PUT', `/api/stores/lessari/affiliate-program/tables/${table.id}/category-rates/${suplementos.id}`, owner, { rateBps: 2000 });
+
+      const order = await place(visitOf(joao.id));
+
+      // Whey has no rate of its own: its category's 20%. Creatine keeps its own 25%.
+      const commission = await commissionOf(order.id);
+      expect(commission).toMatchObject({ baseCents: 15_000, commissionCents: 3250 });
+      expect(commission!.lines.map(({ rateBps, commissionCents }) => ({ rateBps, commissionCents })).sort((a, b) => a.rateBps - b.rateBps)).toEqual([
+        { rateBps: 2000, commissionCents: 2000 },
+        { rateBps: 2500, commissionCents: 1250 },
+      ]);
     });
 
     it("keeps the table's rates as they were: a change afterwards rewrites nothing", async () => {
@@ -198,6 +216,13 @@ describe("an order's affiliate commission: credited at the order, due by the cal
       const byPhone = await place(visitOf(joao.id));
       expect(await commissionOf(byPhone.id)).toMatchObject({ commissionCents: 0, zeroReason: 'OWN_PURCHASE' });
       await expectBooksToHold(bia.id);
+
+      // And the same CPF (the user's review, 12/11/2026), whatever the phone and the e-mail say.
+      const maria = await affiliate('maria', newEmail('maria'));
+      await prisma.affiliate.update({ where: { id: maria.id }, data: { cpf: '52998224725' } });
+      await prisma.customer.updateMany({ where: { name: 'Bia Souza' }, data: { phone: '5511900000000', cpf: '52998224725' } });
+      const byCpf = await place(visitOf(maria.id));
+      expect(await commissionOf(byCpf.id)).toMatchObject({ commissionCents: 0, zeroReason: 'OWN_PURCHASE' });
     });
   });
 

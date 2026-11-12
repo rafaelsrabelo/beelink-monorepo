@@ -21,6 +21,12 @@ describe("ProductCommissionField (IMPULSEIA-102)", () => {
     await expectNoA11yViolations(container)
   })
 
+  it("says its category's rate when the category has one on the default table", () => {
+    render(<ProductCommissionField value={EMPTY_PRODUCT} onChange={() => {}} defaultRate="10%" categoryRate={{ name: "Bolsas", rate: "15%" }} />)
+
+    expect(screen.getByLabelText("Comissão de afiliado (%)")).toHaveAccessibleDescription(/Vazio, segue a categoria Bolsas na tabela Padrão: 15%\./)
+  })
+
   it("says what to correct in place of the help", () => {
     render(<ProductCommissionField value={{ ...EMPTY_PRODUCT, commission: "120" }} onChange={() => {}} defaultRate="10%" errors={{ commission: { message: "Informe um percentual de 0% a 100%, ou deixe vazio." } }} />)
 

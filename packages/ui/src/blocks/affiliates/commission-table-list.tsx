@@ -34,6 +34,11 @@ export interface CommissionTableListProps {
  * many products pay their own. The default one is marked and has no delete — every affiliate needs a
  * table to fall back on.
  */
+/** None, one, or `{count}` of them, in words. */
+function countOf(count: number, none: string, one: string, many: string): string {
+  return count === 0 ? none : count === 1 ? one : format(many, { count: String(count) })
+}
+
 export function CommissionTableList({ tables, hrefOf, onCreate, onEdit, onDelete, busyId = null, locale = defaultLocale, linkComponent: Link = AnchorLink, messages = defaultMessages }: CommissionTableListProps) {
   const text = messages.affiliates.tables
 
@@ -62,7 +67,7 @@ export function CommissionTableList({ tables, hrefOf, onCreate, onEdit, onDelete
               </p>
               <p className="text-muted-foreground text-sm">
                 {format(text.rate, { rate: ratePercentOf(table.defaultRateBps, locale) })} ·{" "}
-                {table.productRateCount > 0 ? format(text.productRates, { count: String(table.productRateCount) }) : text.productRatesNone} ·{" "}
+                {countOf(table.categoryRateCount, text.categoryRatesNone, text.categoryRatesOne, text.categoryRates)} · {countOf(table.productRateCount, text.productRatesNone, text.productRatesOne, text.productRates)} ·{" "}
                 {table.affiliateCount === 0 ? text.affiliatesNone : table.affiliateCount === 1 ? text.affiliatesOne : format(text.affiliates, { count: String(table.affiliateCount) })}
               </p>
             </div>
@@ -70,8 +75,9 @@ export function CommissionTableList({ tables, hrefOf, onCreate, onEdit, onDelete
               <Link href={hrefOf(table.id)} aria-label={format(text.open, { name: table.name })} className={buttonVariants({ variant: "outline", size: "sm" })}>
                 {text.openLabel}
               </Link>
-              <Button type="button" variant="ghost" size="icon" aria-label={format(text.edit, { name: table.name })} onClick={() => onEdit(table)} disabled={busyId === table.id}>
+              <Button type="button" variant="ghost" size="sm" aria-label={format(text.edit, { name: table.name })} onClick={() => onEdit(table)} disabled={busyId === table.id}>
                 <PencilIcon />
+                {text.editLabel}
               </Button>
               {table.isDefault ? null : (
                 <Button type="button" variant="ghost" size="icon" aria-label={format(text.delete, { name: table.name })} onClick={() => onDelete(table)} disabled={busyId === table.id}>

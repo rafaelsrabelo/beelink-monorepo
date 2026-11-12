@@ -4,7 +4,9 @@ import { AffiliateSettingsForm } from "./affiliate-settings-form"
 import { AffiliatesFailed } from "./affiliates-failed"
 import { AffiliatesSkeleton } from "./affiliates-skeleton"
 import { AffiliatesTabs } from "./affiliates-tabs"
-import { calendar, rates, settings, tables } from "./affiliates.fixtures"
+import { calendar, categoryRates, rates, settings, tables } from "./affiliates.fixtures"
+import { CommissionCategoryRateList } from "./commission-category-rate-list"
+import { CommissionGeneralRate } from "./commission-general-rate"
 import { CommissionRateList } from "./commission-rate-list"
 import { CommissionTableDialog } from "./commission-table-dialog"
 import { CommissionTableList } from "./commission-table-list"
@@ -65,11 +67,13 @@ export const NovaTabela: Story = {
   ),
 }
 
-/** Os percentuais de uma tabela, produto por produto: um próprio, um que segue o geral e um sendo digitado. */
-export const PercentuaisPorProduto: Story = {
+/** Os percentuais de uma tabela: o geral, por categoria e por produto — um próprio, um que segue a categoria, um que segue o geral e um sendo digitado. */
+export const PercentuaisDaTabela: Story = {
   render: () => (
-    <div className="max-w-4xl">
-      <CommissionRateList rows={rates} defaultRateBps={1000} search="" onSearch={noop} onType={noop} onSave={noop} onReset={noop} emptyText="A loja ainda não tem produtos." status="Comissão de Whey Concentrado salva." />
+    <div className="flex max-w-4xl flex-col gap-6">
+      <CommissionGeneralRate value="10" onChange={noop} onSubmit={noop} pristine />
+      <CommissionCategoryRateList rows={categoryRates} onType={noop} onSave={noop} onReset={noop} />
+      <CommissionRateList rows={rates} search="" onSearch={noop} onType={noop} onSave={noop} onReset={noop} emptyText="A loja ainda não tem produtos." status="Comissão de Whey Concentrado salva." />
     </div>
   ),
 }

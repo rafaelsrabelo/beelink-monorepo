@@ -16,6 +16,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import type { AffiliateInviteFormValues, AffiliateInviteIssues, AffiliateTableOption } from "@harness-monorepo/ui/lib/affiliates"
+import { maskCpf } from "@harness-monorepo/ui/lib/cpf"
 import { AffiliateTableSelect } from "./affiliate-table-select"
 
 export interface AffiliateInviteDialogProps {
@@ -32,7 +33,7 @@ export interface AffiliateInviteDialogProps {
   messages?: UiMessages
 }
 
-/** Inviting someone to sell for the shop (IMPULSEIA-104): who, at which e-mail, on which table. */
+/** Inviting someone to sell for the shop (IMPULSEIA-104): who, at which e-mail, on which table — and their phone and CPF, which the shop keeps. */
 export function AffiliateInviteDialog({ open, onOpenChange, value, onChange, onSubmit, tables, issues = {}, pending = false, error, messages = defaultMessages }: AffiliateInviteDialogProps) {
   const text = messages.affiliates.inviteDialog
   const id = useId()
@@ -95,6 +96,22 @@ export function AffiliateInviteDialog({ open, onOpenChange, value, onChange, onS
               onChange={(event) => onChange({ ...value, phone: event.target.value })}
             />
             {issues.phone ? <FieldError id={hint("phone")}>{issues.phone}</FieldError> : <FieldDescription id={hint("phone")}>{text.phoneHelp}</FieldDescription>}
+          </Field>
+
+          <Field data-invalid={issues.cpf ? true : undefined}>
+            <FieldLabel htmlFor={`${id}-cpf`}>{text.cpf}</FieldLabel>
+            <Input
+              id={`${id}-cpf`}
+              inputMode="numeric"
+              autoComplete="off"
+              placeholder="000.000.000-00"
+              value={value.cpf}
+              disabled={pending}
+              aria-invalid={issues.cpf ? true : undefined}
+              aria-describedby={hint("cpf")}
+              onChange={(event) => onChange({ ...value, cpf: maskCpf(event.target.value) })}
+            />
+            {issues.cpf ? <FieldError id={hint("cpf")}>{issues.cpf}</FieldError> : <FieldDescription id={hint("cpf")}>{text.cpfHelp}</FieldDescription>}
           </Field>
 
           <Field data-invalid={issues.note ? true : undefined}>

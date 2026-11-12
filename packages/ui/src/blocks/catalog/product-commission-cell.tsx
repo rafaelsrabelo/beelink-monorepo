@@ -11,8 +11,10 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 export interface ProductCommissionCellProps {
   /** The product's name, which the button is named by: a column of them reads the same otherwise. */
   name: string
-  /** Its own rate on the default table, in basis points; null pays the table's. */
+  /** Its own rate on the default table, in basis points; null pays its category's, or the table's. */
   rateBps: number | null
+  /** Its category's rate on the default table; null or absent when the category has none. */
+  categoryRateBps?: number | null
   defaultRateBps: number
   onEdit: () => void
   disabled?: boolean
@@ -25,13 +27,15 @@ export interface ProductCommissionCellProps {
  * table, or the table's, marked as such. Every product pays something — 0 included — so the cell is
  * always the way to the field, never an offer to add one.
  */
-export function ProductCommissionCell({ name, rateBps, defaultRateBps, onEdit, disabled = false, locale = defaultLocale, messages = defaultMessages }: ProductCommissionCellProps) {
+export function ProductCommissionCell({ name, rateBps, categoryRateBps = null, defaultRateBps, onEdit, disabled = false, locale = defaultLocale, messages = defaultMessages }: ProductCommissionCellProps) {
   const text = messages.catalog.products.table
 
   return (
     <Button type="button" variant="ghost" size="sm" className="tabular-nums" aria-label={format(text.editCommission, { name })} onClick={onEdit} disabled={disabled}>
       {rateBps === null ? (
-        <span className="text-muted-foreground">{format(text.commissionDefault, { rate: ratePercentOf(defaultRateBps, locale) })}</span>
+        <span className="text-muted-foreground">
+          {categoryRateBps !== null ? format(text.commissionCategory, { rate: ratePercentOf(categoryRateBps, locale) }) : format(text.commissionDefault, { rate: ratePercentOf(defaultRateBps, locale) })}
+        </span>
       ) : (
         ratePercentOf(rateBps, locale)
       )}

@@ -4,6 +4,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import type { AffiliateInvitationView } from "@harness-monorepo/ui/lib/affiliates"
+import { AffiliateRateLines } from "./affiliate-rate-lines"
 
 export interface AffiliateInvitationSummaryProps {
   invitation: AffiliateInvitationView
@@ -33,19 +34,8 @@ export function AffiliateInvitationSummary({ invitation, messages = defaultMessa
         </h2>
         <p className="text-lg font-semibold">{format(text.general, { rate: invitation.generalRate })}</p>
         <p className="text-muted-foreground text-sm">{text.generalHelp}</p>
-        {invitation.products.length > 0 ? (
-          <div className="flex flex-col gap-1 pt-1">
-            <h3 className="text-sm font-medium">{text.products}</h3>
-            <ul className="flex flex-col gap-0.5 text-sm">
-              {invitation.products.map((product) => (
-                <li key={product.name} className="flex justify-between gap-3">
-                  <span className="truncate">{product.name}</span>
-                  <span className="tabular-nums">{product.rate}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
+        <AffiliateRateLines title={text.categories} lines={invitation.categories} />
+        <AffiliateRateLines title={text.products} lines={invitation.products} />
       </section>
 
       <section aria-labelledby="affiliate-invite-terms" className="flex flex-col gap-2">

@@ -53,8 +53,10 @@ export interface ProductTableItem {
   carrierGap?: "NO_WEIGHT" | "NO_SIZE" | null
   /** Its own cashback, in basis points (BEELINK-313); null or absent has none. Shown only with `onAddCashback`. */
   cashbackRateBps?: number | null
-  /** Its own affiliate commission on the default table (IMPULSEIA-102); null or absent pays the table's. */
+  /** Its own affiliate commission on the default table (IMPULSEIA-102); null or absent pays its category's, or the table's. */
   commissionRateBps?: number | null
+  /** Its category's commission on the default table (the user's review, 12/11/2026); null or absent when the category has none. */
+  commissionCategoryRateBps?: number | null
 }
 
 export interface ProductTableProps {
@@ -221,7 +223,7 @@ export function ProductTable({
               ) : null}
               {commission ? (
                 <TableCell>
-                  <ProductCommissionCell name={product.name} rateBps={product.commissionRateBps ?? null} defaultRateBps={commission.defaultRateBps} onEdit={() => commission.onEdit(product.id)} disabled={busyId === product.id} locale={locale} messages={messages} />
+                  <ProductCommissionCell name={product.name} rateBps={product.commissionRateBps ?? null} categoryRateBps={product.commissionCategoryRateBps ?? null} defaultRateBps={commission.defaultRateBps} onEdit={() => commission.onEdit(product.id)} disabled={busyId === product.id} locale={locale} messages={messages} />
                 </TableCell>
               ) : null}
 

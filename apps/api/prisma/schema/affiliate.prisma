@@ -21,7 +21,8 @@ model AffiliateProgram {
   @@map("affiliate_programs")
 }
 
-/// A commission table: one rate for every product, and a product's own where it has one. Every
+/// A commission table: one rate for every product, a category's own and a product's own where they
+/// have one — `product ?? its category ?? the table's`. Every
 /// affiliate is on one; a special condition is another table. The default table is born with the
 /// programme and never deleted — one per shop, by the partial unique index the migration adds.
 /// Deleting a table touches no history: an order keeps the table's name and each line's rate.
@@ -37,8 +38,9 @@ model CommissionTable {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  rates      CommissionTableRate[]
-  affiliates Affiliate[]
+  rates         CommissionTableRate[]
+  categoryRates CommissionTableCategoryRate[]
+  affiliates    Affiliate[]
 
   @@unique([storeId, name])
   /// One default table per shop, however many first readings open the programme at once.
@@ -61,6 +63,23 @@ model CommissionTableRate {
   @@id([tableId, productId])
   @@index([productId])
   @@map("commission_table_rates")
+}
+
+/// A category's own rate on a table (the user's review, 12/11/2026): its products pay it, unless one
+/// has a rate of its own; 0 pays them nothing. Deleting the category, or the table, takes it along.
+model CommissionTableCategoryRate {
+  tableId    String          @db.Uuid
+  table      CommissionTable @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  categoryId String          @db.Uuid
+  category   ProductCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  /// Basis points, 0 to 10000, by a CHECK.
+  rateBps    Int
+
+  updatedAt DateTime @updatedAt
+
+  @@id([tableId, categoryId])
+  @@index([categoryId])
+  @@map("commission_table_category_rates")
 }
 
 /// Where an affiliate stands with a shop (IMPULSEIA-103). INVITED until the invite is accepted;
@@ -87,8 +106,12 @@ model Affiliate {
   name    String          @db.VarChar(120)
   /// Lower case, as invited: the one address whose account may accept.
   email   String          @db.VarChar(254)
-  /// Digits only, with the country code.
+  /// Digits only, with the country code. Required of a new invite since 12/11/2026; null only on one
+  /// invited before, which the shop completes on the record.
   phone   String?         @db.VarChar(20)
+  /// Eleven digits, checked; the shop's alone to read. Required of a new invite since 12/11/2026, like
+  /// the phone, and unique in the shop among the rows not ended.
+  cpf     String?         @db.Char(11)
   /// The shop's own; the affiliate never reads it.
   note    String?         @db.VarChar(500)
   /// The `/name`, normalised as a category slug is; null while invited.
@@ -135,6 +158,7 @@ model Affiliate {
   @@unique([storeId, slug])
   @@unique([storeId, email], where: raw("(status <> 'ENDED'::\"AffiliateStatus\")"), map: "affiliates_live_email_key")
   @@unique([storeId, userId], where: raw("(status <> 'ENDED'::\"AffiliateStatus\") AND (\"userId\" IS NOT NULL)"), map: "affiliates_live_user_key")
+  @@unique([storeId, cpf], where: raw("(status <> 'ENDED'::\"AffiliateStatus\") AND (cpf IS NOT NULL)"), map: "affiliates_live_cpf_key")
   /// The shop's list, newest invited first, by status.
   @@index([storeId, status, invitedAt])
   @@index([tableId])

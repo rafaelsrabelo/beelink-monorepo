@@ -27,6 +27,8 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 const tableMissing = () => new NotFoundException(affiliateError('COMMISSION_TABLE_NOT_FOUND', 'No such commission table in this shop'));
 const affiliateMissing = () => new NotFoundException(affiliateError('AFFILIATE_NOT_FOUND', 'No such affiliate in this shop'));
+const emailTaken = () => new ConflictException(affiliateError('AFFILIATE_EMAIL_TAKEN', 'Another affiliate of this shop has that e-mail'));
+const cpfTaken = () => new ConflictException(affiliateError('AFFILIATE_CPF_TAKEN', 'Another affiliate of this shop has that CPF'));
 const statusRefused = (status: AffiliateStatus) =>
   new ConflictException(affiliateError<AffiliateStatusDetails>('AFFILIATE_STATUS_INVALID', `Not allowed while ${status}`, { status }));
 
@@ -53,11 +55,11 @@ export class StoreAffiliatesService {
     let row;
     try {
       row = await this.prisma.affiliate.create({
-        data: { storeId, name: dto.name, email: dto.email, phone: dto.phone ?? null, note: dto.note ?? null, tableId: dto.tableId, invite: { create: invite.columns } },
+        data: { storeId, name: dto.name, email: dto.email, phone: dto.phone, cpf: dto.cpf, note: dto.note ?? null, tableId: dto.tableId, invite: { create: invite.columns } },
         include: affiliateInclude,
       });
     } catch (error) {
-      if (isUniqueViolation(error)) throw new ConflictException(affiliateError('AFFILIATE_EMAIL_TAKEN', 'Another affiliate of this shop has that e-mail'));
+      if (isUniqueViolation(error)) throw (await this.cpfInUse(storeId, dto.cpf, null)) ? cpfTaken() : emailTaken();
       // The table went in between: it was this shop's when read.
       if (isForeignKeyViolation(error)) throw tableMissing();
       throw error;
@@ -85,7 +87,7 @@ export class StoreAffiliatesService {
     return toShopAffiliate(await this.affiliateOf(storeId, affiliateId));
   }
 
-  /** The table and the note. Another table applies to orders placed from then on. */
+  /** The table, the phone, the CPF and the note. Another table applies to orders placed from then on. */
   async update(storeSlug: string, userId: string, affiliateId: string, dto: UpdateAffiliateDto): Promise<ShopAffiliate> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
     const current = await this.affiliateOf(storeId, affiliateId);
@@ -94,11 +96,18 @@ export class StoreAffiliatesService {
     try {
       const row = await this.prisma.affiliate.update({
         where: { id: current.id },
-        data: { ...(dto.tableId !== undefined ? { tableId: dto.tableId } : {}), ...(dto.note !== undefined ? { note: dto.note } : {}) },
+        data: {
+          ...(dto.tableId !== undefined ? { tableId: dto.tableId } : {}),
+          ...(dto.phone !== undefined ? { phone: dto.phone } : {}),
+          ...(dto.cpf !== undefined ? { cpf: dto.cpf } : {}),
+          ...(dto.note !== undefined ? { note: dto.note } : {}),
+        },
         include: affiliateInclude,
       });
       return toShopAffiliate(row);
     } catch (error) {
+      // The only unique key a patch can break is the CPF's: the e-mail never changes.
+      if (isUniqueViolation(error)) throw cpfTaken();
       if (isForeignKeyViolation(error)) throw tableMissing();
       throw error;
     }
@@ -185,5 +194,11 @@ export class StoreAffiliatesService {
   private async tableOf(storeId: string, tableId: string): Promise<void> {
     const row = UUID.test(tableId) ? await this.prisma.commissionTable.findFirst({ where: { id: tableId, storeId }, select: { id: true } }) : null;
     if (!row) throw tableMissing();
+  }
+
+  /** Whether another affiliate of the shop, not ended, has the CPF: which of the two unique keys a refused insert broke. */
+  private async cpfInUse(storeId: string, cpf: string, exceptId: string | null): Promise<boolean> {
+    const other = await this.prisma.affiliate.findFirst({ where: { storeId, cpf, status: { not: 'ENDED' }, ...(exceptId ? { id: { not: exceptId } } : {}) }, select: { id: true } });
+    return other !== null;
   }
 }

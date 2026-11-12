@@ -15,14 +15,14 @@ import {
 } from '@nestjs/swagger';
 
 // Types
-import type { CommissionProductRate, CommissionTable } from '@harness-monorepo/contracts';
+import type { CommissionCategoryRate, CommissionProductRate, CommissionTable } from '@harness-monorepo/contracts';
 
 // App
 import type { AuthenticatedUser } from '../auth/auth.decorators.js';
 import { CurrentUser } from '../auth/auth.decorators.js';
 import { CommissionTablesService } from './commission-tables.service.js';
-import { CommissionProductRateDto, CommissionTableDto } from './dto/affiliate-program.dto.js';
-import { CommissionProductRateResponse, CommissionTableResponse } from './dto/affiliate-program.response.js';
+import { CommissionCategoryRateDto, CommissionProductRateDto, CommissionTableDto } from './dto/affiliate-program.dto.js';
+import { CommissionCategoryRateResponse, CommissionProductRateResponse, CommissionTableResponse } from './dto/affiliate-program.response.js';
 
 /** The shop's commission tables and each product's own rate on one (IMPULSEIA-101). The list is the programme's overview. */
 @ApiTags('affiliates')
@@ -99,5 +99,33 @@ export class CommissionTablesController {
     @CurrentUser() current: AuthenticatedUser,
   ): Promise<void> {
     await this.tables.removeRate(storeSlug, current.id, tableId, productId);
+  }
+
+  @Put(':tableId/category-rates/:categoryId')
+  @ApiOperation({ summary: "A category's own rate on the table: its products pay it unless they have their own; 0 pays them nothing" })
+  @ApiOkResponse({ type: CommissionCategoryRateResponse })
+  @ApiBadRequestResponse({ description: 'COMMISSION_TABLE_INVALID' })
+  @ApiNotFoundResponse({ description: 'PRODUCT_CATEGORY_NOT_FOUND' })
+  setCategoryRate(
+    @Param('storeSlug') storeSlug: string,
+    @Param('tableId') tableId: string,
+    @Param('categoryId') categoryId: string,
+    @CurrentUser() current: AuthenticatedUser,
+    @Body() dto: CommissionCategoryRateDto,
+  ): Promise<CommissionCategoryRate> {
+    return this.tables.setCategoryRate(storeSlug, current.id, tableId, categoryId, dto);
+  }
+
+  @Delete(':tableId/category-rates/:categoryId')
+  @HttpCode(204)
+  @ApiOperation({ summary: "Back to the table's rate for the category's products" })
+  @ApiNoContentResponse()
+  async removeCategoryRate(
+    @Param('storeSlug') storeSlug: string,
+    @Param('tableId') tableId: string,
+    @Param('categoryId') categoryId: string,
+    @CurrentUser() current: AuthenticatedUser,
+  ): Promise<void> {
+    await this.tables.removeCategoryRate(storeSlug, current.id, tableId, categoryId);
   }
 }

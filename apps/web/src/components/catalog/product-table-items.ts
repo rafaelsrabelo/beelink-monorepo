@@ -12,6 +12,8 @@ export interface ProductTableContext {
   carrierGaps: ProductPage["carrierGaps"] | undefined
   /** Each product's own rate on the default table (IMPULSEIA-102); absent while the programme is off. */
   commissionRates?: ReadonlyMap<string, number>
+  /** Each category's own rate on the default table (the user's review, 12/11/2026); absent while the programme is off. */
+  commissionCategoryRates?: ReadonlyMap<string, number>
 }
 
 /** One product of the panel's list, as the table draws it. */
@@ -36,5 +38,6 @@ export function productTableItemOf(product: Product, context: ProductTableContex
     carrierGap: context.carrierGaps?.[product.id] ?? null,
     cashbackRateBps: product.cashbackRateBps,
     commissionRateBps: context.commissionRates?.get(product.id) ?? null,
+    commissionCategoryRateBps: product.category ? (context.commissionCategoryRates?.get(product.category.id) ?? null) : null,
   }
 }
