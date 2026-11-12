@@ -7,6 +7,9 @@ import { POST as act } from "./[affiliateId]/[action]/route"
 import { DELETE, GET as read, PATCH } from "./[affiliateId]/route"
 import { GET as list, POST as invite } from "./route"
 
+const mocks = vi.hoisted(() => ({ revalidateStore: vi.fn() }))
+vi.mock("@/lib/revalidate", () => ({ revalidateStore: mocks.revalidateStore }))
+
 type Fetched = (url: string, init?: RequestInit) => Promise<Response>
 
 function request(path: string, init: { method?: string; body?: object; origin?: string } = {}) {
@@ -23,6 +26,7 @@ const acting = (action: string) => ({ params: Promise.resolve({ slug: "loja", af
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  mocks.revalidateStore.mockReset()
 })
 
 describe("the shop's affiliates, for the panel (IMPULSEIA-104)", () => {
@@ -62,6 +66,8 @@ describe("the shop's affiliates, for the panel (IMPULSEIA-104)", () => {
     expect((await act(request(`/api/stores/loja/affiliates/a%201/${action}`, { method: "POST" }), acting(action))).status).toBe(200)
     expect(String(fetched.mock.calls[0]?.[0])).toMatch(new RegExp(`/stores/loja/affiliates/a%201/${action}$`))
     expect(fetched.mock.calls[0]?.[1]?.method).toBe("POST")
+    // Pausing, resuming and ending change whether the shop window's link credits (IMPULSEIA-105); a resend does not.
+    expect(mocks.revalidateStore.mock.calls).toEqual(action === "resend" ? [] : [["loja"]])
   })
 
   it("answers a word that is no act, and another origin, before reaching the API", async () => {
