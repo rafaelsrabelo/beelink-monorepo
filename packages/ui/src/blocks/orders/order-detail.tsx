@@ -42,6 +42,8 @@ export interface OrderDetailProps {
   delivery?: ReactNode
   /** The order's conversation with its customer, under the lines (BEELINK-164). */
   conversation?: ReactNode
+  /** Whom the order is credited to (IMPULSEIA-107), in the side column after its cashback; none outside a shop's programme. */
+  affiliate?: ReactNode
   locale?: string
   currency?: string
   linkComponent?: LinkComponent
@@ -63,6 +65,7 @@ export function OrderDetail({
   statusError,
   delivery,
   conversation,
+  affiliate,
   locale = defaultLocale,
   currency = "BRL",
   linkComponent: Link = AnchorLink,
@@ -115,6 +118,7 @@ export function OrderDetail({
           {order.paymentChannel === "ONLINE" ? <OrderPaymentCard payment={order.payment ?? null} money={money} when={when} refundHref={refundHref} strayRefundHref={strayRefundHref} linkComponent={Link} messages={messages} /> : null}
           {delivery}
           {order.cashback ? <OrderCashback cashback={order.cashback} money={money} date={day} locale={locale} messages={messages} /> : null}
+          {affiliate}
           <OrderFacts
             order={order}
             deliveryLine={deliveryLine}

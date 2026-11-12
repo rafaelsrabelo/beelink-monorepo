@@ -4104,7 +4104,7 @@ export interface UiMessages {
   affiliates: {
     title: string
     intro: string
-    tabs: { label: string; affiliates: string; settings: string; tables: string }
+    tabs: { label: string; affiliates: string; settings: string; tables: string; owed: string }
     settings: {
       title: string
       enabled: string
@@ -4285,6 +4285,151 @@ export interface UiMessages {
     affiliateIssues: { name: string; email: string; phone: string; note: string; table: string }
     /** What a form refuses before it asks, by field. */
     issues: { attributionDays: string; payoutDelayDays: string; termsText: string; name: string; rate: string }
+    /** An order's affiliate (IMPULSEIA-107), on the order's page. Amounts and dates arrive formatted. */
+    order: {
+      title: string
+      none: string
+      commission: string
+      /** `{table}`, `{base}`. */
+      detail: string
+      /** `{date}`. */
+      dueOn: string
+      awaiting: string
+      /** `{date}`. */
+      available: string
+      reversed: string
+      ownPurchase: string
+      /** `{amount}`: given back on the order. */
+      refunded: string
+      settledHint: string
+      change: string
+      assign: string
+      history: string
+      /** `{from}`, `{to}`. */
+      moved: string
+      /** `{from}`. */
+      removed: string
+      /** `{to}`. */
+      added: string
+      /** `{name}`: names the way to the affiliate's record. */
+      open: string
+    }
+    /** Moving an order's credit, in a dialog. */
+    orderDialog: {
+      title: string
+      description: string
+      affiliate: string
+      nobody: string
+      reason: string
+      reasonHelp: string
+      submit: string
+      submitting: string
+      cancel: string
+    }
+    /** The optional field of a sale registered in the panel. */
+    saleField: { title: string; label: string; nobody: string; help: string }
+    /** The orders list, filtered by one affiliate. */
+    ordersFilter: {
+      /** `{name}`. */
+      label: string
+      clear: string
+    }
+    /** One affiliate's balances and statement, on their record. Amounts and dates arrive formatted. */
+    money: {
+      title: string
+      available: string
+      pending: string
+      pendingHelp: string
+      /** `{amount}`: what the next payment is short by. */
+      negative: string
+      pay: string
+      adjust: string
+      orders: string
+      statement: string
+      empty: string
+      kinds: { RELEASED: string; REVERSED: string; ADJUSTED: string; PAID_OUT: string }
+      /** `{number}`. */
+      order: string
+      methods: { PIX: string; TRANSFER: string; CASH: string }
+      /** `{date}`, `{method}`. */
+      paidOn: string
+      previous: string
+      next: string
+      /** `{from}`, `{to}`, `{total}`. */
+      range: string
+    }
+    adjustDialog: {
+      title: string
+      description: string
+      direction: string
+      credit: string
+      debit: string
+      amount: string
+      reason: string
+      reasonHelp: string
+      submit: string
+      submitting: string
+      cancel: string
+    }
+    payoutDialog: {
+      title: string
+      description: string
+      amount: string
+      /** `{amount}`: what is available. */
+      amountHelp: string
+      paidOn: string
+      method: string
+      note: string
+      noteHelp: string
+      /** `{key}`. */
+      pixKey: string
+      pixKeyNone: string
+      submit: string
+      submitting: string
+      cancel: string
+    }
+    /** What the money dialogs refuse before they ask, by field. */
+    moneyIssues: { amount: string; reason: string; paidOn: string; note: string }
+    /** What the shop owes its affiliates, by due day (IMPULSEIA-107). Amounts and dates arrive formatted. */
+    owed: {
+      title: string
+      intro: string
+      owed: string
+      upcoming: string
+      awaiting: string
+      due: string
+      dueEmpty: string
+      upcomingEmpty: string
+      /** `{date}`. */
+      day: string
+      /** `{count}`, 2 or more. */
+      affiliates: string
+      affiliatesOne: string
+      states: { OVERDUE: string; TODAY: string; UPCOMING: string }
+      undated: string
+      byAffiliate: string
+      affiliate: string
+      pixKey: string
+      available: string
+      pending: string
+      none: string
+      /** `{name}`. */
+      pay: string
+      empty: string
+      emptyHint: string
+    }
+    /** What the shop window shows of the affiliate, which the shop may take off. */
+    showcase: {
+      title: string
+      help: string
+      noPhoto: string
+      tagline: string
+      noTagline: string
+      removePhoto: string
+      removeTagline: string
+      /** `{name}`. */
+      photoAlt: string
+    }
     /** The API's refusals, by its codes. */
     errors: {
       AFFILIATE_PROGRAM_INVALID: string
@@ -4300,6 +4445,14 @@ export interface UiMessages {
       AFFILIATE_STATUS_INVALID: string
       AFFILIATE_INVITE_RECENTLY_SENT: string
       PRODUCT_NOT_FOUND: string
+      AFFILIATE_ATTRIBUTION_CLOSED: string
+      AFFILIATE_COMMISSION_NOT_PENDING: string
+      AFFILIATE_ORDER_CHANGE_INVALID: string
+      AFFILIATE_ADJUSTMENT_INVALID: string
+      AFFILIATE_PAYOUT_INVALID: string
+      AFFILIATE_PAYOUT_EXCEEDS_BALANCE: string
+      ORDER_NOT_FOUND: string
+      ORDER_CANCELLED: string
       UNKNOWN: string
     }
     failed: string

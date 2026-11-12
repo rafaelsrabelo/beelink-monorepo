@@ -17,7 +17,7 @@ const noop = () => {}
 function ListScreen() {
   return (
     <div className="flex max-w-4xl flex-col gap-6">
-      <AffiliatesTabs active="affiliates" affiliatesHref="#afiliados" settingsHref="#configuracoes" tablesHref="#tabelas" />
+      <AffiliatesTabs active="affiliates" affiliatesHref="#afiliados" owedHref="#a-pagar" settingsHref="#configuracoes" tablesHref="#tabelas" />
       <AffiliateListSection onInvite={noop}>
         <AffiliateStatusTabs value={null} onValueChange={noop}>
           <AffiliateRows affiliates={people} hrefOf={(id) => `#${id}`} />
