@@ -296,3 +296,107 @@ Criados no Plane, no projeto ImpulseIA, a pedido do Rafael, em Backlog:
 | AF7 | IMPULSEIA-107 |
 | AF8 | IMPULSEIA-108 |
 | AF9 | IMPULSEIA-109 |
+
+## Adendo — as respostas ao "A decidir" (11/11)
+
+Rafael, 11/11/2026. O que segue muda as decisões acima; o que não aparece aqui continua valendo.
+
+### A. A comissão é paga por calendário, em três períodos por mês
+
+Substitui a liberação "na entrega + carência" da decisão 8.
+
+- O mês tem três períodos fixos: **1 a 10, 11 a 20 e 21 ao último dia**, no horário de Brasília.
+- Cada período vence **o prazo do programa depois de fechar**. O prazo é do lojista, configurável de 0
+  a 60 dias, e o padrão é **10**: vendas de 1 a 10 vencem dia 20, de 11 a 20 vencem dia 30, de 21 a 31
+  vencem dia 10 do mês seguinte. A conta é sempre "último dia do período + prazo", então em fevereiro
+  o período de 11 a 20 vence em 2/3.
+- **A comissão entra no período do dia em que o pedido foi entregue**, não do dia em que foi
+  feito. Entregue continua sendo a prova de venda, e assim toda
+  comissão espera pelo menos o prazo depois da entrega, que é o que cobre a devolução. Contar pelo dia
+  do pedido faria um pedido do dia 10 entregue no dia 19 vencer no dia 20, e uma encomenda ainda não
+  entregue no vencimento pediria uma regra a mais para passar ao período seguinte.
+- Cancelado antes do vencimento: estornada, nunca vence. Cancelado depois: linha negativa no extrato,
+  descontada no próximo vencimento, como na decisão 8.
+- O lojista vê o "quanto devo" **por vencimento** ("dia 20: R$ 1.240,00 para 6 afiliados"); o
+  afiliado vê "próximo pagamento: dia 20, R$ 210,00". O acerto continua registrado à mão (decisão 9).
+  Um vencimento passado sem acerto aparece como atrasado para os dois.
+- A varredura no molde de `cashback-sweeper.ts` continua: em vez de liberar a carência, ela vence o
+  período.
+
+### B. O afiliado vê quem comprou
+
+Substitui, na decisão 2, o "o cliente é 'Cliente'".
+
+- O afiliado vê o **nome do cliente** como está no pedido, na área dele e no e-mail de cada venda.
+- **Nunca** telefone, e-mail, CPF ou endereço: esses dados são só da loja.
+- O cliente fica sabendo: o resumo do carrinho e do checkout mostra "Indicação de João — ele verá seu
+  nome neste pedido". A política de privacidade nova (decisão 11) diz que o nome de quem compra por um
+  link vai para o afiliado do link. *A confirmar com o jurídico, junto com o cookie.*
+
+### C. Um e-mail ao afiliado a cada venda
+
+- Sai quando um pedido é atribuído a ele, pela vitrine ou pela venda registrada no painel: número,
+  nome do cliente, itens e comissão prevista.
+- Sai também quando um pedido dele é **cancelado**: uma venda anunciada não some em silêncio.
+- A compra do próprio afiliado não manda e-mail.
+- Entra em AF6, junto com a atribuição.
+
+### D. A vitrine mostra de quem é a indicação — proposta
+
+- **Na chegada pelo link** (`/<loja>/<afiliado>` ou `?afiliado=`): um cartão logo abaixo do cabeçalho,
+  com a foto do afiliado, "Indicação de **João Silva**" e uma frase dele, opcional, de até 100
+  caracteres.
+- **No resto da navegação**, enquanto a atribuição vale: uma faixa fina, de uma linha, com a foto
+  pequena e "Comprando pela indicação de João". O cliente pode fechá-la; a atribuição continua.
+- **No carrinho e no checkout**, sempre: a linha "Indicação de João" do item B.
+- Foto e frase são do afiliado e ele as edita na área dele; sem foto, aparecem as iniciais. Como
+  aparecem na vitrine da loja, **o lojista pode tirar a foto ou a frase** de qualquer afiliado.
+- Nas cores do tema da loja, como o resto da vitrine.
+
+### E. O afiliado é cobrado por afiliado, e começa grátis
+
+- O bee-link cobra da página **R$ 9,90 por mês, por afiliado ativo**: um afiliado convidado que
+  ainda não aceitou, ou encerrado, não conta.
+- O valor é do bee-link, não do lojista, e se define como o preço do plano (`Plan`,
+  `billing.prisma`): no seed, mudado por deploy.
+- **Começa em R$ 0, em teste.** A v1 sai com o valor zerado e nada é cobrado. O painel diz "grátis
+  durante o teste", para que a cobrança depois não pegue ninguém de surpresa.
+- Cobrar de verdade é uma tarefa própria, **AF10**, feita antes de o valor passar de zero: como o
+  afiliado entra na assinatura da página no Asaas, o que conta (convidado, ativo, pausado) e o aviso
+  aos lojistas antes de começar, como o de "What a page costs".
+
+### F. A área é `/afiliado`
+
+`/afiliado` entra em `RESERVED_SLUGS` no lugar de `/parceiro`. Onde está `/parceiro` acima, leia
+`/afiliado`. **Antes da migração, conferir que nenhuma loja já usa esse slug.**
+
+### G. Exportar o "quanto devo" fica para depois
+
+Passa para "Fora de escopo".
+
+### O modelo de dados muda
+
+| Modelo | Muda |
+|---|---|
+| `AffiliateProgram` | `holdDays` (7) vira `payoutDelayDays` (10) |
+| `Affiliate` | ganha `photoUrl?` e `tagline?` (até 100 caracteres) |
+| `AffiliateCommission` | `availableAt?` vira `dueOn?`, a data do vencimento, gravada na entrega |
+
+### As tarefas mudam
+
+| Tarefa | Acrescenta |
+|---|---|
+| **AF1** | `payoutDelayDays` no lugar da carência; o calendário dos vencimentos; `/afiliado` reservado |
+| **AF2** | O prazo nas Configurações, com a prévia do calendário ("vendas de 1 a 10 → dia 20") |
+| **AF5** | O cartão com foto e frase, a faixa fina, a linha no carrinho e no checkout |
+| **AF6** | O vencimento do período no lugar da carência; o e-mail a cada venda e a cada cancelamento |
+| **AF7** | O "quanto devo" por vencimento, o vencimento atrasado, tirar a foto ou a frase |
+| **AF8** | A área em `/afiliado`, o nome do cliente nos pedidos, o próximo pagamento, editar a foto e a frase |
+| **AF9** | A privacidade diz que o nome do cliente vai para o afiliado; "What a page costs" ganha o preço por afiliado |
+| **AF10** (nova) | O preço por afiliado no seed e a cobrança na assinatura da página — só antes de o preço passar de zero. Ainda sem ticket |
+
+### Decidido no mesmo dia
+
+Rafael seguiu as duas recomendações: o período conta pela **data da entrega** (item A), e os
+R$ 9,90 são **por mês, por afiliado ativo** (item E). Enquanto o valor for zero, nada o lê: o preço
+entra no seed junto com a cobrança, em AF10, e o painel diz "grátis durante o teste" até lá.

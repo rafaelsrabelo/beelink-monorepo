@@ -1,3 +1,4 @@
+export type * from "./affiliate.js";
 export type * from "./asaas.js";
 export type * from "./auth.js";
 export type * from "./billing.js";

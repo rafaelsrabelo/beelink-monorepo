@@ -28,6 +28,7 @@ import { CarrierTrackingModule } from './modules/carrier-tracking/carrier-tracki
 import { BillingModule } from './modules/billing/billing.module.js';
 import { PageLockGuard } from './modules/billing/page-lock.guard.js';
 import { CashbackModule } from './modules/cashback/cashback.module.js';
+import { AffiliatesModule } from './modules/affiliates/affiliates.module.js';
 import { RealtimeModule } from './modules/realtime/realtime.module.js';
 import { ReportsModule } from './modules/reports/reports.module.js';
 import { ReviewsModule } from './modules/reviews/reviews.module.js';
@@ -82,6 +83,7 @@ export const requestLogOptions = {
     PanelCountsModule,
     PromotionsModule,
     CashbackModule,
+    AffiliatesModule,
     BillingModule,
     DeliveryModule,
     CarrierTrackingModule,

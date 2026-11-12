@@ -207,6 +207,8 @@ describe('a page locked for want of payment (BEELINK-223)', () => {
       ['GET', '/api/stores/padaria/promotions'],
       ['GET', '/api/stores/padaria/coupons'],
       ['GET', '/api/stores/padaria/cashback'],
+      ['GET', '/api/stores/padaria/affiliate-program'],
+      ['POST', '/api/stores/padaria/affiliate-program/tables', { name: 'Influencers', defaultRateBps: 1500 }],
       ['GET', '/api/stores/padaria/delivery'],
       ['GET', '/api/stores/padaria/integrations/asaas'],
       ['GET', '/api/stores/padaria/custom-domain'],
