@@ -130,7 +130,7 @@ export const legalTexts = {
         blocks: [
           {
             kind: "paragraph",
-            text: "Uma loja pode ter um programa de afiliados: pessoas que ela convida para vender por um link dela e que recebem uma comissão sobre o que venderem. O programa é da loja. É ela que decide quem convida, as comissões de cada produto, por quantos dias uma indicação vale, o prazo de pagamento e os termos do programa, que o afiliado aceita ao entrar. A loja pode pausar ou encerrar o vínculo com um afiliado.",
+            text: "Uma loja pode ter um programa de afiliados: pessoas que ela convida para vender por um link dela e que recebem uma comissão sobre o que venderem. O programa é da loja. É ela que decide quem convida, as comissões em geral, de cada categoria e de cada produto, por quantos dias uma indicação vale, o prazo de pagamento e os termos do programa, que o afiliado aceita ao entrar. A loja pode pausar ou encerrar o vínculo com um afiliado.",
           },
           {
             kind: "paragraph",
@@ -457,7 +457,7 @@ export const legalTexts = {
           {
             kind: "list",
             items: [
-              "o nome e o e-mail com que a loja convidou você, o telefone, se a loja ou você o informou, e uma nota que a loja pode anotar e que você não vê;",
+              "o nome, o e-mail, o telefone e o CPF com que a loja cadastrou você, e uma nota que a loja pode anotar e que você não vê;",
               "a tabela de comissão em que a loja colocou você, a situação do vínculo, isto é, convidado, ativo, pausado ou encerrado, e as datas do convite, do aceite e do encerramento;",
               "o nome que você escolheu para o seu link, a versão dos termos do programa da loja que você aceitou, com a data do aceite, e a chave Pix, se você a informou;",
               "a foto e a frase que você escolher para aparecer na vitrine da loja;",
@@ -467,7 +467,7 @@ export const legalTexts = {
           },
           {
             kind: "paragraph",
-            text: "A loja vê tudo isso no painel, inclusive a chave Pix, porque é ela quem paga. Você vê o mesmo na área do afiliado, menos a nota da loja e quem fez cada ajuste. O seu nome, a sua foto e a sua frase são públicos: aparecem na vitrine da loja para quem chega pelo seu link.",
+            text: "A loja vê tudo isso no painel, inclusive a chave Pix e o CPF, porque é ela quem paga. Você vê o mesmo na área do afiliado, menos a nota da loja e quem fez cada ajuste, e o seu CPF só em parte, mascarado. O seu CPF nunca aparece na vitrine nem nos e-mails. O e-mail, o telefone e o CPF também servem para reconhecer uma compra que você mesmo faça na loja, que não gera comissão. O seu nome, a sua foto e a sua frase são públicos: aparecem na vitrine da loja para quem chega pelo seu link.",
           },
           {
             kind: "paragraph",
