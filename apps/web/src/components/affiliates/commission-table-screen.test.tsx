@@ -108,7 +108,7 @@ describe("CommissionTableScreen (IMPULSEIA-102, and the user's review of 12/11)"
     expect(saveProduct).toHaveBeenCalledWith({ tableId: "t1", productId: "p2", rateBps: 0 })
     expect(await screen.findByText("Comissão de Creatina salva.")).toBeInTheDocument()
 
-    await userEvent.click(screen.getByRole("button", { name: "Usar o geral em Whey" }))
+    await userEvent.click(screen.getByRole("button", { name: "Usar o da categoria em Whey" }))
     expect(saveProduct).toHaveBeenLastCalledWith({ tableId: "t1", productId: "p1", rateBps: null })
   })
 

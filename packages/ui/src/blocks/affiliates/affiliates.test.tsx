@@ -137,13 +137,14 @@ describe("CommissionRateList", () => {
     expect(screen.getByLabelText("Creatina")).toHaveAttribute("placeholder", "15")
     expect(screen.getByLabelText("Camiseta")).toHaveAccessibleDescription("Segue o geral: 10%")
     expect(screen.getByRole("button", { name: "Salvar comissão de Whey Concentrado" })).toBeDisabled()
-    expect(screen.queryByRole("button", { name: "Usar o geral em Creatina" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Usar o da categoria em Creatina" })).not.toBeInTheDocument()
 
     await userEvent.type(screen.getByLabelText("Creatina"), "8")
     expect(onType).toHaveBeenLastCalledWith("p-creatina", "8")
     await userEvent.click(screen.getByRole("button", { name: "Salvar comissão de BCAA" }))
     expect(onSave).toHaveBeenCalledWith("p-bcaa")
-    await userEvent.click(screen.getByRole("button", { name: "Usar o geral em Whey Concentrado" }))
+    // Whey's category has a rate: dropping its own goes back to the category's, and the button says so.
+    await userEvent.click(screen.getByRole("button", { name: "Usar o da categoria em Whey Concentrado" }))
     expect(onReset).toHaveBeenCalledWith("p-whey")
     expect(screen.getByText("Comissão de BCAA salva.")).toBeInTheDocument()
     await expectNoA11yViolations(container)

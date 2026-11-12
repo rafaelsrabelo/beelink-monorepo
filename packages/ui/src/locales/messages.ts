@@ -4204,9 +4204,12 @@ export interface UiMessages {
       /** `{name}`: names the product's save button. */
       save: string
       saveLabel: string
-      /** `{name}`: names the button that drops the product's own rate. */
+      /** `{name}`: names the button that drops the row's own rate, back to the table's. */
       reset: string
       resetLabel: string
+      /** `{name}`: the same, for a product whose category has a rate: it goes back to the category's. */
+      resetCategory: string
+      resetCategoryLabel: string
       /** `{name}`. */
       saved: string
     }

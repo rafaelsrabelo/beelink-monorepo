@@ -3609,6 +3609,8 @@ export const ptBR: UiMessages = {
       saveLabel: "Salvar",
       reset: "Usar o geral em {name}",
       resetLabel: "Usar o geral",
+      resetCategory: "Usar o da categoria em {name}",
+      resetCategoryLabel: "Usar o da categoria",
       saved: "Comissão de {name} salva.",
     },
     list: {

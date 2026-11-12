@@ -108,7 +108,7 @@ export function CommissionTableScreen({ slug, tableId, locale, messages }: Commi
         <h2 className="text-lg font-semibold">{table.data.name}</h2>
         <p className="text-muted-foreground text-sm">{text.intro}</p>
       </div>
-      <CommissionGeneralRateSection key={`${table.data.id}-${table.data.defaultRateBps}`} slug={slug} table={table.data} locale={locale} messages={messages} />
+      <CommissionGeneralRateSection slug={slug} table={table.data} locale={locale} messages={messages} />
       <CommissionCategoryRatesSection slug={slug} table={table.data} locale={locale} messages={messages} />
       {products.isPending ? (
         <AffiliatesSkeleton shape="list" />

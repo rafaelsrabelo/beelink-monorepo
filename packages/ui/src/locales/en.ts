@@ -3608,6 +3608,8 @@ export const en: UiMessages = {
       saveLabel: "Save",
       reset: "Use the table's rate for {name}",
       resetLabel: "Use the table's",
+      resetCategory: "Use the category's in {name}",
+      resetCategoryLabel: "Use the category's",
       saved: "Commission of {name} saved.",
     },
     list: {

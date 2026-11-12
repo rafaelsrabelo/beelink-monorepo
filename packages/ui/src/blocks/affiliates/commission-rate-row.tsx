@@ -70,8 +70,8 @@ export function CommissionRateRow({ row, onType, onSave, onReset, issue, busy = 
             {text.saveLabel}
           </Button>
           {row.rateBps !== null ? (
-            <Button type="button" variant="ghost" size="sm" disabled={busy} onClick={onReset} aria-label={format(text.reset, { name: row.name })}>
-              {text.resetLabel}
+            <Button type="button" variant="ghost" size="sm" disabled={busy} onClick={onReset} aria-label={format(row.fallbackName !== null ? text.resetCategory : text.reset, { name: row.name })}>
+              {row.fallbackName !== null ? text.resetCategoryLabel : text.resetLabel}
             </Button>
           ) : null}
         </form>
