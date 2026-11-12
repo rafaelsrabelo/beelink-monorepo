@@ -194,6 +194,22 @@ describe("the cart's order — where its buyer came from (BEELINK-275)", () => {
     expect(bodyOf(vi.mocked(fetch).mock.calls.at(-1))).toEqual({ ...cart, origin: campaign })
   })
 
+  it("sends the affiliate's link the visitor followed, from the shop's cookie alone", async () => {
+    const calls = api(null)
+    const visitedAt = Date.now() - 86_400_000
+    const affiliateId = "0199a1b2-0000-7000-8000-00000000000a"
+    const forged = { ...cart, affiliateVisit: { affiliateId: "0199a1b2-0000-7000-8000-0000000000ff", visitedAt: new Date().toISOString() } }
+
+    await post({ cookie: `${SESSION}; bl_affiliate=${affiliateId}.${visitedAt}`, body: forged })
+    expect(bodyOf(calls.orderCall())).toEqual({ ...cart, affiliateVisit: { affiliateId, visitedAt: new Date(visitedAt).toISOString() } })
+
+    // A cookie that is not one, and no cookie, send none — and what the page named is dropped either way.
+    for (const cookie of [`${SESSION}; bl_affiliate=forjado`, SESSION]) {
+      await post({ cookie, body: forged })
+      expect(bodyOf(vi.mocked(fetch).mock.calls.at(-1)), cookie).toEqual(cart)
+    }
+  })
+
   it("places an order with no origin for a visitor who came by none", async () => {
     const calls = api(null)
 
