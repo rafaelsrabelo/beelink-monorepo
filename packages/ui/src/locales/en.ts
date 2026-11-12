@@ -219,6 +219,14 @@ export const en: UiMessages = {
         keepShopping: "Keep shopping",
       },
     },
+    affiliate: {
+      region: "Referral",
+      cardLead: "You came here on the recommendation of",
+      strip: "Shopping on {name}'s recommendation",
+      note: "Recommended by {name}",
+      noteDetail: "{name} will see your name on this order.",
+      dismiss: "Close referral",
+    },
     offers: {
       region: "Shop offer",
       benefitDiscount: "{value} off",

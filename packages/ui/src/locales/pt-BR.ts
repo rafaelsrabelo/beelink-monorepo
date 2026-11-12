@@ -219,6 +219,14 @@ export const ptBR: UiMessages = {
         keepShopping: "Continuar comprando",
       },
     },
+    affiliate: {
+      region: "Indicação",
+      cardLead: "Você chegou pela indicação de",
+      strip: "Comprando pela indicação de {name}",
+      note: "Indicação de {name}",
+      noteDetail: "{name} verá seu nome neste pedido.",
+      dismiss: "Fechar indicação",
+    },
     offers: {
       region: "Oferta da loja",
       benefitDiscount: "{value} de desconto",
