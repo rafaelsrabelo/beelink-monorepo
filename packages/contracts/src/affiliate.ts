@@ -125,7 +125,9 @@ export type AffiliateErrorCode =
   /** The shop changed its terms since they were read: read the invite again. */
   | "AFFILIATE_TERMS_CHANGED"
   /** The account already sells for this shop, under another invite. */
-  | "AFFILIATE_ALREADY_LINKED";
+  | "AFFILIATE_ALREADY_LINKED"
+  /** No affiliate of the shop has this `/name` or id: the address is nobody's link. */
+  | "AFFILIATE_LINK_NOT_FOUND";
 
 /**
  * Where an affiliate stands with a shop (IMPULSEIA-103): invited and not yet in; selling; paused —
@@ -274,4 +276,33 @@ export interface AcceptedAffiliate {
 export interface AffiliateSignUpResult {
   session: AuthSession;
   affiliate: AcceptedAffiliate;
+}
+
+/**
+ * An affiliate as the shop window shows them (IMPULSEIA-105): whom the visitor came by, and how long
+ * the shop credits that visit. Nothing else of them is public.
+ */
+export interface PublicAffiliate {
+  id: string;
+  slug: string;
+  name: string;
+  photoUrl: string | null;
+  /** Their own phrase, up to 100 characters; null with none. */
+  tagline: string | null;
+  /** Days this shop credits the orders that follow a visit through the link. */
+  attributionDays: number;
+}
+
+/**
+ * `GET /stores/:slug/affiliate-link?slug=` (or `?id=`): the address is an affiliate's of this shop.
+ * `affiliate` is null when it credits nobody — paused, ended, the programme off, or links not yet
+ * live in this deployment — and then the shop simply opens: a printed link never leads to nothing.
+ */
+export interface PublicAffiliateLink {
+  affiliate: PublicAffiliate | null;
+}
+
+/** `POST /stores/:slug/affiliate-visits`: one visit through an affiliate's link, and nothing of the visitor. */
+export interface AffiliateVisitInput {
+  affiliateId: string;
 }
