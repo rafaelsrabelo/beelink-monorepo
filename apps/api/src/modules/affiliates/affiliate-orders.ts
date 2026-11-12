@@ -10,7 +10,7 @@ import type { EarningParts } from '../cashback/cashback-earning.js';
 import { env } from '../../shared/config/env.js';
 import { brasiliaDayOf, dateColumnOf } from '../billing/billing-dates.js';
 import { payoutPeriodOf } from './affiliate-payout-calendar.js';
-import { commissionOf, zeroed } from './affiliate-commission.js';
+import { commissionOf, zeroed, type CommissionProduct } from './affiliate-commission.js';
 import { lockAffiliate, recountAffiliate } from './affiliate-ledger.js';
 import { AFFILIATE_PROGRAM_DEFAULTS, UUID, affiliateError } from './affiliates.constants.js';
 
@@ -44,6 +44,7 @@ export interface Attribution {
   visitedAt: Date | null;
   email: string;
   phone: string | null;
+  cpf: string | null;
   tableName: string;
   defaultRateBps: number;
 }
@@ -59,7 +60,7 @@ export async function attributionOf(tx: Tx, storeId: string, visit: PlacedAffili
 
   const affiliate = await tx.affiliate.findFirst({
     where: { id: visit.affiliateId, storeId, status: 'ACTIVE' },
-    select: { id: true, email: true, phone: true, table: { select: { name: true, defaultRateBps: true } }, store: { select: { affiliateProgram: { select: { enabled: true, attributionDays: true } } } } },
+    select: { id: true, email: true, phone: true, cpf: true, table: { select: { name: true, defaultRateBps: true } }, store: { select: { affiliateProgram: { select: { enabled: true, attributionDays: true } } } } },
   });
   const program = affiliate?.store.affiliateProgram;
   if (!affiliate || !program?.enabled || now.getTime() - visit.visitedAt.getTime() > program.attributionDays * DAY_MS) return null;
@@ -69,6 +70,7 @@ export async function attributionOf(tx: Tx, storeId: string, visit: PlacedAffili
     visitedAt: new Date(Math.min(visit.visitedAt.getTime(), now.getTime())),
     email: affiliate.email,
     phone: affiliate.phone,
+    cpf: affiliate.cpf,
     tableName: affiliate.table.name,
     defaultRateBps: affiliate.table.defaultRateBps,
   };
@@ -79,6 +81,7 @@ const attributionSelect = {
   status: true,
   email: true,
   phone: true,
+  cpf: true,
   table: { select: { name: true, defaultRateBps: true } },
   store: { select: { affiliateProgram: { select: { enabled: true } } } },
 } as const satisfies Prisma.AffiliateSelect;
@@ -98,12 +101,13 @@ export async function chosenAttributionOf(tx: Tx, storeId: string, affiliateId: 
   if (affiliate.status !== 'ACTIVE') {
     throw new ConflictException(affiliateError<AffiliateStatusDetails>('AFFILIATE_STATUS_INVALID', `Not credited while ${affiliate.status}`, { status: affiliate.status }));
   }
-  return { affiliateId: affiliate.id, visitedAt: null, email: affiliate.email, phone: affiliate.phone, tableName: affiliate.table.name, defaultRateBps: affiliate.table.defaultRateBps };
+  return { affiliateId: affiliate.id, visitedAt: null, email: affiliate.email, phone: affiliate.phone, cpf: affiliate.cpf, tableName: affiliate.table.name, defaultRateBps: affiliate.table.defaultRateBps };
 }
 
 /**
- * Placed: the commission is worked out at the affiliate's table as it is now, and waits on the
- * delivery. An own purchase — the customer's e-mail or phone the affiliate's — owes nothing and tells
+ * Placed: the commission is worked out at the affiliate's table as it is now — each product at its
+ * own rate, else its category's as it stands now, else the table's — and waits on the delivery. An
+ * own purchase — the customer's e-mail, phone or CPF the affiliate's — owes nothing and tells
  * nobody; any other owes the affiliate the e-mail of the sale.
  */
 export async function holdOrderCommission(
@@ -115,13 +119,24 @@ export async function holdOrderCommission(
 
   const table = await tx.affiliate.findUniqueOrThrow({ where: { id: attribution.affiliateId }, select: { tableId: true } });
   // A product deleted since the order — moved to an affiliate later — pays the table's rate.
-  const products = order.productIds.filter((id): id is string => id !== null);
-  const own = await tx.commissionTableRate.findMany({ where: { tableId: table.tableId, productId: { in: products } }, select: { productId: true, rateBps: true } });
-  const worked = commissionOf(order.parts, order.productIds, { defaultRateBps: attribution.defaultRateBps, byProduct: new Map(own.map((rate) => [rate.productId, rate.rateBps])) });
+  const productIds = order.productIds.filter((id): id is string => id !== null);
+  const [catalogue, own] = await Promise.all([
+    tx.product.findMany({ where: { id: { in: productIds } }, select: { id: true, categoryId: true } }),
+    tx.commissionTableRate.findMany({ where: { tableId: table.tableId, productId: { in: productIds } }, select: { productId: true, rateBps: true } }),
+  ]);
+  const categoryOf = new Map(catalogue.map((product) => [product.id, product.categoryId]));
+  const categoryIds = [...new Set(catalogue.map((product) => product.categoryId).filter((id): id is string => id !== null))];
+  const byCategory = await tx.commissionTableCategoryRate.findMany({ where: { tableId: table.tableId, categoryId: { in: categoryIds } }, select: { categoryId: true, rateBps: true } });
+  const products = order.productIds.map((id): CommissionProduct | null => (id !== null && categoryOf.has(id) ? { productId: id, categoryId: categoryOf.get(id) ?? null } : null));
+  const worked = commissionOf(order.parts, products, {
+    defaultRateBps: attribution.defaultRateBps,
+    byProduct: new Map(own.map((rate) => [rate.productId, rate.rateBps])),
+    byCategory: new Map(byCategory.map((rate) => [rate.categoryId, rate.rateBps])),
+  });
 
-  // The e-mail typed at a purchase without an account, else the account's; the phone of the customer's record.
-  const customer = await tx.customer.findUniqueOrThrow({ where: { id: order.customerId }, select: { phone: true, user: { select: { email: true } } } });
-  const ownPurchase = isOwnPurchase(attribution, { email: order.contactEmail ?? customer.user?.email ?? null, phone: customer.phone });
+  // The e-mail typed at a purchase without an account, else the account's; the phone and the CPF of the customer's record.
+  const customer = await tx.customer.findUniqueOrThrow({ where: { id: order.customerId }, select: { phone: true, cpf: true, user: { select: { email: true } } } });
+  const ownPurchase = isOwnPurchase(attribution, { email: order.contactEmail ?? customer.user?.email ?? null, phone: customer.phone, cpf: customer.cpf });
   const commission = ownPurchase ? zeroed(worked) : worked;
   const items = await tx.orderItem.findMany({ where: { orderId: order.orderId }, orderBy: { position: 'asc' }, select: { id: true } });
 
@@ -141,11 +156,12 @@ export async function holdOrderCommission(
   await recountAffiliate(tx, attribution.affiliateId);
 }
 
-/** The buyer is the affiliate: the same e-mail, or the same phone — both kept as digits with the country code. */
-function isOwnPurchase(affiliate: { email: string; phone: string | null }, buyer: { email: string | null; phone: string | null }): boolean {
+/** The buyer is the affiliate: the same e-mail, the same phone — both kept as digits with the country code — or the same CPF, both its eleven digits. */
+function isOwnPurchase(affiliate: { email: string; phone: string | null; cpf: string | null }, buyer: { email: string | null; phone: string | null; cpf: string | null }): boolean {
   const sameEmail = buyer.email !== null && buyer.email.trim().toLowerCase() === affiliate.email;
   const samePhone = buyer.phone !== null && affiliate.phone !== null && buyer.phone === affiliate.phone;
-  return sameEmail || samePhone;
+  const sameCpf = buyer.cpf !== null && affiliate.cpf !== null && buyer.cpf === affiliate.cpf;
+  return sameEmail || samePhone || sameCpf;
 }
 
 /** The order's commission, read again under its affiliate's lock; null when the order was credited to nobody. */

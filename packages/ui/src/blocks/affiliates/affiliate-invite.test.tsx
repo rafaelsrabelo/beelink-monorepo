@@ -16,12 +16,13 @@ const noop = () => {}
 const available = { kind: "available", link: "beelink.com.br/lessari/joao" } as const
 
 describe("the invite to sell (IMPULSEIA-104)", () => {
-  it("says whom it is for, the commission, the products that pay their own, the terms and until when", async () => {
+  it("says whom it is for, the commission, the categories and products that pay their own, the terms and until when", async () => {
     const { container } = render(<AffiliateInvitationSummary invitation={invitation} />)
 
     expect(screen.getByText("Convite para joao@exemplo.com")).toBeInTheDocument()
     expect(screen.getByText("10% sobre o que o cliente pagar pelos produtos")).toBeInTheDocument()
-    expect(screen.getAllByRole("listitem").map((row) => row.textContent)).toEqual(["Whey Concentrado25%", "Creatina0%"])
+    expect(screen.getAllByRole("listitem").map((row) => row.textContent)).toEqual(["Acessórios15%", "Whey Concentrado25%", "Creatina0%"])
+    expect(screen.getByRole("heading", { name: "Categorias com percentual próprio" })).toBeInTheDocument()
     expect(screen.getByText("Whey Concentrado")).toBeInTheDocument()
     expect(screen.getByText(/Não vale divulgar/)).toBeInTheDocument()
     expect(screen.getByText("O convite vale até 18/11/2026.")).toBeInTheDocument()
@@ -29,10 +30,11 @@ describe("the invite to sell (IMPULSEIA-104)", () => {
   })
 
   it("says so when the shop wrote no terms", () => {
-    render(<AffiliateInvitationSummary invitation={{ ...invitation, termsText: null, products: [] }} />)
+    render(<AffiliateInvitationSummary invitation={{ ...invitation, termsText: null, categories: [], products: [] }} />)
 
     expect(screen.getByText("A loja não escreveu termos próprios.")).toBeInTheDocument()
     expect(screen.queryByText("Produtos com percentual próprio")).toBeNull()
+    expect(screen.queryByText("Categorias com percentual próprio")).toBeNull()
   })
 
   it("asks the name and a password when the account is made here, with bee-link's own terms under the button", async () => {

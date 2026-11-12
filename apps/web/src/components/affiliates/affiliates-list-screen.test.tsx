@@ -21,8 +21,8 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: mocks.replace }
 const overview: AffiliateProgramOverview = {
   program: { enabled: true, attributionDays: 30, payoutDelayDays: 10, termsText: null, termsVersion: 0, updatedAt: "2026-11-11T12:00:00.000Z" },
   tables: [
-    { id: "t1", name: "Padrão", defaultRateBps: 1000, isDefault: true, productRateCount: 0, affiliateCount: 1 },
-    { id: "t2", name: "Influencers", defaultRateBps: 1500, isDefault: false, productRateCount: 0, affiliateCount: 0 },
+    { id: "t1", name: "Padrão", defaultRateBps: 1000, isDefault: true, productRateCount: 0, categoryRateCount: 0, affiliateCount: 1 },
+    { id: "t2", name: "Influencers", defaultRateBps: 1500, isDefault: false, productRateCount: 0, categoryRateCount: 0, affiliateCount: 0 },
   ],
   periods: [],
   linksLive: true,
@@ -73,9 +73,12 @@ describe("AffiliatesListScreen (IMPULSEIA-104)", () => {
     const dialog = within(screen.getByRole("dialog", { name: "Convidar afiliado" }))
     await userEvent.type(dialog.getByLabelText("Nome"), "João Silva")
     await userEvent.type(dialog.getByLabelText("E-mail"), "Joao@Exemplo.com")
+    await userEvent.type(dialog.getByLabelText("Telefone"), "(85) 99999-4321")
+    await userEvent.type(dialog.getByLabelText("CPF"), "52998224725")
+    expect(dialog.getByLabelText("CPF")).toHaveValue("529.982.247-25")
     await userEvent.click(dialog.getByRole("button", { name: "Enviar convite" }))
 
-    expect(invite).toHaveBeenCalledWith({ name: "João Silva", email: "joao@exemplo.com", tableId: "t1", phone: null, note: null }, expect.anything())
+    expect(invite).toHaveBeenCalledWith({ name: "João Silva", email: "joao@exemplo.com", tableId: "t1", phone: "(85) 99999-4321", cpf: "52998224725", note: null }, expect.anything())
     expect(screen.getByRole("status")).toHaveTextContent("Convite enviado para joao@exemplo.com.")
   })
 
@@ -88,6 +91,8 @@ describe("AffiliatesListScreen (IMPULSEIA-104)", () => {
     await userEvent.click(dialog.getByRole("button", { name: "Enviar convite" }))
     expect(invite).not.toHaveBeenCalled()
     expect(dialog.getByText("Informe um e-mail válido.")).toBeInTheDocument()
+    expect(dialog.getByText("Informe um telefone com DDD.")).toBeInTheDocument()
+    expect(dialog.getByText("Informe um CPF válido.")).toBeInTheDocument()
     expect(dialog.getByText("Este e-mail já é de um afiliado da loja.")).toBeInTheDocument()
   })
 

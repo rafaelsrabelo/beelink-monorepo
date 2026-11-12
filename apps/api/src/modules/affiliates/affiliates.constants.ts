@@ -33,7 +33,7 @@ export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{1
 /** Every code this module answers: its own, and those it shares with the catalogue, the accounts and the orders. */
 type AnsweredCode =
   | AffiliateErrorCode
-  | Extract<CatalogErrorCode, 'PRODUCT_NOT_FOUND'>
+  | Extract<CatalogErrorCode, 'PRODUCT_NOT_FOUND' | 'PRODUCT_CATEGORY_NOT_FOUND'>
   | Extract<AuthErrorCode, 'AUTH_EMAIL_TAKEN'>
   | Extract<OrderErrorCode, 'ORDER_NOT_FOUND' | 'ORDER_CANCELLED'>;
 

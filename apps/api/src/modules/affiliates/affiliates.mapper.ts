@@ -1,6 +1,6 @@
 // Types
 import type { AffiliateProgram, CommissionTable, CommissionTableSummary, ShopAffiliate, ShopAffiliateSummary } from '@harness-monorepo/contracts';
-import type { AffiliateInviteModel, AffiliateModel, AffiliateProgramModel, CommissionTableModel, CommissionTableRateModel } from '../../generated/prisma/models.js';
+import type { AffiliateInviteModel, AffiliateModel, AffiliateProgramModel, CommissionTableCategoryRateModel, CommissionTableModel, CommissionTableRateModel } from '../../generated/prisma/models.js';
 
 export function toAffiliateProgram(row: AffiliateProgramModel): AffiliateProgram {
   return {
@@ -13,17 +13,26 @@ export function toAffiliateProgram(row: AffiliateProgramModel): AffiliateProgram
   };
 }
 
-export function toCommissionTableSummary(row: CommissionTableModel & { _count: { rates: number; affiliates: number } }): CommissionTableSummary {
-  return { id: row.id, name: row.name, defaultRateBps: row.defaultRateBps, isDefault: row.isDefault, productRateCount: row._count.rates, affiliateCount: row._count.affiliates };
+export function toCommissionTableSummary(row: CommissionTableModel & { _count: { rates: number; categoryRates: number; affiliates: number } }): CommissionTableSummary {
+  return {
+    id: row.id,
+    name: row.name,
+    defaultRateBps: row.defaultRateBps,
+    isDefault: row.isDefault,
+    productRateCount: row._count.rates,
+    categoryRateCount: row._count.categoryRates,
+    affiliateCount: row._count.affiliates,
+  };
 }
 
-export function toCommissionTable(row: CommissionTableModel & { rates: CommissionTableRateModel[] }): CommissionTable {
+export function toCommissionTable(row: CommissionTableModel & { rates: CommissionTableRateModel[]; categoryRates: CommissionTableCategoryRateModel[] }): CommissionTable {
   return {
     id: row.id,
     name: row.name,
     defaultRateBps: row.defaultRateBps,
     isDefault: row.isDefault,
     rates: row.rates.map((rate) => ({ productId: rate.productId, rateBps: rate.rateBps })),
+    categoryRates: row.categoryRates.map((rate) => ({ categoryId: rate.categoryId, rateBps: rate.rateBps })),
     updatedAt: row.updatedAt.toISOString(),
   };
 }
@@ -50,6 +59,7 @@ export function toShopAffiliateSummary(row: AffiliateRow): ShopAffiliateSummary 
 export function toShopAffiliate(row: AffiliateRow): ShopAffiliate {
   return {
     ...toShopAffiliateSummary(row),
+    cpf: row.cpf,
     note: row.note,
     pixKey: row.pixKey,
     photoUrl: row.photoUrl,

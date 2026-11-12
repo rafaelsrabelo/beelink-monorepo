@@ -25,7 +25,7 @@ import { AppLink } from "@/components/app-link"
 import { AffiliateMoneySection } from "@/components/affiliates/affiliate-money-section"
 import { AffiliateShowcaseSection } from "@/components/affiliates/affiliate-showcase-section"
 import { affiliateErrorOf } from "@/lib/affiliate-form"
-import { affiliateDateFormatter, affiliateLinkOf, affiliateRecordViewOf, affiliateTableOptionsOf, recordFormOf, recordPatchOf } from "@/lib/affiliate-people"
+import { affiliateDateFormatter, affiliateLinkOf, affiliateRecordViewOf, affiliateTableOptionsOf, identityMissingOf, recordFormOf, recordPatchOf } from "@/lib/affiliate-people"
 import { useAffiliateProgram } from "@/services/affiliates/affiliate-hooks"
 import { AffiliateError } from "@/services/affiliates/affiliate-requests"
 import { useActOnAffiliate, useCancelAffiliateInvite, useShopAffiliate, useUpdateAffiliate } from "@/services/affiliates/shop-affiliate-hooks"
@@ -123,6 +123,7 @@ export function AffiliateRecordScreen({ slug, affiliateId, origin, locale, messa
         onSubmit={submit}
         tables={affiliateTableOptionsOf(program.data.tables, locale)}
         tableLocked={current.status === "ENDED"}
+        identityMissing={identityMissingOf(current)}
         issues={issues}
         pending={update.isPending}
         pristine={"pristine" in outcome}

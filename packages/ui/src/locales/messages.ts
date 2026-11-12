@@ -4228,6 +4228,8 @@ export interface UiMessages {
       tableHelp: string
       phone: string
       phoneHelp: string
+      cpf: string
+      cpfHelp: string
       note: string
       noteHelp: string
       submit: string
@@ -4260,6 +4262,11 @@ export interface UiMessages {
       /** `{sent}`, `{expires}`. */
       inviteOpen: string
       condition: string
+      cpf: string
+      /** Under the phone and the CPF of an affiliate invited before they were asked. */
+      identityMissing: string
+      phoneHelp: string
+      cpfHelp: string
       table: string
       tableHelp: string
       note: string
@@ -4284,7 +4291,7 @@ export interface UiMessages {
       keep: string
     }
     /** What the invite and record forms refuse before they ask, by field. */
-    affiliateIssues: { name: string; email: string; phone: string; note: string; table: string }
+    affiliateIssues: { name: string; email: string; phone: string; cpf: string; note: string; table: string }
     /** What a form refuses before it asks, by field. */
     issues: { attributionDays: string; payoutDelayDays: string; termsText: string; name: string; rate: string }
     /** An order's affiliate (IMPULSEIA-107), on the order's page. Amounts and dates arrive formatted. */
@@ -4444,6 +4451,7 @@ export interface UiMessages {
       AFFILIATE_INVALID: string
       AFFILIATE_NOT_FOUND: string
       AFFILIATE_EMAIL_TAKEN: string
+      AFFILIATE_CPF_TAKEN: string
       AFFILIATE_STATUS_INVALID: string
       AFFILIATE_INVITE_RECENTLY_SENT: string
       PRODUCT_NOT_FOUND: string
@@ -4474,6 +4482,7 @@ export interface UiMessages {
     /** `{rate}`. */
     general: string
     generalHelp: string
+    categories: string
     products: string
     terms: string
     termsNone: string

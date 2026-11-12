@@ -44,19 +44,30 @@ export interface AffiliatePayoutPeriod {
 export interface CommissionTableSummary {
   id: string;
   name: string;
-  /** What every product pays on this table, 0 to 10000, unless it has a rate of its own here. */
+  /** What every product pays on this table, 0 to 10000, unless it or its category has a rate of its own here. */
   defaultRateBps: number;
   /** The table born with the programme: the one a product's own form edits, and never deleted. */
   isDefault: boolean;
   /** How many products have a rate of their own on this table. */
   productRateCount: number;
+  /** How many categories have a rate of their own on this table. */
+  categoryRateCount: number;
   /** How many affiliates are on this table and not ended. A table with any is not deleted. */
   affiliateCount: number;
 }
 
-/** A product's own rate on a table, which replaces the table's for that product. 0 pays it nothing. */
+/**
+ * A product's own rate on a table, which replaces its category's and the table's for that product.
+ * 0 pays it nothing. A product's rate is `product ?? its category ?? the table's`, and nothing else.
+ */
 export interface CommissionProductRate {
   productId: string;
+  rateBps: number;
+}
+
+/** A category's own rate on a table (the user's review, 12/11): every product of it pays this, unless the product has its own. */
+export interface CommissionCategoryRate {
+  categoryId: string;
   rateBps: number;
 }
 
@@ -66,7 +77,10 @@ export interface CommissionTable {
   name: string;
   defaultRateBps: number;
   isDefault: boolean;
+  /** By product: these come first. */
   rates: CommissionProductRate[];
+  /** By category: for the products of it with no rate of their own. */
+  categoryRates: CommissionCategoryRate[];
   /** ISO-8601. */
   updatedAt: string;
 }
@@ -79,6 +93,11 @@ export interface CommissionTablePayload {
 
 /** What `PUT …/tables/:tableId/rates/:productId` takes. */
 export interface CommissionProductRatePayload {
+  rateBps: number;
+}
+
+/** What `PUT …/tables/:tableId/category-rates/:categoryId` takes. */
+export interface CommissionCategoryRatePayload {
   rateBps: number;
 }
 
@@ -110,11 +129,13 @@ export type AffiliateErrorCode =
   | "COMMISSION_TABLE_LIMIT"
   /** Affiliates who have not ended are on this table: move them before deleting it. */
   | "COMMISSION_TABLE_IN_USE"
-  /** An affiliate's name, e-mail, phone, note or table out of its range or missing. */
+  /** An affiliate's name, e-mail, phone, CPF, note or table out of its range or missing. */
   | "AFFILIATE_INVALID"
   | "AFFILIATE_NOT_FOUND"
   /** Another affiliate of the shop, not ended, has this e-mail. */
   | "AFFILIATE_EMAIL_TAKEN"
+  /** Another affiliate of the shop, not ended, has this CPF. */
+  | "AFFILIATE_CPF_TAKEN"
   /** What was asked does not fit where the affiliate stands; `details` is `AffiliateStatusDetails`. */
   | "AFFILIATE_STATUS_INVALID"
   /** The invite went out less than a minute ago. */
@@ -163,7 +184,7 @@ export interface ShopAffiliateSummary {
   name: string;
   /** Lower case, as it was invited. */
   email: string;
-  /** Digits only, with the country code; null when none was given. */
+  /** Digits only, with the country code. Required since 12/11/2026; null only for one invited before. */
   phone: string | null;
   /** The `/name` chosen on accepting, unique in the shop for good; null while invited. */
   slug: string | null;
@@ -177,6 +198,8 @@ export interface ShopAffiliateSummary {
 
 /** One affiliate, whole, as the shop reads them. The Pix key is the shop's to see: it is the shop that pays. */
 export interface ShopAffiliate extends ShopAffiliateSummary {
+  /** Eleven digits, the shop's alone to see. Required since 12/11/2026; null only for one invited before. */
+  cpf: string | null;
   note: string | null;
   pixKey: string | null;
   photoUrl: string | null;
@@ -205,15 +228,19 @@ export interface CreateAffiliatePayload {
   name: string;
   email: string;
   tableId: string;
-  /** Any way a person writes it; null or absent for none. */
-  phone?: string | null;
+  /** Any way a person writes it; kept as digits with the country code. */
+  phone: string;
+  /** With or without points and dash; kept as its eleven digits, and checked. */
+  cpf: string;
   /** The shop's own, up to 500 characters; the affiliate never reads it. */
   note?: string | null;
 }
 
-/** A patch: a key left out is left alone. */
+/** A patch: a key left out is left alone. The phone and the CPF are completed or corrected, never cleared. */
 export interface UpdateAffiliatePayload {
   tableId?: string;
+  phone?: string;
+  cpf?: string;
   note?: string | null;
 }
 
@@ -246,9 +273,16 @@ export interface AffiliateSlugAvailability {
   reason: AffiliateSlugUnavailableReason | null;
 }
 
-/** A product with a rate of its own on the invite's table. Every other product pays the table's rate. */
+/** A product with a rate of its own on the invite's table. */
 export interface AffiliateInvitationProduct {
   productId: string;
+  name: string;
+  rateBps: number;
+}
+
+/** A category with a rate of its own on the invite's table: its products pay it, unless they have their own. */
+export interface AffiliateInvitationCategory {
+  categoryId: string;
   name: string;
   rateBps: number;
 }
@@ -257,7 +291,8 @@ export interface AffiliateInvitationProduct {
 export interface AffiliateInvitation {
   store: { name: string; slug: string; logoUrl: string | null };
   affiliate: { name: string; email: string };
-  table: { name: string; defaultRateBps: number; products: AffiliateInvitationProduct[] };
+  /** Every product pays `products`' rate if it is there, else its category's in `categories`, else `defaultRateBps`. */
+  table: { name: string; defaultRateBps: number; categories: AffiliateInvitationCategory[]; products: AffiliateInvitationProduct[] };
   /** The shop's terms as they stand; `version` is what accepting sends back. */
   terms: { text: string | null; version: number };
   /** ISO-8601. */
@@ -548,6 +583,8 @@ export interface AffiliateProfile {
   pixKey: string | null;
   /** Digits only, with the country code. */
   phone: string | null;
+  /** Their CPF as the shop registered it, masked — `***.456.789-**` — and read-only: only the shop changes it. Null when the shop has none. */
+  maskedCpf: string | null;
   photoUrl: string | null;
   /** Up to 100 characters. */
   tagline: string | null;
@@ -611,7 +648,7 @@ export interface AffiliateProductLink {
   name: string;
   imageUrl: string | null;
   priceCents: number;
-  /** The product's own on their table, or the table's. */
+  /** The product's own on their table, else its category's there, else the table's. */
   rateBps: number;
   /** `/<loja>/<produtos>/<slug>?afiliado=<nome>`: the site's origin goes in front. */
   path: string;

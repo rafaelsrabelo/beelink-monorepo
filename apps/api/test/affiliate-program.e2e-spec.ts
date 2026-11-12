@@ -7,9 +7,11 @@ import type {
   AffiliateProgramPayload,
   ApiErrorBody,
   AuthSession,
+  CommissionCategoryRate,
   CommissionProductRate,
   CommissionTable,
   Product,
+  ProductCategory,
 } from '@harness-monorepo/contracts';
 
 // App
@@ -66,6 +68,12 @@ describe("a shop's affiliate programme: its rules and its commission tables", ()
     return response.json<Product>();
   }
 
+  async function category(name: string, slug = 'lessari', session = owner): Promise<ProductCategory> {
+    const response = await call('POST', `/api/stores/${slug}/product-categories`, session, { name });
+    if (response.statusCode !== 201) throw new Error(`POST product-categories answered ${response.statusCode}: ${response.payload}`);
+    return response.json<ProductCategory>();
+  }
+
   async function defaultTableId(): Promise<string> {
     const { tables } = (await overview()).json<AffiliateProgramOverview>();
     return tables.find((table) => table.isDefault)!.id;
@@ -78,7 +86,7 @@ describe("a shop's affiliate programme: its rules and its commission tables", ()
       expect(response.statusCode).toBe(200);
       const read = response.json<AffiliateProgramOverview>();
       expect(read.program).toEqual({ enabled: false, attributionDays: 30, payoutDelayDays: 10, termsText: null, termsVersion: 0, updatedAt: expect.any(String) });
-      expect(read.tables).toEqual([{ id: expect.any(String), name: 'Padrão', defaultRateBps: 1000, isDefault: true, productRateCount: 0, affiliateCount: 0 }]);
+      expect(read.tables).toEqual([{ id: expect.any(String), name: 'Padrão', defaultRateBps: 1000, isDefault: true, productRateCount: 0, categoryRateCount: 0, affiliateCount: 0 }]);
       expect(read.periods).toEqual(payoutPeriodsOfMonth(brasiliaDayOf(new Date()), 10));
       expect(read.periods.map((period) => period.firstDay.slice(8))).toEqual(['01', '11', '21']);
     });
@@ -161,7 +169,7 @@ describe("a shop's affiliate programme: its rules and its commission tables", ()
       const created = await createTable({ name: '  Influencers  ', defaultRateBps: 1500 });
 
       expect(created.statusCode).toBe(201);
-      expect(created.json<CommissionTable>()).toEqual({ id: expect.any(String), name: 'Influencers', defaultRateBps: 1500, isDefault: false, rates: [], updatedAt: expect.any(String) });
+      expect(created.json<CommissionTable>()).toEqual({ id: expect.any(String), name: 'Influencers', defaultRateBps: 1500, isDefault: false, rates: [], categoryRates: [], updatedAt: expect.any(String) });
       await createTable({ name: 'Amigos', defaultRateBps: 500 });
       expect((await overview()).json<AffiliateProgramOverview>().tables.map((table) => table.name)).toEqual(['Padrão', 'Amigos', 'Influencers']);
     });
@@ -290,6 +298,56 @@ describe("a shop's affiliate programme: its rules and its commission tables", ()
 
       expect((await call('DELETE', `/api/stores/lessari/products/${whey.id}`, owner)).statusCode).toBe(204);
       expect(await prisma.commissionTableRate.count()).toBe(0);
+    });
+  });
+
+  describe("a category's own rate", () => {
+    it("is set, 0 included, read with the table, counted, and goes back to the table's when removed", async () => {
+      const [bolsas, brindes] = [await category('Bolsas'), await category('Brindes')];
+      const id = await defaultTableId();
+
+      const set = await call('PUT', `${tablesUrl}/${id}/category-rates/${bolsas.id}`, owner, { rateBps: 1500 });
+      expect(set.statusCode).toBe(200);
+      expect(set.json<CommissionCategoryRate>()).toEqual({ categoryId: bolsas.id, rateBps: 1500 });
+      await call('PUT', `${tablesUrl}/${id}/category-rates/${bolsas.id}`, owner, { rateBps: 1800 });
+      await call('PUT', `${tablesUrl}/${id}/category-rates/${brindes.id}`, owner, { rateBps: 0 });
+
+      const table = (await call('GET', `${tablesUrl}/${id}`, owner)).json<CommissionTable>();
+      expect(table.categoryRates).toEqual(expect.arrayContaining([{ categoryId: bolsas.id, rateBps: 1800 }, { categoryId: brindes.id, rateBps: 0 }]));
+      expect(table.categoryRates).toHaveLength(2);
+      expect((await overview()).json<AffiliateProgramOverview>().tables[0]).toMatchObject({ categoryRateCount: 2, productRateCount: 0 });
+
+      expect((await call('DELETE', `${tablesUrl}/${id}/category-rates/${bolsas.id}`, owner)).statusCode).toBe(204);
+      expect((await call('DELETE', `${tablesUrl}/${id}/category-rates/${bolsas.id}`, owner)).statusCode).toBe(204);
+      expect((await call('GET', `${tablesUrl}/${id}`, owner)).json<CommissionTable>().categoryRates).toEqual([{ categoryId: brindes.id, rateBps: 0 }]);
+    });
+
+    it("refuses another shop's category, and a rate out of range", async () => {
+      const foreign = await category('Delas', 'vizinha', stranger);
+      const id = await defaultTableId();
+
+      for (const categoryId of [foreign.id, MISSING, 'nao-e-um-id']) {
+        const response = await call('PUT', `${tablesUrl}/${id}/category-rates/${categoryId}`, owner, { rateBps: 1000 });
+        expect(response.statusCode).toBe(404);
+        expect(errorOf(response)).toBe('PRODUCT_CATEGORY_NOT_FOUND');
+      }
+      const bolsas = await category('Bolsas');
+      for (const rateBps of [-1, 10_001, 1.5]) {
+        expect(errorOf(await call('PUT', `${tablesUrl}/${id}/category-rates/${bolsas.id}`, owner, { rateBps }))).toBe('COMMISSION_TABLE_INVALID');
+      }
+      expect(await prisma.commissionTableCategoryRate.count()).toBe(0);
+    });
+
+    it('goes with its category, and with its table', async () => {
+      const bolsas = await category('Bolsas');
+      await call('PUT', `${tablesUrl}/${await defaultTableId()}/category-rates/${bolsas.id}`, owner, { rateBps: 1500 });
+      const table = (await createTable({ name: 'Influencers', defaultRateBps: 1500 })).json<CommissionTable>();
+      await call('PUT', `${tablesUrl}/${table.id}/category-rates/${bolsas.id}`, owner, { rateBps: 2000 });
+
+      expect((await call('DELETE', `${tablesUrl}/${table.id}`, owner)).statusCode).toBe(204);
+      expect(await prisma.commissionTableCategoryRate.count()).toBe(1);
+      expect((await call('DELETE', `/api/stores/lessari/product-categories/${bolsas.id}`, owner)).statusCode).toBe(204);
+      expect(await prisma.commissionTableCategoryRate.count()).toBe(0);
     });
   });
 

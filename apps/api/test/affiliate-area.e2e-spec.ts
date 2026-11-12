@@ -23,6 +23,7 @@ import type {
 import { AffiliateCommissionSweeper } from '../src/modules/affiliates/affiliate-commission-sweeper.js';
 import { brasiliaDayOf, dayOfDateColumn, openOfBrasiliaDay } from '../src/modules/billing/billing-dates.js';
 import { PrismaService } from '../src/shared/prisma/prisma.service.js';
+import { affiliateIdentity } from './support/affiliate-identity.js';
 import { PASSWORD, newEmail, signUpAndSignIn, verifyEmailOf } from './support/auth-flow.js';
 import { createTestApp } from './support/create-test-app.js';
 import { clearInbox, tokenFromLink, waitForMessage } from './support/mailpit.js';
@@ -47,6 +48,9 @@ function keysOf(value: unknown, into = new Set<string>()): Set<string> {
   }
   return into;
 }
+
+/** A CPF as the affiliate's area shows it: the middle six digits. */
+const maskedOf = (cpf: string) => `***.${cpf.slice(3, 6)}.${cpf.slice(6, 9)}-**`;
 
 describe("the affiliate's own area: the shops they sell for, their links, orders, statement and data (IMPULSEIA-108)", () => {
   let app: NestFastifyApplication;
@@ -97,7 +101,7 @@ describe("the affiliate's own area: the shops they sell for, their links, orders
   /** An affiliate through the real door — invited, signed up by the invite's link — and the session it opened. */
   async function affiliate(slug: string, name: string, email = newEmail(slug)): Promise<{ record: ShopAffiliate; session: AuthSession; email: string }> {
     const tableId = (await call('GET', '/api/stores/lessari/affiliate-program', owner)).json<AffiliateProgramOverview>().tables[0]!.id;
-    const record = (await call('POST', '/api/stores/lessari/affiliates', owner, { name, email, tableId })).json<ShopAffiliate>();
+    const record = (await call('POST', '/api/stores/lessari/affiliates', owner, { ...affiliateIdentity(), name, email, tableId })).json<ShopAffiliate>();
     const token = tokenFromLink((await waitForMessage(email.toLowerCase(), 10_000, 'convidou você')).Text, '/afiliado/convite');
     const accepted = await call('POST', `/api/affiliate-invites/${token}/sign-up`, undefined, { name, password: PASSWORD, slug, pixKey: `${slug}@pix.test`, termsVersion: 0 });
     if (accepted.statusCode !== 201) throw new Error(`sign-up answered ${accepted.statusCode}: ${accepted.payload}`);
@@ -140,7 +144,7 @@ describe("the affiliate's own area: the shops they sell for, their links, orders
       // Invited again: the account exists, so it accepts signed in, as a new standing.
       const tableId = (await call('GET', '/api/stores/lessari/affiliate-program', owner)).json<AffiliateProgramOverview>().tables[0]!.id;
       await clearInbox();
-      await call('POST', '/api/stores/lessari/affiliates', owner, { name: 'Maria Souza', email: maria.email, tableId });
+      await call('POST', '/api/stores/lessari/affiliates', owner, { ...affiliateIdentity(), name: 'Maria Souza', email: maria.email, tableId });
       const token = tokenFromLink((await waitForMessage(maria.email, 10_000, 'convidou você')).Text, '/afiliado/convite');
       expect((await call('POST', `/api/affiliate-invites/${token}/accept`, maria.session, { slug: 'maria-de-novo', pixKey: null, termsVersion: 0 })).statusCode).toBe(200);
 
@@ -163,8 +167,18 @@ describe("the affiliate's own area: the shops they sell for, their links, orders
         availableCents: 0,
         payment: { availableCents: 0, next: null },
         numbers: { days: 30, visits: 0, orders: 0, sales: 0, commissionCents: 0 },
-        profile: { pixKey: 'maria@pix.test', phone: null, photoUrl: null, tagline: null },
+        profile: { pixKey: 'maria@pix.test', phone: maria.record.phone, maskedCpf: maskedOf(maria.record.cpf!), photoUrl: null, tagline: null },
       });
+    });
+
+    it('shows their CPF masked, and nowhere whole — not in the area, nor on the shop window', async () => {
+      const cpf = maria.record.cpf!;
+      const home = await area('/lessari');
+
+      expect(home.json<AffiliateHome>().profile.maskedCpf).toMatch(/^\*\*\*\.\d{3}\.\d{3}-\*\*$/);
+      expect(home.payload).not.toContain(cpf);
+      expect((await profile({ tagline: 'Oi' })).payload).not.toContain(cpf);
+      expect((await call('GET', '/api/stores/lessari/affiliate-link?slug=maria')).payload).not.toContain(cpf);
     });
 
     it('counts the last thirty days, and says when the next payment falls due and how much', async () => {
@@ -281,6 +295,12 @@ describe("the affiliate's own area: the shops they sell for, their links, orders
         { productId: creatina.id, name: 'Creatina', imageUrl: null, priceCents: 5000, rateBps: 2500, path: `/lessari/produtos/${creatina.slug}?afiliado=maria` },
         { productId: whey.id, name: 'Whey 900 g', imageUrl: null, priceCents: 10_000, rateBps: 1000, path: `/lessari/produtos/${whey.slug}?afiliado=maria` },
       ]);
+
+      // A category's rate reaches the products of it that have none of their own.
+      const suplementos = (await call('POST', '/api/stores/lessari/product-categories', owner, { name: 'Suplementos' })).json<{ id: string }>();
+      await prisma.product.updateMany({ where: { id: { in: [whey.id, creatina.id] } }, data: { categoryId: suplementos.id } });
+      await call('PUT', `/api/stores/lessari/affiliate-program/tables/${tableId}/category-rates/${suplementos.id}`, owner, { rateBps: 1800 });
+      expect((await area('/lessari/products')).json<AffiliateProductPage>().products.map((product) => product.rateBps)).toEqual([2500, 1800]);
       expect((await area('/lessari/products?q=whey')).json<AffiliateProductPage>().products.map((product) => product.name)).toEqual(['Whey 900 g']);
     });
 
@@ -298,14 +318,14 @@ describe("the affiliate's own area: the shops they sell for, their links, orders
       const response = await profile({ pixKey: '529.982.247-25', phone: '(11) 98888-7777', tagline: '  Separei meus favoritos  ', photoUrl: PHOTO });
 
       expect(response.statusCode).toBe(200);
-      expect(response.json<AffiliateProfile>()).toEqual({ pixKey: '52998224725', phone: '5511988887777', photoUrl: PHOTO, tagline: 'Separei meus favoritos' });
+      expect(response.json<AffiliateProfile>()).toEqual({ pixKey: '52998224725', phone: '5511988887777', maskedCpf: maskedOf(maria.record.cpf!), photoUrl: PHOTO, tagline: 'Separei meus favoritos' });
       expect((await call('GET', '/api/stores/lessari/affiliate-link?slug=maria')).json<{ affiliate: { photoUrl: string; tagline: string } }>().affiliate).toMatchObject({ photoUrl: PHOTO, tagline: 'Separei meus favoritos' });
     });
 
     it('leaves a key it is not given alone, and clears one given as null', async () => {
       await profile({ tagline: 'Frase', phone: '(11) 98888-7777' });
 
-      expect((await profile({ tagline: null })).json<AffiliateProfile>()).toEqual({ pixKey: 'maria@pix.test', phone: '5511988887777', photoUrl: null, tagline: null });
+      expect((await profile({ tagline: null })).json<AffiliateProfile>()).toEqual({ pixKey: 'maria@pix.test', phone: '5511988887777', maskedCpf: maskedOf(maria.record.cpf!), photoUrl: null, tagline: null });
     });
 
     it.each([

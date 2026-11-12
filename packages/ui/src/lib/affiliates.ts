@@ -87,10 +87,12 @@ export interface AffiliateInviteFormValues {
   email: string
   tableId: string
   phone: string
+  /** As typed, masked to `000.000.000-00`. */
+  cpf: string
   note: string
 }
 
-export type AffiliateInviteIssues = Partial<Record<"name" | "email" | "tableId" | "phone" | "note", string>>
+export type AffiliateInviteIssues = Partial<Record<"name" | "email" | "tableId" | "phone" | "cpf" | "note", string>>
 
 /** One affiliate, whole, its lines already in words. */
 export interface AffiliateRecordView {
@@ -98,6 +100,8 @@ export interface AffiliateRecordView {
   email: string
   /** As a person writes it; null when none was given. */
   phone: string | null
+  /** `000.000.000-00`; null for one invited before it was asked. */
+  cpf: string | null
   status: AffiliateStatusValue
   /** The whole link, `https://…/<loja>/<nome>`; null while invited. */
   link: string | null
@@ -113,10 +117,14 @@ export interface AffiliateRecordView {
 /** The record's own form: the table, and the shop's note. */
 export interface AffiliateRecordFormValues {
   tableId: string
+  /** As typed; blank only for one invited before it was asked. */
+  phone: string
+  /** As typed, masked to `000.000.000-00`; blank only for one invited before it was asked. */
+  cpf: string
   note: string
 }
 
-export type AffiliateRecordIssues = Partial<Record<"tableId" | "note", string>>
+export type AffiliateRecordIssues = Partial<Record<"tableId" | "phone" | "cpf" | "note", string>>
 
 /** The invite as the person invited reads it, before accepting. Rates and dates arrive in words. */
 export interface AffiliateInvitationView {
@@ -125,6 +133,8 @@ export interface AffiliateInvitationView {
   email: string
   /** "10%". */
   generalRate: string
+  /** Categories with a rate of their own on the invite's table: their products pay it, unless they have their own. */
+  categories: { name: string; rate: string }[]
   /** Products with a rate of their own on the invite's table. */
   products: { name: string; rate: string }[]
   termsText: string | null

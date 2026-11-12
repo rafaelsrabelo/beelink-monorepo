@@ -16,6 +16,7 @@ import type {
 } from '@harness-monorepo/contracts';
 
 // App
+import { IsCpf, cpfDigitsOf } from '../../../shared/http/cpf.js';
 import { MaxCodePoints } from '../../../shared/http/max-code-points.js';
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from '../../auth/auth.constants.js';
 import { normaliseWhatsapp } from '../../stores/dto/store-fields.dto.js';
@@ -37,6 +38,8 @@ const ACCEPTANCE = answering('AFFILIATE_ACCEPTANCE_INVALID');
 
 const trimmed = Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value));
 const trimmedOrNull = Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() || null : value));
+/** A CPF is kept as its eleven digits, whichever points and dash were typed around them. */
+const cpfDigits = Transform(({ value }: { value: unknown }) => cpfDigitsOf(value));
 /** An e-mail is compared without case or surrounding spaces, as the accounts compare it. */
 const normalisedEmail = Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim().toLowerCase() : value));
 /** The longest an address may be, by the standard: the column is as wide. */
@@ -62,11 +65,17 @@ export class CreateAffiliateDto implements CreateAffiliatePayload {
   @IsUUID('all', AFFILIATE)
   tableId!: string;
 
-  @ApiPropertyOptional({ nullable: true, type: String, example: '(11) 99999-8888', description: 'Kept as digits with the country code.' })
-  @IsOptional()
+  @ApiProperty({ example: '(11) 99999-8888', description: 'Required (the user\'s review, 12/11/2026). Kept as digits with the country code.' })
   @normaliseWhatsapp
+  @IsString(AFFILIATE)
   @Matches(/^\d{12,15}$/, AFFILIATE)
-  phone?: string | null;
+  phone!: string;
+
+  @ApiProperty({ example: '529.982.247-25', description: 'Required, and checked. Kept as its eleven digits; the shop\'s alone to read.' })
+  @cpfDigits
+  @IsString(AFFILIATE)
+  @IsCpf(AFFILIATE)
+  cpf!: string;
 
   @ApiPropertyOptional({ nullable: true, type: String, maxLength: AFFILIATE_NOTE_MAX, description: "The shop's own; the affiliate never reads it." })
   @IsOptional()
@@ -77,12 +86,27 @@ export class CreateAffiliateDto implements CreateAffiliatePayload {
   note?: string | null;
 }
 
-/** A patch: a key left out is left alone, and a null note clears it. */
+/** A patch: a key left out is left alone, and a null note clears it. The phone and the CPF are corrected, never cleared. */
 export class UpdateAffiliateDto implements UpdateAffiliatePayload {
   @ApiPropertyOptional({ format: 'uuid' })
   @IsOptional()
   @IsUUID('all', AFFILIATE)
   tableId?: string;
+
+  @ApiPropertyOptional({ example: '(11) 99999-8888' })
+  // Left out is left alone; null is refused — the phone and the CPF are corrected, never cleared.
+  @ValidateIf((_, value) => value !== undefined)
+  @normaliseWhatsapp
+  @IsString(AFFILIATE)
+  @Matches(/^\d{12,15}$/, AFFILIATE)
+  phone?: string;
+
+  @ApiPropertyOptional({ example: '529.982.247-25' })
+  @ValidateIf((_, value) => value !== undefined)
+  @cpfDigits
+  @IsString(AFFILIATE)
+  @IsCpf(AFFILIATE)
+  cpf?: string;
 
   @ApiPropertyOptional({ nullable: true, type: String, maxLength: AFFILIATE_NOTE_MAX })
   @trimmedOrNull

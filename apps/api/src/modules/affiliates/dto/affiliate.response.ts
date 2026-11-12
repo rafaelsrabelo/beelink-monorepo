@@ -5,6 +5,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import type {
   AcceptedAffiliate,
   AffiliateInvitation,
+  AffiliateInvitationCategory,
   AffiliateInvitationProduct,
   AffiliateSignUpResult,
   AffiliateSlugAvailability,
@@ -35,7 +36,7 @@ export class ShopAffiliateSummaryResponse implements ShopAffiliateSummary {
   @ApiProperty({ format: 'uuid' }) id!: string;
   @ApiProperty() name!: string;
   @ApiProperty() email!: string;
-  @ApiProperty({ nullable: true, type: String, description: 'Digits with the country code.' }) phone!: string | null;
+  @ApiProperty({ nullable: true, type: String, description: 'Digits with the country code. Null only for one invited before 12/11/2026.' }) phone!: string | null;
   @ApiProperty({ nullable: true, type: String, description: 'Null while invited.' }) slug!: string | null;
   @ApiProperty({ enum: AFFILIATE_STATUSES }) status!: AffiliateStatus;
   @ApiProperty({ type: AffiliateTableRefResponse }) table!: AffiliateTableRefResponse;
@@ -44,6 +45,7 @@ export class ShopAffiliateSummaryResponse implements ShopAffiliateSummary {
 }
 
 export class ShopAffiliateResponse extends ShopAffiliateSummaryResponse implements ShopAffiliate {
+  @ApiProperty({ nullable: true, type: String, example: '52998224725', description: 'Eleven digits, the shop\'s alone. Null only for one invited before 12/11/2026.' }) cpf!: string | null;
   @ApiProperty({ nullable: true, type: String }) note!: string | null;
   @ApiProperty({ nullable: true, type: String }) pixKey!: string | null;
   @ApiProperty({ nullable: true, type: String }) photoUrl!: string | null;
@@ -78,10 +80,17 @@ class InvitationProductResponse implements AffiliateInvitationProduct {
   @ApiProperty({ example: 1500 }) rateBps!: number;
 }
 
+class InvitationCategoryResponse implements AffiliateInvitationCategory {
+  @ApiProperty({ format: 'uuid' }) categoryId!: string;
+  @ApiProperty() name!: string;
+  @ApiProperty({ example: 1500 }) rateBps!: number;
+}
+
 class InvitationTableResponse {
   @ApiProperty() name!: string;
   @ApiProperty({ example: 1000 }) defaultRateBps!: number;
-  @ApiProperty({ type: [InvitationProductResponse], description: 'Products with a rate of their own; every other pays `defaultRateBps`.' }) products!: InvitationProductResponse[];
+  @ApiProperty({ type: [InvitationCategoryResponse], description: 'Categories with a rate of their own: their products pay it, unless they have their own.' }) categories!: InvitationCategoryResponse[];
+  @ApiProperty({ type: [InvitationProductResponse], description: 'Products with a rate of their own; every other pays its category\'s, else `defaultRateBps`.' }) products!: InvitationProductResponse[];
 }
 
 class InvitationTermsResponse {

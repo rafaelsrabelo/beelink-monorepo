@@ -18,7 +18,7 @@ vi.mock("@/services/affiliates/affiliate-hooks", () => ({ useCommissionTable: mo
 vi.mock("@/services/catalog/catalog-hooks", () => ({ useProducts: mocks.products }))
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: mocks.replace }), useSearchParams: () => new URLSearchParams() }))
 
-const table: CommissionTable = { id: "t1", name: "Influencers", defaultRateBps: 1500, isDefault: false, rates: [{ productId: "p1", rateBps: 2500 }], updatedAt: "2026-11-11T12:00:00.000Z" }
+const table: CommissionTable = { id: "t1", name: "Influencers", defaultRateBps: 1500, isDefault: false, rates: [{ productId: "p1", rateBps: 2500 }], categoryRates: [], updatedAt: "2026-11-11T12:00:00.000Z" }
 const products = [
   { id: "p1", name: "Whey", images: [] },
   { id: "p2", name: "Creatina", images: [] },
