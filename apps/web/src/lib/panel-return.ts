@@ -9,13 +9,21 @@ export function isPanelPage(pathname: string): boolean {
 }
 
 /**
- * A page of the panel to go back to, or null. Only the panel's own: a sign-in link that could send
- * anywhere is a phishing page's best friend, so another site, a protocol-relative `//` and a shop
- * window all fall back to the panel's front.
+ * Where an invited affiliate signs in from and comes back to (IMPULSEIA-104): a page of bee-link's own,
+ * signed in or not, and never a shop's — `afiliado` is a reserved slug.
+ */
+export const AFFILIATE_INVITE_PATH = "/afiliado/convite"
+
+/**
+ * A page of the panel to go back to, or null. Only the panel's own — and the affiliate's invite, which
+ * a person with an account signs in to accept: a sign-in link that could send anywhere is a phishing
+ * page's best friend, so another site, a protocol-relative `//` and a shop window all fall back to the
+ * panel's front.
  */
 export function panelReturnOf(raw: string | null | undefined): string | null {
   if (!raw || !raw.startsWith("/") || raw.startsWith("//") || raw.includes("\\")) return null
-  return isPanelPage(raw.split(/[?#]/)[0] ?? "") ? raw : null
+  const path = raw.split(/[?#]/)[0] ?? ""
+  return isPanelPage(path) || path === AFFILIATE_INVITE_PATH ? raw : null
 }
 
 /** The sign-in page that comes back to `back` once the person is in. */

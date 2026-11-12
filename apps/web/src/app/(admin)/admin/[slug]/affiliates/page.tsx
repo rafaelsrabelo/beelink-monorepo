@@ -1,12 +1,11 @@
-// Libs
-import { redirect } from "next/navigation"
+// App
+import { AffiliatesListScreen } from "@/components/affiliates/affiliates-list-screen"
+import { getMessages } from "@/lib/locale"
 
-/**
- * The menu's "Afiliados" (IMPULSEIA-102). It leads to the programme's settings until the list of
- * affiliates arrives (AF4) and takes this address.
- */
+/** The menu's "Afiliados": the shop's affiliates (IMPULSEIA-104). */
 export default async function AffiliatesPage({ params }: PageProps<"/admin/[slug]/affiliates">) {
   const { slug } = await params
+  const { ui, locale } = await getMessages()
 
-  redirect(`/admin/${slug}/affiliates/settings` as Parameters<typeof redirect>[0])
+  return <AffiliatesListScreen slug={slug} locale={locale} messages={ui} />
 }

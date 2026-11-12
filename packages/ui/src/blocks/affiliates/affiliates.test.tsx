@@ -20,10 +20,12 @@ import { CommissionTableList } from "./commission-table-list"
 const noop = () => {}
 
 describe("AffiliatesTabs (IMPULSEIA-102)", () => {
-  it("links both sections and marks the one on screen", async () => {
-    const { container } = render(<AffiliatesTabs active="tables" settingsHref="/a/settings" tablesHref="/a/tables" />)
+  it("links the three sections and marks the one on screen", async () => {
+    const { container } = render(<AffiliatesTabs active="tables" affiliatesHref="/a" settingsHref="/a/settings" tablesHref="/a/tables" />)
 
     const nav = within(screen.getByRole("navigation", { name: "Seções de afiliados" }))
+    expect(nav.getAllByRole("link").map((link) => link.textContent)).toEqual(["Afiliados", "Configurações", "Tabelas"])
+    expect(nav.getByRole("link", { name: "Afiliados" })).toHaveAttribute("href", "/a")
     expect(nav.getByRole("link", { name: "Configurações" })).toHaveAttribute("href", "/a/settings")
     expect(nav.getByRole("link", { name: "Tabelas" })).toHaveAttribute("aria-current", "page")
     expect(nav.getByRole("link", { name: "Configurações" })).not.toHaveAttribute("aria-current")
