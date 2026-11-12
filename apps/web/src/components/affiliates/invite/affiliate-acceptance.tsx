@@ -49,7 +49,8 @@ export function AffiliateAcceptance({ token, invitation, signUp, host, onTermsCh
   const accept = useAcceptAffiliateInvite(token)
   const signUpAndAccept = useAffiliateInviteSignUp(token)
   const sending = signUp ? signUpAndAccept : accept
-  const hint = slugHintOf({ typed: value.slug, settled, check: check.data, checking: check.isFetching, host, storeSlug: invitation.store.slug }, text)
+  // `isLoading`, not `isFetching`: a name already answered is not said to be checked again while it is re-read behind the screen.
+  const hint = slugHintOf({ typed: value.slug, settled, check: check.data, checking: check.isLoading, host, storeSlug: invitation.store.slug }, text)
 
   function refused(error: Error) {
     if (!(error instanceof AffiliateInviteError)) return

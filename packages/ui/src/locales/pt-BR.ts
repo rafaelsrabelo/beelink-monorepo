@@ -3585,8 +3585,8 @@ export const ptBR: UiMessages = {
       saved: "Comissão de {name} salva.",
     },
     list: {
-      title: "Afiliados",
-      intro: "Quem vende pelo link da loja. O convite vai por e-mail, e a pessoa escolhe o próprio nome no link ao aceitar.",
+      title: "Quem vende pela loja",
+      intro: "O convite vai por e-mail, e a pessoa escolhe o próprio nome no link ao aceitar.",
       invite: "Convidar afiliado",
       filterLabel: "Filtrar por situação",
       all: "Todos",
@@ -3758,7 +3758,7 @@ export const ptBR: UiMessages = {
     termsChanged: "A loja mudou os termos enquanto você lia. Leia de novo antes de aceitar.",
     done: {
       title: "Pronto! Você vende pela {store}",
-      body: "Este é o seu link. Quem comprar por ele em até 30 dias conta para você.",
+      body: "Este é o seu link. Quem chegar à loja por ele e comprar conta para você, no prazo que a loja definiu.",
       copy: "Copiar link",
       copied: "Link copiado.",
       next: "Em breve você acompanha visitas, vendas e comissões na sua área de afiliado.",

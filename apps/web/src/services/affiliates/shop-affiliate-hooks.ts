@@ -46,14 +46,15 @@ export function useActOnAffiliate(slug: string, affiliateId: string): UseMutatio
   return useAffiliateMutation(slug, (act: AffiliateAct) => actOnAffiliate(slug, affiliateId, act))
 }
 
-/** Cancelled, the affiliate is gone: their record is dropped rather than read again into a 404. */
+/**
+ * Cancelled, the affiliate is gone. Everything of the shop's is marked stale and nothing is read at
+ * once: the record still on screen would ask for someone who no longer exists, and the list reads
+ * again when the screen it goes back to mounts.
+ */
 export function useCancelAffiliateInvite(slug: string, affiliateId: string): UseMutationResult<void, Error, void> {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: () => cancelAffiliateInvite(slug, affiliateId),
-    onSuccess: () => {
-      queryClient.removeQueries({ queryKey: affiliateKeys.person(slug, affiliateId) })
-      return queryClient.invalidateQueries({ queryKey: affiliateKeys.shop(slug) })
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: affiliateKeys.shop(slug), refetchType: "none" }),
   })
 }

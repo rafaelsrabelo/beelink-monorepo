@@ -3584,8 +3584,8 @@ export const en: UiMessages = {
       saved: "Commission of {name} saved.",
     },
     list: {
-      title: "Affiliates",
-      intro: "People who sell through the shop's link. The invite goes by e-mail, and they choose their own name in the link on accepting.",
+      title: "Who sells for the shop",
+      intro: "The invite goes by e-mail, and they choose their own name in the link on accepting.",
       invite: "Invite an affiliate",
       filterLabel: "Filter by standing",
       all: "All",
@@ -3757,7 +3757,7 @@ export const en: UiMessages = {
     termsChanged: "The shop changed its terms while you were reading. Read them again before accepting.",
     done: {
       title: "Done! You sell for {store}",
-      body: "This is your link. Whoever buys through it within 30 days counts for you.",
+      body: "This is your link. Whoever reaches the shop through it and buys counts for you, within the time the shop set.",
       copy: "Copy link",
       copied: "Link copied.",
       next: "Soon you will follow visits, sales and commissions in your affiliate area.",
