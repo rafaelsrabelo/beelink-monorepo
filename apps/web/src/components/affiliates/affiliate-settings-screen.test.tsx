@@ -47,7 +47,9 @@ describe("AffiliateSettingsScreen (IMPULSEIA-102)", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Afiliados" })).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Tabelas" })).toHaveAttribute("href", "/admin/loja/affiliates/tables")
     expect(screen.getByRole("switch", { name: "Programa ligado" })).not.toBeChecked()
-    expect(screen.getByLabelText("A visita pelo link vale por")).toHaveValue("30")
+    // A sale is the affiliate's by the address it was made at: no days to set, the rule said in a sentence.
+    expect(screen.queryByLabelText("A visita pelo link vale por")).toBeNull()
+    expect(screen.getByText(/compra pelas páginas do link dele/)).toBeInTheDocument()
     expect(calendar()).toEqual([
       "Entregues de 1 de nov. a 10 de nov. → pagar em 20 de nov.",
       "Entregues de 11 de nov. a 20 de nov. → pagar em 30 de nov.",
@@ -71,9 +73,10 @@ describe("AffiliateSettingsScreen (IMPULSEIA-102)", () => {
   it("says what to correct before asking the API, and sends nothing", async () => {
     render(<AffiliateSettingsScreen slug="loja" locale="pt-BR" messages={ui} />)
 
-    await userEvent.clear(screen.getByLabelText("A visita pelo link vale por"))
+    await userEvent.clear(screen.getByLabelText("Prazo para pagar"))
+    await userEvent.type(screen.getByLabelText("Prazo para pagar"), "61")
     await userEvent.click(screen.getByRole("button", { name: "Salvar configurações" }))
-    expect(screen.getByText("Informe de 1 a 90 dias.")).toBeInTheDocument()
+    expect(screen.getByText("Informe de 0 a 60 dias.")).toBeInTheDocument()
     expect(mutate).not.toHaveBeenCalled()
   })
 

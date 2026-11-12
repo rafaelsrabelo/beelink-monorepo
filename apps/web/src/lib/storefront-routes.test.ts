@@ -262,3 +262,25 @@ describe("a shop at its own domain (BEELINK-283)", () => {
     })
   })
 })
+
+describe("an affiliate's sub-site (the user's call of 12/11)", () => {
+  const words = { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha", account: "conta", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", cashback: "cashback", profile: "perfil", messages: "conversas" } }
+
+  it("keeps the affiliate's name in front of every address the pages draw, on the platform's host", () => {
+    const sub = storefrontRoutes({ slug: "mutante", routeWords: words, affiliate: "margarida" })
+
+    expect(sub.home).toBe("/mutante/margarida")
+    expect(sub.product("whey")).toBe("/mutante/margarida/produtos/whey")
+    expect(sub.cart()).toBe("/mutante/margarida/carrinho")
+    expect(sub.checkout()).toBe("/mutante/margarida/checkout")
+    expect(sub.category("bolsas")).toBe("/mutante/margarida/bolsas")
+  })
+
+  it("and at the shop's own domain, where the front door is the name", () => {
+    const sub = storefrontRoutes({ slug: "mutante", ownDomain: true, routeWords: words, affiliate: "margarida" })
+
+    expect(sub.home).toBe("/margarida")
+    expect(sub.cart()).toBe("/margarida/carrinho")
+    expect(storefrontRoutes({ slug: "mutante", ownDomain: true, routeWords: words }).home).toBe("/")
+  })
+})

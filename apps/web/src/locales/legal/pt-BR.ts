@@ -16,11 +16,11 @@ export interface LegalTexts {
  * keeps or shares is a new version of these texts, with a new `version`.
  */
 export const legalTexts = {
-  version: "2026-11-13",
+  version: "2026-11-14",
   terms: {
     lang: "pt-BR",
     title: "Termos de uso",
-    effective: "Vigente desde 13 de novembro de 2026",
+    effective: "Vigente desde 14 de novembro de 2026",
     intro: [
       "Estes Termos de uso são as regras para usar o bee-link. Eles explicam o que a plataforma faz, o que ela não faz e o que se espera de cada pessoa que a usa.",
       "Eles valem para três públicos: o lojista, que cria uma conta no painel para publicar a sua loja; o afiliado, que uma loja convida para vender pelo link dela e que entra com uma conta do bee-link; e o cliente, que cria uma conta numa loja para comprar dela. Quando uma regra vale só para um deles, o texto diz.",
@@ -388,7 +388,7 @@ export const legalTexts = {
   privacy: {
     lang: "pt-BR",
     title: "Política de privacidade",
-    effective: "Vigente desde 13 de novembro de 2026",
+    effective: "Vigente desde 14 de novembro de 2026",
     intro: [
       "Esta Política de privacidade explica quais dados pessoais o bee-link trata, para quê, com quem os compartilha, por quanto tempo os guarda e como você exerce os seus direitos, conforme a Lei Geral de Proteção de Dados (Lei nº 13.709/2018, a LGPD).",
       "Ela vale para os lojistas, para os afiliados das lojas, para os clientes das lojas, para quem se candidata a fazer entregas e para quem visita o site do bee-link ou uma loja sem criar conta. Ao criar uma conta, ou ao definir uma senha pelo link enviado por e-mail, ou ao enviar o cadastro de entregador, você declara que leu esta Política. Isso vale também para quem cria a conta pelo convite de afiliado de uma loja.",
@@ -529,7 +529,7 @@ export const legalTexts = {
               "o carrinho e o CEP de \"Entregar em\" ficam em cookies no seu navegador, e não no banco de dados do bee-link;",
               "a sua resposta ao aviso de cookies de uma loja que usa o Pixel da Meta também fica num cookie no seu navegador; no banco de dados do bee-link ela só é registrada junto de um pedido que você faça depois de aceitar, como explica a seção \"Pixel da Meta nas lojas\";",
               "o formulário de contato de uma loja ou site guarda o seu nome e as respostas aos campos que o dono escolheu, como e-mail e telefone, e a mensagem também é enviada ao e-mail do dono;",
-              "o link de um afiliado de uma loja grava no seu navegador o cookie bl_affiliate, só com um identificador do afiliado e o momento da chegada, para que um pedido que você fizer ali credite a comissão dele; a visita entra numa contagem diária do afiliado, que é só um número, sem nada de quem visitou;",
+              "o link de um afiliado de uma loja abre as páginas da loja no endereço dele, com o nome do afiliado, e um pedido que você fizer por essas páginas credita a comissão dele; o navegador guarda o cookie bl_affiliate, só com um identificador do afiliado e o momento da chegada, para que a sua visita entre uma vez só numa contagem diária do afiliado, que é só um número, sem nada de quem visitou;",
               "o \"Avise-me\" de um produto esgotado guarda o seu número de WhatsApp e, se você quiser, o seu nome, para que a loja possa avisar quando o produto voltar; esse aviso ainda não existe no bee-link, e hoje o pedido fica guardado sem que a loja o veja.",
             ],
           },
@@ -600,7 +600,7 @@ export const legalTexts = {
               "Execução de contrato: criar e manter contas, confirmar o e-mail, redefinir a senha, publicar a loja e localizá-la no mapa, preencher endereços pelo CEP, registrar pedidos e conversas, enviar os e-mails de andamento dos pedidos, registrar o aceite dos Termos de uso e atender o que você pede pelo formulário de contato ou pelo \"Avise-me\"; e, no programa de afiliados de uma loja, enviar o convite, criar a conta do afiliado e manter o vínculo dele com a loja, calcular e registrar as comissões e avisar o afiliado de cada venda, de cada cancelamento e de cada pagamento registrado.",
               "Procedimentos preliminares a um contrato, a pedido de quem se candidata: guardar o cadastro de quem quer fazer entregas pelo bee-link e falar com a pessoa para concluí-lo.",
               "Cumprimento de obrigação legal: guardar registros de acesso e atender ordens de autoridades, quando a lei exigir.",
-              "Legítimo interesse: proteger as contas e a plataforma, prevenir fraudes e abusos, limitar tentativas repetidas e investigar erros, sempre dentro do que se espera de um serviço como este; e, para a loja que tem um programa de afiliados, creditar ao afiliado o pedido de quem chegou pelo link dele, pelo cookie bl_affiliate, e mostrar a ele o nome de quem comprou, para que a loja cumpra o acordo que fez com o afiliado.",
+              "Legítimo interesse: proteger as contas e a plataforma, prevenir fraudes e abusos, limitar tentativas repetidas e investigar erros, sempre dentro do que se espera de um serviço como este; e, para a loja que tem um programa de afiliados, creditar ao afiliado o pedido feito pelas páginas do link dele, e mostrar a ele o nome de quem comprou, para que a loja cumpra o acordo que fez com o afiliado.",
               "Consentimento: enviar ofertas e novidades de uma loja por e-mail, só a quem aceitou; numa loja que conectou um Pixel da Meta, enviar à Meta os dados da sua navegação naquela loja e a compra que você fizer ali, pelo seu navegador ou pelo servidor do bee-link, só depois que você aceita no aviso de cookies; e, no site do bee-link, medir as visitas com o Google Analytics, que recebe os dados da sua navegação ali, só depois que você aceita no aviso de cookies da página inicial. Você pode retirar o consentimento quando quiser: o das ofertas, em \"Avisos por e-mail\", na sua conta na loja; o do pixel, no link \"Cookies\", no rodapé da loja; o da medição, no link \"Cookies\", no rodapé da página inicial do bee-link.",
             ],
           },
@@ -775,8 +775,7 @@ export const legalTexts = {
               "bl_site_consent: a sua resposta, aceitar ou recusar, ao aviso de cookies do site do bee-link, que pergunta sobre o Google Analytics; vale para a página inicial e para as telas em que o lojista entra e cria a conta, nunca como resposta ao aviso de uma loja, e dura 180 dias;",
               "bl_purchases: numa loja que usa o Pixel da Meta, e só depois que você aceita, os códigos dos seus últimos pedidos já informados à Meta, para que o mesmo pedido não seja informado duas vezes; vale só para aquela loja e dura 7 dias, renovados a cada pedido informado;",
               "bl_origin: a campanha do link pelo qual você chegou a uma loja, isto é, os parâmetros utm_source, utm_medium, utm_campaign, utm_content e utm_term do endereço, para que o pedido que você fizer ali registre de qual campanha veio; e, numa loja que usa o Pixel da Meta, só depois que você aceita, o identificador do clique no anúncio (fbclid) com que você chegou; vale só para aquela loja e dura 30 dias a partir da chegada;",
-              "bl_affiliate: numa loja com programa de afiliados, o afiliado pelo link de quem você chegou, isto é, um identificador do afiliado e o momento da chegada, e nada sobre você, para que o pedido que você fizer ali credite a comissão dele; não depende do aviso de cookies, porque serve ao acordo entre a loja e o afiliado, e não a publicidade; só o servidor do bee-link o lê, ele vale só para aquela loja e dura os dias de indicação que ela definiu, de 1 a 90, ou 30 se ela não os mudou, contados da chegada; o link de outro afiliado o substitui;",
-              "bl_affiliate_hidden: numa loja em que você fechou a faixa que diz por indicação de quem você chegou, o identificador desse afiliado, para que a faixa não volte; dura até você fechar o navegador;",
+              "bl_affiliate: numa loja com programa de afiliados, quando você abre as páginas do link de um afiliado, um identificador dele e o momento da chegada, e nada sobre você, para que a sua visita conte uma vez só na contagem do afiliado; não depende do aviso de cookies, porque serve ao acordo entre a loja e o afiliado, e não a publicidade; só o servidor do bee-link o lê, ele vale só para aquela loja e dura até você fechar o navegador; não é ele que credita a comissão, e sim o endereço do link pelo qual você comprou;",
               "bl_popup: numa loja que mostra um aviso de primeira compra (pop-up ou faixa), que você já fechou esse aviso ou apertou o botão dele, para que ele não apareça de novo; guarda só um número que identifica o aviso fechado, e nada sobre você; vale só para aquela loja e dura 30 dias;",
               "bl_prefs: as preferências de exibição do painel, como o menu recolhido; dura 1 ano;",
               "bl_locale: o idioma escolhido; dura 1 ano.",

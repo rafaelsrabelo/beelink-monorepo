@@ -91,6 +91,12 @@ function ownBackOf(slug: string, value: string): string {
  */
 export interface StorefrontShop extends ShopAddress {
   routeWords: StorefrontRouteWords
+  /**
+   * The affiliate whose sub-site the page is under (the user's call of 12/11): every address drawn
+   * keeps their name in front — `/<shop>/<name>/…`, `/<name>/…` at the shop's own domain. Only the
+   * pages' addresses: a cookie's path, and so the cart, stays the shop's (`shopHomeOf`).
+   */
+  affiliate?: string | null
 }
 
 /**
@@ -224,11 +230,12 @@ export function toggledOption(filters: ListingFilters, option: string): ListingF
  */
 export function storefrontRoutes(shop: StorefrontShop) {
   const { routeWords } = shop
-  // `/<slug>` on the platform's host and nothing at the shop's own domain, where the front door is `/`.
-  const base = shopBaseOf(shop)
+  // `/<slug>` on the platform's host and nothing at the shop's own domain, where the front door is `/`;
+  // under an affiliate's sub-site, their name after it.
+  const base = `${shopBaseOf(shop)}${shop.affiliate ? `/${shop.affiliate}` : ""}`
 
   return {
-    home: shopHomeOf(shop),
+    home: base || shopHomeOf(shop),
 
     /**
      * The whole catalogue, in a grid. The home shows a selection and links here. Every filter is

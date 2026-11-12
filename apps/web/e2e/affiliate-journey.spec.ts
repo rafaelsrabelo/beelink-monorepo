@@ -120,34 +120,48 @@ test.describe("a shop's affiliate, in the browser", () => {
 
     const visitor = await (await browser.newContext()).newPage()
 
-    await test.step("a visitor who follows the link sees whose recommendation it is where the link is, and on the order", async () => {
+    await test.step("the shop's own address, in a fresh browser, is the shop's alone", async () => {
+      await visitor.goto(`/${slug}`)
+      await expect(visitor).toHaveURL(new RegExp(`/${slug}$`))
+      await expect(visitor.getByRole("link", { name: /Whey/ }).first()).toBeVisible()
+      await expect(visitor.getByRole("region", { name: "Indicação" })).toHaveCount(0)
+    })
+
+    await test.step("the link is Maria's sub-site: every page keeps her name, the band and, in the cart, the line", async () => {
       await visitor.goto(`/${slug}/maria`)
-      // The link keeps its own address: the shop's home is drawn there, with the name in it.
       await expect(visitor).toHaveURL(new RegExp(`/${slug}/maria$`))
       const band = visitor.getByRole("region", { name: "Indicação" })
       await expect(band.getByText("Você está na loja de")).toBeVisible()
       await expect(band.getByText("Maria Souza")).toBeVisible()
       await expect(band.getByText("Parceria oficial")).toBeVisible()
-      await expect(visitor.getByRole("button", { name: "Fechar indicação" })).toHaveCount(0)
-      await expect.poll(async () => (await visitor.context().cookies()).some((cookie) => cookie.name === "bl_affiliate")).toBe(true)
 
-      // Straight to the shop: the referral still holds, and no band says so.
-      await visitor.goto(`/${slug}`)
-      await expect(visitor.getByRole("link", { name: /Whey/ }).first()).toBeVisible()
-      await expect(visitor.getByRole("region", { name: "Indicação" })).toHaveCount(0)
-      await visitor.goto(`/${slug}/produtos/${productSlug}`)
-      await expect(visitor.getByRole("button", { name: "Adicionar ao carrinho" }).first()).toBeVisible()
-      await expect(visitor.getByRole("region", { name: "Indicação" })).toHaveCount(0)
-
-      // A page the link names her on wears it again.
-      await visitor.goto(`/${slug}/produtos/${productSlug}?afiliado=maria`)
+      // A product reached from the sub-site stays in it: its card's address carries the name.
+      await visitor.locator(`a[href="/${slug}/maria/produtos/${productSlug}"]`).first().click()
+      await expect(visitor).toHaveURL(new RegExp(`/${slug}/maria/produtos/${productSlug}$`))
       await expect(visitor.getByRole("region", { name: "Indicação" }).getByText("Maria Souza")).toBeVisible()
       await visitor.getByRole("button", { name: "Adicionar ao carrinho" }).first().click()
 
-      // The order says whose it is whenever the referral holds.
-      await visitor.goto(`/${slug}/carrinho`)
+      // The logo leads home — her home.
+      await visitor.locator("header").getByRole("link", { name: "Loja Afiliados" }).first().click()
+      await expect(visitor).toHaveURL(new RegExp(`/${slug}/maria$`))
+
+      await visitor.goto(`/${slug}/maria/carrinho`)
+      await expect(visitor.getByRole("region", { name: "Indicação" }).getByText("Maria Souza")).toBeVisible()
       await expect(visitor.getByText(/^Indicação de Maria/)).toBeVisible()
       await expect(visitor.getByText(/^Maria( Souza)? verá seu nome neste pedido\.$/)).toBeVisible()
+    })
+
+    await test.step("outside her name the same browser is at the shop alone — the same cart, nobody's", async () => {
+      await visitor.goto(`/${slug}/carrinho`)
+      await expect(visitor.getByRole("button", { name: "Finalizar compra" }).or(visitor.getByRole("link", { name: "Finalizar compra" })).first()).toBeVisible()
+      await expect(visitor.getByRole("region", { name: "Indicação" })).toHaveCount(0)
+      await expect(visitor.getByText(/^Indicação de/)).toHaveCount(0)
+    })
+
+    await test.step("`?afiliado=` on any page leads into her sub-site", async () => {
+      await visitor.goto(`/${slug}/produtos/${productSlug}?afiliado=maria&utm_source=instagram`)
+      await expect(visitor).toHaveURL(new RegExp(`/${slug}/maria/produtos/${productSlug}\\?utm_source=instagram$`))
+      await expect(visitor.getByRole("region", { name: "Indicação" }).getByText("Maria Souza")).toBeVisible()
     })
 
     await test.step("Maria finds the shop, her link and the visit in her own area", async () => {

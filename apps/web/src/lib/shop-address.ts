@@ -20,6 +20,14 @@ export interface ShopAddress {
 export const SHOP_DOMAIN_HEADER = "x-bl-shop-domain"
 
 /**
+ * The request header the proxy stamps a page with when it was asked under an affiliate's name — the
+ * affiliate's sub-site, `/<shop>/<name>/…` or `/<name>/…` at the shop's own domain (the user's call
+ * of 12/11): the name, as the shop keeps it, of an affiliate the shop credits now. Only the proxy
+ * writes it, after asking the API; a request that arrives carrying one is refused there.
+ */
+export const AFFILIATE_HEADER = "x-bl-affiliate"
+
+/**
  * The shop as this request reached it. The stamp counts only for the shop it names: at one shop's
  * domain no other shop is at the root.
  */

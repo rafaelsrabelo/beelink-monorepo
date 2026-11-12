@@ -7,7 +7,7 @@ import type { CustomerSignInOptions, PublicLanding, StorefrontOffers, PublicProd
 // App
 import { callPublicApi } from "./public-api"
 import { catalogTag, offersTag, storeTag } from "./revalidate"
-import { shopAddressOf } from "./shop-address"
+import { AFFILIATE_HEADER, shopAddressOf } from "./shop-address"
 
 /**
  * The reads every storefront page shares.
@@ -28,6 +28,11 @@ import { shopAddressOf } from "./shop-address"
  */
 export interface ServedShop extends PublicStore {
   ownDomain: boolean
+  /**
+   * The affiliate whose sub-site this request is under (the user's call of 12/11) — the name the
+   * proxy stamped after the API said they credit — or null on the shop's own pages.
+   */
+  affiliate?: string | null
 }
 
 /**
@@ -47,7 +52,8 @@ export async function shopAt(slug: string): Promise<ServedShop | null> {
   if (!response.ok) return null
 
   const store = (await response.json()) as PublicStore
-  return { ...store, ownDomain: shopAddressOf(await headers(), store.slug).ownDomain === true }
+  const asked = await headers()
+  return { ...store, ownDomain: shopAddressOf(asked, store.slug).ownDomain === true, affiliate: asked.get(AFFILIATE_HEADER) || null }
 }
 
 /** The checkout of before anything was charged online: the shop's own labels, settled with it. */

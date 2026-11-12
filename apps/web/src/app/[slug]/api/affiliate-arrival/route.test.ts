@@ -53,25 +53,32 @@ describe("a visitor arriving by an affiliate's link (IMPULSEIA-105)", () => {
     expect(new Headers(init?.headers).get("x-forwarded-for")).toBe("203.0.113.9")
 
     const kept = response.cookies.get("bl_affiliate")!
-    expect(kept).toMatchObject({ value: `${ID}.${Date.UTC(2026, 10, 12, 15)}`, path: "/lessari", maxAge: 30 * 24 * 60 * 60, httpOnly: true, sameSite: "lax" })
-    // A new arrival shows the strip again, even one this browser had closed.
+    expect(kept).toMatchObject({ value: `s1.${ID}.${Date.UTC(2026, 10, 12, 15)}`, path: "/lessari", httpOnly: true, sameSite: "lax" })
+    // The browser's session: an order counts only in the visit that came by the link.
+    expect(kept.maxAge).toBeUndefined()
+    expect(kept.expires).toBeUndefined()
+    // Whatever an old closed strip left is cleared.
     expect(response.cookies.get("bl_affiliate_hidden")).toMatchObject({ value: "", maxAge: 0, path: "/lessari" })
   })
 
-  it("counts a page read again as the same visit — the same affiliate, just now — and keeps its instant", async () => {
+  it("counts the pages of one browser session as one visit — the same affiliate — and keeps its instant", async () => {
     vi.useFakeTimers({ now: Date.UTC(2026, 10, 12, 15), toFake: ["Date"] })
     const fetched = api()
     const earlier = Date.UTC(2026, 10, 12, 14, 45)
 
-    const again = await POST(request({ slug: "joao" }, { cookie: `bl_affiliate=${ID}.${earlier}` }), shop())
+    const again = await POST(request({ slug: "joao" }, { cookie: `bl_affiliate=s1.${ID}.${earlier}` }), shop())
     expect(again.status).toBe(200)
     expect(visits(fetched)).toEqual([])
-    expect(again.cookies.get("bl_affiliate")?.value).toBe(`${ID}.${earlier}`)
+    expect(again.cookies.get("bl_affiliate")?.value).toBe(`s1.${ID}.${earlier}`)
 
-    // Half an hour on, or another affiliate's cookie, is a visit of its own.
-    await POST(request({ slug: "joao" }, { cookie: `bl_affiliate=${ID}.${Date.UTC(2026, 10, 12, 14, 30)}` }), shop())
-    await POST(request({ slug: "joao" }, { cookie: `bl_affiliate=0199a1b2-0000-7000-8000-000000000002.${earlier}` }), shop())
+    // The same affiliate hours on is the same browser session — still one visit; another affiliate's
+    // cookie, or a value of the shape it had before, is a visit of its own.
+    await POST(request({ slug: "joao" }, { cookie: `bl_affiliate=s1.${ID}.${Date.UTC(2026, 10, 12, 9)}` }), shop())
+    expect(visits(fetched)).toEqual([])
+    await POST(request({ slug: "joao" }, { cookie: `bl_affiliate=s1.0199a1b2-0000-7000-8000-000000000002.${earlier}` }), shop())
+    const replaced = await POST(request({ slug: "joao" }, { cookie: `bl_affiliate=${ID}.${earlier}` }), shop())
     expect(visits(fetched)).toHaveLength(2)
+    expect(replaced.cookies.get("bl_affiliate")?.value).toBe(`s1.${ID}.${Date.UTC(2026, 10, 12, 15)}`)
   })
 
   it("keeps it at the root of the shop's own domain", async () => {

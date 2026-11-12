@@ -3534,8 +3534,7 @@ export const en: UiMessages = {
       title: "Affiliate programme",
       enabled: "Programme on",
       enabledHelp: "Off, no affiliate link credits a new order. What was already credited still stands.",
-      attributionDays: "A visit through the link counts for",
-      attributionDaysHelp: "An order placed within this time of the visit is the affiliate's. If the person opens another affiliate's link, the last one counts.",
+      attribution: "A sale counts for the affiliate when the customer buys through the pages of their link: the shop's address with the affiliate's name, like yourshop.com/margarida. Outside that address, the shop is yours alone.",
       payoutDelay: "Time to pay",
       payoutDelayHelp: "Days after each period closes. A commission falls in the period of the day its order was delivered.",
       days: "days",
@@ -3814,7 +3813,6 @@ export const en: UiMessages = {
       table: "Choose a table.",
     },
     issues: {
-      attributionDays: "Enter 1 to 90 days.",
       payoutDelayDays: "Enter 0 to 60 days.",
       termsText: "The terms may have up to 10,000 characters.",
       name: "Enter a name of up to 60 characters.",

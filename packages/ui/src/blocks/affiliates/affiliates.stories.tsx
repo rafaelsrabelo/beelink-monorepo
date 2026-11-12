@@ -39,11 +39,11 @@ export const ConfiguracoesRecusadas: Story = {
   render: () => (
     <div className="max-w-4xl">
       <AffiliateSettingsForm
-        value={{ ...settings, attributionDays: "0", payoutDelayDays: "90" }}
+        value={{ ...settings, payoutDelayDays: "90" }}
         onChange={noop}
         onSubmit={noop}
         calendar={[]}
-        issues={{ attributionDays: "Informe de 1 a 90 dias.", payoutDelayDays: "Informe de 0 a 60 dias." }}
+        issues={{ payoutDelayDays: "Informe de 0 a 60 dias." }}
         error="Alguma configuração está fora do permitido. Confira os campos."
       />
     </div>

@@ -348,9 +348,9 @@ describe("bee-link's legal texts (BEELINK-171)", () => {
 
     // BEELINK-329's version (2026-10-15) said the courier form no longer asks for the city; that sentence stays, checked above.
     it("is the version that tells of affiliates", () => {
-      expect(legalTexts.version).toBe("2026-11-13")
-      expect(legalTexts.privacy.effective).toBe("Vigente desde 13 de novembro de 2026")
-      expect(legalTexts.terms.effective).toBe("Vigente desde 13 de novembro de 2026")
+      expect(legalTexts.version).toBe("2026-11-14")
+      expect(legalTexts.privacy.effective).toBe("Vigente desde 14 de novembro de 2026")
+      expect(legalTexts.terms.effective).toBe("Vigente desde 14 de novembro de 2026")
     })
 
     it("gives the affiliates' data a section of its own, after the shopkeepers'", () => {
@@ -386,18 +386,18 @@ describe("bee-link's legal texts (BEELINK-171)", () => {
       expect(policy("Com quem os dados são compartilhados")).toMatch(/o afiliado a quem um pedido foi creditado recebe, pelo bee-link, o nome de quem comprou[\s\S]*nunca o e-mail, o celular, o CPF ou o endereço[\s\S]*é um parceiro da loja, que decide mostrar esses dados a ele e responde por isso/)
     })
 
-    it("names both cookies of the link: what each holds, that the first waits for no consent, and how long each lasts", () => {
+    it("names the link's cookie: what it holds, that it waits for no consent, and that it lasts the browser's session", () => {
       const cookies = policy("Cookies")
 
-      expect(cookies).toMatch(/bl_affiliate: numa loja com programa de afiliados, o afiliado pelo link de quem você chegou, isto é, um identificador do afiliado e o momento da chegada, e nada sobre você/)
+      expect(cookies).toMatch(/bl_affiliate: numa loja com programa de afiliados, quando você abre as páginas do link de um afiliado, um identificador dele e o momento da chegada, e nada sobre você/)
       expect(cookies).toMatch(/não depende do aviso de cookies, porque serve ao acordo entre a loja e o afiliado, e não a publicidade/)
-      expect(cookies).toMatch(/dura os dias de indicação que ela definiu, de 1 a 90, ou 30 se ela não os mudou, contados da chegada; o link de outro afiliado o substitui/)
-      expect(cookies).toMatch(/bl_affiliate_hidden: numa loja em que você fechou a faixa[\s\S]*dura até você fechar o navegador/)
-      expect(policy("Dados de quem visita uma loja sem conta")).toMatch(/o link de um afiliado de uma loja grava no seu navegador o cookie bl_affiliate/)
+      expect(cookies).toMatch(/dura até você fechar o navegador; não é ele que credita a comissão, e sim o endereço do link pelo qual você comprou/)
+      expect(cookies).not.toMatch(/bl_affiliate_hidden/)
+      expect(policy("Dados de quem visita uma loja sem conta")).toMatch(/o link de um afiliado de uma loja abre as páginas da loja no endereço dele, com o nome do afiliado, e um pedido que você fizer por essas páginas credita a comissão dele/)
     })
 
     it("says on what basis, for how long, and how an affiliate asks", () => {
-      expect(policy("Para que os dados são usados")).toMatch(/creditar ao afiliado o pedido de quem chegou pelo link dele, pelo cookie bl_affiliate, e mostrar a ele o nome de quem comprou, para que a loja cumpra o acordo que fez com o afiliado/)
+      expect(policy("Para que os dados são usados")).toMatch(/creditar ao afiliado o pedido feito pelas páginas do link dele, e mostrar a ele o nome de quem comprou, para que a loja cumpra o acordo que fez com o afiliado/)
       expect(policy("Por quanto tempo os dados são guardados")).toMatch(/A contagem diária das visitas pelo link de um afiliado é guardada por 13 meses e depois apagada/)
       expect(policy("Como exercer os seus direitos")).toMatch(/Se você é afiliado de uma loja, os pedidos sobre a sua conta são feitos ao bee-link[\s\S]*à loja, que é a controladora deles/)
       expect(policy("Segurança")).toMatch(/links de convite de afiliado que valem uma única vez, por 7 dias/)

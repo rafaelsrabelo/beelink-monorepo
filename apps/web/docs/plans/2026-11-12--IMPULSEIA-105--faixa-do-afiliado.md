@@ -83,3 +83,24 @@ link da Margarida, a faixa continuava dizendo "Comprando pela indicação de MAR
   Nenhum cookie novo — a política publicada já nomeia os dois.
 - **A cor é a primária da loja** (`shop-primary`, com o texto legível sobre ela); o selo ganha um
   fundo leve do mesmo texto, como destaque, legível numa primária escura e numa clara.
+
+## Adendo — a indicação vale só na visita do link (12/11)
+
+Rafael, testando: navegou pela Mutante sem o link, foi ao carrinho e viu "Indicação de…", de um clique
+de antes. Decisão dele: **um pedido conta para o afiliado só quando o cliente chegou pelo link na
+mesma visita**, até fechar o navegador.
+
+- O `bl_affiliate` passa a ser **cookie de sessão** (sem `Max-Age`). Uma visita direta depois, noutra
+  sessão, não carrega indicação: nem faixa, nem linha no carrinho e no checkout, e o pedido não é de
+  ninguém.
+- **O valor ganhou forma nova**, `s1.<id>.<ms>`: um valor gravado antes, quando o cookie durava os
+  dias do programa, é lido como nenhuma visita, e o handler do pedido o apaga quando o vê. O nome do
+  cookie não muda (a política o nomeia).
+- **Os "dias de atribuição" saem da tela de Configurações**, que passa a dizer a regra numa frase. A
+  coluna e o campo da API ficam como estão, sem migração; o formulário devolve o valor guardado ao
+  salvar, e o pedido continua conferindo a visita na API como antes.
+- **Política de privacidade:** a `2026-11-13` publicada dizia que o `bl_affiliate` "dura os dias de
+  indicação que ela definiu, de 1 a 90, ou 30". Uma duração menor é uma **versão nova**, nunca uma
+  edição da publicada: a `2026-11-14` diz que ele dura até fechar o navegador e tira o
+  `bl_affiliate_hidden` da lista, que não é mais gravado. Rascunho para revisão jurídica, como as
+  anteriores.

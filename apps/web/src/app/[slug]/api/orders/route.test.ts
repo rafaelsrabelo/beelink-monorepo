@@ -6,7 +6,15 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import { POST } from "./route"
 import { encodeOrigin } from "@/lib/origin-cookie"
 
-const mocks = vi.hoisted(() => ({ revalidateOffers: vi.fn() }))
+const mocks = vi.hoisted(() => ({
+  revalidateOffers: vi.fn(),
+  // Whose sub-site the order's handler was asked under: the proxy's stamp, resolved by the shop's kept read — its own suite.
+  orderAffiliateVisitAt: vi.fn(async (_slug: string, headers: Pick<Headers, "get">, now: number) =>
+    headers.get("x-bl-affiliate") === "joao" ? { affiliateId: "0199a1b2-0000-7000-8000-00000000000a", visitedAt: new Date(now).toISOString() } : null,
+  ),
+}))
+vi.mock("server-only", () => ({}))
+vi.mock("@/lib/affiliate-link", () => ({ orderAffiliateVisitAt: mocks.orderAffiliateVisitAt }))
 // The shop's own read says where the request arrived, from its headers (BEELINK-283): none here is the platform's host.
 vi.mock("next/headers", () => ({ headers: async () => new Headers() }))
 // The tags stay real: the shop's own read, which the origin asks for, is kept under them.
@@ -23,8 +31,8 @@ const RENEWED = {
 const cart = { items: [{ variantId: "v1", quantity: 2 }], fulfillment: "DELIVERY", paymentMethod: "PIX" }
 const placed = { number: 12, status: "RECEIVED", items: [], totalCents: 17980 }
 
-function post(init: { origin?: string | null; cookie?: string; contentType?: string; body?: unknown; referer?: string } = {}, slug = "loja") {
-  const headers = new Headers({ "content-type": init.contentType ?? "application/json", "user-agent": "Mozilla/5.0 (teste)" })
+function post(init: { origin?: string | null; cookie?: string; contentType?: string; body?: unknown; referer?: string; headers?: Record<string, string> } = {}, slug = "loja") {
+  const headers = new Headers({ "content-type": init.contentType ?? "application/json", "user-agent": "Mozilla/5.0 (teste)", ...init.headers })
   if (init.origin !== null) headers.set("origin", init.origin ?? "http://localhost:3000")
   if (init.cookie) headers.set("cookie", init.cookie)
   if (init.referer) headers.set("referer", init.referer)
@@ -194,20 +202,26 @@ describe("the cart's order — where its buyer came from (BEELINK-275)", () => {
     expect(bodyOf(vi.mocked(fetch).mock.calls.at(-1))).toEqual({ ...cart, origin: campaign })
   })
 
-  it("sends the affiliate's link the visitor followed, from the shop's cookie alone", async () => {
+  it("credits the affiliate whose sub-site the order was placed under, and nobody for a cookie alone", async () => {
     const calls = api(null)
-    const visitedAt = Date.now() - 86_400_000
     const affiliateId = "0199a1b2-0000-7000-8000-00000000000a"
     const forged = { ...cart, affiliateVisit: { affiliateId: "0199a1b2-0000-7000-8000-0000000000ff", visitedAt: new Date().toISOString() } }
 
-    await post({ cookie: `${SESSION}; bl_affiliate=${affiliateId}.${visitedAt}`, body: forged })
-    expect(bodyOf(calls.orderCall())).toEqual({ ...cart, affiliateVisit: { affiliateId, visitedAt: new Date(visitedAt).toISOString() } })
+    await post({ cookie: SESSION, body: forged, headers: { "x-bl-affiliate": "joao" } })
+    expect(bodyOf(calls.orderCall())).toMatchObject({ ...cart, affiliateVisit: { affiliateId } })
 
-    // A cookie that is not one, and no cookie, send none — and what the page named is dropped either way.
-    for (const cookie of [`${SESSION}; bl_affiliate=forjado`, SESSION]) {
+    // Outside the sub-site the order is nobody's, whatever the browser holds — and what the page named is dropped.
+    for (const cookie of [`${SESSION}; bl_affiliate=s1.${affiliateId}.${Date.now()}`, SESSION]) {
       await post({ cookie, body: forged })
       expect(bodyOf(vi.mocked(fetch).mock.calls.at(-1)), cookie).toEqual(cart)
     }
+  })
+
+  it("clears a referral kept from when it lasted the programme's days", async () => {
+    api(null)
+    const response = await post({ cookie: `${SESSION}; bl_affiliate=0199a1b2-0000-7000-8000-00000000000a.${Date.now()}` })
+
+    expect(response.cookies.get("bl_affiliate")).toMatchObject({ value: "", maxAge: 0, path: "/loja" })
   })
 
   it("places an order with no origin for a visitor who came by none", async () => {

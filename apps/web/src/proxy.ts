@@ -12,7 +12,9 @@ import { isAuthPath, isFilePath, isPanelPath, panelShopOf, shopPageOf, wasHanded
 import { refreshSession } from "@/lib/refresh-session"
 import { serverEnv } from "@/lib/server-env"
 import { ACCESS_COOKIE, REFRESH_COOKIE, clearSessionCookies, setSessionCookies } from "@/lib/session-cookies"
-import { SHOP_DOMAIN_HEADER, type ShopAddress } from "@/lib/shop-address"
+import { AFFILIATE_KEY } from "@/lib/affiliate-cookie"
+import { affiliateSegmentAt } from "@/lib/affiliate-segments"
+import { AFFILIATE_HEADER, SHOP_DOMAIN_HEADER, shopBaseOf, type ShopAddress } from "@/lib/shop-address"
 import { hostNameOf, shopHosts } from "@/lib/shop-hosts"
 import { shopMoves } from "@/lib/shop-moves"
 import { hostAskedOf, shopOriginOf } from "@/lib/shop-origin"
@@ -158,6 +160,11 @@ async function onShopDomain(request: NextRequest, slug: string): Promise<NextRes
     request.headers.set(SHOP_DOMAIN_HEADER, slug)
     return keepShopperSignedIn(request, shop, () => NextResponse.next({ request: { headers: request.headers } }))
   }
+  // A handler asked from an affiliate's sub-site keeps its address too, with the name in front of it.
+  if (pathname.startsWith(`${under}/`)) {
+    const handler = await affiliateHandler(request, shop, pathname.slice(under.length))
+    if (handler) return handler
+  }
 
   if (isFilePath(pathname) || pathname === LEGAL_ROUTES.terms || pathname === LEGAL_ROUTES.privacy) return NextResponse.next()
 
@@ -166,12 +173,75 @@ async function onShopDomain(request: NextRequest, slug: string): Promise<NextRes
     return NextResponse.redirect(`${publicOriginOf(request)}${pathname.slice(under.length) || "/"}${search}`, 308)
   }
 
+  const subsite = await affiliateSubsite(request, shop, pathname)
+  if (subsite) return subsite
+
   // From `nextUrl`, the server's own address: a rewrite is internal, and one to the visitor's origin
   // would be fetched from outside.
   const page = request.nextUrl.clone()
   page.pathname = pathname === "/" ? under : `${under}${pathname}`
   request.headers.set(SHOP_DOMAIN_HEADER, slug)
   return keepShopperSignedIn(request, shop, () => NextResponse.rewrite(page, { request: { headers: request.headers } }))
+}
+
+/** The first segment of an address past the shop's base, and the address without it. */
+function firstSegmentOf(rest: string): { segment: string; inner: string } | null {
+  const [, segment = "", ...more] = rest.split("/")
+  return segment ? { segment, inner: more.length ? `/${more.join("/")}` : "" } : null
+}
+
+/**
+ * A shop's handler asked under an affiliate's name — `/<shop>/<name>/api/…`, which is how a page of
+ * the sub-site places an order. Served as the shop's handler, stamped with the name while the
+ * affiliate credits; never redirected, so a name that credits nobody is the handler with no stamp —
+ * an order credited to nobody. Null for every other address.
+ */
+async function affiliateHandler(request: NextRequest, shop: ShopAddress, rest: string): Promise<NextResponse | null> {
+  const first = firstSegmentOf(rest)
+  if (!first || !(first.inner === "/api" || first.inner.startsWith("/api/"))) return null
+
+  const found = await affiliateSegmentAt(shop.slug, first.segment)
+  if (found.kind === "none") return null
+
+  const handler = request.nextUrl.clone()
+  handler.pathname = `/${shop.slug}${first.inner}`
+  if (found.kind === "credits") request.headers.set(AFFILIATE_HEADER, found.name)
+  if (shop.ownDomain) request.headers.set(SHOP_DOMAIN_HEADER, shop.slug)
+  return keepShopperSignedIn(request, shop, () => NextResponse.rewrite(handler, { request: { headers: request.headers } }))
+}
+
+/**
+ * An affiliate's sub-site (the user's call of 12/11): every page of the shop under the affiliate's
+ * name — `/<shop>/<name>/…`, `/<name>/…` at the shop's own domain — is the shop's own page, stamped
+ * with the name, so each address it draws keeps the name, the band says whose it is and an order
+ * placed there is theirs. A name that credits nobody now leads to the same page without it; a page
+ * asked with `?afiliado=<name>` of an affiliate who credits leads into the sub-site. Null for an
+ * address that is the shop's alone: the first segment is nobody's name.
+ */
+async function affiliateSubsite(request: NextRequest, shop: ShopAddress, rest: string): Promise<NextResponse | null> {
+  const { searchParams } = request.nextUrl
+  const first = firstSegmentOf(rest)
+  const found = first ? await affiliateSegmentAt(shop.slug, first.segment) : null
+  const base = shopBaseOf(shop)
+
+  if (first && found && found.kind !== "none") {
+    if (found.kind === "idle") return NextResponse.redirect(`${publicOriginOf(request)}${base}${first.inner || (base ? "" : "/")}${request.nextUrl.search}`, 307)
+
+    const page = request.nextUrl.clone()
+    page.pathname = `/${shop.slug}${first.inner}`
+    request.headers.set(AFFILIATE_HEADER, found.name)
+    if (shop.ownDomain) request.headers.set(SHOP_DOMAIN_HEADER, shop.slug)
+    return keepShopperSignedIn(request, shop, () => NextResponse.rewrite(page, { request: { headers: request.headers } }))
+  }
+
+  const asked = searchParams.get(AFFILIATE_KEY)
+  const named = asked ? await affiliateSegmentAt(shop.slug, asked) : null
+  if (named?.kind !== "credits") return null
+
+  const kept = new URLSearchParams(searchParams)
+  kept.delete(AFFILIATE_KEY)
+  const query = kept.toString()
+  return NextResponse.redirect(`${publicOriginOf(request)}${base}/${named.name}${rest === "/" ? "" : rest}${query ? `?${query}` : ""}`, 307)
 }
 
 /**
@@ -194,6 +264,11 @@ async function onPlatform(request: NextRequest): Promise<NextResponse> {
   const domain = page ? (await shopHosts()).hostOf(moved ?? page.slug) : null
   if (page && domain) return NextResponse.redirect(`${shopOriginOf(request, domain)}${page.rest}${search}`, 308)
   if (page && moved) return NextResponse.redirect(new URL(`/${moved}${page.rest === "/" ? "" : page.rest}${search}`, request.url), 308)
+  if (page) {
+    const shop = { slug: page.slug } satisfies ShopAddress
+    const subsite = (await affiliateHandler(request, shop, page.rest)) ?? (await affiliateSubsite(request, shop, page.rest))
+    if (subsite) return subsite
+  }
 
   // The panel of a page that changed its address, at the old one: the same page, at the new one.
   const panel = panelShopOf(pathname)
@@ -254,8 +329,10 @@ async function onPlatform(request: NextRequest): Promise<NextResponse> {
 export async function proxy(request: NextRequest): Promise<NextResponse> {
   // Only this proxy writes the stamp, and what reads it trusts it. No browser sends one: a request
   // that arrives with it is claiming to have come by a shop's own domain.
-  if (request.headers.has(SHOP_DOMAIN_HEADER)) {
-    return NextResponse.json({ statusCode: 400, errorCode: "BAD_REQUEST", message: `${SHOP_DOMAIN_HEADER} is not a header a request may carry` }, { status: 400 })
+  for (const stamp of [SHOP_DOMAIN_HEADER, AFFILIATE_HEADER]) {
+    if (request.headers.has(stamp)) {
+      return NextResponse.json({ statusCode: 400, errorCode: "BAD_REQUEST", message: `${stamp} is not a header a request may carry` }, { status: 400 })
+    }
   }
 
   const host = hostNameOf(hostAskedOf(request))

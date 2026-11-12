@@ -134,7 +134,14 @@ describe("shopAt — the shop, its showcases' cards included", () => {
     it("is the platform's host with no stamp on the request", async () => {
       stubApi(() => ({ slug: "lessari", name: "Lessari" }))
 
-      expect(await shopAt("lessari")).toEqual({ slug: "lessari", name: "Lessari", ownDomain: false })
+      expect(await shopAt("lessari")).toEqual({ slug: "lessari", name: "Lessari", ownDomain: false, affiliate: null })
+    })
+
+    it("is under an affiliate's sub-site when the proxy stamped the request with their name (the user's call of 12/11)", async () => {
+      stubApi(() => ({ slug: "lessari" }))
+      incoming.current = new Headers({ "x-bl-affiliate": "margarida" })
+
+      expect((await shopAt("lessari"))?.affiliate).toBe("margarida")
     })
 
     it("is the shop's own domain when the proxy stamped the request with this shop", async () => {

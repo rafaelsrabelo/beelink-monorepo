@@ -30,6 +30,15 @@ vi.mock("@/lib/shop-moves", async (original) => ({
   },
 }))
 
+/** Whose sub-site a shop's first segment is (the user's call of 12/11): nobody's unless a test says so. Its copy has its own suite. */
+const subsites = vi.hoisted(() => ({ names: {} as Record<string, "credits" | "idle"> }))
+vi.mock("@/lib/affiliate-segments", () => ({
+  affiliateSegmentAt: async (shop: string, segment: string) => {
+    const kind = subsites.names[`${shop}/${segment.toLowerCase()}`]
+    return kind === "credits" ? { kind, name: segment.toLowerCase() } : kind === "idle" ? { kind } : { kind: "none" }
+  },
+}))
+
 // App
 import { config, proxy } from "./proxy"
 import { wasHandedOver } from "@/lib/proxy-scope"
@@ -57,6 +66,7 @@ function request(pathname: string, cookie?: string): NextRequest {
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  subsites.names = {}
   table.domains = {}
   table.asked = 0
   moves.left = {}
@@ -910,5 +920,84 @@ describe("WEB_DOMAIN, the platform's own host", () => {
     await unnamed(arriving("localhost:3000", "/api/stores/loja"))
 
     expect(table.asked).toBe(2)
+  })
+})
+
+describe("an affiliate's sub-site (the user's call of 12/11)", () => {
+  const HOST = "minhaloja.com.br"
+  const own = (pathname: string, init: Parameters<typeof arriving>[2] = {}) => arriving(HOST, pathname, init)
+  const affiliateOf = (response: Response) => response.headers.get("x-middleware-request-x-bl-affiliate")
+  const leadsTo = (response: Response) => {
+    const location = response.headers.get("location")
+    return location ? `${new URL(location).pathname}${new URL(location).search}` : null
+  }
+
+  it("serves every page and handler under the name as the shop's own, stamped with the affiliate", async () => {
+    subsites.names = { "loja/margarida": "credits" }
+
+    for (const [asked, served] of [
+      ["/loja/margarida", "/loja"],
+      ["/loja/margarida/produtos/whey?utm_source=instagram", "/loja/produtos/whey?utm_source=instagram"],
+      ["/loja/margarida/carrinho", "/loja/carrinho"],
+      ["/loja/MARGARIDA/conta/pedidos", "/loja/conta/pedidos"],
+      ["/loja/margarida/api/orders", "/loja/api/orders"],
+    ] as const) {
+      const response = await proxy(request(asked))
+
+      expect(rewrittenTo(response), asked).toBe(served)
+      expect(affiliateOf(response), asked).toBe("margarida")
+      expect(response.headers.get("location"), asked).toBeNull()
+    }
+  })
+
+  it("does the same at the shop's own domain, with both stamps", async () => {
+    table.domains = { [HOST]: "loja" }
+    subsites.names = { "loja/margarida": "credits" }
+
+    for (const [asked, served] of [
+      ["/margarida", "/loja"],
+      ["/margarida/produtos/whey", "/loja/produtos/whey"],
+      ["/loja/margarida/api/orders", "/loja/api/orders"],
+    ] as const) {
+      const response = await proxy(own(asked))
+
+      expect(rewrittenTo(response), asked).toBe(served)
+      expect(affiliateOf(response), asked).toBe("margarida")
+      expect(stampOf(response), asked).toBe("loja")
+    }
+  })
+
+  it("leads a name that credits nobody to the same page without it, and serves its handler unstamped", async () => {
+    subsites.names = { "loja/margarida": "idle" }
+
+    expect(leadsTo(await proxy(request("/loja/margarida/produtos/whey?utm_source=instagram")))).toBe("/loja/produtos/whey?utm_source=instagram")
+    expect(leadsTo(await proxy(request("/loja/margarida")))).toBe("/loja")
+    const handler = await proxy(request("/loja/margarida/api/orders"))
+    expect(rewrittenTo(handler)).toBe("/loja/api/orders")
+    expect(affiliateOf(handler)).toBeNull()
+
+    table.domains = { [HOST]: "loja" }
+    expect(leadsTo(await proxy(own("/margarida/carrinho")))).toBe("/carrinho")
+    expect(leadsTo(await proxy(own("/margarida")))).toBe("/")
+  })
+
+  it("leads `?afiliado=` of an affiliate who credits into the sub-site, the rest of the query kept", async () => {
+    subsites.names = { "loja/margarida": "credits", "loja/joao": "idle" }
+
+    expect(leadsTo(await proxy(request("/loja/produtos/whey?afiliado=margarida&utm_source=instagram")))).toBe("/loja/margarida/produtos/whey?utm_source=instagram")
+    expect(leadsTo(await proxy(request("/loja?afiliado=margarida")))).toBe("/loja/margarida")
+    // A name that credits nobody leaves the page as it was asked.
+    expect(untouched(await proxy(request("/loja/produtos?afiliado=joao")))).toBe(true)
+
+    table.domains = { [HOST]: "loja" }
+    expect(leadsTo(await proxy(own("/?afiliado=margarida")))).toBe("/margarida")
+  })
+
+  it("leaves the shop's own pages alone, and refuses a stamp a request carries", async () => {
+    expect(untouched(await proxy(request("/loja/produtos/whey")))).toBe(true)
+    expect(untouched(await proxy(request("/loja/blusas")))).toBe(true)
+
+    const forged = new NextRequest("http://localhost:3000/loja", { headers: { "x-bl-affiliate": "margarida" } })
+    expect((await proxy(forged)).status).toBe(400)
   })
 })

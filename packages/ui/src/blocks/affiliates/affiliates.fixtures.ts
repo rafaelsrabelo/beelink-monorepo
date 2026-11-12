@@ -3,7 +3,7 @@ import type { AffiliatePayoutRowView, AffiliateSettingsFormValues, CommissionRat
 
 export const settings: AffiliateSettingsFormValues = {
   enabled: true,
-  attributionDays: "30",
+  attributionDays: 30,
   payoutDelayDays: "10",
   termsText: "A comissão é paga por Pix, no calendário do programa.",
 }
