@@ -33,6 +33,7 @@ import type {
 import { OrderCashbackResponse } from '../../cashback/dto/cashback.response.js';
 import { ShippingWindowResponse } from '../../delivery/dto/delivery.response.js';
 import { cpfDigitsOf, IsCpf } from '../../../shared/http/cpf.js';
+import { UUID } from '../../affiliates/affiliates.constants.js';
 import { clickIdOf, FBCLID_MAX, FBP_MAX, fbpOf, ORIGIN_LABEL_MAX, originLabelOf, PAGE_URL_MAX, pageUrlOf, pastInstantOf, USER_AGENT_MAX, userAgentOf } from '../order-origin.js';
 import { ORDER_PAYMENT_CHANNELS, OrderPaymentBriefResponse, OrderPaymentResponse } from '../../payments/dto/payment.response.js';
 import { blankToNull, trim } from '../../stores/dto/store-fields.dto.js';
@@ -143,8 +144,6 @@ export class OrderMarketingConsentDto implements OrderMarketingConsentInput {
   @MaxLength(PAGE_URL_MAX)
   pageUrl?: string | null;
 }
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * The affiliate's link the buyer arrived by (IMPULSEIA-106), read by the web's order handler from
