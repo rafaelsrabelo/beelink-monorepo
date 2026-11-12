@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 import { AffiliateConfirmDialog } from "./affiliate-confirm-dialog"
 import { AffiliateInviteDialog } from "./affiliate-invite-dialog"
 import { AffiliateListSection } from "./affiliate-list-section"
-import { inviteValue, invitedRecord, people, record, recordValue, tableOptions } from "./affiliate-people.fixtures"
+import { inviteValue, invitedRecord, people, record, recordValue, recordValueMissing, tableOptions } from "./affiliate-people.fixtures"
 import { AffiliateRecordActions } from "./affiliate-record-actions"
 import { AffiliateRecordDetails } from "./affiliate-record-details"
 import { AffiliateRecordForm } from "./affiliate-record-form"
@@ -88,6 +88,7 @@ export const FichaConvidado: Story = {
   render: () => (
     <div className="flex max-w-4xl flex-col gap-6">
       <AffiliateRecordDetails affiliate={invitedRecord} />
+      <AffiliateRecordForm value={recordValueMissing} onChange={noop} onSubmit={noop} tables={tableOptions} identityMissing pristine />
       <AffiliateRecordActions status="INVITED" onAction={noop} notice="Convite reenviado para maria@exemplo.com. O link anterior deixou de valer." />
     </div>
   ),

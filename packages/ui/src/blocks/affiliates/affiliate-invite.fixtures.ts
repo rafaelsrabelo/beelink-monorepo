@@ -6,6 +6,7 @@ export const invitation: AffiliateInvitationView = {
   storeLogoUrl: null,
   email: "joao@exemplo.com",
   generalRate: "10%",
+  categories: [{ name: "Acessórios", rate: "15%" }],
   products: [
     { name: "Whey Concentrado", rate: "25%" },
     { name: "Creatina", rate: "0%" },

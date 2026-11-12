@@ -2,7 +2,7 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 
 // Types
-import type { CommissionProductRate, CommissionTable } from '@harness-monorepo/contracts';
+import type { CommissionCategoryRate, CommissionProductRate, CommissionTable } from '@harness-monorepo/contracts';
 import type { CommissionTableModel } from '../../generated/prisma/models.js';
 
 // App
@@ -11,7 +11,7 @@ import { StoresService } from '../stores/stores.service.js';
 import { openProgram } from './affiliate-program.js';
 import { COMMISSION_TABLES_MAX, UUID, affiliateError, isUniqueViolation } from './affiliates.constants.js';
 import { toCommissionTable } from './affiliates.mapper.js';
-import type { CommissionProductRateDto, CommissionTableDto } from './dto/affiliate-program.dto.js';
+import type { CommissionCategoryRateDto, CommissionProductRateDto, CommissionTableDto } from './dto/affiliate-program.dto.js';
 
 const nameTaken = () => new ConflictException(affiliateError('COMMISSION_TABLE_NAME_TAKEN', 'Another table of this shop has that name'));
 
@@ -39,7 +39,7 @@ export class CommissionTablesService {
 
     try {
       const row = await this.prisma.commissionTable.create({ data: { storeId, name: dto.name, defaultRateBps: dto.defaultRateBps } });
-      return toCommissionTable({ ...row, rates: [] });
+      return toCommissionTable({ ...row, rates: [], categoryRates: [] });
     } catch (error) {
       if (isUniqueViolation(error)) throw nameTaken();
       throw error;
@@ -104,6 +104,26 @@ export class CommissionTablesService {
     if (UUID.test(productId)) await this.prisma.commissionTableRate.deleteMany({ where: { tableId: table.id, productId } });
   }
 
+  /** A category's own rate on the table: its products pay it, unless they have their own. */
+  async setCategoryRate(storeSlug: string, userId: string, tableId: string, categoryId: string, dto: CommissionCategoryRateDto): Promise<CommissionCategoryRate> {
+    const storeId = await this.stores.ownedStoreId(storeSlug, userId);
+    const table = await this.tableOf(storeId, tableId);
+    const category = UUID.test(categoryId) ? await this.prisma.productCategory.findFirst({ where: { id: categoryId, storeId }, select: { id: true } }) : null;
+    if (!category) throw new NotFoundException(affiliateError('PRODUCT_CATEGORY_NOT_FOUND', `No category ${categoryId} in this shop`));
+
+    const key = { tableId: table.id, categoryId: category.id };
+    const row = await this.prisma.commissionTableCategoryRate.upsert({ where: { tableId_categoryId: key }, create: { ...key, rateBps: dto.rateBps }, update: { rateBps: dto.rateBps } });
+    return { categoryId: row.categoryId, rateBps: row.rateBps };
+  }
+
+  /** Back to the table's own rate for the category's products. A category with none already is answered the same. */
+  async removeCategoryRate(storeSlug: string, userId: string, tableId: string, categoryId: string): Promise<void> {
+    const storeId = await this.stores.ownedStoreId(storeSlug, userId);
+    const table = await this.tableOf(storeId, tableId);
+    // As with a product's: a table's category rates are its own shop's categories only.
+    if (UUID.test(categoryId)) await this.prisma.commissionTableCategoryRate.deleteMany({ where: { tableId: table.id, categoryId } });
+  }
+
   /** A table of this shop's; another shop's, or none at all, is one answer. */
   private async tableOf(storeId: string, tableId: string): Promise<CommissionTableModel> {
     const row = UUID.test(tableId) ? await this.prisma.commissionTable.findFirst({ where: { id: tableId, storeId } }) : null;
@@ -112,7 +132,10 @@ export class CommissionTablesService {
   }
 
   private async tableWithRates(table: CommissionTableModel): Promise<CommissionTable> {
-    const rates = await this.prisma.commissionTableRate.findMany({ where: { tableId: table.id }, orderBy: { productId: 'asc' } });
-    return toCommissionTable({ ...table, rates });
+    const [rates, categoryRates] = await Promise.all([
+      this.prisma.commissionTableRate.findMany({ where: { tableId: table.id }, orderBy: { productId: 'asc' } }),
+      this.prisma.commissionTableCategoryRate.findMany({ where: { tableId: table.id }, orderBy: { categoryId: 'asc' } }),
+    ]);
+    return toCommissionTable({ ...table, rates, categoryRates });
   }
 }

@@ -14,6 +14,7 @@ import {
   fetchAffiliateProgram,
   fetchCommissionTable,
   saveAffiliateProgram,
+  saveCategoryCommission,
   saveProductCommission,
   updateCommissionTable,
 } from "./affiliate-requests"
@@ -53,6 +54,10 @@ export function useDeleteCommissionTable(slug: string): UseMutationResult<void, 
   return useTableMutation(slug, (tableId: string) => deleteCommissionTable(slug, tableId))
 }
 
+export function useSaveCategoryCommission(slug: string): UseMutationResult<unknown, Error, { tableId: string; categoryId: string; rateBps: number | null }> {
+  return useTableMutation(slug, ({ tableId, categoryId, rateBps }: { tableId: string; categoryId: string; rateBps: number | null }) => saveCategoryCommission(slug, tableId, categoryId, rateBps))
+}
+
 export function useSaveProductCommission(slug: string): UseMutationResult<unknown, Error, { tableId: string; productId: string; rateBps: number | null }> {
   return useTableMutation(slug, ({ tableId, productId, rateBps }: { tableId: string; productId: string; rateBps: number | null }) => saveProductCommission(slug, tableId, productId, rateBps))
 }
@@ -67,11 +72,19 @@ export function useDefaultCommissionTable(slug: string): {
   summary: CommissionTableSummary | undefined
   /** Each product's own rate on it, by product; undefined until it is read. */
   rates: ReadonlyMap<string, number> | undefined
+  /** Each category's own rate on it, by category (the user's review, 12/11/2026); undefined until it is read. */
+  categoryRates: ReadonlyMap<string, number> | undefined
   pending: boolean
 } {
   const overview = useAffiliateProgram(slug)
   const summary = overview.data?.program.enabled ? overview.data.tables.find((candidate) => candidate.isDefault) : undefined
   const detail = useCommissionTable(slug, summary?.id)
   const table = summary ? detail.data : undefined
-  return { table, summary, rates: table ? new Map(table.rates.map((rate) => [rate.productId, rate.rateBps])) : undefined, pending: overview.isPending || (summary !== undefined && detail.isPending) }
+  return {
+    table,
+    summary,
+    rates: table ? new Map(table.rates.map((rate) => [rate.productId, rate.rateBps])) : undefined,
+    categoryRates: table ? new Map(table.categoryRates.map((rate) => [rate.categoryId, rate.rateBps])) : undefined,
+    pending: overview.isPending || (summary !== undefined && detail.isPending),
+  }
 }

@@ -58,7 +58,7 @@ export class AffiliatesService {
       where: { storeId },
       orderBy: [{ isDefault: 'desc' }, { name: 'asc' }],
       // Ended affiliates are no one's to move: a table with only those is deleted, and they go to the default one.
-      include: { _count: { select: { rates: true, affiliates: { where: { status: { not: 'ENDED' } } } } } },
+      include: { _count: { select: { rates: true, categoryRates: true, affiliates: { where: { status: { not: 'ENDED' } } } } } },
     });
 
     return {

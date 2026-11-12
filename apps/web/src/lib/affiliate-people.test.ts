@@ -8,7 +8,7 @@ import type { ShopAffiliate } from "@harness-monorepo/contracts"
 import { ptBR } from "@harness-monorepo/ui/locales/index"
 
 // App
-import { affiliateDateFormatter, affiliateLinkOf, affiliateListItemOf, affiliateRecordViewOf, invitePayloadOf, recordFormOf, recordPatchOf } from "./affiliate-people"
+import { affiliateDateFormatter, affiliateLinkOf, affiliateListItemOf, affiliateRecordViewOf, identityMissingOf, invitePayloadOf, recordFormOf, recordPatchOf } from "./affiliate-people"
 
 const text = ptBR.affiliates
 const date = affiliateDateFormatter("pt-BR")
@@ -18,6 +18,7 @@ const joao: ShopAffiliate = {
   name: "João Silva",
   email: "joao@exemplo.com",
   phone: "5585999994321",
+  cpf: "52998224725",
   slug: "joao",
   status: "ACTIVE",
   table: { id: "t2", name: "Influencers" },
@@ -42,7 +43,7 @@ describe("the affiliates in words (IMPULSEIA-104)", () => {
   it("reads the record: the phone as a person writes it, the terms accepted, what happened when", () => {
     const view = affiliateRecordViewOf({ ...joao, endedAt: "2026-11-20T15:00:00.000Z", status: "ENDED" }, { text: text.record, date, link: affiliateLinkOf("https://beelink.com.br", "lessari", "joao") })
 
-    expect(view).toMatchObject({ phone: "(85) 99999-4321", link: "https://beelink.com.br/lessari/joao", terms: "Versão 2, aceita em 11/11/2026" })
+    expect(view).toMatchObject({ phone: "(85) 99999-4321", cpf: "529.982.247-25", link: "https://beelink.com.br/lessari/joao", terms: "Versão 2, aceita em 11/11/2026" })
     expect(view.history).toEqual(["Convidado em 11/11/2026", "Aceitou em 11/11/2026", "Encerrado em 20/11/2026"])
     expect(affiliateLinkOf("https://beelink.com.br", "lessari", null)).toBeNull()
   })
@@ -56,17 +57,17 @@ describe("the affiliates in words (IMPULSEIA-104)", () => {
 })
 
 describe("the invite form", () => {
-  const typed = { name: " Maria Souza ", email: " Maria@Exemplo.com ", tableId: "t1", phone: "", note: "  " }
+  const typed = { name: " Maria Souza ", email: " Maria@Exemplo.com ", tableId: "t1", phone: " (85) 99999-4321 ", cpf: "529.982.247-25", note: "  " }
 
-  it("trims, lowers the e-mail, and sends blank phone and note as none", () => {
-    expect(invitePayloadOf(typed, text.affiliateIssues)).toEqual({ payload: { name: "Maria Souza", email: "maria@exemplo.com", tableId: "t1", phone: null, note: null } })
-    expect(invitePayloadOf({ ...typed, phone: "(85) 99999-4321" }, text.affiliateIssues)).toMatchObject({ payload: { phone: "(85) 99999-4321" } })
+  it("trims, lowers the e-mail, sends the CPF as its digits and a blank note as none", () => {
+    expect(invitePayloadOf(typed, text.affiliateIssues)).toEqual({ payload: { name: "Maria Souza", email: "maria@exemplo.com", tableId: "t1", phone: "(85) 99999-4321", cpf: "52998224725", note: null } })
   })
 
-  it("says what to correct, field by field", () => {
-    expect(invitePayloadOf({ name: "M", email: "maria@", tableId: "", phone: "1234", note: "x".repeat(501) }, text.affiliateIssues)).toEqual({
-      issues: { name: text.affiliateIssues.name, email: text.affiliateIssues.email, tableId: text.affiliateIssues.table, phone: text.affiliateIssues.phone, note: text.affiliateIssues.note },
+  it("says what to correct, field by field — the phone and the CPF are required", () => {
+    expect(invitePayloadOf({ name: "M", email: "maria@", tableId: "", phone: "1234", cpf: "529.982.247-26", note: "x".repeat(501) }, text.affiliateIssues)).toEqual({
+      issues: { name: text.affiliateIssues.name, email: text.affiliateIssues.email, tableId: text.affiliateIssues.table, phone: text.affiliateIssues.phone, cpf: text.affiliateIssues.cpf, note: text.affiliateIssues.note },
     })
+    expect(invitePayloadOf({ ...typed, phone: "", cpf: "" }, text.affiliateIssues)).toEqual({ issues: { phone: text.affiliateIssues.phone, cpf: text.affiliateIssues.cpf } })
   })
 })
 
@@ -78,6 +79,22 @@ describe("the record form", () => {
     expect(recordPatchOf({ ...saved, tableId: "t1" }, saved, text.affiliateIssues)).toEqual({ payload: { tableId: "t1" } })
     expect(recordPatchOf({ ...saved, note: "  " }, saved, text.affiliateIssues)).toEqual({ payload: { note: null } })
     expect(recordPatchOf({ ...saved, note: `${saved.note}  ` }, saved, text.affiliateIssues)).toEqual({ pristine: true })
+  })
+
+  it("corrects the phone and the CPF, and never blanks them", () => {
+    expect(saved).toMatchObject({ phone: "(85) 99999-4321", cpf: "529.982.247-25" })
+    expect(recordPatchOf({ ...saved, phone: "(31) 98888-1111", cpf: "111.444.777-35" }, saved, text.affiliateIssues)).toEqual({ payload: { phone: "(31) 98888-1111", cpf: "11144477735" } })
+    expect(recordPatchOf({ ...saved, phone: "", cpf: "" }, saved, text.affiliateIssues)).toEqual({ issues: { phone: text.affiliateIssues.phone, cpf: text.affiliateIssues.cpf } })
+  })
+
+  it("leaves blank what one invited before never had, and asks to complete it", () => {
+    const before = { ...joao, phone: null, cpf: null }
+    const blank = recordFormOf(before)
+
+    expect(identityMissingOf(before)).toBe(true)
+    expect(identityMissingOf(joao)).toBe(false)
+    expect(recordPatchOf({ ...blank, note: "Completar" }, blank, text.affiliateIssues)).toEqual({ payload: { note: "Completar" } })
+    expect(recordPatchOf({ ...blank, cpf: "529.982.247-25" }, blank, text.affiliateIssues)).toEqual({ payload: { cpf: "52998224725" } })
   })
 
   it("refuses a note past 500 characters", () => {

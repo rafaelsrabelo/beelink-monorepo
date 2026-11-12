@@ -400,3 +400,34 @@ Passa para "Fora de escopo".
 Rafael seguiu as duas recomendações: o período conta pela **data da entrega** (item A), e os
 R$ 9,90 são **por mês, por afiliado ativo** (item E). Enquanto o valor for zero, nada o lê: o preço
 entra no seed junto com a cobrança, em AF10, e o painel diz "grátis durante o teste" até lá.
+
+## Adendo — o que foi entregue (12/11)
+
+As nove tarefas viraram nove PRs em rascunho, empilhados: cada um tem como base a branch do anterior,
+e só o primeiro aponta para `main`. Merge na ordem, como diz `docs/repo/deploy.md` ("The affiliates
+epic").
+
+| Tarefa | Ticket | PR | O que entrou |
+|---|---|---|---|
+| AF1 | IMPULSEIA-101 | #305 | Programa e tabelas de comissão na API; o calendário dos vencimentos; `afiliado` reservado |
+| AF2 | IMPULSEIA-102 | #306 | Configurações e Tabelas no painel; a comissão no produto e na lista |
+| AF3 | IMPULSEIA-103 | #307 | Afiliado e convite na API; o `/nome` no espaço das categorias; tabela com afiliados não se apaga |
+| AF4 | IMPULSEIA-104 | #308 | A página do convite; a lista e a ficha no painel |
+| AF5 | IMPULSEIA-105 | #309 | O link na vitrine: cartão, faixa, linha no carrinho, cookie, visitas; o interruptor `AFFILIATE_LINKS_ENABLED` |
+| AF6 | IMPULSEIA-106 | #310 | A comissão do pedido, a repartição compartilhada com o cashback, o vencimento pela entrega, a varredura, os e-mails de venda |
+| AF7 | IMPULSEIA-107 | #311 | O afiliado no pedido, o filtro, a troca com motivo, o extrato, ajuste, acerto e "A pagar" |
+| AF8 | IMPULSEIA-108 | #312 | A área `/afiliado`, os links de produto, os números, os dados do afiliado, o e-mail do acerto; `convite` reservado |
+| AF9 | IMPULSEIA-109 | #313 | A versão nova dos textos legais (rascunho para o jurídico), `docs/product`, o fluxo inteiro em e2e, o checklist de deploy |
+
+Ficou para depois, cada um com o seu motivo no plano da tarefa:
+
+- **AF10, a cobrança por afiliado** (R$ 9,90 por mês por afiliado ativo): o preço no seed, a cobrança
+  na assinatura da página e o aviso aos lojistas antes de começar. Ainda sem ticket.
+- **O comprovante do acerto** (AF7): o módulo de uploads é das fotos do catálogo.
+- **Trocar o `/nome` depois do aceite** (épico, decisão 5).
+- **Exportar o "quanto devo" em planilha** (adendo de 11/11, item G).
+- **Cadastro pelo Google no convite** (AF3): o painel não entra com Google hoje.
+- **Conferir o formato da chave Pix no aceite do convite** (AF8): a área já confere.
+
+Antes de produção, na ordem: a revisão jurídica dos textos, a checagem dos slugs `afiliado` e
+`convite`, o deploy, e só então `AFFILIATE_LINKS_ENABLED=true`.

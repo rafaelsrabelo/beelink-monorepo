@@ -5,10 +5,12 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // UI
 import { ratePercentOf } from "@harness-monorepo/ui/lib/cashback"
+import { isCpf, maskCpf } from "@harness-monorepo/ui/lib/cpf"
 import { format } from "@harness-monorepo/ui/locales/index"
 
 // App
 import { phoneLineOf } from "@/lib/account-menu"
+import { cpfLineOf } from "@/lib/customer-identity"
 
 /**
  * The crossing between the shop's affiliates on the wire (IMPULSEIA-103) and the panel's blocks
@@ -25,6 +27,8 @@ const PHONE_DIGITS = { min: 10, max: 15 }
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 const lengthOf = (text: string): number => [...text].length
+const digitsOf = (text: string): string => text.replace(/\D/g, "")
+const isPhone = (typed: string): boolean => digitsOf(typed).length >= PHONE_DIGITS.min && digitsOf(typed).length <= PHONE_DIGITS.max
 
 /** An instant as the shop reads a date: Brasília's day. */
 export function affiliateDateFormatter(locale: string): (iso: string) => string {
@@ -49,25 +53,25 @@ export function affiliateTableOptionsOf(tables: readonly CommissionTableSummary[
 }
 
 export function emptyInviteOf(defaultTableId: string): AffiliateInviteFormValues {
-  return { name: "", email: "", tableId: defaultTableId, phone: "", note: "" }
+  return { name: "", email: "", tableId: defaultTableId, phone: "", cpf: "", note: "" }
 }
 
-/** The invite as the API takes it, or what to correct, field by field. Blank phone and note are none. */
+/** The invite as the API takes it, or what to correct, field by field. The phone and the CPF are required; a blank note is none. */
 export function invitePayloadOf(value: AffiliateInviteFormValues, text: Text["affiliateIssues"]): { payload: CreateAffiliatePayload } | { issues: AffiliateInviteIssues } {
   const name = value.name.trim()
   const email = value.email.trim().toLowerCase()
   const phone = value.phone.trim()
-  const digits = phone.replace(/\D/g, "").length
   const note = value.note.trim()
   const issues: AffiliateInviteIssues = {
     ...(lengthOf(name) < NAME.min || lengthOf(name) > NAME.max ? { name: text.name } : {}),
     ...(EMAIL.test(email) ? {} : { email: text.email }),
     ...(value.tableId ? {} : { tableId: text.table }),
-    ...(phone && (digits < PHONE_DIGITS.min || digits > PHONE_DIGITS.max) ? { phone: text.phone } : {}),
+    ...(isPhone(phone) ? {} : { phone: text.phone }),
+    ...(isCpf(value.cpf) ? {} : { cpf: text.cpf }),
     ...(lengthOf(note) > NOTE_MAX ? { note: text.note } : {}),
   }
   if (Object.keys(issues).length > 0) return { issues }
-  return { payload: { name, email, tableId: value.tableId, phone: phone || null, note: note || null } }
+  return { payload: { name, email, tableId: value.tableId, phone, cpf: digitsOf(value.cpf), note: note || null } }
 }
 
 /** The affiliate's own address in the shop window: `<origin>/<shop>/<name>`, once they chose the name. */
@@ -81,6 +85,7 @@ export function affiliateRecordViewOf(affiliate: ShopAffiliate, input: { text: T
     name: affiliate.name,
     email: affiliate.email,
     phone: phoneLineOf(affiliate.phone),
+    cpf: cpfLineOf(affiliate.cpf),
     status: affiliate.status,
     link: input.link,
     pixKey: affiliate.pixKey,
@@ -94,8 +99,13 @@ export function affiliateRecordViewOf(affiliate: ShopAffiliate, input: { text: T
   }
 }
 
-export function recordFormOf(affiliate: Pick<ShopAffiliate, "table" | "note">): AffiliateRecordFormValues {
-  return { tableId: affiliate.table.id, note: affiliate.note ?? "" }
+export function recordFormOf(affiliate: Pick<ShopAffiliate, "table" | "phone" | "cpf" | "note">): AffiliateRecordFormValues {
+  return { tableId: affiliate.table.id, phone: phoneLineOf(affiliate.phone) ?? "", cpf: affiliate.cpf ? maskCpf(affiliate.cpf) : "", note: affiliate.note ?? "" }
+}
+
+/** Invited before the phone and the CPF were asked (the user's review, 12/11/2026): the record asks to complete them. */
+export function identityMissingOf(affiliate: Pick<ShopAffiliate, "phone" | "cpf">): boolean {
+  return affiliate.phone === null || affiliate.cpf === null
 }
 
 /**
@@ -104,10 +114,21 @@ export function recordFormOf(affiliate: Pick<ShopAffiliate, "table" | "note">): 
  */
 export function recordPatchOf(value: AffiliateRecordFormValues, saved: AffiliateRecordFormValues, text: Text["affiliateIssues"]): { payload: UpdateAffiliatePayload } | { issues: AffiliateRecordIssues } | { pristine: true } {
   const note = value.note.trim()
-  if (lengthOf(note) > NOTE_MAX) return { issues: { note: text.note } }
-  if (!value.tableId) return { issues: { tableId: text.table } }
+  const phone = value.phone.trim()
+  const phoneChanged = digitsOf(phone) !== digitsOf(saved.phone)
+  const cpfChanged = digitsOf(value.cpf) !== digitsOf(saved.cpf)
+  // Left blank as it was saved — one invited before — is no change; blanked or mistyped is a correction to make.
+  const issues: AffiliateRecordIssues = {
+    ...(lengthOf(note) > NOTE_MAX ? { note: text.note } : {}),
+    ...(value.tableId ? {} : { tableId: text.table }),
+    ...(phoneChanged && !isPhone(phone) ? { phone: text.phone } : {}),
+    ...(cpfChanged && !isCpf(value.cpf) ? { cpf: text.cpf } : {}),
+  }
+  if (Object.keys(issues).length > 0) return { issues }
   const payload: UpdateAffiliatePayload = {
     ...(value.tableId !== saved.tableId ? { tableId: value.tableId } : {}),
+    ...(phoneChanged ? { phone } : {}),
+    ...(cpfChanged ? { cpf: digitsOf(value.cpf) } : {}),
     ...(note !== saved.note.trim() ? { note: note || null } : {}),
   }
   return Object.keys(payload).length > 0 ? { payload } : { pristine: true }

@@ -6,6 +6,7 @@ import type { AffiliateProgramOverview, AuthSession, PublicAffiliateLink, ShopAf
 
 // App
 import { PrismaService } from '../src/shared/prisma/prisma.service.js';
+import { affiliateIdentity } from './support/affiliate-identity.js';
 import { PASSWORD, newEmail, signUpAndSignIn } from './support/auth-flow.js';
 import { createTestApp } from './support/create-test-app.js';
 import { clearInbox, tokenFromLink, waitForMessage } from './support/mailpit.js';
@@ -48,7 +49,7 @@ describe('a deployment with AFFILIATE_LINKS_ENABLED off', () => {
   it('answers an active affiliate of a shop whose programme is on as a link that credits nobody, and counts no visit', async () => {
     const { tables } = (await call('PUT', '/api/stores/lessari/affiliate-program', owner, { enabled: true, attributionDays: 30, payoutDelayDays: 10, termsText: null })).json<AffiliateProgramOverview>();
     const email = newEmail('joao');
-    const joao = (await call('POST', '/api/stores/lessari/affiliates', owner, { name: 'João Silva', email, tableId: tables[0]!.id })).json<ShopAffiliate>();
+    const joao = (await call('POST', '/api/stores/lessari/affiliates', owner, { ...affiliateIdentity(), name: 'João Silva', email, tableId: tables[0]!.id })).json<ShopAffiliate>();
     const token = tokenFromLink((await waitForMessage(email.toLowerCase())).Text, '/afiliado/convite');
     expect((await call('POST', `/api/affiliate-invites/${token}/sign-up`, undefined, { name: 'João Silva', password: PASSWORD, slug: 'joao', pixKey: null, termsVersion: 0 })).statusCode).toBe(201);
 

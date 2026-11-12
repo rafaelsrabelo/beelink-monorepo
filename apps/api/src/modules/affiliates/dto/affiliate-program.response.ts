@@ -6,6 +6,7 @@ import type {
   AffiliatePayoutPeriod,
   AffiliateProgram,
   AffiliateProgramOverview,
+  CommissionCategoryRate,
   CommissionProductRate,
   CommissionTable,
   CommissionTableSummary,
@@ -32,6 +33,7 @@ export class CommissionTableSummaryResponse implements CommissionTableSummary {
   @ApiProperty({ example: 1000 }) defaultRateBps!: number;
   @ApiProperty({ description: 'Born with the programme; never deleted.' }) isDefault!: boolean;
   @ApiProperty() productRateCount!: number;
+  @ApiProperty() categoryRateCount!: number;
   @ApiProperty({ description: 'Affiliates on it who have not ended; a table with any is not deleted.' }) affiliateCount!: number;
 }
 
@@ -47,11 +49,17 @@ export class CommissionProductRateResponse implements CommissionProductRate {
   @ApiProperty({ example: 0 }) rateBps!: number;
 }
 
+export class CommissionCategoryRateResponse implements CommissionCategoryRate {
+  @ApiProperty({ format: 'uuid' }) categoryId!: string;
+  @ApiProperty({ example: 1500 }) rateBps!: number;
+}
+
 export class CommissionTableResponse implements CommissionTable {
   @ApiProperty({ format: 'uuid' }) id!: string;
   @ApiProperty() name!: string;
   @ApiProperty({ example: 1000 }) defaultRateBps!: number;
   @ApiProperty() isDefault!: boolean;
-  @ApiProperty({ type: [CommissionProductRateResponse] }) rates!: CommissionProductRateResponse[];
+  @ApiProperty({ type: [CommissionProductRateResponse], description: 'By product: these come first.' }) rates!: CommissionProductRateResponse[];
+  @ApiProperty({ type: [CommissionCategoryRateResponse], description: 'By category: for the products of it with no rate of their own.' }) categoryRates!: CommissionCategoryRateResponse[];
   @ApiProperty({ format: 'date-time' }) updatedAt!: string;
 }

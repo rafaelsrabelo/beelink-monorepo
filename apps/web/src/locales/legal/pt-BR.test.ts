@@ -4,6 +4,9 @@ import { describe, expect, it } from "vitest"
 // App
 import { legalTexts } from "./pt-BR"
 
+// Types
+import type { LegalDocumentContent } from "@harness-monorepo/ui/blocks/legal/legal-document"
+
 const documents = [legalTexts.terms, legalTexts.privacy]
 
 describe("bee-link's legal texts (BEELINK-171)", () => {
@@ -263,14 +266,6 @@ describe("bee-link's legal texts (BEELINK-171)", () => {
     }
     const couriers = textOf("Dados de quem se candidata a entregar")
 
-    // BEELINK-325 said a person is on the list once, under 2026-10-14. BEELINK-329 changed the form:
-    // it has another name on the page and no longer asks for the city, which the text had described.
-    it("is the version that says the form no longer asks for the city", () => {
-      expect(legalTexts.version).toBe("2026-10-15")
-      expect(legalTexts.privacy.effective).toBe("Vigente desde 15 de outubro de 2026")
-      expect(legalTexts.terms.effective).toBe("Vigente desde 15 de outubro de 2026")
-    })
-
     it("has a section of its own, between the visitor's and the technical data", () => {
       const headings = legalTexts.privacy.sections.map((section) => section.heading)
 
@@ -336,6 +331,91 @@ describe("bee-link's legal texts (BEELINK-171)", () => {
       expect(legalTexts.terms.intro.join(" ")).toMatch(/Quem envia o cadastro de entregador, na página inicial do bee-link, também aceita estes Termos e declara ter lido a Política de privacidade ao enviá-lo/)
       expect(legalTexts.terms.intro.join(" ")).toMatch(/não cria uma conta, e as regras da atividade de entrega ainda não fazem parte destes Termos/)
       expect(JSON.stringify(legalTexts.terms)).toMatch(/ao definir a senha ou ao enviar o cadastro de entregador/)
+    })
+  })
+
+  /**
+   * IMPULSEIA-109: a shop's affiliates. Who answers for which of their data, the two cookies of the
+   * link, and the one thing of a customer an affiliate reads — the name, never a way to reach them.
+   */
+  describe("the texts, on a shop's affiliates", () => {
+    const textOf = (document: LegalDocumentContent, heading: string) => {
+      const section = document.sections.find((entry) => entry.heading === heading)
+      return section?.blocks.map((block) => (block.kind === "paragraph" ? block.text : block.items.join(" "))).join(" ") ?? ""
+    }
+    const policy = (heading: string) => textOf(legalTexts.privacy, heading)
+    const affiliates = policy("Dados dos afiliados das lojas")
+
+    // BEELINK-329's version (2026-10-15) said the courier form no longer asks for the city; that sentence stays, checked above.
+    it("is the version that tells of affiliates", () => {
+      expect(legalTexts.version).toBe("2026-11-12")
+      expect(legalTexts.privacy.effective).toBe("Vigente desde 12 de novembro de 2026")
+      expect(legalTexts.terms.effective).toBe("Vigente desde 12 de novembro de 2026")
+    })
+
+    it("gives the affiliates' data a section of its own, after the shopkeepers'", () => {
+      const headings = legalTexts.privacy.sections.map((section) => section.heading)
+
+      expect(headings.slice(headings.indexOf("Dados dos lojistas"), headings.indexOf("Dados dos clientes das lojas") + 1)).toEqual(["Dados dos lojistas", "Dados dos afiliados das lojas", "Dados dos clientes das lojas"])
+      expect(legalTexts.privacy.intro.join(" ")).toMatch(/para os afiliados das lojas/)
+      expect(legalTexts.privacy.intro.join(" ")).toMatch(/Isso vale também para quem cria a conta pelo convite de afiliado de uma loja/)
+    })
+
+    it("names bee-link the controller of the account, and the shop of its standing with the affiliate", () => {
+      expect(policy("Controlador e operador")).toMatch(/Dados do afiliado de uma loja: o bee-link é o controlador dos dados da conta do afiliado, que é uma conta do bee-link[\s\S]*A loja é a controladora dos dados do vínculo dela com o afiliado[\s\S]*e o bee-link é o operador/)
+    })
+
+    it("says what is kept of an affiliate, the CPF, Pix key, photo and phrase included, and who sees it", () => {
+      expect(affiliates).toMatch(/o nome, o e-mail, o telefone e o CPF com que a loja cadastrou você, e uma nota que a loja pode anotar e que você não vê/)
+      expect(affiliates).toMatch(/o nome que você escolheu para o seu link, a versão dos termos do programa da loja que você aceitou, com a data do aceite, e a chave Pix/)
+      expect(affiliates).toMatch(/a foto e a frase que você escolher para aparecer na vitrine da loja/)
+      expect(affiliates).toMatch(/quantas visitas o seu link recebeu em cada dia, só como um número, sem nada de quem visitou/)
+      expect(affiliates).toMatch(/A loja vê tudo isso no painel, inclusive a chave Pix e o CPF, porque é ela quem paga/)
+      expect(affiliates).toMatch(/o seu CPF só em parte, mascarado\. O seu CPF nunca aparece na vitrine nem nos e-mails/)
+      expect(affiliates).toMatch(/O e-mail, o telefone e o CPF também servem para reconhecer uma compra que você mesmo faça na loja, que não gera comissão/)
+      expect(affiliates).toMatch(/O seu nome, a sua foto e a sua frase são públicos/)
+      expect(affiliates).toMatch(/vale uma única vez, por 7 dias/)
+    })
+
+    it("says the affiliate reads the customer's name and the order, and never a way to reach them", () => {
+      const customers = policy("Dados dos clientes das lojas")
+
+      expect(customers).toMatch(/o afiliado a quem o pedido foi creditado, a comissão dele e o momento em que você chegou pelo link/)
+      expect(customers).toMatch(/vê, na área do afiliado e no e-mail de cada venda, o número, a data, o andamento, os itens e os valores desse pedido e o seu nome\. Ele nunca vê o seu e-mail, o seu celular, o seu CPF nem o seu endereço/)
+      expect(customers).toMatch(/o carrinho e o checkout avisam isso antes do pedido/)
+      expect(policy("Com quem os dados são compartilhados")).toMatch(/o afiliado a quem um pedido foi creditado recebe, pelo bee-link, o nome de quem comprou[\s\S]*nunca o e-mail, o celular, o CPF ou o endereço[\s\S]*é um parceiro da loja, que decide mostrar esses dados a ele e responde por isso/)
+    })
+
+    it("names both cookies of the link: what each holds, that the first waits for no consent, and how long each lasts", () => {
+      const cookies = policy("Cookies")
+
+      expect(cookies).toMatch(/bl_affiliate: numa loja com programa de afiliados, o afiliado pelo link de quem você chegou, isto é, um identificador do afiliado e o momento da chegada, e nada sobre você/)
+      expect(cookies).toMatch(/não depende do aviso de cookies, porque serve ao acordo entre a loja e o afiliado, e não a publicidade/)
+      expect(cookies).toMatch(/dura os dias de indicação que ela definiu, de 1 a 90, ou 30 se ela não os mudou, contados da chegada; o link de outro afiliado o substitui/)
+      expect(cookies).toMatch(/bl_affiliate_hidden: numa loja em que você fechou a faixa[\s\S]*dura até você fechar o navegador/)
+      expect(policy("Dados de quem visita uma loja sem conta")).toMatch(/o link de um afiliado de uma loja grava no seu navegador o cookie bl_affiliate/)
+    })
+
+    it("says on what basis, for how long, and how an affiliate asks", () => {
+      expect(policy("Para que os dados são usados")).toMatch(/creditar ao afiliado o pedido de quem chegou pelo link dele, pelo cookie bl_affiliate, e mostrar a ele o nome de quem comprou, para que a loja cumpra o acordo que fez com o afiliado/)
+      expect(policy("Por quanto tempo os dados são guardados")).toMatch(/A contagem diária das visitas pelo link de um afiliado é guardada por 13 meses e depois apagada/)
+      expect(policy("Como exercer os seus direitos")).toMatch(/Se você é afiliado de uma loja, os pedidos sobre a sua conta são feitos ao bee-link[\s\S]*à loja, que é a controladora deles/)
+      expect(policy("Segurança")).toMatch(/links de convite de afiliado que valem uma única vez, por 7 dias/)
+    })
+
+    it("says in the terms that the programme is the shop's, the money is never bee-link's, and what an affiliate owes", () => {
+      const terms = textOf(legalTexts.terms, "Afiliados das lojas")
+
+      expect(legalTexts.terms.intro.join(" ")).toMatch(/três públicos: o lojista[\s\S]*o afiliado, que uma loja convida para vender pelo link dela e que entra com uma conta do bee-link/)
+      expect(legalTexts.terms.intro.join(" ")).toMatch(/inclusive o do convite de afiliado de uma loja/)
+      expect(terms).toMatch(/O programa é da loja/)
+      expect(terms).toMatch(/paga os preços de sempre da loja/)
+      expect(terms).toMatch(/nunca sobre a entrega/)
+      expect(terms).toMatch(/A compra do próprio afiliado não gera comissão/)
+      expect(terms).toMatch(/não paga o afiliado: ele não recebe, não guarda e não transfere dinheiro de ninguém/)
+      expect(terms).toMatch(/O acordo é entre a loja e o afiliado, e o bee-link não é parte dele/)
+      expect(terms).toMatch(/usar o nome dos clientes que vê na área do afiliado só para acompanhar as próprias vendas/)
+      expect(textOf(legalTexts.terms, "Contas")).toMatch(/a conta de afiliado também é do bee-link e abre a área do afiliado/)
     })
   })
 

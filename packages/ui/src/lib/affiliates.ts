@@ -31,6 +31,7 @@ export interface CommissionTableView {
   defaultRateBps: number
   isDefault: boolean
   productRateCount: number
+  categoryRateCount: number
   /** Affiliates on it who have not ended: a table with any is not deleted. */
   affiliateCount: number
 }
@@ -45,11 +46,21 @@ export interface CommissionTableFormValues {
 export type CommissionTableIssues = Partial<Record<"name" | "rate", string>>
 
 /** A product as a table's rates list it: its own rate there, or null when it follows the table's. */
+/**
+ * One rate on a table's screen: a product's, or a category's (the user's review, 12/11/2026). Its own
+ * rate here, or what it pays without one — its category's, or the table's.
+ */
 export interface CommissionRateRowView {
-  productId: string
+  /** The product's or the category's id. */
+  id: string
   name: string
-  imageUrl: string | null
+  /** A product's photo, or null when it has none; absent on a category, which shows none. */
+  imageUrl?: string | null
   rateBps: number | null
+  /** What it pays with no rate of its own: its category's, else the table's. */
+  fallbackRateBps: number
+  /** The category whose rate it follows; null when it follows the table's. */
+  fallbackName: string | null
   /** What its field shows: what was typed, or its own rate as saved. */
   typed: string
   /** What was typed is not what is saved: its save is offered. */
@@ -87,10 +98,12 @@ export interface AffiliateInviteFormValues {
   email: string
   tableId: string
   phone: string
+  /** As typed, masked to `000.000.000-00`. */
+  cpf: string
   note: string
 }
 
-export type AffiliateInviteIssues = Partial<Record<"name" | "email" | "tableId" | "phone" | "note", string>>
+export type AffiliateInviteIssues = Partial<Record<"name" | "email" | "tableId" | "phone" | "cpf" | "note", string>>
 
 /** One affiliate, whole, its lines already in words. */
 export interface AffiliateRecordView {
@@ -98,6 +111,8 @@ export interface AffiliateRecordView {
   email: string
   /** As a person writes it; null when none was given. */
   phone: string | null
+  /** `000.000.000-00`; null for one invited before it was asked. */
+  cpf: string | null
   status: AffiliateStatusValue
   /** The whole link, `https://…/<loja>/<nome>`; null while invited. */
   link: string | null
@@ -113,10 +128,14 @@ export interface AffiliateRecordView {
 /** The record's own form: the table, and the shop's note. */
 export interface AffiliateRecordFormValues {
   tableId: string
+  /** As typed; blank only for one invited before it was asked. */
+  phone: string
+  /** As typed, masked to `000.000.000-00`; blank only for one invited before it was asked. */
+  cpf: string
   note: string
 }
 
-export type AffiliateRecordIssues = Partial<Record<"tableId" | "note", string>>
+export type AffiliateRecordIssues = Partial<Record<"tableId" | "phone" | "cpf" | "note", string>>
 
 /** The invite as the person invited reads it, before accepting. Rates and dates arrive in words. */
 export interface AffiliateInvitationView {
@@ -125,6 +144,8 @@ export interface AffiliateInvitationView {
   email: string
   /** "10%". */
   generalRate: string
+  /** Categories with a rate of their own on the invite's table: their products pay it, unless they have their own. */
+  categories: { name: string; rate: string }[]
   /** Products with a rate of their own on the invite's table. */
   products: { name: string; rate: string }[]
   termsText: string | null

@@ -46,6 +46,7 @@ export class AffiliateShopResponse implements AffiliateShop {
 export class AffiliateProfileResponse implements AffiliateProfile {
   @ApiProperty({ nullable: true, type: String }) pixKey!: string | null;
   @ApiProperty({ nullable: true, type: String }) phone!: string | null;
+  @ApiProperty({ nullable: true, type: String, example: '***.982.247-**', description: 'Their CPF as the shop registered it, masked and read-only.' }) maskedCpf!: string | null;
   @ApiProperty({ nullable: true, type: String }) photoUrl!: string | null;
   @ApiProperty({ nullable: true, type: String }) tagline!: string | null;
 }

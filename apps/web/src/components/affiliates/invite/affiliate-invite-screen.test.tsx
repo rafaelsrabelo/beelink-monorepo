@@ -28,7 +28,7 @@ vi.mock("@/services/addresses/use-debounced-value", () => ({ useDebouncedValue: 
 const invitation: AffiliateInvitation = {
   store: { name: "Lessari", slug: "lessari", logoUrl: null },
   affiliate: { name: "João Silva", email: "joao@exemplo.com" },
-  table: { name: "Influencers", defaultRateBps: 1500, products: [] },
+  table: { name: "Influencers", defaultRateBps: 1500, categories: [], products: [] },
   terms: { text: "Pago por Pix.", version: 3 },
   expiresAt: "2026-11-18T13:00:00.000Z",
   hasAccount: false,

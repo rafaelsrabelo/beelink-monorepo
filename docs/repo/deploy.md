@@ -114,7 +114,7 @@ What a page pays bee-link (BEELINK-218) is charged at bee-link's own Asaas accou
 - **The webhook's address must reach the web from outside**, as the shops' does: a `POST` with its `asaas-access-token` header and its body untouched. After the first deploy with it on, check: Asaas's panel lists "bee-link (assinaturas)" with no interrupted queue, the API's log says `bee-link's own Asaas webhook was registered`, and `billing_events` gains rows at the first payment. An event about something else the account holds is answered and written `IGNORED`.
 
 - **`BILLING_ENFORCED` is left out until the day charging starts** — and switched on only in the order of [Switching charging on](#switching-charging-on). Unset or `false`, nothing is charged, nothing locks and the panel says nothing of a plan. A page's 7-day trial is counted from its creation either way, so the day it is set to `true` every page created more than seven days before reads as expired, unless a free month covers it. **Set to `true` with `ASAAS_PLATFORM_API_KEY`, it locks** (BEELINK-223), at once and with no step of its own: every page whose trial and free month ended unpaid has its panel closed but for its subscription and its shop window off the air — an exempt one excepted. With the switch on and no key, nothing locks: no page could pay.
-- **`AFFILIATE_LINKS_ENABLED` is left out until the new privacy policy is published** (IMPULSEIA-105). Unset or `false`, an affiliate's link opens the shop and credits nobody: no banner, no visit counted, no `bl_affiliate` cookie on anyone's browser — whatever each shop's own programme says. Set it to `true` only once the policy that tells of that cookie, and of the buyer's name an affiliate reads, is live (AF9 of the affiliates epic).
+- **`AFFILIATE_LINKS_ENABLED` is left out until the new privacy policy is published** (IMPULSEIA-105). Unset or `false`, an affiliate's link opens the shop and credits nobody: no banner, no visit counted, no `bl_affiliate` cookie on anyone's browser — whatever each shop's own programme says. Set it to `true` only once the policy that tells of that cookie, and of the buyer's name an affiliate reads, is live — step 5 of [The affiliates epic](#the-affiliates-epic).
 - **A coupon of bee-link's — one free month for a page that never paid, once a page — is made from the `api` container's terminal** (BEELINK-224), never in the repository, which is public. In Dokploy: the stack's `api` service, **Terminal** — in the image's working directory, `/app` (`cd /app` first should it open elsewhere):
   - `node dist/scripts/platform-coupon.js create --code <CODE> --max-uses <N> [--expires <YYYY-MM-DD>]` — the last day is on Brasília's calendar; without `--expires` it never ends, and without `--max-uses` any number of pages may use it;
   - `node dist/scripts/platform-coupon.js list` — every coupon, where it stands and how many pages used it;
@@ -141,6 +141,23 @@ The order:
 5. **Switch on**: `BILLING_ENFORCED=true` beside `ASAAS_PLATFORM_API_KEY` in the Environment, and a redeploy. Read the report once more: what it says is locked is locked.
 
 In homologation the notice goes through homologation's own `SMTP_URL`: check it is a test inbox before running `send` there.
+
+## The affiliates epic
+
+The affiliates epic (IMPULSEIA-100) arrives as nine stacked pull requests. Everything in it runs on the first deploy, but its link credits nobody until the last step below. Deploy it in this order:
+
+1. **Merge the stack in order**: #305 (AF1) into `main`, then #306, #307, #308, #309, #310, #311, #312 and #313 (AF9), each after the one below it. Each PR's base is the previous one's branch, and GitHub retargets the next PR to `main` as each is merged. #313 carries the new legal texts, and is merged only after their review (step 3).
+2. **Before the first deploy of the epic, check the two new reserved slugs**: no store uses `afiliado` or `convite`, as its address now or as one it left, in both `stores` and `store_slug_history`:
+
+   ```sql
+   SELECT slug FROM stores WHERE slug IN ('afiliado', 'convite')
+   UNION ALL SELECT slug FROM store_slug_history WHERE slug IN ('afiliado', 'convite');
+   ```
+
+   A store found there keeps working, but its address hides the affiliates' area (`/afiliado`) or the invite's page (`/afiliado/convite`): move it first.
+3. **Get the new privacy policy and terms reviewed**, version `2026-11-12` in `apps/web/src/locales/legal/pt-BR.ts`. If they are published on another day, the version moves to that day in `packages/contracts/src/legal.ts`, `apps/api/src/modules/auth/auth.constants.ts`, the texts and their tests, in one commit, before #313 is merged.
+4. **The migrations run by themselves** in the `migrate` service, in this order: `20261111120000_affiliate_program`, `20261111130000_affiliates`, `20261112120000_affiliate_visits`, `20261112130000_affiliate_commissions`, `20261112140000_affiliate_payouts`, `20261112150000_affiliate_payout_notices`. Of the tables that existed before, only `orders` changes, by two nullable columns (`affiliateId`, `affiliateVisitAt`): no existing row is rewritten.
+5. **Only after the new policy is live**, set `AFFILIATE_LINKS_ENABLED=true` in the API's Environment and redeploy. Until then every store's programme can be set up and its affiliates invited, but no link credits, no `bl_affiliate` cookie is written, no visit is counted, and no order can be given an affiliate, whether placed on the window or registered in the panel. After the switch, check one store: `/<store>/<name>` of an active affiliate shows the card, and the cart shows "Indicação de …".
 
 ## Homologation
 

@@ -15,7 +15,7 @@ const text = ptBR.affiliateInvite
 const invitation: AffiliateInvitation = {
   store: { name: "Lessari", slug: "lessari", logoUrl: null },
   affiliate: { name: "João Silva", email: "joao@exemplo.com" },
-  table: { name: "Influencers", defaultRateBps: 1500, products: [{ productId: "p1", name: "Whey", rateBps: 2500 }] },
+  table: { name: "Influencers", defaultRateBps: 1500, categories: [{ categoryId: "c1", name: "Acessórios", rateBps: 1200 }], products: [{ productId: "p1", name: "Whey", rateBps: 2500 }] },
   terms: { text: "Pago por Pix.", version: 3 },
   expiresAt: "2026-11-18T13:00:00.000Z",
   hasAccount: false,
@@ -29,6 +29,7 @@ describe("the invite, in words (IMPULSEIA-104)", () => {
       storeLogoUrl: null,
       email: "joao@exemplo.com",
       generalRate: "15%",
+      categories: [{ name: "Acessórios", rate: "12%" }],
       products: [{ name: "Whey", rate: "25%" }],
       termsText: "Pago por Pix.",
       expires: "18/11/2026",

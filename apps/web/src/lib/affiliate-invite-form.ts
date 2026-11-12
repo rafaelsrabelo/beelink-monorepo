@@ -26,6 +26,7 @@ export function invitationViewOf(invitation: AffiliateInvitation, locale: string
     storeLogoUrl: invitation.store.logoUrl,
     email: invitation.affiliate.email,
     generalRate: ratePercentOf(invitation.table.defaultRateBps, locale),
+    categories: invitation.table.categories.map((category) => ({ name: category.name, rate: ratePercentOf(category.rateBps, locale) })),
     products: invitation.table.products.map((product) => ({ name: product.name, rate: ratePercentOf(product.rateBps, locale) })),
     termsText: invitation.terms.text,
     expires: date(invitation.expiresAt),

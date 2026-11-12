@@ -10,6 +10,7 @@ import { env } from '../../shared/config/env.js';
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoresService } from '../stores/stores.service.js';
 import { nextPaymentOf, numbersOf, ordersOf, payoutsOf, productsOf } from './affiliate-area-reads.js';
+import { maskedCpfOf } from './affiliate-cpf.js';
 import { statementOf } from './affiliate-statement.js';
 import { AFFILIATE_AREA_PAGE_SIZE, affiliateError } from './affiliates.constants.js';
 import type { AffiliateAreaPageQueryDto, AffiliateProductQueryDto, AffiliateProfileDto } from './dto/affiliate-area.dto.js';
@@ -27,6 +28,7 @@ const STANDING = {
   tableId: true,
   pixKey: true,
   phone: true,
+  cpf: true,
   photoUrl: true,
   tagline: true,
   pendingCents: true,
@@ -38,7 +40,13 @@ const STANDING = {
 type Standing = Prisma.AffiliateGetPayload<{ select: typeof STANDING }> & { status: 'ACTIVE' | 'PAUSED' | 'ENDED'; slug: string };
 
 const pageOf = (query: AffiliateAreaPageQueryDto) => ({ page: query.page ?? 1, pageSize: query.pageSize ?? AFFILIATE_AREA_PAGE_SIZE });
-const profileOf = (row: Pick<Standing, 'pixKey' | 'phone' | 'photoUrl' | 'tagline'>): AffiliateProfile => ({ pixKey: row.pixKey, phone: row.phone, photoUrl: row.photoUrl, tagline: row.tagline });
+const profileOf = (row: Pick<Standing, 'pixKey' | 'phone' | 'cpf' | 'photoUrl' | 'tagline'>): AffiliateProfile => ({
+  pixKey: row.pixKey,
+  phone: row.phone,
+  maskedCpf: maskedCpfOf(row.cpf),
+  photoUrl: row.photoUrl,
+  tagline: row.tagline,
+});
 
 /**
  * The affiliate's own area (IMPULSEIA-108): what an account reads of the shops it sells for. Every
@@ -130,7 +138,7 @@ export class AffiliateAreaService {
         ...(dto.photoUrl !== undefined ? { photoUrl: dto.photoUrl } : {}),
         ...(dto.tagline !== undefined ? { tagline: dto.tagline } : {}),
       },
-      select: { pixKey: true, phone: true, photoUrl: true, tagline: true },
+      select: { pixKey: true, phone: true, cpf: true, photoUrl: true, tagline: true },
     });
     return profileOf(row);
   }

@@ -12,12 +12,13 @@ export const people: AffiliateListItemView[] = [
   { id: "a-ana", name: "Ana Lima", email: "ana@exemplo.com", status: "PAUSED", tableName: "Padrão", since: "Desde 2 de out." },
 ]
 
-export const inviteValue: AffiliateInviteFormValues = { name: "Maria Souza", email: "maria@exemplo.com", tableId: "t-padrao", phone: "", note: "" }
+export const inviteValue: AffiliateInviteFormValues = { name: "Maria Souza", email: "maria@exemplo.com", tableId: "t-padrao", phone: "(85) 98888-1234", cpf: "529.982.247-25", note: "" }
 
 export const record: AffiliateRecordView = {
   name: "João Silva",
   email: "joao@exemplo.com",
   phone: "(85) 99999-4321",
+  cpf: "529.982.247-25",
   status: "ACTIVE",
   link: "https://beelink.com.br/lessari/joao",
   pixKey: "joao@exemplo.com",
@@ -30,6 +31,7 @@ export const invitedRecord: AffiliateRecordView = {
   name: "Maria Souza",
   email: "maria@exemplo.com",
   phone: null,
+  cpf: null,
   status: "INVITED",
   link: null,
   pixKey: null,
@@ -38,4 +40,7 @@ export const invitedRecord: AffiliateRecordView = {
   invite: "Convite enviado em 11 de nov. O link vale até 18 de nov.",
 }
 
-export const recordValue: AffiliateRecordFormValues = { tableId: "t-influ", note: "Indicou 3 amigas no lançamento." }
+export const recordValue: AffiliateRecordFormValues = { tableId: "t-influ", phone: "(85) 99999-4321", cpf: "529.982.247-25", note: "Indicou 3 amigas no lançamento." }
+
+/** One invited before the phone and the CPF were asked. */
+export const recordValueMissing: AffiliateRecordFormValues = { tableId: "t-padrao", phone: "", cpf: "", note: "" }

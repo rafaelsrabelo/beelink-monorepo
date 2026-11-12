@@ -42,6 +42,7 @@ export function AffiliateRecordDetails({ affiliate, messages = defaultMessages }
       <dl className="flex flex-col gap-3">
         <Line term={text.email}>{affiliate.email}</Line>
         <Line term={text.phone}>{affiliate.phone ?? <span className="text-muted-foreground">{text.none}</span>}</Line>
+        <Line term={text.cpf}>{affiliate.cpf ?? <span className="text-muted-foreground">{text.none}</span>}</Line>
         <Line term={text.link}>
           {affiliate.link ? (
             <span className="font-mono text-[13px]">{affiliate.link}</span>

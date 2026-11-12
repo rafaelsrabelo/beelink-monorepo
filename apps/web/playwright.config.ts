@@ -49,6 +49,9 @@ export default defineConfig({
         // The courier's form is sent for real by several tests from one address (BEELINK-322); the
         // limit of five in ten minutes has its own e2e test, in apps/api.
         COURIER_APPLICATION_RATE_LIMIT_MAX: "1000",
+        // A deployment's switch, on here as in `.env.example`: production keeps it off until the
+        // privacy policy that names the affiliate's cookie is published (IMPULSEIA-105, -109).
+        AFFILIATE_LINKS_ENABLED: "true",
       },
     },
     {

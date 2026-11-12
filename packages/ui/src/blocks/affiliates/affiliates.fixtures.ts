@@ -15,12 +15,19 @@ export const calendar: AffiliatePayoutRowView[] = [
 ]
 
 export const tables: CommissionTableView[] = [
-  { id: "t-padrao", name: "Padrão", defaultRateBps: 1000, isDefault: true, productRateCount: 2, affiliateCount: 3 },
-  { id: "t-influ", name: "Influencers", defaultRateBps: 1500, isDefault: false, productRateCount: 0, affiliateCount: 1 },
+  { id: "t-padrao", name: "Padrão", defaultRateBps: 1000, isDefault: true, productRateCount: 2, categoryRateCount: 1, affiliateCount: 3 },
+  { id: "t-influ", name: "Influencers", defaultRateBps: 1500, isDefault: false, productRateCount: 0, categoryRateCount: 0, affiliateCount: 1 },
 ]
 
 export const rates: CommissionRateRowView[] = [
-  { productId: "p-whey", name: "Whey Concentrado", imageUrl: null, rateBps: 2500, typed: "25", changed: false },
-  { productId: "p-creatina", name: "Creatina", imageUrl: null, rateBps: null, typed: "", changed: false },
-  { productId: "p-bcaa", name: "BCAA", imageUrl: null, rateBps: 0, typed: "5", changed: true },
+  { id: "p-whey", name: "Whey Concentrado", imageUrl: null, rateBps: 2500, fallbackRateBps: 1500, fallbackName: "Suplementos", typed: "25", changed: false },
+  { id: "p-creatina", name: "Creatina", imageUrl: null, rateBps: null, fallbackRateBps: 1500, fallbackName: "Suplementos", typed: "", changed: false },
+  { id: "p-camiseta", name: "Camiseta", imageUrl: null, rateBps: null, fallbackRateBps: 1000, fallbackName: null, typed: "", changed: false },
+  { id: "p-bcaa", name: "BCAA", imageUrl: null, rateBps: 0, fallbackRateBps: 1500, fallbackName: "Suplementos", typed: "5", changed: true },
+]
+
+/** A shop's categories on a table: one with its own rate, one following the general rate. */
+export const categoryRates: CommissionRateRowView[] = [
+  { id: "c-suplementos", name: "Suplementos", rateBps: 1500, fallbackRateBps: 1000, fallbackName: null, typed: "15", changed: false },
+  { id: "c-roupas", name: "Roupas", rateBps: null, fallbackRateBps: 1000, fallbackName: null, typed: "", changed: false },
 ]

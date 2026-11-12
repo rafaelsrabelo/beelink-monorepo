@@ -134,6 +134,7 @@ export async function productsOf(prisma: PrismaService, owner: LinkOwner, query:
         priceCents: true,
         images: { orderBy: { position: 'asc' }, take: 1, select: { url: true } },
         commissionRates: { where: { tableId: owner.tableId }, select: { rateBps: true } },
+        category: { select: { commissionRates: { where: { tableId: owner.tableId }, select: { rateBps: true } } } },
       },
     }),
     prisma.product.count({ where }),
@@ -147,7 +148,8 @@ export async function productsOf(prisma: PrismaService, owner: LinkOwner, query:
       name: row.name,
       imageUrl: row.images[0]?.url ?? null,
       priceCents: row.priceCents,
-      rateBps: row.commissionRates[0]?.rateBps ?? owner.defaultRateBps,
+      // The product's own, else its category's, else the table's — the order's own precedence (`rateOf`).
+      rateBps: row.commissionRates[0]?.rateBps ?? row.category?.commissionRates[0]?.rateBps ?? owner.defaultRateBps,
       path: `/${owner.storeSlug}/${products}/${row.slug}${credit}`,
     })),
     total,

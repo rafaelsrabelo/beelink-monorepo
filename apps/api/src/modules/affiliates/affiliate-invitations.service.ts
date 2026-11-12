@@ -64,6 +64,7 @@ export class AffiliateInvitationsService {
           defaultRateBps: true,
           // A product off the shelf sells nothing through a link: only those on it are shown.
           rates: { where: { product: { status: 'ACTIVE' } }, select: { productId: true, rateBps: true, product: { select: { name: true } } }, orderBy: { product: { name: 'asc' } } },
+          categoryRates: { select: { categoryId: true, rateBps: true, category: { select: { name: true } } }, orderBy: { category: { name: 'asc' } } },
         },
       }),
       this.prisma.affiliateProgram.findUniqueOrThrow({ where: { storeId: invite.storeId }, select: { termsText: true, termsVersion: true } }),
@@ -74,7 +75,12 @@ export class AffiliateInvitationsService {
     return {
       store: invite.store,
       affiliate: { name: invite.name, email: invite.email },
-      table: { name: table.name, defaultRateBps: table.defaultRateBps, products: table.rates.map((rate) => ({ productId: rate.productId, name: rate.product.name, rateBps: rate.rateBps })) },
+      table: {
+        name: table.name,
+        defaultRateBps: table.defaultRateBps,
+        categories: table.categoryRates.map((rate) => ({ categoryId: rate.categoryId, name: rate.category.name, rateBps: rate.rateBps })),
+        products: table.rates.map((rate) => ({ productId: rate.productId, name: rate.product.name, rateBps: rate.rateBps })),
+      },
       terms: { text: program.termsText, version: program.termsVersion },
       expiresAt: invite.expiresAt.toISOString(),
       hasAccount: account !== null,
