@@ -15,8 +15,8 @@ export const calendar: AffiliatePayoutRowView[] = [
 ]
 
 export const tables: CommissionTableView[] = [
-  { id: "t-padrao", name: "Padrão", defaultRateBps: 1000, isDefault: true, productRateCount: 2 },
-  { id: "t-influ", name: "Influencers", defaultRateBps: 1500, isDefault: false, productRateCount: 0 },
+  { id: "t-padrao", name: "Padrão", defaultRateBps: 1000, isDefault: true, productRateCount: 2, affiliateCount: 3 },
+  { id: "t-influ", name: "Influencers", defaultRateBps: 1500, isDefault: false, productRateCount: 0, affiliateCount: 1 },
 ]
 
 export const rates: CommissionRateRowView[] = [

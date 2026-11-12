@@ -197,6 +197,7 @@ model Store {
   /// Its affiliate programme (IMPULSEIA-101); none until the owner first opens it.
   affiliateProgram  AffiliateProgram?
   commissionTables  CommissionTable[]
+  affiliates        Affiliate[]
   /// Its first-purchase pop-up (BEELINK-306); none until the shopkeeper first saves it.
   popup             StorePopup?
   cashbackCredits   CashbackCredit[]

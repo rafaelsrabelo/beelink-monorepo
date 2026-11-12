@@ -56,7 +56,8 @@ export class AffiliatesService {
     const tables = await this.prisma.commissionTable.findMany({
       where: { storeId },
       orderBy: [{ isDefault: 'desc' }, { name: 'asc' }],
-      include: { _count: { select: { rates: true } } },
+      // Ended affiliates are no one's to move: a table with only those is deleted, and they go to the default one.
+      include: { _count: { select: { rates: true, affiliates: { where: { status: { not: 'ENDED' } } } } } },
     });
 
     return {

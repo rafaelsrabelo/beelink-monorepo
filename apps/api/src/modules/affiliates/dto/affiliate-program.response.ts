@@ -32,6 +32,7 @@ export class CommissionTableSummaryResponse implements CommissionTableSummary {
   @ApiProperty({ example: 1000 }) defaultRateBps!: number;
   @ApiProperty({ description: 'Born with the programme; never deleted.' }) isDefault!: boolean;
   @ApiProperty() productRateCount!: number;
+  @ApiProperty({ description: 'Affiliates on it who have not ended; a table with any is not deleted.' }) affiliateCount!: number;
 }
 
 export class AffiliateProgramOverviewResponse implements AffiliateProgramOverview {

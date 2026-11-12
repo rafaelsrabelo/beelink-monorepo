@@ -4124,6 +4124,10 @@ export interface UiMessages {
       /** `{count}`: the products with a rate of their own on it. */
       productRates: string
       productRatesNone: string
+      /** `{count}`, 2 or more. */
+      affiliates: string
+      affiliatesOne: string
+      affiliatesNone: string
       /** `{name}`: names the way to a table's rates by product. */
       open: string
       openLabel: string
@@ -4178,6 +4182,7 @@ export interface UiMessages {
       COMMISSION_TABLE_NAME_TAKEN: string
       COMMISSION_TABLE_DEFAULT: string
       COMMISSION_TABLE_LIMIT: string
+      COMMISSION_TABLE_IN_USE: string
       PRODUCT_NOT_FOUND: string
       UNKNOWN: string
     }

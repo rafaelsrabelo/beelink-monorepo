@@ -31,6 +31,8 @@ export interface CommissionTableView {
   defaultRateBps: number
   isDefault: boolean
   productRateCount: number
+  /** Affiliates on it who have not ended: a table with any is not deleted. */
+  affiliateCount: number
 }
 
 /** A table's name and rate as the dialog edits them. */

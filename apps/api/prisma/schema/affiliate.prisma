@@ -37,7 +37,8 @@ model CommissionTable {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  rates CommissionTableRate[]
+  rates      CommissionTableRate[]
+  affiliates Affiliate[]
 
   @@unique([storeId, name])
   /// One default table per shop, however many first readings open the programme at once.
@@ -60,4 +61,80 @@ model CommissionTableRate {
   @@id([tableId, productId])
   @@index([productId])
   @@map("commission_table_rates")
+}
+
+/// Where an affiliate stands with a shop (IMPULSEIA-103). INVITED until the invite is accepted;
+/// ACTIVE ⇄ PAUSED; ENDED for good — the same e-mail may be invited again, as a new row.
+enum AffiliateStatus {
+  INVITED
+  ACTIVE
+  PAUSED
+  ENDED
+}
+
+/// Someone who sells through a shop's link (plan docs/plans/2026-10-24--afiliados.md): one row per
+/// standing with one shop. The account is bee-link's own (storeId null), never the shop's, so one
+/// account sells for many shops. E-mail and account are unique in the shop among the rows not ended;
+/// the `/name` is unique in the shop for good, so a printed link of an ended affiliate never credits
+/// someone else.
+model Affiliate {
+  id      String          @id @default(uuid(7)) @db.Uuid
+  storeId String          @db.Uuid
+  store   Store           @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  /// Null until the invite is accepted, and again if the account is deleted.
+  userId  String?         @db.Uuid
+  user    User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name    String          @db.VarChar(120)
+  /// Lower case, as invited: the one address whose account may accept.
+  email   String          @db.VarChar(254)
+  /// Digits only, with the country code.
+  phone   String?         @db.VarChar(20)
+  /// The shop's own; the affiliate never reads it.
+  note    String?         @db.VarChar(500)
+  /// The `/name`, normalised as a category slug is; null while invited.
+  slug    String?         @db.VarChar(40)
+  status  AffiliateStatus @default(INVITED)
+  /// A table with an affiliate who has not ended is not deleted; one with only ended ones hands them
+  /// to the default table first, so the key never dangles. NO ACTION rather than RESTRICT: checked at
+  /// the end of the statement, so a shop deleted takes its tables and its affiliates together.
+  tableId String          @db.Uuid
+  table   CommissionTable @relation(fields: [tableId], references: [id], onDelete: NoAction)
+  /// As the affiliate gave it, up to 140 characters; the shop pays through it, outside bee-link.
+  pixKey  String?         @db.VarChar(140)
+  /// What the shop window shows of them (AF5); edited in their own area (AF8).
+  photoUrl String?
+  tagline  String?        @db.VarChar(100)
+  /// The shop's terms as accepted: their version, and when.
+  termsVersion    Int?
+  termsAcceptedAt DateTime?
+
+  invitedAt  DateTime  @default(now())
+  acceptedAt DateTime?
+  endedAt    DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  invite AffiliateInvite?
+
+  @@unique([storeId, slug])
+  @@unique([storeId, email], where: raw("(status <> 'ENDED'::\"AffiliateStatus\")"), map: "affiliates_live_email_key")
+  @@unique([storeId, userId], where: raw("(status <> 'ENDED'::\"AffiliateStatus\") AND (\"userId\" IS NOT NULL)"), map: "affiliates_live_user_key")
+  /// The shop's list, newest invited first, by status.
+  @@index([storeId, status, invitedAt])
+  @@index([tableId])
+  @@index([userId])
+  @@map("affiliates")
+}
+
+/// The invite of an affiliate still INVITED: one per affiliate. Sending it again replaces the token
+/// and the expiry, so only the latest e-mail's link works. Only the token's SHA-256 is kept.
+model AffiliateInvite {
+  affiliateId String    @id @db.Uuid
+  affiliate   Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  tokenHash   String    @unique @db.VarChar(64)
+  expiresAt   DateTime
+  sentAt      DateTime
+  usedAt      DateTime?
+
+  @@map("affiliate_invites")
 }
