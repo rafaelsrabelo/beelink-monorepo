@@ -5,13 +5,13 @@ import { NextResponse, type NextRequest } from "next/server"
 import type { ApiErrorBody } from "@harness-monorepo/contracts"
 
 // App
-import { AFFILIATE_COOKIE, orderAffiliateVisitOf } from "@/lib/affiliate-cookie"
+import { AFFILIATE_COOKIE, heldBeforeSessions, orderAffiliateVisitOf } from "@/lib/affiliate-cookie"
 import { callApi } from "@/lib/api"
 import { clientIpOf, readJsonBody, refuseCrossOrigin } from "@/lib/bff"
 import { clearCustomerSessionCookies, setCustomerSessionCookies } from "@/lib/customer-session-cookies"
 import { marketingConsentAt, orderOriginOf } from "@/lib/order-origin"
 import { revalidateOffers } from "@/lib/revalidate"
-import { shopAddressOf } from "@/lib/shop-address"
+import { shopAddressOf, shopHomeOf } from "@/lib/shop-address"
 import { callAsShopper } from "@/lib/shopper-call"
 
 function isCart(body: unknown): body is Record<string, unknown> {
@@ -80,6 +80,8 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
   })
   if (placed.renewed) setCustomerSessionCookies(answer, shopAddressOf(request.headers, slug), placed.renewed)
   if (placed.response.ok && tookACoupon(payload)) revalidateOffers(slug)
+  // A referral kept from when it lasted the programme's days credits nothing now: it is cleared where seen.
+  if (heldBeforeSessions(request.cookies.get(AFFILIATE_COOKIE)?.value)) answer.cookies.set(AFFILIATE_COOKIE, "", { path: shopHomeOf(shopAddressOf(request.headers, slug)), maxAge: 0 })
   return answer
 }
 

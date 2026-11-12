@@ -37,17 +37,17 @@ describe("the affiliate forms' crossing (IMPULSEIA-102)", () => {
   it("turns the programme into the form and back, blank terms being none", () => {
     const form = affiliateSettingsFormOf({ enabled: true, attributionDays: 30, payoutDelayDays: 10, termsText: null, termsVersion: 0, updatedAt: "2026-11-11T12:00:00.000Z" })
 
-    expect(form).toEqual({ enabled: true, attributionDays: "30", payoutDelayDays: "10", termsText: "" })
+    expect(form).toEqual({ enabled: true, attributionDays: 30, payoutDelayDays: "10", termsText: "" })
     expect(affiliateSettingsPayloadOf(form, issues)).toEqual({ payload: { enabled: true, attributionDays: 30, payoutDelayDays: 10, termsText: null } })
     expect(affiliateSettingsPayloadOf({ ...form, termsText: "  Pix  " }, issues)).toEqual({ payload: { enabled: true, attributionDays: 30, payoutDelayDays: 10, termsText: "Pix" } })
     expect(affiliateSettingsPayloadOf({ ...form, payoutDelayDays: "0" }, issues)).toMatchObject({ payload: { payoutDelayDays: 0 } })
   })
 
   it("says each field out of range, and sends nothing", () => {
-    const form = { enabled: true, attributionDays: "0", payoutDelayDays: "61", termsText: "a".repeat(10_001) }
+    const form = { enabled: true, attributionDays: 30, payoutDelayDays: "61", termsText: "a".repeat(10_001) }
 
-    expect(affiliateSettingsPayloadOf(form, issues)).toEqual({ issues: { attributionDays: issues.attributionDays, payoutDelayDays: issues.payoutDelayDays, termsText: issues.termsText } })
-    expect(affiliateSettingsPayloadOf({ ...form, attributionDays: "91", payoutDelayDays: "2,5", termsText: "" }, issues)).toEqual({ issues: { attributionDays: issues.attributionDays, payoutDelayDays: issues.payoutDelayDays } })
+    expect(affiliateSettingsPayloadOf(form, issues)).toEqual({ issues: { payoutDelayDays: issues.payoutDelayDays, termsText: issues.termsText } })
+    expect(affiliateSettingsPayloadOf({ ...form, payoutDelayDays: "2,5", termsText: "" }, issues)).toEqual({ issues: { payoutDelayDays: issues.payoutDelayDays } })
   })
 
   it("follows the delay as typed on the API's periods, and shows none for a delay that does not hold", () => {

@@ -200,14 +200,22 @@ describe("the cart's order — where its buyer came from (BEELINK-275)", () => {
     const affiliateId = "0199a1b2-0000-7000-8000-00000000000a"
     const forged = { ...cart, affiliateVisit: { affiliateId: "0199a1b2-0000-7000-8000-0000000000ff", visitedAt: new Date().toISOString() } }
 
-    await post({ cookie: `${SESSION}; bl_affiliate=${affiliateId}.${visitedAt}`, body: forged })
+    await post({ cookie: `${SESSION}; bl_affiliate=s1.${affiliateId}.${visitedAt}`, body: forged })
     expect(bodyOf(calls.orderCall())).toEqual({ ...cart, affiliateVisit: { affiliateId, visitedAt: new Date(visitedAt).toISOString() } })
 
-    // A cookie that is not one, and no cookie, send none — and what the page named is dropped either way.
-    for (const cookie of [`${SESSION}; bl_affiliate=forjado`, SESSION]) {
+    // A cookie that is not one, one of the shape it had while it lasted the programme's days, and no
+    // cookie send none — and what the page named is dropped either way.
+    for (const cookie of [`${SESSION}; bl_affiliate=forjado`, `${SESSION}; bl_affiliate=${affiliateId}.${visitedAt}`, SESSION]) {
       await post({ cookie, body: forged })
       expect(bodyOf(vi.mocked(fetch).mock.calls.at(-1)), cookie).toEqual(cart)
     }
+  })
+
+  it("clears a referral kept from when it lasted the programme's days", async () => {
+    api(null)
+    const response = await post({ cookie: `${SESSION}; bl_affiliate=0199a1b2-0000-7000-8000-00000000000a.${Date.now()}` })
+
+    expect(response.cookies.get("bl_affiliate")).toMatchObject({ value: "", maxAge: 0, path: "/loja" })
   })
 
   it("places an order with no origin for a visitor who came by none", async () => {

@@ -16,11 +16,11 @@ export interface LegalTexts {
  * keeps or shares is a new version of these texts, with a new `version`.
  */
 export const legalTexts = {
-  version: "2026-11-13",
+  version: "2026-11-14",
   terms: {
     lang: "pt-BR",
     title: "Termos de uso",
-    effective: "Vigente desde 13 de novembro de 2026",
+    effective: "Vigente desde 14 de novembro de 2026",
     intro: [
       "Estes Termos de uso são as regras para usar o bee-link. Eles explicam o que a plataforma faz, o que ela não faz e o que se espera de cada pessoa que a usa.",
       "Eles valem para três públicos: o lojista, que cria uma conta no painel para publicar a sua loja; o afiliado, que uma loja convida para vender pelo link dela e que entra com uma conta do bee-link; e o cliente, que cria uma conta numa loja para comprar dela. Quando uma regra vale só para um deles, o texto diz.",
@@ -388,7 +388,7 @@ export const legalTexts = {
   privacy: {
     lang: "pt-BR",
     title: "Política de privacidade",
-    effective: "Vigente desde 13 de novembro de 2026",
+    effective: "Vigente desde 14 de novembro de 2026",
     intro: [
       "Esta Política de privacidade explica quais dados pessoais o bee-link trata, para quê, com quem os compartilha, por quanto tempo os guarda e como você exerce os seus direitos, conforme a Lei Geral de Proteção de Dados (Lei nº 13.709/2018, a LGPD).",
       "Ela vale para os lojistas, para os afiliados das lojas, para os clientes das lojas, para quem se candidata a fazer entregas e para quem visita o site do bee-link ou uma loja sem criar conta. Ao criar uma conta, ou ao definir uma senha pelo link enviado por e-mail, ou ao enviar o cadastro de entregador, você declara que leu esta Política. Isso vale também para quem cria a conta pelo convite de afiliado de uma loja.",
@@ -775,8 +775,7 @@ export const legalTexts = {
               "bl_site_consent: a sua resposta, aceitar ou recusar, ao aviso de cookies do site do bee-link, que pergunta sobre o Google Analytics; vale para a página inicial e para as telas em que o lojista entra e cria a conta, nunca como resposta ao aviso de uma loja, e dura 180 dias;",
               "bl_purchases: numa loja que usa o Pixel da Meta, e só depois que você aceita, os códigos dos seus últimos pedidos já informados à Meta, para que o mesmo pedido não seja informado duas vezes; vale só para aquela loja e dura 7 dias, renovados a cada pedido informado;",
               "bl_origin: a campanha do link pelo qual você chegou a uma loja, isto é, os parâmetros utm_source, utm_medium, utm_campaign, utm_content e utm_term do endereço, para que o pedido que você fizer ali registre de qual campanha veio; e, numa loja que usa o Pixel da Meta, só depois que você aceita, o identificador do clique no anúncio (fbclid) com que você chegou; vale só para aquela loja e dura 30 dias a partir da chegada;",
-              "bl_affiliate: numa loja com programa de afiliados, o afiliado pelo link de quem você chegou, isto é, um identificador do afiliado e o momento da chegada, e nada sobre você, para que o pedido que você fizer ali credite a comissão dele; não depende do aviso de cookies, porque serve ao acordo entre a loja e o afiliado, e não a publicidade; só o servidor do bee-link o lê, ele vale só para aquela loja e dura os dias de indicação que ela definiu, de 1 a 90, ou 30 se ela não os mudou, contados da chegada; o link de outro afiliado o substitui;",
-              "bl_affiliate_hidden: numa loja em que você fechou a faixa que diz por indicação de quem você chegou, o identificador desse afiliado, para que a faixa não volte; dura até você fechar o navegador;",
+              "bl_affiliate: numa loja com programa de afiliados, o afiliado pelo link de quem você chegou, isto é, um identificador do afiliado e o momento da chegada, e nada sobre você, para que o pedido que você fizer ali credite a comissão dele; não depende do aviso de cookies, porque serve ao acordo entre a loja e o afiliado, e não a publicidade; só o servidor do bee-link o lê, ele vale só para aquela loja e dura até você fechar o navegador, de modo que só um pedido feito na mesma visita em que você chegou pelo link credita a comissão; o link de outro afiliado o substitui;",
               "bl_popup: numa loja que mostra um aviso de primeira compra (pop-up ou faixa), que você já fechou esse aviso ou apertou o botão dele, para que ele não apareça de novo; guarda só um número que identifica o aviso fechado, e nada sobre você; vale só para aquela loja e dura 30 dias;",
               "bl_prefs: as preferências de exibição do painel, como o menu recolhido; dura 1 ano;",
               "bl_locale: o idioma escolhido; dura 1 ano.",

@@ -65,10 +65,12 @@ describe("AffiliateSettingsForm", () => {
   it("says what to correct under each field, and the API's refusal, and submits", async () => {
     const onSubmit = vi.fn()
     const { container } = render(
-      <AffiliateSettingsForm value={settings} onChange={noop} onSubmit={onSubmit} calendar={[]} issues={{ attributionDays: "Informe de 1 a 90 dias." }} error="Alguma configuração está fora do permitido." />,
+      <AffiliateSettingsForm value={settings} onChange={noop} onSubmit={onSubmit} calendar={[]} issues={{ payoutDelayDays: "Informe de 0 a 60 dias." }} error="Alguma configuração está fora do permitido." />,
     )
 
-    expect(screen.getByLabelText("A visita pelo link vale por")).toHaveAccessibleDescription("Informe de 1 a 90 dias.")
+    expect(screen.getByLabelText("Prazo para pagar")).toHaveAccessibleDescription("Informe de 0 a 60 dias.")
+    expect(screen.queryByLabelText("A visita pelo link vale por")).toBeNull()
+    expect(screen.getByText(/compra na mesma visita/)).toBeInTheDocument()
     expect(screen.getByText("Alguma configuração está fora do permitido.")).toBeInTheDocument()
     await userEvent.click(screen.getByRole("button", { name: "Salvar configurações" }))
     expect(onSubmit).toHaveBeenCalledOnce()

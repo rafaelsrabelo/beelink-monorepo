@@ -348,9 +348,9 @@ describe("bee-link's legal texts (BEELINK-171)", () => {
 
     // BEELINK-329's version (2026-10-15) said the courier form no longer asks for the city; that sentence stays, checked above.
     it("is the version that tells of affiliates", () => {
-      expect(legalTexts.version).toBe("2026-11-13")
-      expect(legalTexts.privacy.effective).toBe("Vigente desde 13 de novembro de 2026")
-      expect(legalTexts.terms.effective).toBe("Vigente desde 13 de novembro de 2026")
+      expect(legalTexts.version).toBe("2026-11-14")
+      expect(legalTexts.privacy.effective).toBe("Vigente desde 14 de novembro de 2026")
+      expect(legalTexts.terms.effective).toBe("Vigente desde 14 de novembro de 2026")
     })
 
     it("gives the affiliates' data a section of its own, after the shopkeepers'", () => {
@@ -386,13 +386,13 @@ describe("bee-link's legal texts (BEELINK-171)", () => {
       expect(policy("Com quem os dados são compartilhados")).toMatch(/o afiliado a quem um pedido foi creditado recebe, pelo bee-link, o nome de quem comprou[\s\S]*nunca o e-mail, o celular, o CPF ou o endereço[\s\S]*é um parceiro da loja, que decide mostrar esses dados a ele e responde por isso/)
     })
 
-    it("names both cookies of the link: what each holds, that the first waits for no consent, and how long each lasts", () => {
+    it("names the link's cookie: what it holds, that it waits for no consent, and that it lasts the browser's session", () => {
       const cookies = policy("Cookies")
 
       expect(cookies).toMatch(/bl_affiliate: numa loja com programa de afiliados, o afiliado pelo link de quem você chegou, isto é, um identificador do afiliado e o momento da chegada, e nada sobre você/)
       expect(cookies).toMatch(/não depende do aviso de cookies, porque serve ao acordo entre a loja e o afiliado, e não a publicidade/)
-      expect(cookies).toMatch(/dura os dias de indicação que ela definiu, de 1 a 90, ou 30 se ela não os mudou, contados da chegada; o link de outro afiliado o substitui/)
-      expect(cookies).toMatch(/bl_affiliate_hidden: numa loja em que você fechou a faixa[\s\S]*dura até você fechar o navegador/)
+      expect(cookies).toMatch(/dura até você fechar o navegador, de modo que só um pedido feito na mesma visita em que você chegou pelo link credita a comissão; o link de outro afiliado o substitui/)
+      expect(cookies).not.toMatch(/bl_affiliate_hidden/)
       expect(policy("Dados de quem visita uma loja sem conta")).toMatch(/o link de um afiliado de uma loja grava no seu navegador o cookie bl_affiliate/)
     })
 

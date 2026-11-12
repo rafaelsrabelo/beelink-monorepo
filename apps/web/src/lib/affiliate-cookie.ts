@@ -5,9 +5,13 @@
  * recommendation this is, and the order (AF6), to credit it.
  *
  * On the shop's path, like the cart and the UTMs, so an arrival at one shop never credits an order
- * at another; `HttpOnly`, since no page needs to read it. Its life is the programme's attribution
- * days, from the visit, and the last link followed replaces it whole. It is the shop's agreement
+ * at another; `HttpOnly`, since no page needs to read it. It lives for the browser's session — an
+ * order counts for the affiliate only when the customer came by the link in the same visit (the
+ * user's call of 12/11) — and the last link followed replaces it whole. It is the shop's agreement
  * with its affiliate and not marketing, so it does not wait on the answer about the pixel.
+ *
+ * Its value names its shape (`s1.`): a value written before, when the cookie lasted the programme's
+ * days, is read as no visit, so a browser that still holds one is credited to nobody.
  *
  * The cookie is the visitor's to edit: nothing is read from it without being checked here, and the
  * API checks again, at the order, whether the affiliate still credits and the visit still counts.
@@ -35,7 +39,11 @@ const DAY_MS = 24 * 60 * 60 * 1000
 const CLOCK_SKEW_MS = 5 * 60_000
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
-const VALUE = /^([0-9a-f-]{36})\.(\d{1,16})$/
+/** The shape a value is written in since the cookie lives for the session. */
+const SHAPE = "s1"
+const VALUE = /^s1\.([0-9a-f-]{36})\.(\d{1,16})$/
+/** The shape the cookie was written in while it lasted the programme's days: never believed again. */
+const BEFORE_SESSIONS = /^[0-9a-f-]{36}\.\d{1,16}$/
 
 export interface AffiliateVisit {
   affiliateId: string
@@ -44,7 +52,12 @@ export interface AffiliateVisit {
 }
 
 export function encodeAffiliateVisit({ affiliateId, visitedAt }: AffiliateVisit): string {
-  return `${affiliateId}.${Math.trunc(visitedAt)}`
+  return `${SHAPE}.${affiliateId}.${Math.trunc(visitedAt)}`
+}
+
+/** Whether a value was written while the cookie lasted the programme's days: one to clear where a response can. */
+export function heldBeforeSessions(raw: string | undefined): boolean {
+  return raw !== undefined && BEFORE_SESSIONS.test(raw.toLowerCase())
 }
 
 /**

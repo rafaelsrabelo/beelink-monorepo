@@ -50,7 +50,7 @@ export function AffiliateSettingsForm({ value, onChange, onSubmit, issues = {}, 
   }
 
   /** A whole number of days, its refusal said under it and named by it. */
-  function days(key: "attributionDays" | "payoutDelayDays", label: string, help: string, placeholder: string) {
+  function days(key: "payoutDelayDays", label: string, help: string, placeholder: string) {
     const issue = issues[key]
     return (
       <Field data-invalid={issue ? true : undefined} className="max-w-md">
@@ -88,7 +88,7 @@ export function AffiliateSettingsForm({ value, onChange, onSubmit, issues = {}, 
       </Field>
       <p className="text-muted-foreground text-sm">{text.price}</p>
 
-      {days("attributionDays", text.attributionDays, text.attributionDaysHelp, "30")}
+      <p className="text-muted-foreground text-sm">{text.attribution}</p>
       {days("payoutDelayDays", text.payoutDelay, text.payoutDelayHelp, "10")}
       <AffiliatePayoutCalendar rows={calendar} messages={messages} />
 

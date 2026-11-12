@@ -18,7 +18,6 @@ import { percentFrom } from "@/lib/discount-form"
 type Text = UiMessages["affiliates"]
 
 const BPS_MAX = 10_000
-const ATTRIBUTION_DAYS = { min: 1, max: 90 }
 const PAYOUT_DELAY_DAYS = { min: 0, max: 60 }
 const TERMS_MAX = 10_000
 const NAME_MAX = 60
@@ -47,7 +46,7 @@ export function commissionRateOf(typed: string): number | null | undefined {
 export function affiliateSettingsFormOf(program: AffiliateProgram): AffiliateSettingsFormValues {
   return {
     enabled: program.enabled,
-    attributionDays: String(program.attributionDays),
+    attributionDays: program.attributionDays,
     payoutDelayDays: String(program.payoutDelayDays),
     termsText: program.termsText ?? "",
   }
@@ -55,21 +54,20 @@ export function affiliateSettingsFormOf(program: AffiliateProgram): AffiliateSet
 
 /** The rules as the API takes them, or what to correct, field by field. Blank terms are none. */
 export function affiliateSettingsPayloadOf(value: AffiliateSettingsFormValues, text: Text["issues"]): { payload: AffiliateProgramPayload } | { issues: AffiliateSettingsIssues } {
-  const attributionDays = daysFrom(value.attributionDays, ATTRIBUTION_DAYS)
   const payoutDelayDays = daysFrom(value.payoutDelayDays, PAYOUT_DELAY_DAYS)
   const terms = value.termsText.trim()
   const termsHold = lengthOf(terms) <= TERMS_MAX
 
-  if (attributionDays === null || payoutDelayDays === null || !termsHold) {
+  if (payoutDelayDays === null || !termsHold) {
     return {
       issues: {
-        ...(attributionDays === null ? { attributionDays: text.attributionDays } : {}),
         ...(payoutDelayDays === null ? { payoutDelayDays: text.payoutDelayDays } : {}),
         ...(termsHold ? {} : { termsText: text.termsText }),
       },
     }
   }
-  return { payload: { enabled: value.enabled, attributionDays, payoutDelayDays, termsText: terms || null } }
+  // The stored days go back as they are: a visit counts only for its session, and nothing here edits them.
+  return { payload: { enabled: value.enabled, attributionDays: value.attributionDays, payoutDelayDays, termsText: terms || null } }
 }
 
 /**

@@ -4116,8 +4116,8 @@ export interface UiMessages {
       title: string
       enabled: string
       enabledHelp: string
-      attributionDays: string
-      attributionDaysHelp: string
+      /** When a sale counts for the affiliate: the link in the same visit. */
+      attribution: string
       payoutDelay: string
       payoutDelayHelp: string
       /** The unit after a days field. */
@@ -4431,7 +4431,7 @@ export interface UiMessages {
     /** What the invite and record forms refuse before they ask, by field. */
     affiliateIssues: { name: string; email: string; phone: string; cpf: string; note: string; table: string }
     /** What a form refuses before it asks, by field. */
-    issues: { attributionDays: string; payoutDelayDays: string; termsText: string; name: string; rate: string }
+    issues: { payoutDelayDays: string; termsText: string; name: string; rate: string }
     /** An order's affiliate (IMPULSEIA-107), on the order's page. Amounts and dates arrive formatted. */
     order: {
       title: string

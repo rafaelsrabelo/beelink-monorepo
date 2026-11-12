@@ -120,7 +120,7 @@ test.describe("a shop's affiliate, in the browser", () => {
 
     const visitor = await (await browser.newContext()).newPage()
 
-    await test.step("a visitor who follows the link sees whose recommendation it is where the link is, and on the order", async () => {
+    await test.step("a visitor who follows the link sees whose recommendation it is where the link is, and on the order of that visit", async () => {
       await visitor.goto(`/${slug}/maria`)
       // The link keeps its own address: the shop's home is drawn there, with the name in it.
       await expect(visitor).toHaveURL(new RegExp(`/${slug}/maria$`))
@@ -129,25 +129,38 @@ test.describe("a shop's affiliate, in the browser", () => {
       await expect(band.getByText("Maria Souza")).toBeVisible()
       await expect(band.getByText("Parceria oficial")).toBeVisible()
       await expect(visitor.getByRole("button", { name: "Fechar indicação" })).toHaveCount(0)
-      await expect.poll(async () => (await visitor.context().cookies()).some((cookie) => cookie.name === "bl_affiliate")).toBe(true)
+      // The referral lives for the browser's session alone.
+      await expect.poll(async () => (await visitor.context().cookies()).find((cookie) => cookie.name === "bl_affiliate")?.expires).toBe(-1)
 
-      // Straight to the shop: the referral still holds, and no band says so.
+      // Straight to the shop in the same visit: the referral holds, and no band says so.
       await visitor.goto(`/${slug}`)
       await expect(visitor.getByRole("link", { name: /Whey/ }).first()).toBeVisible()
-      await expect(visitor.getByRole("region", { name: "Indicação" })).toHaveCount(0)
-      await visitor.goto(`/${slug}/produtos/${productSlug}`)
-      await expect(visitor.getByRole("button", { name: "Adicionar ao carrinho" }).first()).toBeVisible()
       await expect(visitor.getByRole("region", { name: "Indicação" })).toHaveCount(0)
 
       // A page the link names her on wears it again.
       await visitor.goto(`/${slug}/produtos/${productSlug}?afiliado=maria`)
       await expect(visitor.getByRole("region", { name: "Indicação" }).getByText("Maria Souza")).toBeVisible()
+      await visitor.goto(`/${slug}/produtos/${productSlug}`)
+      await expect(visitor.getByRole("region", { name: "Indicação" })).toHaveCount(0)
       await visitor.getByRole("button", { name: "Adicionar ao carrinho" }).first().click()
 
-      // The order says whose it is whenever the referral holds.
+      // The order of the visit that came by the link says whose it is.
       await visitor.goto(`/${slug}/carrinho`)
       await expect(visitor.getByText(/^Indicação de Maria/)).toBeVisible()
       await expect(visitor.getByText(/^Maria( Souza)? verá seu nome neste pedido\.$/)).toBeVisible()
+    })
+
+    await test.step("a visit that did not come by the link — another browser, or one closed since — is nobody's", async () => {
+      const stranger = await (await browser.newContext()).newPage()
+      await stranger.goto(`/${slug}/produtos/${productSlug}`)
+      await expect(stranger.getByRole("button", { name: "Adicionar ao carrinho" }).first()).toBeVisible()
+      await expect(stranger.getByRole("region", { name: "Indicação" })).toHaveCount(0)
+      await stranger.getByRole("button", { name: "Adicionar ao carrinho" }).first().click()
+
+      await stranger.goto(`/${slug}/carrinho`)
+      await expect(stranger.getByRole("button", { name: "Finalizar compra" }).or(stranger.getByRole("link", { name: "Finalizar compra" })).first()).toBeVisible()
+      await expect(stranger.getByText(/^Indicação de/)).toHaveCount(0)
+      expect((await stranger.context().cookies()).some((cookie) => cookie.name === "bl_affiliate")).toBe(false)
     })
 
     await test.step("Maria finds the shop, her link and the visit in her own area", async () => {

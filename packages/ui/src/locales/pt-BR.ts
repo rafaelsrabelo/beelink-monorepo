@@ -3535,8 +3535,7 @@ export const ptBR: UiMessages = {
       title: "Programa de afiliados",
       enabled: "Programa ligado",
       enabledHelp: "Desligado, nenhum link de afiliado atribui pedido novo. O que já foi atribuído continua valendo.",
-      attributionDays: "A visita pelo link vale por",
-      attributionDaysHelp: "Um pedido feito nesse prazo depois da visita é do afiliado. Se a pessoa abrir o link de outro afiliado, o último vale.",
+      attribution: "Uma venda conta para o afiliado quando o cliente chega pelo link dele e compra na mesma visita, antes de fechar o navegador. Se abrir o link de outro afiliado, vale o último.",
       payoutDelay: "Prazo para pagar",
       payoutDelayHelp: "Dias depois que cada período fecha. A comissão entra no período do dia em que o pedido foi entregue.",
       days: "dias",
@@ -3815,7 +3814,6 @@ export const ptBR: UiMessages = {
       table: "Escolha uma tabela.",
     },
     issues: {
-      attributionDays: "Informe de 1 a 90 dias.",
       payoutDelayDays: "Informe de 0 a 60 dias.",
       termsText: "Os termos podem ter até 10.000 caracteres.",
       name: "Informe um nome de até 60 caracteres.",

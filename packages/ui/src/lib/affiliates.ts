@@ -7,15 +7,19 @@
 /** The programme's rules as the form edits them: what was typed, before it is read as numbers. */
 export interface AffiliateSettingsFormValues {
   enabled: boolean
+  /**
+   * The stored attribution days, carried back as they are: a visit counts only for the browser's
+   * session (the user's call of 12/11), so no field on the screen sets them.
+   */
+  attributionDays: number
   /** Whole days, as typed. */
-  attributionDays: string
   payoutDelayDays: string
   /** Blank is no terms. */
   termsText: string
 }
 
 /** What the form refuses, by field, in words. */
-export type AffiliateSettingsIssues = Partial<Record<"attributionDays" | "payoutDelayDays" | "termsText", string>>
+export type AffiliateSettingsIssues = Partial<Record<"payoutDelayDays" | "termsText", string>>
 
 /** One payout period of the month, its days and its due day already in words. */
 export interface AffiliatePayoutRowView {
