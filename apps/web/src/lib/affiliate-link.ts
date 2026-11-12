@@ -4,7 +4,7 @@ import "server-only"
 import type { PublicAffiliate, PublicAffiliateLink } from "@harness-monorepo/contracts"
 
 // App
-import { AFFILIATE_COOKIE, AFFILIATE_HIDDEN_COOKIE, affiliateVisitOf } from "./affiliate-cookie"
+import { AFFILIATE_COOKIE, affiliateVisitOf } from "./affiliate-cookie"
 import { callPublicApi } from "./public-api"
 import { storeTag } from "./revalidate"
 
@@ -26,10 +26,9 @@ export async function affiliateLinkAt(shopSlug: string, ask: AffiliateLinkAsk): 
   return (await response.json()) as PublicAffiliateLink
 }
 
-/** Who this browser came to the shop by, as the shop window says it, and whether the visitor closed the strip. */
+/** Who this browser came to the shop by, as the shop window says it. */
 export interface AffiliateReferral {
   affiliate: PublicAffiliate
-  hidden: boolean
 }
 
 /** What the reads of a request's cookies need: the shop layout hands it `cookies()`. */
@@ -49,5 +48,5 @@ export async function affiliateReferralAt(shopSlug: string, jar: CookieReader, n
   const affiliate = (await affiliateLinkAt(shopSlug, { id: visit.affiliateId }))?.affiliate ?? null
   if (!affiliate || now - visit.visitedAt >= affiliate.attributionDays * 24 * 60 * 60 * 1000) return null
 
-  return { affiliate, hidden: jar.get(AFFILIATE_HIDDEN_COOKIE)?.value === affiliate.id }
+  return { affiliate }
 }

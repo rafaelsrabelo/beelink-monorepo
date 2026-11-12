@@ -221,11 +221,11 @@ export const ptBR: UiMessages = {
     },
     affiliate: {
       region: "Indicação",
-      cardLead: "Você chegou pela indicação de",
-      strip: "Comprando pela indicação de {name}",
+      bannerLead: "Você está na loja de",
+      partner: "Parceria oficial",
+      bannerNote: "Suas compras por este link contam para esta indicação.",
       note: "Indicação de {name}",
       noteDetail: "{name} verá seu nome neste pedido.",
-      dismiss: "Fechar indicação",
     },
     offers: {
       region: "Oferta da loja",
