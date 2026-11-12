@@ -11,16 +11,17 @@ import { AffiliatesFailed } from "@harness-monorepo/ui/blocks/affiliates/affilia
 import { AffiliatesSkeleton } from "@harness-monorepo/ui/blocks/affiliates/affiliates-skeleton"
 import { CommissionRateList } from "@harness-monorepo/ui/blocks/affiliates/commission-rate-list"
 import { TablePager } from "@harness-monorepo/ui/blocks/catalog/table-pager"
-import { ratePercentOf } from "@harness-monorepo/ui/lib/cashback"
 import { format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import { AppLink } from "@/components/app-link"
 import { useDebouncedValue } from "@/services/addresses/use-debounced-value"
-import { useCommissionTable } from "@/services/affiliates/affiliate-hooks"
+import { useCommissionTable, useSaveProductCommission } from "@/services/affiliates/affiliate-hooks"
 import { useProducts } from "@/services/catalog/catalog-hooks"
 import { AffiliatesFrame } from "./affiliates-frame"
+import { CommissionCategoryRatesSection } from "./commission-category-rates-section"
+import { CommissionGeneralRateSection } from "./commission-general-rate-section"
 import { useRateDrafts } from "./use-rate-drafts"
 
 export interface CommissionTableScreenProps {
@@ -33,8 +34,9 @@ export interface CommissionTableScreenProps {
 const SEARCH_DEBOUNCE_MS = 350
 
 /**
- * One commission table's rates, product by product (IMPULSEIA-102). The search and the page live in
- * the address, so a reload or the back button keeps the place; each row is saved on its own.
+ * One commission table's rates (IMPULSEIA-102): the general one, by category and by product, the
+ * Padrão's too (the user's review, 12/11/2026). The products' search and page live in the address,
+ * so a reload or the back button keeps the place; each row is saved on its own.
  */
 export function CommissionTableScreen({ slug, tableId, locale, messages }: CommissionTableScreenProps) {
   const text = messages.affiliates.table
@@ -53,7 +55,12 @@ export function CommissionTableScreen({ slug, tableId, locale, messages }: Commi
   const settled = useDebouncedValue(typed, SEARCH_DEBOUNCE_MS)
   const table = useCommissionTable(slug, tableId)
   const products = useProducts(slug, { ...(search ? { search } : {}), page })
-  const drafts = useRateDrafts(slug, table.data, messages)
+  const saveProduct = useSaveProductCommission(slug)
+  const drafts = useRateDrafts({
+    saved: new Map((table.data?.rates ?? []).map((rate) => [rate.productId, rate.rateBps])),
+    save: (productId, rateBps) => saveProduct.mutateAsync({ tableId, productId, rateBps }),
+    messages,
+  })
 
   /** Writes the search and the page into the address; a new search starts at page one. */
   function go(nextSearch: string, nextPage: number) {
@@ -77,6 +84,19 @@ export function CommissionTableScreen({ slug, tableId, locale, messages }: Commi
 
   const rows = products.data?.products ?? []
   const byId = new Map(rows.map((product) => [product.id, product]))
+  const byCategory = new Map(table.data.categoryRates.map((rate) => [rate.categoryId, rate.rateBps]))
+  // What a product without its own rate pays: its category's, else the table's — the order's own precedence.
+  const productRows = rows.map((product) => {
+    const categoryRate = product.category ? byCategory.get(product.category.id) : undefined
+    return {
+      id: product.id,
+      name: product.name,
+      imageUrl: product.images[0]?.url ?? null,
+      fallbackRateBps: categoryRate ?? table.data.defaultRateBps,
+      fallbackName: categoryRate !== undefined && product.category ? product.category.name : null,
+      ...drafts.draftOf(product.id),
+    }
+  })
 
   return frame(
     <>
@@ -86,14 +106,15 @@ export function CommissionTableScreen({ slug, tableId, locale, messages }: Commi
           {text.back}
         </AppLink>
         <h2 className="text-lg font-semibold">{table.data.name}</h2>
-        <p className="text-muted-foreground text-sm">{format(text.intro, { rate: ratePercentOf(table.data.defaultRateBps, locale) })}</p>
+        <p className="text-muted-foreground text-sm">{text.intro}</p>
       </div>
+      <CommissionGeneralRateSection key={`${table.data.id}-${table.data.defaultRateBps}`} slug={slug} table={table.data} locale={locale} messages={messages} />
+      <CommissionCategoryRatesSection slug={slug} table={table.data} locale={locale} messages={messages} />
       {products.isPending ? (
         <AffiliatesSkeleton shape="list" />
       ) : (
         <CommissionRateList
-          rows={drafts.rowsOf(rows)}
-          defaultRateBps={table.data.defaultRateBps}
+          rows={productRows}
           search={typed}
           onSearch={setTyped}
           onType={drafts.type}

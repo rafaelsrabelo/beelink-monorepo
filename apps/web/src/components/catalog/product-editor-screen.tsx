@@ -68,6 +68,12 @@ export function ProductEditorScreen({ slug, productId, ui, web, locale }: Produc
   // The shop's affiliate programme on (IMPULSEIA-102): the product's own rate on the default table.
   const commission = useDefaultCommissionTable(slug)
   const ownRate = productId ? (commission.rates?.get(productId) ?? null) : null
+  /** The rate the category chosen in the form has on the default table, which an empty field follows instead of the table's. */
+  const categoryCommissionOf = (categoryId: string): { name: string; rate: string } | null => {
+    const rateBps = categoryId ? commission.categoryRates?.get(categoryId) : undefined
+    const category = categories.data?.find((candidate) => candidate.id === categoryId)
+    return rateBps !== undefined && category ? { name: category.name, rate: ratePercentOf(rateBps, locale) } : null
+  }
 
   const [value, setValue] = useState<FormValues>(EMPTY_FORM)
   const [variations, setVariations] = useState<VariationsValue>(EMPTY_VARIATIONS)
@@ -227,7 +233,7 @@ export function ProductEditorScreen({ slug, productId, ui, web, locale }: Produc
           errors: showIssues ? issues : undefined,
         }}
         cashback={byProduct}
-        commission={commission.summary ? { defaultRate: ratePercentOf(commission.summary.defaultRateBps, locale) } : undefined}
+        commission={commission.summary ? { defaultRate: ratePercentOf(commission.summary.defaultRateBps, locale), categoryRate: categoryCommissionOf(value.categoryId) } : undefined}
         dirty={dirty && !save.isSuccess}
         messages={ui}
       />

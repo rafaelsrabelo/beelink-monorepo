@@ -31,6 +31,7 @@ export interface CommissionTableView {
   defaultRateBps: number
   isDefault: boolean
   productRateCount: number
+  categoryRateCount: number
   /** Affiliates on it who have not ended: a table with any is not deleted. */
   affiliateCount: number
 }
@@ -45,11 +46,21 @@ export interface CommissionTableFormValues {
 export type CommissionTableIssues = Partial<Record<"name" | "rate", string>>
 
 /** A product as a table's rates list it: its own rate there, or null when it follows the table's. */
+/**
+ * One rate on a table's screen: a product's, or a category's (the user's review, 12/11/2026). Its own
+ * rate here, or what it pays without one — its category's, or the table's.
+ */
 export interface CommissionRateRowView {
-  productId: string
+  /** The product's or the category's id. */
+  id: string
   name: string
-  imageUrl: string | null
+  /** A product's photo, or null when it has none; absent on a category, which shows none. */
+  imageUrl?: string | null
   rateBps: number | null
+  /** What it pays with no rate of its own: its category's, else the table's. */
+  fallbackRateBps: number
+  /** The category whose rate it follows; null when it follows the table's. */
+  fallbackName: string | null
   /** What its field shows: what was typed, or its own rate as saved. */
   typed: string
   /** What was typed is not what is saved: its save is offered. */

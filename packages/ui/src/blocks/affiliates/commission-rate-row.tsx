@@ -15,8 +15,6 @@ import type { CommissionRateRowView } from "@harness-monorepo/ui/lib/affiliates"
 
 export interface CommissionRateRowProps {
   row: CommissionRateRowView
-  /** The table's own rate, which a product without one pays. */
-  defaultRateBps: number
   onType: (typed: string) => void
   onSave: () => void
   onReset: () => void
@@ -26,15 +24,16 @@ export interface CommissionRateRowProps {
   messages?: UiMessages
 }
 
-/** One product's commission on a table: its own rate, typed and saved here, or the table's. */
-export function CommissionRateRow({ row, defaultRateBps, onType, onSave, onReset, issue, busy = false, locale = defaultLocale, messages = defaultMessages }: CommissionRateRowProps) {
+/** One product's or one category's commission on a table: its own rate, typed and saved here, or what it follows. */
+export function CommissionRateRow({ row, onType, onSave, onReset, issue, busy = false, locale = defaultLocale, messages = defaultMessages }: CommissionRateRowProps) {
   const text = messages.affiliates.table
-  const fieldId = `commission-rate-${row.productId}`
+  const fieldId = `commission-rate-${row.id}`
+  const fallback = ratePercentOf(row.fallbackRateBps, locale)
 
   return (
     <li className="flex flex-wrap items-start gap-3 py-3">
       <div className="flex min-w-48 flex-1 items-center gap-3">
-        {row.imageUrl ? (
+        {row.imageUrl === undefined ? null : row.imageUrl ? (
           <img src={row.imageUrl} alt="" className="size-10 shrink-0 rounded-md object-cover" />
         ) : (
           <span className="bg-muted text-muted-foreground flex size-10 shrink-0 items-center justify-center rounded-md">
@@ -59,7 +58,7 @@ export function CommissionRateRow({ row, defaultRateBps, onType, onSave, onReset
             inputMode="decimal"
             autoComplete="off"
             className="w-24"
-            placeholder={String(defaultRateBps / 100).replace(".", ",")}
+            placeholder={String(row.fallbackRateBps / 100).replace(".", ",")}
             value={row.typed}
             disabled={busy}
             aria-invalid={issue ? true : undefined}
@@ -78,7 +77,7 @@ export function CommissionRateRow({ row, defaultRateBps, onType, onSave, onReset
         </form>
         {/* Always there, so a row keeps its height when its note comes and goes. */}
         <p id={`${fieldId}-note`} className={issue ? "text-destructive min-h-4 text-xs" : "text-muted-foreground min-h-4 text-xs"}>
-          {issue ?? (row.rateBps === null ? format(text.follows, { rate: ratePercentOf(defaultRateBps, locale) }) : null)}
+          {issue ?? (row.rateBps !== null ? null : row.fallbackName !== null ? format(text.followsCategory, { name: row.fallbackName, rate: fallback }) : format(text.follows, { rate: fallback }))}
         </p>
       </div>
     </li>

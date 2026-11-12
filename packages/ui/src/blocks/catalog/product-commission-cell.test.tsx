@@ -30,4 +30,12 @@ describe("ProductCommissionCell (IMPULSEIA-102)", () => {
     expect(screen.getByRole("button", { name: "Edit affiliate commission: Creatina" })).toBeDisabled()
     expect(screen.getByRole("button")).toHaveTextContent("10% · default")
   })
+
+  it("says its category's rate when the category has one and the product none", () => {
+    const { rerender } = render(<ProductCommissionCell name="Creatina" rateBps={null} categoryRateBps={1500} defaultRateBps={1000} onEdit={() => {}} />)
+
+    expect(screen.getByRole("button")).toHaveTextContent("15% · categoria")
+    rerender(<ProductCommissionCell name="Creatina" rateBps={500} categoryRateBps={1500} defaultRateBps={1000} onEdit={() => {}} />)
+    expect(screen.getByRole("button")).toHaveTextContent("5%")
+  })
 })

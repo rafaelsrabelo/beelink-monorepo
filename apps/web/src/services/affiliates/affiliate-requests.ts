@@ -1,17 +1,5 @@
 // Types
-import type {
-  AffiliateProgramOverview,
-  AffiliateProgramPayload,
-  CommissionProductRate,
-  CommissionProductRatePayload,
-  CommissionTable,
-  CommissionTablePayload,
-  CreateAffiliatePayload,
-  ShopAffiliate,
-  ShopAffiliatePage,
-  AffiliateStatus,
-  UpdateAffiliatePayload,
-} from "@harness-monorepo/contracts"
+import type { AffiliateProgramOverview, AffiliateProgramPayload, AffiliateStatus, CommissionCategoryRate, CommissionCategoryRatePayload, CommissionProductRate, CommissionProductRatePayload, CommissionTable, CommissionTablePayload, CreateAffiliatePayload, ShopAffiliate, ShopAffiliatePage, UpdateAffiliatePayload } from "@harness-monorepo/contracts"
 
 /** What a failed call carries: the API's stable code, never a sentence (apps/web/AGENTS.md, rule 9). */
 export class AffiliateError extends Error {
@@ -62,6 +50,12 @@ export function updateCommissionTable(slug: string, tableId: string, payload: Co
 
 export function deleteCommissionTable(slug: string, tableId: string): Promise<void> {
   return ask(table(slug, tableId), "DELETE")
+}
+
+/** A category's own rate on a table, or — with null — back to the table's (the user's review, 12/11/2026). */
+export function saveCategoryCommission(slug: string, tableId: string, categoryId: string, rateBps: number | null): Promise<CommissionCategoryRate | undefined> {
+  const path = `${table(slug, tableId)}/category-rates/${encodeURIComponent(categoryId)}`
+  return rateBps === null ? ask<undefined>(path, "DELETE") : ask<CommissionCategoryRate>(path, "PUT", { rateBps } satisfies CommissionCategoryRatePayload)
 }
 
 /** A product's own rate on a table, or — with null — back to the table's. */

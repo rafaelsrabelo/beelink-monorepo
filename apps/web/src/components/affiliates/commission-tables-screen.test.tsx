@@ -50,7 +50,7 @@ describe("CommissionTablesScreen (IMPULSEIA-102)", () => {
   it("creates a table from the dialog, in the API's units", async () => {
     render(<CommissionTablesScreen slug="loja" locale="pt-BR" messages={ui} />)
 
-    expect(screen.getByRole("link", { name: "Percentuais por produto: Influencers" })).toHaveAttribute("href", "/admin/loja/affiliates/tables/t2")
+    expect(screen.getByRole("link", { name: "Personalizar os percentuais de Influencers" })).toHaveAttribute("href", "/admin/loja/affiliates/tables/t2")
     await userEvent.click(screen.getByRole("button", { name: "Nova tabela" }))
     const dialog = within(screen.getByRole("dialog", { name: "Nova tabela" }))
     await userEvent.type(dialog.getByLabelText("Nome"), "Amigos")

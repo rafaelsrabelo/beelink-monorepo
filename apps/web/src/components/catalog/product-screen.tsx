@@ -208,7 +208,7 @@ export function ProductScreen({ slug, messages, web }: ProductScreenProps) {
         ) : (
           <ProductTable
             products={rows.map((product) =>
-              productTableItemOf(product, { categoryNames: nameById, pageOf: routes?.product ?? null, carrierGaps: products.data?.carrierGaps, commissionRates: commission.rates }),
+              productTableItemOf(product, { categoryNames: nameById, pageOf: routes?.product ?? null, carrierGaps: products.data?.carrierGaps, commissionRates: commission.rates, commissionCategoryRates: commission.categoryRates }),
             )}
             selection={chosen.selection}
             onEdit={(productId) => router.push(`/admin/${slug}/products/${productId}`)}
