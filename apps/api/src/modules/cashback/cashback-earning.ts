@@ -1,6 +1,9 @@
 // Types
 import type { CashbackMode, CouponKind, QuotedCashback } from '@harness-monorepo/contracts';
 
+// App
+import { shareCentsOf, weightedRateOf, type WeightedRate } from '../orders/products-share.js';
+
 /** A line of an order as its cashback reads it (BEELINK-313). */
 export interface EarningLine {
   /** What the line costs after its promotion. */
@@ -44,17 +47,15 @@ export function earningBaseOf(parts: Omit<EarningParts, 'lines'>): number {
 /**
  * The order's rate as a fraction, `weighted / net` basis points (BEELINK-313): the shop's one rate,
  * or — by product — each line's own over what the line costs, a line with none counting as nothing.
- * A coupon, a hand discount and credit spent are the order's, not a line's: they are taken to come
- * off every line in proportion to its cost, which is what multiplying this average by the base does.
- * BigInt, since cents by basis points by cents is past what a double holds whole.
+ * The split over the lines is the one an affiliate's commission is worked out on (`products-share.ts`).
  */
-function rateOf(rules: EarningRules, lines: readonly EarningLine[]): { weighted: bigint; net: bigint } {
+function rateOf(rules: EarningRules, lines: readonly EarningLine[]): WeightedRate {
   if (rules.mode === 'STORE') return { weighted: BigInt(rules.rateBps), net: 1n };
-  return lines.reduce((sum, line) => ({ weighted: sum.weighted + BigInt(line.netCents) * BigInt(line.rateBps ?? 0), net: sum.net + BigInt(line.netCents) }), { weighted: 0n, net: 0n });
+  return weightedRateOf(lines.map((line) => ({ netCents: line.netCents, rateBps: line.rateBps ?? 0 })));
 }
 
 /** That fraction to the nearest basis point, for an order to record and a screen to say. */
-function roundedRateOf({ weighted, net }: { weighted: bigint; net: bigint }): number {
+function roundedRateOf({ weighted, net }: WeightedRate): number {
   return net === 0n ? 0 : Number((weighted * 2n + net) / (net * 2n));
 }
 
@@ -70,7 +71,7 @@ function roundedRateOf({ weighted, net }: { weighted: bigint; net: bigint }): nu
 export function earningOf(rules: EarningRules | null, parts: EarningParts): { earnedCents: number; rateBps: number } | null {
   if (!rules?.enabled || earningBaseOf({ ...parts, cashbackUsedCents: 0 }) < rules.minSubtotalCents) return null;
   const rate = rateOf(rules, parts.lines);
-  const earnedCents = rate.net === 0n ? 0 : Number((rate.weighted * BigInt(earningBaseOf(parts))) / (rate.net * 10_000n));
+  const earnedCents = shareCentsOf(rate, earningBaseOf(parts));
   // An average under half a basis point still earned a cent: the order's CHECK takes no rate of 0.
   return earnedCents > 0 ? { earnedCents, rateBps: Math.max(1, roundedRateOf(rate)) } : null;
 }
