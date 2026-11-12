@@ -119,3 +119,20 @@ confere de novo, na hora do pedido, se o afiliado credita e se a visita cabe nos
 - Ler as visitas no painel e na área do afiliado: AF7 e AF8.
 - Editar foto e frase: AF8. Tirar foto e frase pelo lojista: AF7.
 - A política de privacidade nova e ligar `AFFILIATE_LINKS_ENABLED` em produção: AF9.
+
+## Adendo — o que dirigir no navegador mudou (12/11)
+
+- **O `?afiliado=` fica no endereço.** O plano tirava o nome do endereço com `history.replaceState`
+  logo na chegada. Na hidratação, o próprio Next refaz o `replaceState` do endereço com que a página
+  carregou e o nome voltava; e saber "esta é a página da chegada" num store do navegador não sobrevive
+  ao `router.refresh()` que a chegada pede — no `next dev`, o módulo do store foi avaliado de novo
+  depois dele, e o cartão virava faixa. Agora:
+  - o cartão é desenhado quando o endereço traz `?afiliado=` com o nome do afiliado que o cookie
+    guarda (`useSearchParams`), e a faixa nas outras páginas — nenhum estado do navegador decide;
+  - recarregar a página não conta outra visita: o handler da chegada não conta quando `bl_affiliate`
+    já guarda o mesmo afiliado de menos de 30 minutos atrás, e mantém o instante da visita;
+  - um link copiado da barra de endereço continua creditando o mesmo afiliado, o que é o que o link
+    dele faria.
+- **Uma chegada por endereço.** O efeito roda duas vezes no modo estrito do React; a página guarda o
+  endereço que já contou e não manda a chegada de novo.
+- O store em memória ficou só com "a faixa foi fechada".

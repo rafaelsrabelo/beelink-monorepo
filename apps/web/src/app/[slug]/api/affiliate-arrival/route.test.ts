@@ -58,6 +58,22 @@ describe("a visitor arriving by an affiliate's link (IMPULSEIA-105)", () => {
     expect(response.cookies.get("bl_affiliate_hidden")).toMatchObject({ value: "", maxAge: 0, path: "/lessari" })
   })
 
+  it("counts a page read again as the same visit — the same affiliate, just now — and keeps its instant", async () => {
+    vi.useFakeTimers({ now: Date.UTC(2026, 10, 12, 15), toFake: ["Date"] })
+    const fetched = api()
+    const earlier = Date.UTC(2026, 10, 12, 14, 45)
+
+    const again = await POST(request({ slug: "joao" }, { cookie: `bl_affiliate=${ID}.${earlier}` }), shop())
+    expect(again.status).toBe(200)
+    expect(visits(fetched)).toEqual([])
+    expect(again.cookies.get("bl_affiliate")?.value).toBe(`${ID}.${earlier}`)
+
+    // Half an hour on, or another affiliate's cookie, is a visit of its own.
+    await POST(request({ slug: "joao" }, { cookie: `bl_affiliate=${ID}.${Date.UTC(2026, 10, 12, 14, 30)}` }), shop())
+    await POST(request({ slug: "joao" }, { cookie: `bl_affiliate=0199a1b2-0000-7000-8000-000000000002.${earlier}` }), shop())
+    expect(visits(fetched)).toHaveLength(2)
+  })
+
   it("keeps it at the root of the shop's own domain", async () => {
     api()
 

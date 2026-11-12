@@ -13,8 +13,8 @@ import { StorefrontAffiliateNoteLive } from "./storefront-affiliate-note-live"
 import type { AffiliateReferral } from "@/lib/affiliate-link"
 import { useAffiliateReferralUi } from "@/stores/affiliate-referral"
 
-const navigation = vi.hoisted(() => ({ pathname: "/lessari" }))
-vi.mock("next/navigation", () => ({ usePathname: () => navigation.pathname }))
+const navigation = vi.hoisted(() => ({ search: "" }))
+vi.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams(navigation.search) }))
 
 const ID = "0199a1b2-0000-7000-8000-000000000001"
 const JOAO: AffiliateReferral = { affiliate: { id: ID, slug: "joao", name: "João Silva", photoUrl: null, tagline: "Meus favoritos", attributionDays: 30 }, hidden: false }
@@ -28,14 +28,14 @@ function shop(referral: AffiliateReferral | null, children = <StorefrontAffiliat
 }
 
 afterEach(() => {
-  useAffiliateReferralUi.setState({ arrivedOn: {}, closed: {} })
-  navigation.pathname = "/lessari"
+  useAffiliateReferralUi.setState({ closed: {} })
+  navigation.search = ""
   document.cookie = "bl_affiliate_hidden=; Path=/lessari; Max-Age=0"
 })
 
 describe("whom the visitor came by, under the shop's header (IMPULSEIA-105)", () => {
-  it("draws the card, with the whole name and the phrase, on the page the link arrived at", () => {
-    useAffiliateReferralUi.getState().arrive("lessari", "/lessari")
+  it("draws the card, with the whole name and the phrase, on the address the link arrived with", () => {
+    navigation.search = "?afiliado=JOAO&utm_source=instagram"
     shop(JOAO)
 
     expect(screen.getByRole("region", { name: "Indicação" })).toHaveTextContent("Você chegou pela indicação de João Silva")
@@ -45,8 +45,8 @@ describe("whom the visitor came by, under the shop's header (IMPULSEIA-105)", ()
   })
 
   it("draws the strip on every other page, and closes it for the browser's session without forgetting the affiliate", async () => {
-    useAffiliateReferralUi.getState().arrive("lessari", "/lessari")
-    navigation.pathname = "/lessari/produtos"
+    // Another page, or the same link naming an affiliate the shop no longer credits: the strip.
+    navigation.search = "?afiliado=maria"
     // The browser reads back only the cookies of the path it is on.
     window.history.replaceState(null, "", "/lessari/produtos")
     shop(JOAO)
