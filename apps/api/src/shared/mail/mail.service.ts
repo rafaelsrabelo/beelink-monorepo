@@ -14,6 +14,7 @@ import type { AccountShop } from '../../modules/auth/account-scope.js';
 import { EMAIL_VERIFICATION_TTL_HOURS, PASSWORD_RESET_TTL_MINUTES } from '../../modules/auth/auth.constants.js';
 import { env } from '../config/env.js';
 import { affiliateInvite, type AffiliateInviteContent } from './affiliate-invite.template.js';
+import { affiliateSale, affiliateSaleCancelled, type AffiliateSaleContent } from './affiliate-sale.template.js';
 import { cashbackExpiring, type CashbackExpiringContent } from './cashback-expiring.template.js';
 import { chargingNotice, type ChargingNoticeContent } from './charging-notice.template.js';
 import { courierApplicationReceived, type CourierApplicationReceivedContent } from './courier-application-received.template.js';
@@ -128,6 +129,18 @@ export class MailService implements OnApplicationBootstrap {
   async sendAffiliateInvite(to: string, content: AffiliateInviteContent, token: string): Promise<boolean> {
     const url = `${env.WEB_URL}/afiliado/convite?token=${encodeURIComponent(token)}`;
     return this.send(to, affiliateInvite(content, url), content.shopName);
+  }
+
+  /**
+   * A sale through the affiliate's link, and its cancellation (IMPULSEIA-106), from the shop by name.
+   * The button opens the affiliate's own area, which is bee-link's. Answers whether it went, for its outbox.
+   */
+  async sendAffiliateSale(to: string, content: AffiliateSaleContent): Promise<boolean> {
+    return this.send(to, affiliateSale(content, `${env.WEB_URL}/afiliado`), content.shopName);
+  }
+
+  async sendAffiliateSaleCancelled(to: string, content: Omit<AffiliateSaleContent, 'items'> & { wasAvailable: boolean }): Promise<boolean> {
+    return this.send(to, affiliateSaleCancelled(content, `${env.WEB_URL}/afiliado`), content.shopName);
   }
 
   /** One per lead, to the site's owner. The visitor's words travel escaped — see `leadReceived`. */

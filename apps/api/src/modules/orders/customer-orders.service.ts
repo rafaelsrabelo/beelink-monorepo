@@ -7,6 +7,7 @@ import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
+import { placedAffiliateVisitOf } from '../affiliates/affiliate-orders.js';
 import { Buyers, givenAddressOf, type Buyer } from '../customers/buyers.service.js';
 import { CustomersService } from '../customers/customers.service.js';
 import { CUSTOMER_ORDER_INCLUDE, toCustomerOrder, toCustomerOrderSummary } from './customer-order.mapper.js';
@@ -93,6 +94,7 @@ export class CustomerOrdersService {
       onSaleOnly: true,
       origin: placedOriginOf(dto.origin),
       marketingConsent: placedConsentOf(dto.marketingConsent),
+      affiliateVisit: placedAffiliateVisitOf(dto.affiliateVisit),
       customerOf: async () => customerId,
     });
     this.realtime.publish({ storeId, customerId }, { type: 'order.created', orderNumber: placed.number, placedBy: 'CUSTOMER' });
