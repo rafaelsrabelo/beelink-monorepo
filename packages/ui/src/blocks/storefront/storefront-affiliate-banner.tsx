@@ -52,7 +52,7 @@ export function StorefrontAffiliateBanner({ name, photoUrl, tagline = null, onDi
               {tagline ? <p className="text-sm leading-snug break-words text-shop-on-primary/85">“{tagline}”</p> : null}
             </div>
           </div>
-          <p className="text-xs leading-snug text-shop-on-primary/85 shop-sm:ms-auto shop-sm:max-w-xs shop-sm:text-end shop-sm:text-sm">{text.bannerNote}</p>
+          <p className="text-xs leading-snug text-shop-on-primary/85 shop-sm:ms-auto shop-sm:max-w-sm shop-sm:text-end shop-sm:text-sm">{text.bannerNote}</p>
         </div>
         {onDismiss ? (
           <button
