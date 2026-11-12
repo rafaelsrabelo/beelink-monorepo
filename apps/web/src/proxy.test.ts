@@ -506,6 +506,8 @@ describe("a shop with an active domain, asked for on the platform's host", () =>
     expect(await at("/loja/produtos/bolsa?variant=v1&cor=azul")).toEqual([308, "https://minhaloja.com.br/produtos/bolsa?variant=v1&cor=azul"])
     expect(await at("/loja/confirmar-email?token=t&voltar=%2Floja%2Fcarrinho")).toEqual([308, "https://minhaloja.com.br/confirmar-email?token=t&voltar=%2Floja%2Fcarrinho"])
     expect(await at("/loja?curtir=p-1")).toEqual([308, "https://minhaloja.com.br/?curtir=p-1"])
+    // An affiliate's link keeps the affiliate's name on the way (IMPULSEIA-105): it is how a visitor knows whose link it is.
+    expect(await at("/loja/margarida?utm_source=instagram")).toEqual([308, "https://minhaloja.com.br/margarida?utm_source=instagram"])
   })
 
   it("is sent there whoever asks, a signed-in shopper included, with no call to the API", async () => {
@@ -642,6 +644,8 @@ describe("a request that arrived by a shop's own domain", () => {
       ["/entrar?modo=criar&voltar=%2Fcarrinho", "/loja/entrar?modo=criar&voltar=%2Fcarrinho"],
       ["/conta/pedidos/14?pagamento=1", "/loja/conta/pedidos/14?pagamento=1"],
       ["/lp/dia-das-maes", "/loja/lp/dia-das-maes"],
+      // An affiliate's link (IMPULSEIA-105): the address keeps the name, and the page draws the shop's front door there.
+      ["/margarida?utm_source=instagram", "/loja/margarida?utm_source=instagram"],
     ] as const) {
       const response = await proxy(own(asked))
 

@@ -27,9 +27,10 @@ const SAME_VISIT_MS = 30 * 60_000
 const answer = (status: number) => new NextResponse(null, { status })
 
 /**
- * A visitor arrived by an affiliate's link (IMPULSEIA-105): `?afiliado=<name>` on any page of the
- * shop, which `/<shop>/<name>` leads to. The shop window's script tells it here, so a link preview
- * that fetches the address without running the page counts nothing and is credited nothing.
+ * A visitor arrived by an affiliate's link (IMPULSEIA-105): `/<shop>/<name>`, the shop's front door
+ * drawn at the link's own address, or `?afiliado=<name>` on any page of the shop. The shop window's
+ * script tells it here, so a link preview that fetches the address without running the page counts
+ * nothing and is credited nothing.
  *
  * When the link credits someone, this answers `200` and writes `bl_affiliate` — the affiliate's id
  * and the instant, for the programme's days, on the shop's path, replacing any affiliate before

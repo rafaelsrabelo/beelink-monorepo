@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   shopAt: vi.fn(),
   navigationAt: vi.fn(),
   affiliateLinkAt: vi.fn(),
+  home: vi.fn(() => null),
   redirect: vi.fn((to: string) => {
     throw new Error(`REDIRECT ${to}`)
   }),
@@ -23,13 +24,16 @@ vi.mock("next/navigation", () => ({ redirect: mocks.redirect, notFound: mocks.no
 vi.mock("@/components/storefront/shop-font", () => ({ figtree: { variable: "font-figtree", style: {} }, shopFontStyle: {} }))
 vi.mock("@/lib/locale", () => ({ getMessages: async () => ({ ...messagesFor("pt-BR"), locale: "pt-BR" }) }))
 vi.mock("@/lib/affiliate-link", () => ({ affiliateLinkAt: mocks.affiliateLinkAt }))
+vi.mock("@/lib/site-origin", () => ({ siteOrigin: async () => "https://beelink.biz" }))
+// The front door itself is the home page's, tested there: here, only that it is the one drawn, and how.
+vi.mock("@/components/storefront/storefront-home", () => ({ StorefrontHome: mocks.home }))
 vi.mock("@/lib/storefront-data", async (original) => ({
   ...(await original<typeof import("@/lib/storefront-data")>()),
   shopAt: mocks.shopAt,
   navigationAt: mocks.navigationAt,
 }))
 
-import SectionPage from "./[section]/page"
+import SectionPage, { generateMetadata } from "./[section]/page"
 
 const shop = {
   slug: "lessari",
@@ -56,26 +60,48 @@ afterEach(() => {
   vi.clearAllMocks()
 })
 
+/** What the page drew: the element it returned, when it returned one rather than leaving. */
+type Drawn = { type: unknown; props: { slug: string; store: ServedShop; arrivedBy: string | null } }
+
 describe("a shop's address that is an affiliate's link (IMPULSEIA-105)", () => {
-  it("leads to the shop's front door with the affiliate, carrying what else the address said", async () => {
+  it("draws the shop's front door at the link's own address, with the affiliate, and leads nowhere", async () => {
     mocks.affiliateLinkAt.mockResolvedValue({ affiliate: JOAO })
 
-    await expect(SectionPage(at("joao", { utm_source: "instagram" }))).rejects.toThrow("REDIRECT /lessari?utm_source=instagram&afiliado=joao")
+    const drawn = (await SectionPage(at("joao", { utm_source: "instagram" }))) as unknown as Drawn
+
+    expect(drawn.type).toBe(mocks.home)
+    expect(drawn.props).toMatchObject({ slug: "lessari", arrivedBy: "joao" })
+    expect(mocks.redirect).not.toHaveBeenCalled()
     expect(mocks.affiliateLinkAt).toHaveBeenCalledWith("lessari", { slug: "joao" })
   })
 
-  it("leads to the shop alone, and never to nothing, for a link that credits nobody", async () => {
-    mocks.affiliateLinkAt.mockResolvedValue({ affiliate: null })
+  it("keeps the affiliate's own spelling of the name, whatever the address's case", async () => {
+    mocks.affiliateLinkAt.mockResolvedValue({ affiliate: JOAO })
 
-    await expect(SectionPage(at("joao"))).rejects.toThrow("REDIRECT /lessari")
-    expect(mocks.notFound).not.toHaveBeenCalled()
+    const drawn = (await SectionPage(at("Joao"))) as unknown as Drawn
+
+    expect(drawn.props.arrivedBy).toBe("joao")
   })
 
-  it("leads to the shop's own domain's root at its own domain", async () => {
+  it("draws the front door with nobody, and never nothing, for a link that credits nobody", async () => {
+    mocks.affiliateLinkAt.mockResolvedValue({ affiliate: null })
+
+    const drawn = (await SectionPage(at("joao"))) as unknown as Drawn
+
+    expect(drawn.type).toBe(mocks.home)
+    expect(drawn.props.arrivedBy).toBeNull()
+    expect(mocks.notFound).not.toHaveBeenCalled()
+    expect(mocks.redirect).not.toHaveBeenCalled()
+  })
+
+  it("draws it in place at the shop's own domain too, where the proxy rewrote `/<name>` onto this page", async () => {
     mocks.shopAt.mockResolvedValue({ ...shop, ownDomain: true })
     mocks.affiliateLinkAt.mockResolvedValue({ affiliate: JOAO })
 
-    await expect(SectionPage(at("joao"))).rejects.toThrow("REDIRECT /?afiliado=joao")
+    const drawn = (await SectionPage(at("joao"))) as unknown as Drawn
+
+    expect(drawn.props).toMatchObject({ arrivedBy: "joao", store: expect.objectContaining({ ownDomain: true }) })
+    expect(mocks.redirect).not.toHaveBeenCalled()
   })
 
   it("is still a 404 for a segment that is nobody's link", async () => {
@@ -89,5 +115,28 @@ describe("a shop's address that is an affiliate's link (IMPULSEIA-105)", () => {
 
     await SectionPage(at("bolsas")).catch(() => undefined)
     expect(mocks.affiliateLinkAt).not.toHaveBeenCalled()
+  })
+})
+
+describe("what an affiliate's link says of itself to a search engine", () => {
+  it("is the shop's front door, pointing at the shop's own address and kept out of the index", async () => {
+    mocks.affiliateLinkAt.mockResolvedValue({ affiliate: JOAO })
+
+    const meta = await generateMetadata(at("joao"))
+
+    expect(meta).toMatchObject({ title: "Lessari", alternates: { canonical: "/lessari" }, robots: { index: false, follow: true } })
+  })
+
+  it("points at the domain's root at the shop's own domain, and says the same for a link that credits nobody", async () => {
+    mocks.shopAt.mockResolvedValue({ ...shop, ownDomain: true })
+    mocks.affiliateLinkAt.mockResolvedValue({ affiliate: null })
+
+    expect(await generateMetadata(at("joao"))).toMatchObject({ alternates: { canonical: "/" }, robots: { index: false, follow: true } })
+  })
+
+  it("says nothing for a segment that is nobody's link", async () => {
+    mocks.affiliateLinkAt.mockResolvedValue(null)
+
+    expect(await generateMetadata(at("qualquer-coisa"))).toEqual({})
   })
 })

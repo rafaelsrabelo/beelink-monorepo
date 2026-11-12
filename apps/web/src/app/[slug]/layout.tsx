@@ -59,9 +59,10 @@ import { storefrontRoutes } from "@/lib/storefront-routes"
  * them out.
  *
  * And whom the visitor came by is read and told from here (IMPULSEIA-105): an affiliate's link
- * arrives as `?afiliado=` on the landing, which `StorefrontAffiliateArrival` tells the shop from the
- * browser, and the `bl_affiliate` it leaves is read here per request — the affiliate's name and face
- * a kept read, the cookie this visitor's — for the strip, the card and the order's line below.
+ * arrives as `?afiliado=` on any page, which `StorefrontAffiliateArrival` tells the shop from the
+ * browser — or as `/<shop>/<name>`, whose page tells it with the name — and the `bl_affiliate` it
+ * leaves is read here per request — the affiliate's name and face a kept read, the cookie this
+ * visitor's — for the strip, the card and the order's line below.
  *
  * And whether the request arrived by the shop's own domain is handed down from here (BEELINK-283),
  * around everything: the components that run in the browser spell the shop's addresses and write its

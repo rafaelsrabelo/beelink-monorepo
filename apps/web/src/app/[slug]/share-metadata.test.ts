@@ -255,7 +255,8 @@ describe("the cards of a shop's pages, in the app's tree", () => {
   const source = join(process.cwd(), "src")
   const read = (file: string) => readFileSync(join(source, file), "utf8")
   const under = (folder: string) => (readdirSync(join(source, folder), { recursive: true }) as string[]).map((file) => `${folder}/${file.replaceAll("\\", "/")}`).filter((file) => /\.tsx$/.test(file) && !/\.test\.tsx$/.test(file))
-  const files = [...under("app/[slug]"), ...under("components/storefront/account")]
+  // The home's card is said once for its two addresses — the shop's and an affiliate's link (IMPULSEIA-105).
+  const files = [...under("app/[slug]"), ...under("components/storefront/account"), "lib/shop-home-metadata.ts"]
   const declaring = files.filter((file) => /\bopenGraph\s*:/.test(read(file)))
 
   it("is declared by the home, the sections, the products, the landings and the shopper's pages", () => {
@@ -263,9 +264,9 @@ describe("the cards of a shop's pages, in the app's tree", () => {
       "app/[slug]/[section]/[item]/page.tsx",
       "app/[slug]/[section]/page.tsx",
       "app/[slug]/lp/[page]/page.tsx",
-      "app/[slug]/page.tsx",
       "components/storefront/account/account-tab-page.tsx",
       "components/storefront/account/order-page.tsx",
+      "lib/shop-home-metadata.ts",
     ])
   })
 

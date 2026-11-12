@@ -13,6 +13,7 @@ import { StorefrontReorderNotice } from "@harness-monorepo/ui/blocks/storefront/
 // App
 import { ShopUnavailable } from "@/components/storefront/shop-unavailable"
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
+import { StorefrontHome } from "@/components/storefront/storefront-home"
 import { StorefrontOffers } from "@/components/storefront/storefront-offers"
 import { StorefrontCartLive } from "@/components/storefront/storefront-cart-live"
 import { StorefrontCartSuggestions } from "@/components/storefront/storefront-cart-suggestions"
@@ -25,7 +26,6 @@ import { StorefrontSignInSection } from "@/components/storefront/storefront-sign
 import { StorefrontVerifyEmailSection } from "@/components/storefront/storefront-verify-email-section"
 import { TrackView } from "@/components/storefront/tracking/track-view"
 import { getMessages } from "@/lib/locale"
-import { affiliateArrivalHref } from "@/lib/affiliate-arrival"
 import { affiliateLinkAt } from "@/lib/affiliate-link"
 import { cartAt } from "@/lib/cart"
 import { COUPON_KEY, couponIn } from "@/lib/cart-coupon"
@@ -37,6 +37,7 @@ import { pendingReviewsAt } from "@/lib/customer-reviews"
 import { OVERVIEW_FAVORITES } from "@/lib/overview-parts"
 import { customerOrdersAt, customerReorderAt } from "@/lib/customer-orders"
 import { reorderNoticeOf } from "@/lib/reorder-view"
+import { homeMetadataOf } from "@/lib/shop-home-metadata"
 import { shopShareOf } from "@/lib/shop-share"
 import { offTheAirAt, unavailableMetadata } from "@/lib/shop-unavailable"
 import { shopperAt } from "@/lib/shopper"
@@ -70,7 +71,12 @@ export async function generateMetadata({ params, searchParams }: PageProps<"/[sl
   if (shop?.unavailable && offTheAirAt(section, shop.routeWords)) return unavailableMetadata(shop)
   const place = await placeOf(slug, section, await searchParams)
 
-  if (!place) return {}
+  if (!place) {
+    // An affiliate's link draws the shop's front door at its own address (IMPULSEIA-105): one home
+    // per affiliate is still one page, so it points the search engines at the shop's own address.
+    const link = shop && !shop.unavailable ? await affiliateLinkAt(slug, { slug: section }) : null
+    return shop && link ? { ...(await homeMetadataOf(shop)), robots: { index: false, follow: true } } : {}
+  }
 
   const { store } = place
   const address = canonicalOf(place, storefrontRoutes(store))
@@ -102,9 +108,10 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
 
   if (!place) {
     // The segment's third reading, after a route word and a category (IMPULSEIA-105): an affiliate's
-    // link leads to the shop — with the affiliate, while the link credits them — and never to a 404.
+    // link is the shop's front door drawn here, at the link's own address — the name stays where the
+    // visitor reads it — with the affiliate while the link credits them, and never a 404.
     const link = shop && !shop.unavailable ? await affiliateLinkAt(slug, { slug: section }) : null
-    if (shop && link) redirect(affiliateArrivalHref(storefrontRoutes(shop).home, link.affiliate?.slug ?? null, query) as Parameters<typeof redirect>[0])
+    if (shop && link) return <StorefrontHome slug={slug} store={shop} arrivedBy={link.affiliate?.slug ?? null} />
     notFound()
   }
   // A page of its own, with none of the shop's header around it.

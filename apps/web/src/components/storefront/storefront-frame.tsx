@@ -67,6 +67,11 @@ export interface StorefrontFrameProps {
    * show one — the home, the listings and a product's. Absent everywhere else, the design preview included.
    */
   notice?: ReactNode
+  /**
+   * The affiliate an affiliate's link names, on the shop's front door drawn at that link's address
+   * (IMPULSEIA-105): the card is drawn for them. Absent everywhere else, where `?afiliado=` says it.
+   */
+  arrivedBy?: string | null
   /** The page's strip under the menu, edge to edge: the listing's results band (5a). */
   pageHeader?: ReactNode
   /** How the page below it sits: 5a's listing draws its own columns on the canvas. */
@@ -131,6 +136,7 @@ export function StorefrontFrame({
   showBanner = false,
   blocks,
   notice,
+  arrivedBy = null,
   pageHeader,
   body,
   colors,
@@ -208,7 +214,7 @@ export function StorefrontFrame({
       // own notice: it is nothing outside a shop's layout, the design preview's among them.
       notice={
         <>
-          <StorefrontAffiliateBand messages={messages} />
+          <StorefrontAffiliateBand arrivedBy={arrivedBy} messages={messages} />
           {notice}
         </>
       }

@@ -15,19 +15,23 @@ import { AFFILIATE_KEY, hiddenCookieOf } from "@/lib/affiliate-cookie"
 import { useAffiliateReferralUi } from "@/stores/affiliate-referral"
 
 export interface StorefrontAffiliateBandProps {
+  /** The affiliate the page's own address names: an affiliate's link drawn in place. Null where `?afiliado=` says it. */
+  arrivedBy?: string | null
   messages: UiMessages
 }
 
 /**
  * Whom the visitor came by, under the shop's header (IMPULSEIA-105): the card on the address their
- * affiliate's link arrived with — `?afiliado=<name>`, naming the affiliate the shop credits — and the
- * slim strip on every other page, until they close it, which hides the strip and keeps the referral.
+ * affiliate's link arrived with — `/<shop>/<name>`, or `?afiliado=<name>` on any page, naming the
+ * affiliate the shop credits — and the slim strip on every other page, until they close it, which
+ * hides the strip and keeps the referral.
  * Nothing outside a shop's layout, and nothing for a visitor who came by nobody.
  */
-export function StorefrontAffiliateBand({ messages }: StorefrontAffiliateBandProps) {
+export function StorefrontAffiliateBand({ arrivedBy = null, messages }: StorefrontAffiliateBandProps) {
   const shopReferral = useShopReferral()
   const slug = shopReferral?.slug ?? ""
-  const asked = useSearchParams().get(AFFILIATE_KEY)
+  const named = useSearchParams().get(AFFILIATE_KEY)
+  const asked = arrivedBy ?? named
   const shop = useShopAddress(slug)
   const closed = useAffiliateReferralUi((state) => state.closed[slug] === true)
   const close = useAffiliateReferralUi((state) => state.close)
