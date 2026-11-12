@@ -1,0 +1,61 @@
+/// A shop's affiliate programme (IMPULSEIA-101, plan docs/plans/2026-10-24--afiliados.md): its rules.
+/// One row per shop, written with its default table the first time the owner opens the programme,
+/// switched off. A change applies from then on: an order keeps the rates it was placed at.
+model AffiliateProgram {
+  storeId String @id @db.Uuid
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  enabled         Boolean @default(false)
+  /// Days a visit through an affiliate's link credits the orders that follow it, 1 to 90, by a CHECK.
+  attributionDays Int     @default(30)
+  /// Days after a payout period closes that its commissions fall due, 0 to 60, by a CHECK.
+  payoutDelayDays Int     @default(10)
+  /// The shop's own terms, which an affiliate accepts on joining; null when there are none.
+  termsText       String?
+  /// 0 until terms are first written; up by one each time their text changes, removal included.
+  termsVersion    Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("affiliate_programs")
+}
+
+/// A commission table: one rate for every product, and a product's own where it has one. Every
+/// affiliate is on one; a special condition is another table. The default table is born with the
+/// programme and never deleted — one per shop, by the partial unique index the migration adds.
+/// Deleting a table touches no history: an order keeps the table's name and each line's rate.
+model CommissionTable {
+  id             String  @id @default(uuid(7)) @db.Uuid
+  storeId        String  @db.Uuid
+  store          Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  name           String  @db.VarChar(60)
+  /// Basis points of what the customer paid for a product, 0 to 10000, by a CHECK.
+  defaultRateBps Int
+  isDefault      Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  rates CommissionTableRate[]
+
+  @@unique([storeId, name])
+  @@map("commission_tables")
+}
+
+/// A product's own rate on a table, which replaces the table's for that product; 0 pays it nothing.
+/// Deleting the product, or the table, takes it along.
+model CommissionTableRate {
+  tableId   String          @db.Uuid
+  table     CommissionTable @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  productId String          @db.Uuid
+  product   Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  /// Basis points, 0 to 10000, by a CHECK.
+  rateBps   Int
+
+  updatedAt DateTime @updatedAt
+
+  @@id([tableId, productId])
+  @@index([productId])
+  @@map("commission_table_rates")
+}

@@ -11,6 +11,8 @@ import type { PaymentMethod, StoreLayoutType, StoreType } from '@harness-monorep
  */
 export const RESERVED_SLUGS: readonly string[] = [
   'admin',
+  // An affiliate's own area, across the shops they sell for (IMPULSEIA-100).
+  'afiliado',
   'api',
   'auth',
   'cart',
