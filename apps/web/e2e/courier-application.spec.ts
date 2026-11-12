@@ -509,7 +509,7 @@ test.describe("the courier's form, the two legal texts", () => {
     await terms.click()
     const termsDialog = page.getByRole("dialog", { name: "Termos de uso" })
     await expect(termsDialog).toBeVisible()
-    await expect(termsDialog).toHaveAccessibleDescription("Vigente desde 15 de outubro de 2026")
+    await expect(termsDialog).toHaveAccessibleDescription("Vigente desde 12 de novembro de 2026")
     await expect(termsDialog.getByRole("heading", { level: 3, name: "1. Quem somos" })).toBeVisible()
     await expect(termsDialog.getByRole("button", { name: "Fechar" })).toBeFocused()
     await page.keyboard.press("Escape")
@@ -574,7 +574,7 @@ test.describe("the courier's form, the two legal texts", () => {
   test("are the texts the two pages show, in the version that names the courier's data", async ({ page }) => {
     await page.goto("/privacidade")
 
-    await expect(page.getByText("Vigente desde 15 de outubro de 2026")).toBeVisible()
+    await expect(page.getByText("Vigente desde 12 de novembro de 2026")).toBeVisible()
     await expect(page.getByRole("heading", { level: 2, name: /Dados de quem se candidata a entregar/ })).toBeVisible()
     await expect(page.getByText("Se o formulário for enviado com um CPF, um e-mail ou um número de WhatsApp que já está na lista, o cadastro não é aceito", { exact: false })).toBeVisible()
   })

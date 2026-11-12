@@ -16,15 +16,15 @@ export interface LegalTexts {
  * keeps or shares is a new version of these texts, with a new `version`.
  */
 export const legalTexts = {
-  version: "2026-10-15",
+  version: "2026-11-12",
   terms: {
     lang: "pt-BR",
     title: "Termos de uso",
-    effective: "Vigente desde 15 de outubro de 2026",
+    effective: "Vigente desde 12 de novembro de 2026",
     intro: [
       "Estes Termos de uso são as regras para usar o bee-link. Eles explicam o que a plataforma faz, o que ela não faz e o que se espera de cada pessoa que a usa.",
-      "Eles valem para dois públicos: o lojista, que cria uma conta no painel para publicar a sua loja, e o cliente, que cria uma conta numa loja para comprar dela. Quando uma regra vale só para um dos dois, o texto diz.",
-      "Você aceita estes Termos quando cria a sua conta, pelo formulário de cadastro ou pelo botão \"Continuar com Google\", e também quando define uma senha pelo link enviado por e-mail. Nesses mesmos momentos, você declara ter lido a Política de privacidade, que explica como o bee-link trata dados pessoais.",
+      "Eles valem para três públicos: o lojista, que cria uma conta no painel para publicar a sua loja; o afiliado, que uma loja convida para vender pelo link dela e que entra com uma conta do bee-link; e o cliente, que cria uma conta numa loja para comprar dela. Quando uma regra vale só para um deles, o texto diz.",
+      "Você aceita estes Termos quando cria a sua conta, pelo formulário de cadastro, inclusive o do convite de afiliado de uma loja, ou pelo botão \"Continuar com Google\", e também quando define uma senha pelo link enviado por e-mail. Nesses mesmos momentos, você declara ter lido a Política de privacidade, que explica como o bee-link trata dados pessoais.",
       "Quem envia o cadastro de entregador, na página inicial do bee-link, também aceita estes Termos e declara ter lido a Política de privacidade ao enviá-lo. Esse cadastro é uma lista de interesse: ele não cria uma conta, e as regras da atividade de entrega ainda não fazem parte destes Termos.",
     ],
     sections: [
@@ -126,6 +126,32 @@ export const legalTexts = {
         ],
       },
       {
+        heading: "Afiliados das lojas",
+        blocks: [
+          {
+            kind: "paragraph",
+            text: "Uma loja pode ter um programa de afiliados: pessoas que ela convida para vender por um link dela e que recebem uma comissão sobre o que venderem. O programa é da loja. É ela que decide quem convida, as comissões de cada produto, por quantos dias uma indicação vale, o prazo de pagamento e os termos do programa, que o afiliado aceita ao entrar. A loja pode pausar ou encerrar o vínculo com um afiliado.",
+          },
+          {
+            kind: "paragraph",
+            text: "Quem chega pelo link de um afiliado paga os preços de sempre da loja. A comissão é calculada pelo bee-link sobre o que o cliente pagou pelos produtos, depois dos descontos, e nunca sobre a entrega. Ela fica pendente até o pedido ser entregue, vence no dia que o calendário do programa dá para aquela entrega e é desfeita se o pedido for cancelado. A compra do próprio afiliado não gera comissão.",
+          },
+          {
+            kind: "paragraph",
+            text: "O bee-link calcula e registra as comissões, o extrato e os pagamentos, mas não paga o afiliado: ele não recebe, não guarda e não transfere dinheiro de ninguém. Quem paga é a loja, por fora do bee-link, e ela registra no painel o que pagou. O acordo é entre a loja e o afiliado, e o bee-link não é parte dele.",
+          },
+          { kind: "paragraph", text: "O afiliado se compromete a:" },
+          {
+            kind: "list",
+            items: [
+              "indicar a loja de boa-fé, sem se passar por ela nem prometer preços, prazos ou condições que ela não oferece;",
+              "não enviar mensagens em massa que ninguém pediu e respeitar as regras de publicidade;",
+              "usar o nome dos clientes que vê na área do afiliado só para acompanhar as próprias vendas, sem repassá-lo nem usá-lo para falar com essas pessoas fora do que a loja autorizar.",
+            ],
+          },
+        ],
+      },
+      {
         heading: "Contas",
         blocks: [
           { kind: "paragraph", text: "Há dois tipos de conta, separados um do outro:" },
@@ -133,6 +159,7 @@ export const legalTexts = {
             kind: "list",
             items: [
               "a conta de lojista é do bee-link e abre o painel, onde o lojista pode ter uma ou mais lojas;",
+              "a conta de afiliado também é do bee-link e abre a área do afiliado: a mesma conta pode ser afiliada de várias lojas, e também ser de lojista;",
               "a conta de cliente pertence à loja em que foi criada e só vale nela: quem compra em duas lojas tem duas contas, com duas senhas, e uma loja não sabe da outra.",
             ],
           },
@@ -326,7 +353,7 @@ export const legalTexts = {
           },
           {
             kind: "paragraph",
-            text: "Quando você aceita estes Termos, o bee-link registra a versão aceita, a data e o momento em que o aceite foi dado: no cadastro, no \"Continuar com Google\", ao definir a senha ou ao enviar o cadastro de entregador. [PREENCHER: como as contas existentes serão avisadas de uma versão nova e como vão aceitá-la].",
+            text: "Quando você aceita estes Termos, o bee-link registra a versão aceita, a data e o momento em que o aceite foi dado: no cadastro, inclusive o do convite de afiliado, no \"Continuar com Google\", ao definir a senha ou ao enviar o cadastro de entregador. [PREENCHER: como as contas existentes serão avisadas de uma versão nova e como vão aceitá-la].",
           },
         ],
       },
@@ -361,10 +388,10 @@ export const legalTexts = {
   privacy: {
     lang: "pt-BR",
     title: "Política de privacidade",
-    effective: "Vigente desde 15 de outubro de 2026",
+    effective: "Vigente desde 12 de novembro de 2026",
     intro: [
       "Esta Política de privacidade explica quais dados pessoais o bee-link trata, para quê, com quem os compartilha, por quanto tempo os guarda e como você exerce os seus direitos, conforme a Lei Geral de Proteção de Dados (Lei nº 13.709/2018, a LGPD).",
-      "Ela vale para os lojistas, para os clientes das lojas, para quem se candidata a fazer entregas e para quem visita o site do bee-link ou uma loja sem criar conta. Ao criar uma conta, ou ao definir uma senha pelo link enviado por e-mail, ou ao enviar o cadastro de entregador, você declara que leu esta Política.",
+      "Ela vale para os lojistas, para os afiliados das lojas, para os clientes das lojas, para quem se candidata a fazer entregas e para quem visita o site do bee-link ou uma loja sem criar conta. Ao criar uma conta, ou ao definir uma senha pelo link enviado por e-mail, ou ao enviar o cadastro de entregador, você declara que leu esta Política. Isso vale também para quem cria a conta pelo convite de afiliado de uma loja.",
     ],
     sections: [
       {
@@ -387,6 +414,7 @@ export const legalTexts = {
             kind: "list",
             items: [
               "Dados do lojista: o bee-link é o controlador dos dados da conta do lojista e das lojas que ele cria.",
+              "Dados do afiliado de uma loja: o bee-link é o controlador dos dados da conta do afiliado, que é uma conta do bee-link, como a do lojista. A loja é a controladora dos dados do vínculo dela com o afiliado, descritos na seção \"Dados dos afiliados das lojas\", e o bee-link é o operador.",
               "Dados de quem se candidata a fazer entregas: o bee-link é o controlador.",
               "Dados dos clientes de uma loja: a loja é a controladora, e o bee-link é o operador, que trata esses dados em nome dela para prestar o serviço. A conta de cliente pertence à loja em que foi criada.",
               "Dados de quem usa o formulário de contato ou o \"Avise-me\" de uma loja: a loja é a controladora, e o bee-link é o operador.",
@@ -419,6 +447,35 @@ export const legalTexts = {
         ],
       },
       {
+        heading: "Dados dos afiliados das lojas",
+        blocks: [
+          {
+            kind: "paragraph",
+            text: "Um afiliado é quem uma loja convida para vender por um link dela e receber uma comissão sobre o que vender. Ele entra com uma conta do bee-link, pela mesma porta do lojista, e uma conta pode ser afiliada de várias lojas. Da conta, o bee-link guarda o mesmo que da conta do lojista: nome, e-mail, a senha só como hash, a data da confirmação do e-mail, as sessões e o registro de cada aceite dos Termos de uso. Quem cria a conta pelo convite tem o e-mail confirmado pelo próprio convite, que chegou àquela caixa.",
+          },
+          { kind: "paragraph", text: "De cada loja de que você é afiliado, o bee-link guarda, em nome dela:" },
+          {
+            kind: "list",
+            items: [
+              "o nome e o e-mail com que a loja convidou você, o telefone, se a loja ou você o informou, e uma nota que a loja pode anotar e que você não vê;",
+              "a tabela de comissão em que a loja colocou você, a situação do vínculo, isto é, convidado, ativo, pausado ou encerrado, e as datas do convite, do aceite e do encerramento;",
+              "o nome que você escolheu para o seu link, a versão dos termos do programa da loja que você aceitou, com a data do aceite, e a chave Pix, se você a informou;",
+              "a foto e a frase que você escolher para aparecer na vitrine da loja;",
+              "os pedidos creditados a você, com a comissão de cada um; o extrato do que entrou e saiu, com o motivo de cada ajuste que a loja fez; e os pagamentos que a loja registrou, com o valor, a data, a forma e a nota;",
+              "quantas visitas o seu link recebeu em cada dia, só como um número, sem nada de quem visitou.",
+            ],
+          },
+          {
+            kind: "paragraph",
+            text: "A loja vê tudo isso no painel, inclusive a chave Pix, porque é ela quem paga. Você vê o mesmo na área do afiliado, menos a nota da loja e quem fez cada ajuste. O seu nome, a sua foto e a sua frase são públicos: aparecem na vitrine da loja para quem chega pelo seu link.",
+          },
+          {
+            kind: "paragraph",
+            text: "O convite chega ao e-mail que a loja digitou e vale uma única vez, por 7 dias. Um convite cancelado antes do aceite é apagado, com o que a loja anotou nele.",
+          },
+        ],
+      },
+      {
         heading: "Dados dos clientes das lojas",
         blocks: [
           { kind: "paragraph", text: "Quando você cria uma conta numa loja e compra dela, o bee-link guarda, em nome da loja:" },
@@ -431,6 +488,7 @@ export const legalTexts = {
               "até 10 endereços de entrega, cada um com o nome que você der a ele e quem recebe ali;",
               "os seus pedidos: itens, valores, formas de entrega e de pagamento, o endereço e quem recebe como eram no momento da compra, o histórico de andamento, os dados de envio, como o código de rastreio, e a observação interna que a loja pode anotar, que você não vê;",
               "de onde você chegou quando fez um pedido: a campanha do link, isto é, os parâmetros utm_source, utm_medium, utm_campaign, utm_content e utm_term, que a loja vê no pedido; e, numa loja que usa o Pixel da Meta, só se você tinha aceitado o aviso de cookies dela quando fez o pedido, o registro de que o aceite valia naquele momento e o que estava no seu navegador: o identificador do clique no anúncio (fbclid) e quando ele aconteceu, o identificador _fbp da Meta, a identificação do navegador e o endereço da página do carrinho, que a loja não vê no painel;",
+              "se você chegou à loja pelo link de um afiliado dela e fez um pedido dentro dos dias em que a indicação vale, o afiliado a quem o pedido foi creditado, a comissão dele e o momento em que você chegou pelo link; a loja também pode creditar a um afiliado um pedido seu que ela registrou no painel, e pode tirar ou trocar o afiliado de um pedido, com o motivo, que fica no histórico do pedido;",
               "as conversas dos pedidos: cada mensagem, quem a escreveu, quando e quando foi lida;",
               "as suas escolhas de avisos por e-mail, sobre o andamento dos pedidos, favoritos, cashback perto de vencer e ofertas da loja; só a escolha de receber ofertas é um consentimento, e o bee-link guarda a data em que você a fez;",
               "um resumo das suas compras na loja, como o número de pedidos e o valor total;",
@@ -441,6 +499,10 @@ export const legalTexts = {
           {
             kind: "paragraph",
             text: "Ao criar a conta, o seu nome e o seu e-mail já aparecem para a loja, mesmo antes da primeira compra. No painel, a loja vê o seu nome, e-mail, celular, CPF, data de nascimento, endereço padrão, pedidos, conversas e o saldo e o extrato do seu cashback. Ela nunca vê a sua senha nem as suas sessões.",
+          },
+          {
+            kind: "paragraph",
+            text: "O afiliado a quem um pedido seu foi creditado vê, na área do afiliado e no e-mail de cada venda, o número, a data, o andamento, os itens e os valores desse pedido e o seu nome. Ele nunca vê o seu e-mail, o seu celular, o seu CPF nem o seu endereço. Numa loja em que você chegou pelo link de um afiliado, o carrinho e o checkout avisam isso antes do pedido.",
           },
           {
             kind: "paragraph",
@@ -462,6 +524,7 @@ export const legalTexts = {
               "o carrinho e o CEP de \"Entregar em\" ficam em cookies no seu navegador, e não no banco de dados do bee-link;",
               "a sua resposta ao aviso de cookies de uma loja que usa o Pixel da Meta também fica num cookie no seu navegador; no banco de dados do bee-link ela só é registrada junto de um pedido que você faça depois de aceitar, como explica a seção \"Pixel da Meta nas lojas\";",
               "o formulário de contato de uma loja ou site guarda o seu nome e as respostas aos campos que o dono escolheu, como e-mail e telefone, e a mensagem também é enviada ao e-mail do dono;",
+              "o link de um afiliado de uma loja grava no seu navegador o cookie bl_affiliate, só com um identificador do afiliado e o momento da chegada, para que um pedido que você fizer ali credite a comissão dele; a visita entra numa contagem diária do afiliado, que é só um número, sem nada de quem visitou;",
               "o \"Avise-me\" de um produto esgotado guarda o seu número de WhatsApp e, se você quiser, o seu nome, para que a loja possa avisar quando o produto voltar; esse aviso ainda não existe no bee-link, e hoje o pedido fica guardado sem que a loja o veja.",
             ],
           },
@@ -529,16 +592,16 @@ export const legalTexts = {
           {
             kind: "list",
             items: [
-              "Execução de contrato: criar e manter contas, confirmar o e-mail, redefinir a senha, publicar a loja e localizá-la no mapa, preencher endereços pelo CEP, registrar pedidos e conversas, enviar os e-mails de andamento dos pedidos, registrar o aceite dos Termos de uso e atender o que você pede pelo formulário de contato ou pelo \"Avise-me\".",
+              "Execução de contrato: criar e manter contas, confirmar o e-mail, redefinir a senha, publicar a loja e localizá-la no mapa, preencher endereços pelo CEP, registrar pedidos e conversas, enviar os e-mails de andamento dos pedidos, registrar o aceite dos Termos de uso e atender o que você pede pelo formulário de contato ou pelo \"Avise-me\"; e, no programa de afiliados de uma loja, enviar o convite, criar a conta do afiliado e manter o vínculo dele com a loja, calcular e registrar as comissões e avisar o afiliado de cada venda, de cada cancelamento e de cada pagamento registrado.",
               "Procedimentos preliminares a um contrato, a pedido de quem se candidata: guardar o cadastro de quem quer fazer entregas pelo bee-link e falar com a pessoa para concluí-lo.",
               "Cumprimento de obrigação legal: guardar registros de acesso e atender ordens de autoridades, quando a lei exigir.",
-              "Legítimo interesse: proteger as contas e a plataforma, prevenir fraudes e abusos, limitar tentativas repetidas e investigar erros, sempre dentro do que se espera de um serviço como este.",
+              "Legítimo interesse: proteger as contas e a plataforma, prevenir fraudes e abusos, limitar tentativas repetidas e investigar erros, sempre dentro do que se espera de um serviço como este; e, para a loja que tem um programa de afiliados, creditar ao afiliado o pedido de quem chegou pelo link dele, pelo cookie bl_affiliate, e mostrar a ele o nome de quem comprou, para que a loja cumpra o acordo que fez com o afiliado.",
               "Consentimento: enviar ofertas e novidades de uma loja por e-mail, só a quem aceitou; numa loja que conectou um Pixel da Meta, enviar à Meta os dados da sua navegação naquela loja e a compra que você fizer ali, pelo seu navegador ou pelo servidor do bee-link, só depois que você aceita no aviso de cookies; e, no site do bee-link, medir as visitas com o Google Analytics, que recebe os dados da sua navegação ali, só depois que você aceita no aviso de cookies da página inicial. Você pode retirar o consentimento quando quiser: o das ofertas, em \"Avisos por e-mail\", na sua conta na loja; o do pixel, no link \"Cookies\", no rodapé da loja; o da medição, no link \"Cookies\", no rodapé da página inicial do bee-link.",
             ],
           },
           {
             kind: "paragraph",
-            text: "Para os dados dos clientes, a loja, como controladora, responde pelas bases legais dos usos que fizer deles. O bee-link não usa dados pessoais para publicidade própria: o Google Analytics do site dele serve para contar as visitas, as contas criadas e os cadastros de entregador enviados, e não para anúncios. A loja que conecta um Pixel da Meta usa os dados da navegação e das compras de quem aceitou para medir e direcionar os anúncios dela, e responde por esse uso.",
+            text: "Para os dados dos clientes, a loja, como controladora, responde pelas bases legais dos usos que fizer deles. O bee-link não usa dados pessoais para publicidade própria: o Google Analytics do site dele serve para contar as visitas, as contas criadas e os cadastros de entregador enviados, e não para anúncios. A loja que conecta um Pixel da Meta usa os dados da navegação e das compras de quem aceitou para medir e direcionar os anúncios dela, e responde por esse uso. A loja que tem um programa de afiliados responde pelo acordo com os seus afiliados e por mostrar a eles o nome de quem comprou pelo link de cada um.",
           },
         ],
       },
@@ -564,6 +627,10 @@ export const legalTexts = {
           {
             kind: "paragraph",
             text: "Os dados dos clientes de uma loja ficam disponíveis para ela no painel, e as mensagens do formulário de contato chegam também ao e-mail do dono, que passa a responder por elas.",
+          },
+          {
+            kind: "paragraph",
+            text: "Numa loja com programa de afiliados, o afiliado a quem um pedido foi creditado recebe, pelo bee-link, o nome de quem comprou e os dados desse pedido: o número, a data, o andamento, os itens e os valores, nunca o e-mail, o celular, o CPF ou o endereço. O afiliado não é fornecedor do bee-link: é um parceiro da loja, que decide mostrar esses dados a ele e responde por isso. Os dados do afiliado ficam disponíveis no painel da loja de que ele é afiliado, e o nome, a foto e a frase dele aparecem na vitrine dela.",
           },
           {
             kind: "paragraph",
@@ -703,6 +770,8 @@ export const legalTexts = {
               "bl_site_consent: a sua resposta, aceitar ou recusar, ao aviso de cookies do site do bee-link, que pergunta sobre o Google Analytics; vale para a página inicial e para as telas em que o lojista entra e cria a conta, nunca como resposta ao aviso de uma loja, e dura 180 dias;",
               "bl_purchases: numa loja que usa o Pixel da Meta, e só depois que você aceita, os códigos dos seus últimos pedidos já informados à Meta, para que o mesmo pedido não seja informado duas vezes; vale só para aquela loja e dura 7 dias, renovados a cada pedido informado;",
               "bl_origin: a campanha do link pelo qual você chegou a uma loja, isto é, os parâmetros utm_source, utm_medium, utm_campaign, utm_content e utm_term do endereço, para que o pedido que você fizer ali registre de qual campanha veio; e, numa loja que usa o Pixel da Meta, só depois que você aceita, o identificador do clique no anúncio (fbclid) com que você chegou; vale só para aquela loja e dura 30 dias a partir da chegada;",
+              "bl_affiliate: numa loja com programa de afiliados, o afiliado pelo link de quem você chegou, isto é, um identificador do afiliado e o momento da chegada, e nada sobre você, para que o pedido que você fizer ali credite a comissão dele; não depende do aviso de cookies, porque serve ao acordo entre a loja e o afiliado, e não a publicidade; só o servidor do bee-link o lê, ele vale só para aquela loja e dura os dias de indicação que ela definiu, de 1 a 90, ou 30 se ela não os mudou, contados da chegada; o link de outro afiliado o substitui;",
+              "bl_affiliate_hidden: numa loja em que você fechou a faixa que diz por indicação de quem você chegou, o identificador desse afiliado, para que a faixa não volte; dura até você fechar o navegador;",
               "bl_popup: numa loja que mostra um aviso de primeira compra (pop-up ou faixa), que você já fechou esse aviso ou apertou o botão dele, para que ele não apareça de novo; guarda só um número que identifica o aviso fechado, e nada sobre você; vale só para aquela loja e dura 30 dias;",
               "bl_prefs: as preferências de exibição do painel, como o menu recolhido; dura 1 ano;",
               "bl_locale: o idioma escolhido; dura 1 ano.",
@@ -739,6 +808,10 @@ export const legalTexts = {
           },
           {
             kind: "paragraph",
+            text: "A contagem diária das visitas pelo link de um afiliado é guardada por 13 meses e depois apagada. O vínculo de um afiliado com uma loja, depois de encerrado, continua guardado com os pedidos, o extrato e os pagamentos, porque é a história do que a loja deveu e pagou. Um convite cancelado antes do aceite é apagado.",
+          },
+          {
+            kind: "paragraph",
             text: "Os registros técnicos do servidor são guardados por [PREENCHER: prazo de guarda dos logs; o art. 15 do Marco Civil da Internet pede 6 meses para os registros de acesso a aplicações, e hoje o servidor descarta os logs por volume, sem prazo fixo].",
           },
           {
@@ -762,10 +835,11 @@ export const legalTexts = {
               "acesso ao site só por conexão segura (HTTPS);",
               "cookies de sessão fora do alcance de scripts da página;",
               "links de confirmação de e-mail e de nova senha que valem uma única vez: o primeiro por 24 horas, o segundo por 1 hora;",
+              "links de convite de afiliado que valem uma única vez, por 7 dias, e deixam de valer quando a loja envia um novo;",
               "redefinição de senha que encerra todas as sessões da conta;",
               "limite de tentativas para entrar, criar conta, fazer pedidos e enviar mensagens e formulários;",
               "banco de dados numa rede interna do servidor, sem acesso direto pela internet;",
-              "separação entre as lojas: cada lojista só acessa os dados das próprias lojas.",
+              "separação entre as lojas: cada lojista só acessa os dados das próprias lojas, e cada afiliado, só os do próprio vínculo com cada loja.",
             ],
           },
           {
@@ -811,6 +885,7 @@ export const legalTexts = {
             items: [
               "Se você é cliente de uma loja, faça o pedido à loja, que é a controladora dos seus dados. O bee-link, como operador, apoia a loja e leva a ela o pedido que receber sobre esses dados.",
               "Se você é lojista, faça o pedido ao bee-link, pelo canal indicado na seção de contato.",
+              "Se você é afiliado de uma loja, os pedidos sobre a sua conta são feitos ao bee-link, pelo canal indicado na seção de contato, e os sobre o vínculo com a loja, como as comissões, o extrato e os pagamentos, à loja, que é a controladora deles. Na área do afiliado, você mesmo corrige a chave Pix, o telefone, a foto e a frase.",
               "Se você enviou o cadastro de entregador, faça o pedido ao bee-link, pelo canal indicado na seção de contato, informando o CPF do cadastro.",
               "Para os dados que o bee-link trata para fins próprios, como os registros técnicos e o aceite dos Termos de uso, qualquer pessoa pode falar direto com o bee-link.",
             ],
