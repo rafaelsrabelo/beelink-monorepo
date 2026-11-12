@@ -4,15 +4,25 @@ export const PANEL_PATHS = ["/dashboard", "/admin", "/create-store"]
 /** The page to go back to after signing in, on `/login`. */
 export const RETURN_KEY = "voltar"
 
-export function isPanelPage(pathname: string): boolean {
-  return PANEL_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`))
-}
-
 /**
  * Where an invited affiliate signs in from and comes back to (IMPULSEIA-104): a page of bee-link's own,
  * signed in or not, and never a shop's — `afiliado` is a reserved slug.
  */
 export const AFFILIATE_INVITE_PATH = "/afiliado/convite"
+
+/** The affiliate's own area (IMPULSEIA-108): the shops an account sells for, and each one's page. */
+export const AFFILIATE_AREA_PATH = "/afiliado"
+
+/** A page of the affiliate's area: signed in like the panel — all of it but the invite, which is public. */
+export function isAffiliateAreaPage(pathname: string): boolean {
+  if (pathname === AFFILIATE_INVITE_PATH || pathname.startsWith(`${AFFILIATE_INVITE_PATH}/`)) return false
+  return pathname === AFFILIATE_AREA_PATH || pathname.startsWith(`${AFFILIATE_AREA_PATH}/`)
+}
+
+/** A signed-in page of bee-link's own: the panel's, and the affiliate's area. */
+export function isPanelPage(pathname: string): boolean {
+  return PANEL_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`)) || isAffiliateAreaPage(pathname)
+}
 
 /**
  * A page of the panel to go back to, or null. Only the panel's own — and the affiliate's invite, which

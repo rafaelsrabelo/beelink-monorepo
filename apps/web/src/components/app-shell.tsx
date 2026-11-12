@@ -38,6 +38,7 @@ import { useMyStores } from "@/services/stores/store-hooks"
 import { PanelNotifications } from "@/components/panel-notifications"
 import { menuBadgeOf, type PanelMenuArea } from "@/lib/panel-menu-counts"
 import { usePanelCounts } from "@/services/panel/panel-counts-hooks"
+import { useMyAffiliateShops } from "@/services/affiliate-area/affiliate-area-hooks"
 
 export interface AppShellProps {
   user: User
@@ -80,6 +81,8 @@ export function AppShell({ user, ui, web, locale, prefs, children }: AppShellPro
   const plan = usePlanCard(shopSlug, locale)
 
   const stores = useMyStores()
+  // The account sells for a shop too (IMPULSEIA-108): its menu offers the way into its own area.
+  const sellsFor = (useMyAffiliateShops().data?.length ?? 0) > 0
   const workspaces = (stores.data ?? []).map((store) => ({
     slug: store.slug,
     name: store.name,
@@ -150,6 +153,7 @@ export function AppShell({ user, ui, web, locale, prefs, children }: AppShellPro
               signingOut={signOut.isPending}
               onSignOut={() => signOut.mutate(undefined, { onSuccess: () => startOver("/login") })}
               localeSlot={<LocaleSwitcher locale={locale} messages={web} />}
+              {...(sellsFor ? { affiliateHref: "/afiliado" } : {})}
               linkComponent={AppLink}
               messages={ui}
             />

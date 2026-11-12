@@ -1,6 +1,6 @@
 // App
 import { CUSTOMER_ACCESS_COOKIE, CUSTOMER_REFRESH_COOKIE } from "./customer-session-cookies"
-import { isPanelPage } from "./panel-return"
+import { isAffiliateAreaPage, isPanelPage } from "./panel-return"
 import { REFRESH_COOKIE } from "./session-cookies"
 
 /**
@@ -45,13 +45,15 @@ const SHOP_PATH = /^\/(?!_next|api)[^/.]+(?:\/.*)?$/
 /**
  * Whether the proxy acts on a request to the platform's host:
  *
- * - the panel's pages and `/create-store`, and the auth screens — always;
+ * - the panel's pages and `/create-store`, the affiliate's area but its invite, and the auth screens — always;
  * - the panel's handlers — only with a panel refresh cookie, to renew the pair on the way;
  * - a shop's pages and handlers — only for a shopper whose refresh cookie is there and whose access
  *   cookie is not, to keep them signed in. An anonymous visitor and a crawler are never handed over.
  */
 export function wasHandedOver(pathname: string, has: (cookie: string) => boolean): boolean {
   if (PANEL_TREES.some((path) => pathname === path || pathname.startsWith(`${path}/`))) return true
+  // The affiliate's own area (IMPULSEIA-108), signed in like the panel; its invite stays public.
+  if (isAffiliateAreaPage(pathname)) return true
   if (PANEL_PAGES.includes(pathname)) return true
   if (PANEL_HANDLER.test(pathname) && has(REFRESH_COOKIE)) return true
 

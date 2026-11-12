@@ -17,7 +17,16 @@ describe("what the proxy takes in hand on the platform's host", () => {
     for (const path of ["/dashboards", "/administrador", "/admin-loja"]) expect(wasHandedOver(path, holding()), path).toBe(false)
   })
 
-  it("/create-store and the auth screens, each alone: nothing under them was ever named", () => {
+  it("the affiliate's own area, signed in like the panel — but never its invite, which a person with no account opens (IMPULSEIA-108)", () => {
+    for (const path of ["/afiliado", "/afiliado/loja-da-ana"]) {
+      expect(wasHandedOver(path, holding()), path).toBe(true)
+      expect(isPanelPath(path), path).toBe(true)
+    }
+    expect(wasHandedOver("/afiliado/convite", holding())).toBe(false)
+    expect(wasHandedOver("/afiliados", holding())).toBe(false)
+  })
+
+    it("/create-store and the auth screens, each alone: nothing under them was ever named", () => {
     for (const path of ["/create-store", "/login", "/signup", "/verify-email", "/forgot-password", "/reset-password"]) {
       expect(wasHandedOver(path, holding()), path).toBe(true)
       expect(wasHandedOver(`${path}/x`, holding()), `${path}/x`).toBe(false)
