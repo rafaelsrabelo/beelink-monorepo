@@ -40,6 +40,8 @@ model CommissionTable {
   rates CommissionTableRate[]
 
   @@unique([storeId, name])
+  /// One default table per shop, however many first readings open the programme at once.
+  @@unique([storeId], where: { isDefault: true }, map: "commission_tables_one_default_key")
   @@map("commission_tables")
 }
 
