@@ -38,4 +38,7 @@ export const SemLoja: Story = { args: { current: null, workspaces: [] } }
 /** Signing out: the item is held so a second press cannot start it twice. */
 export const Saindo: Story = { args: { signingOut: true } }
 
+/** A conta também vende como afiliada (IMPULSEIA-108): o caminho para a área dela. */
+export const ComAreaDoAfiliado: Story = { args: { affiliateHref: "/afiliado" } }
+
 export const EmIngles: Story = { args: { messages: en } }

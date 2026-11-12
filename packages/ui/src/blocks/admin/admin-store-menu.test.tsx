@@ -72,7 +72,20 @@ describe("AdminStoreMenu", () => {
     expect(screen.getByRole("menuitem", { name: "Sair" })).toBeInTheDocument()
   })
 
-  it("signs out when asked", async () => {
+  it("offers the way into the affiliate's area only to an account that sells for a shop (IMPULSEIA-108)", async () => {
+    const { unmount } = renderMenu({ affiliateHref: "/afiliado" })
+
+    await userEvent.click(screen.getByRole("button", { name: "Trocar de loja" }))
+    expect(await screen.findByRole("menuitem", { name: "Minhas vendas como afiliado" })).toHaveAttribute("href", "/afiliado")
+    unmount()
+
+    renderMenu()
+    await userEvent.click(screen.getByRole("button", { name: "Trocar de loja" }))
+    expect(await screen.findByRole("menuitem", { name: "Sair" })).toBeInTheDocument()
+    expect(screen.queryByRole("menuitem", { name: "Minhas vendas como afiliado" })).not.toBeInTheDocument()
+  })
+
+    it("signs out when asked", async () => {
     const onSignOut = vi.fn()
     renderMenu({ onSignOut })
 
