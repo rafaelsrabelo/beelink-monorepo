@@ -5,11 +5,13 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import type { ProductCategory, PublicProductCategory } from '@harness-monorepo/contracts';
 import type { CreateProductCategoryDto, UpdateProductCategoryDto } from './dto/product-category.dto.js';
 import type { ReorderDto } from './dto/reorder.dto.js';
+import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoresService } from '../stores/stores.service.js';
 import { catalogError, CatalogSlugService } from './catalog-slug.service.js';
+import { lockShopSegment, shopSegmentHolder } from './shop-segments.js';
 import {
   productCategoryAdminInclude,
   productCategoryInclude,
@@ -148,19 +150,22 @@ export class ProductCategoriesService {
     });
 
     try {
-      const row = await this.prisma.productCategory.create({
-        data: {
-          storeId,
-          slug,
-          name: dto.name,
-          description: dto.description ?? null,
-          imageUrl: dto.imageUrl ?? null,
-          bannerUrl: dto.bannerUrl ?? null,
-          parentId,
-          isActive: dto.isActive ?? true,
-          position: (last._max.position ?? -1) + 1,
-        },
-        include: productCategoryInclude,
+      const row = await this.prisma.$transaction(async (tx) => {
+        await this.claimSegment(tx, storeId, slug);
+        return tx.productCategory.create({
+          data: {
+            storeId,
+            slug,
+            name: dto.name,
+            description: dto.description ?? null,
+            imageUrl: dto.imageUrl ?? null,
+            bannerUrl: dto.bannerUrl ?? null,
+            parentId,
+            isActive: dto.isActive ?? true,
+            position: (last._max.position ?? -1) + 1,
+          },
+          include: productCategoryInclude,
+        });
       });
 
       return toProductCategory(row);
@@ -191,21 +196,24 @@ export class ProductCategoriesService {
     const parentId = dto.parentId ? await this.parentFor(storeId, dto.parentId, categoryId) : null;
 
     try {
-      const row = await this.prisma.productCategory.update({
-        where: { id: categoryId },
-        data: {
-          slug,
-          slugHistory: this.slugs.historyAfterRename(current.slug, slug, current.slugHistory),
-          name: dto.name ?? current.name,
-          // `?? null` rather than `?? current.x`: sending the key with null is how the panel clears
-          // a field, and `undefined` is Prisma's own "leave this column alone".
-          ...(dto.description !== undefined ? { description: dto.description ?? null } : {}),
-          ...(dto.imageUrl !== undefined ? { imageUrl: dto.imageUrl ?? null } : {}),
-          ...(dto.bannerUrl !== undefined ? { bannerUrl: dto.bannerUrl ?? null } : {}),
-          ...(dto.parentId !== undefined ? { parentId } : {}),
-          ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
-        },
-        include: productCategoryInclude,
+      const row = await this.prisma.$transaction(async (tx) => {
+        if (slug !== current.slug) await this.claimSegment(tx, storeId, slug, categoryId);
+        return tx.productCategory.update({
+          where: { id: categoryId },
+          data: {
+            slug,
+            slugHistory: this.slugs.historyAfterRename(current.slug, slug, current.slugHistory),
+            name: dto.name ?? current.name,
+            // `?? null` rather than `?? current.x`: sending the key with null is how the panel clears
+            // a field, and `undefined` is Prisma's own "leave this column alone".
+            ...(dto.description !== undefined ? { description: dto.description ?? null } : {}),
+            ...(dto.imageUrl !== undefined ? { imageUrl: dto.imageUrl ?? null } : {}),
+            ...(dto.bannerUrl !== undefined ? { bannerUrl: dto.bannerUrl ?? null } : {}),
+            ...(dto.parentId !== undefined ? { parentId } : {}),
+            ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
+          },
+          include: productCategoryInclude,
+        });
       });
 
       return toProductCategory(row);
@@ -277,6 +285,18 @@ export class ProductCategoriesService {
     }
 
     return row;
+  }
+
+  /**
+   * A category's address is a segment of the shop's, shared with its affiliates' `/name`s
+   * (IMPULSEIA-103): claimed under the segment's lock, and refused while an affiliate holds it.
+   * Another category holding it is the unique key's to answer, as ever.
+   */
+  private async claimSegment(tx: Prisma.TransactionClient, storeId: string, slug: string, categoryId?: string): Promise<void> {
+    await lockShopSegment(tx, storeId, slug);
+    if ((await shopSegmentHolder(tx, storeId, slug, { categoryId })) === 'AFFILIATE') {
+      throw new ConflictException(catalogError('PRODUCT_CATEGORY_SLUG_AFFILIATE', `"${slug}" is the address of one of this shop's affiliates`));
+    }
   }
 
   private taken(slug: string): ConflictException {

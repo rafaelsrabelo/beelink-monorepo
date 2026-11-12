@@ -39,6 +39,8 @@ model User {
   billingAccount BillingAccount?
   /// The e-mail that told this shopkeeper the day charging starts (BEELINK-297); one, ever.
   chargingNotice ChargingNotice?
+  /// The shops this account sells for (IMPULSEIA-103).
+  affiliations Affiliate[]
 
   @@unique([storeId, email])
   // The composite above leaves bee-link's accounts unconstrained — Postgres counts every null

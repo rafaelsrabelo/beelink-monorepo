@@ -159,6 +159,7 @@ export const ptBR: WebMessages = {
     CATALOG_SLUG_RESERVED: "Um dos nomes é uma palavra que a loja usa nos próprios endereços. Mude o nome e tente de novo.",
     PRODUCT_CATEGORY_NOT_FOUND: "Uma das categorias escolhidas não existe mais. Escolha outra e tente de novo.",
     PRODUCT_CATEGORY_SLUG_TAKEN: "Uma categoria com esse nome acabou de ser criada. Tente importar de novo.",
+    PRODUCT_CATEGORY_SLUG_AFFILIATE: "Um dos nomes já é o link de um afiliado da loja. Mude o nome e tente de novo.",
     PRODUCT_IMPORT_NOT_CONFIGURED: "A importação por PDF ainda não está disponível neste ambiente.",
     PRODUCT_IMPORT_UNREADABLE:
       "Não encontramos produtos nesse documento. Confira se é o cardápio ou catálogo, se não tem senha, e tente de novo.",

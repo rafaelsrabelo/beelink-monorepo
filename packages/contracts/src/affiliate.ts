@@ -1,3 +1,6 @@
+// Types
+import type { AuthSession } from "./auth.js";
+
 /**
  * A shop's affiliate programme (IMPULSEIA-100): people who sell through the shop's link and earn a
  * commission on what they sell. The customer pays the shop's own prices; the affiliate's share is
@@ -46,6 +49,8 @@ export interface CommissionTableSummary {
   isDefault: boolean;
   /** How many products have a rate of their own on this table. */
   productRateCount: number;
+  /** How many affiliates are on this table and not ended. A table with any is not deleted. */
+  affiliateCount: number;
 }
 
 /** A product's own rate on a table, which replaces the table's for that product. 0 pays it nothing. */
@@ -95,4 +100,178 @@ export type AffiliateErrorCode =
   /** The default table is not deleted: every affiliate needs a table to fall back on. */
   | "COMMISSION_TABLE_DEFAULT"
   /** The shop already has the most tables it may keep. */
-  | "COMMISSION_TABLE_LIMIT";
+  | "COMMISSION_TABLE_LIMIT"
+  /** Affiliates who have not ended are on this table: move them before deleting it. */
+  | "COMMISSION_TABLE_IN_USE"
+  /** An affiliate's name, e-mail, phone, note or table out of its range or missing. */
+  | "AFFILIATE_INVALID"
+  | "AFFILIATE_NOT_FOUND"
+  /** Another affiliate of the shop, not ended, has this e-mail. */
+  | "AFFILIATE_EMAIL_TAKEN"
+  /** What was asked does not fit where the affiliate stands; `details` is `AffiliateStatusDetails`. */
+  | "AFFILIATE_STATUS_INVALID"
+  /** The invite went out less than a minute ago. */
+  | "AFFILIATE_INVITE_RECENTLY_SENT"
+  /** No invite answers to this link: never one, already accepted, sent again since, or cancelled. */
+  | "AFFILIATE_INVITE_NOT_FOUND"
+  /** The invite's seven days are over: the shop can send it again. */
+  | "AFFILIATE_INVITE_EXPIRED"
+  /** The signed-in account is not the one invited; `details` is `AffiliateInviteEmailMismatchDetails`. */
+  | "AFFILIATE_INVITE_EMAIL_MISMATCH"
+  /** The `/name` cannot be the affiliate's; `details` is `AffiliateSlugUnavailableDetails`. */
+  | "AFFILIATE_SLUG_UNAVAILABLE"
+  /** The acceptance's `/name`, Pix key, terms version, name or password out of its range or missing. */
+  | "AFFILIATE_ACCEPTANCE_INVALID"
+  /** The shop changed its terms since they were read: read the invite again. */
+  | "AFFILIATE_TERMS_CHANGED"
+  /** The account already sells for this shop, under another invite. */
+  | "AFFILIATE_ALREADY_LINKED";
+
+/**
+ * Where an affiliate stands with a shop (IMPULSEIA-103): invited and not yet in; selling; paused —
+ * no new order is credited, those already credited run their course; or ended, for good. An ended
+ * affiliate may be invited again, which starts a new standing with the shop.
+ */
+export type AffiliateStatus = "INVITED" | "ACTIVE" | "PAUSED" | "ENDED";
+
+/** An affiliate as the shop's list shows them. */
+export interface ShopAffiliateSummary {
+  id: string;
+  name: string;
+  /** Lower case, as it was invited. */
+  email: string;
+  /** Digits only, with the country code; null when none was given. */
+  phone: string | null;
+  /** The `/name` chosen on accepting, unique in the shop for good; null while invited. */
+  slug: string | null;
+  status: AffiliateStatus;
+  table: { id: string; name: string };
+  /** ISO-8601. */
+  invitedAt: string;
+  /** ISO-8601; null while invited. */
+  acceptedAt: string | null;
+}
+
+/** One affiliate, whole, as the shop reads them. The Pix key is the shop's to see: it is the shop that pays. */
+export interface ShopAffiliate extends ShopAffiliateSummary {
+  note: string | null;
+  pixKey: string | null;
+  photoUrl: string | null;
+  tagline: string | null;
+  /** The version of the shop's terms accepted; null while invited. */
+  termsVersion: number | null;
+  /** ISO-8601. */
+  termsAcceptedAt: string | null;
+  /** ISO-8601. */
+  endedAt: string | null;
+  /** While invited: when the invite last went out, and when its link stops working. */
+  invite: { sentAt: string; expiresAt: string } | null;
+}
+
+/** `GET /stores/:slug/affiliates`: newest invited first. */
+export interface ShopAffiliatePage {
+  affiliates: ShopAffiliateSummary[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+/** What inviting takes. The e-mail is where the invite goes, and the one account that may accept it. */
+export interface CreateAffiliatePayload {
+  /** 2 to 120 characters, trimmed. */
+  name: string;
+  email: string;
+  tableId: string;
+  /** Any way a person writes it; null or absent for none. */
+  phone?: string | null;
+  /** The shop's own, up to 500 characters; the affiliate never reads it. */
+  note?: string | null;
+}
+
+/** A patch: a key left out is left alone. */
+export interface UpdateAffiliatePayload {
+  tableId?: string;
+  note?: string | null;
+}
+
+/** `details` of `AFFILIATE_STATUS_INVALID`. */
+export interface AffiliateStatusDetails {
+  status: AffiliateStatus;
+}
+
+/** `details` of `AFFILIATE_INVITE_EMAIL_MISMATCH`: whom the invite is for. */
+export interface AffiliateInviteEmailMismatchDetails {
+  email: string;
+}
+
+/**
+ * Why a `/name` cannot be the affiliate's: `INVALID`, not 3 to 40 of `a-z`, `0-9` and inner hyphens
+ * once normalised; `RESERVED`, a word the shop's own addresses use; `TAKEN`, a category of the shop —
+ * now or before a rename — or another of its affiliates.
+ */
+export type AffiliateSlugUnavailableReason = "INVALID" | "RESERVED" | "TAKEN";
+
+/** `details` of `AFFILIATE_SLUG_UNAVAILABLE`. */
+export interface AffiliateSlugUnavailableDetails {
+  reason: AffiliateSlugUnavailableReason;
+}
+
+/** `GET /affiliate-invites/:token/slug?slug=`: the `/name` as it would be kept, and whether it can be. */
+export interface AffiliateSlugAvailability {
+  slug: string;
+  available: boolean;
+  reason: AffiliateSlugUnavailableReason | null;
+}
+
+/** A product with a rate of its own on the invite's table. Every other product pays the table's rate. */
+export interface AffiliateInvitationProduct {
+  productId: string;
+  name: string;
+  rateBps: number;
+}
+
+/** `GET /affiliate-invites/:token`: the invite as the person invited reads it, before accepting. */
+export interface AffiliateInvitation {
+  store: { name: string; slug: string; logoUrl: string | null };
+  affiliate: { name: string; email: string };
+  table: { name: string; defaultRateBps: number; products: AffiliateInvitationProduct[] };
+  /** The shop's terms as they stand; `version` is what accepting sends back. */
+  terms: { text: string | null; version: number };
+  /** ISO-8601. */
+  expiresAt: string;
+  /** Whether the e-mail invited has a bee-link account: sign in and accept, rather than sign up. */
+  hasAccount: boolean;
+  /** A `/name` free now, from the affiliate's name; null when none is. */
+  suggestedSlug: string | null;
+}
+
+/** What accepting takes, signed in. */
+export interface AffiliateAcceptancePayload {
+  /** Normalised as the availability check shows it. */
+  slug: string;
+  /** Up to 140 characters; null to give it later. */
+  pixKey: string | null;
+  /** The `terms.version` the invite showed. */
+  termsVersion: number;
+}
+
+/** What accepting takes with no account yet: the account is made with the invited e-mail, already verified. */
+export interface AffiliateSignUpPayload extends AffiliateAcceptancePayload {
+  /** 2 to 120 characters. */
+  name: string;
+  /** 8 to 128 characters. */
+  password: string;
+}
+
+/** An accepted invite: the shop the affiliate now sells for, and their `/name` there. */
+export interface AcceptedAffiliate {
+  storeName: string;
+  storeSlug: string;
+  slug: string;
+}
+
+/** `POST /affiliate-invites/:token/sign-up`: the new account's session, and the invite accepted. */
+export interface AffiliateSignUpResult {
+  session: AuthSession;
+  affiliate: AcceptedAffiliate;
+}

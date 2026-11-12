@@ -1,5 +1,5 @@
 // Types
-import type { AffiliateErrorCode, AffiliateProgramPayload, CatalogErrorCode } from '@harness-monorepo/contracts';
+import type { AffiliateErrorCode, AffiliateProgramPayload, AffiliateStatus, AuthErrorCode, CatalogErrorCode } from '@harness-monorepo/contracts';
 
 /**
  * What a programme reads the first time its owner opens it (IMPULSEIA-101): switched off, so nothing
@@ -30,14 +30,32 @@ export const COMMISSION_TABLES_MAX = 50;
 
 export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export function affiliateError(
-  errorCode: AffiliateErrorCode | Extract<CatalogErrorCode, 'PRODUCT_NOT_FOUND'>,
-  message: string,
-): { errorCode: AffiliateErrorCode | Extract<CatalogErrorCode, 'PRODUCT_NOT_FOUND'>; message: string } {
-  return { errorCode, message };
+/** Every code this module answers: its own, and the two it shares with the catalogue and the accounts. */
+type AnsweredCode = AffiliateErrorCode | Extract<CatalogErrorCode, 'PRODUCT_NOT_FOUND'> | Extract<AuthErrorCode, 'AUTH_EMAIL_TAKEN'>;
+
+export function affiliateError<D extends object>(errorCode: AnsweredCode, message: string, details?: D): { errorCode: AnsweredCode; message: string; details?: D } {
+  return details ? { errorCode, message, details } : { errorCode, message };
 }
 
 /** Postgres' unique violation, as Prisma reports it — the backstop for the race a pre-check loses. */
 export function isUniqueViolation(error: unknown): boolean {
   return typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002';
+}
+
+export const AFFILIATE_STATUSES = ['INVITED', 'ACTIVE', 'PAUSED', 'ENDED'] as const satisfies readonly AffiliateStatus[];
+export const AFFILIATE_NAME_MIN = 2;
+export const AFFILIATE_NAME_MAX = 120;
+/** The columns' widths, which the validators count in characters as Postgres does. */
+export const AFFILIATE_NOTE_MAX = 500;
+export const PIX_KEY_MAX = 140;
+/** An invite's link works for a week; sending it again starts another one (plan, decision 5). */
+export const AFFILIATE_INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+/** The least time between two sends of one invite, so the button never fills someone else's inbox. */
+export const AFFILIATE_INVITE_RESEND_FLOOR_MS = 60 * 1000;
+export const AFFILIATES_PAGE_SIZE = 20;
+export const AFFILIATES_PAGE_SIZE_MAX = 100;
+export const AFFILIATES_PAGE_MAX = 10_000;
+/** Postgres' foreign-key violation, as Prisma reports it: a row referred to went away in between. */
+export function isForeignKeyViolation(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2003';
 }

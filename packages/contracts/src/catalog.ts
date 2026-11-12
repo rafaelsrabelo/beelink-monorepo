@@ -734,6 +734,8 @@ export type CatalogErrorCode =
   | "PRODUCT_SLUG_TAKEN"
   | "PRODUCT_CATEGORY_NOT_FOUND"
   | "PRODUCT_CATEGORY_SLUG_TAKEN"
+  /** The address is an affiliate's of the shop (IMPULSEIA-103): `/<shop>/<segment>` would be both. */
+  | "PRODUCT_CATEGORY_SLUG_AFFILIATE"
   | "CATALOG_SLUG_RESERVED"
   | "CATALOG_SLUG_EMPTY"
   | "CATALOG_PRICE_INVALID"

@@ -63,12 +63,26 @@ export class CommissionTablesService {
     }
   }
 
-  /** Gone for good: an order keeps the table's name and each line's rate, so no history leans on it. */
+  /**
+   * Gone for good: an order keeps the table's name and each line's rate, so no history leans on it.
+   * Never while an affiliate who has not ended is on it (IMPULSEIA-103); the ended ones on it go to
+   * the default table first, since their table pays nothing any more and the key may not dangle.
+   */
   async remove(storeSlug: string, userId: string, tableId: string): Promise<void> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
     const table = await this.tableOf(storeId, tableId);
     if (table.isDefault) throw new ConflictException(affiliateError('COMMISSION_TABLE_DEFAULT', 'The default table is never deleted'));
-    await this.prisma.commissionTable.deleteMany({ where: { id: table.id, isDefault: false } });
+
+    await this.prisma.$transaction(async (tx) => {
+      // The row held: an affiliate put on it meanwhile waits on the lock its key takes, and finds it gone.
+      await tx.$queryRaw`SELECT 1 FROM "commission_tables" WHERE "id" = ${table.id}::uuid FOR UPDATE`;
+      if ((await tx.affiliate.count({ where: { tableId: table.id, status: { not: 'ENDED' } } })) > 0) {
+        throw new ConflictException(affiliateError('COMMISSION_TABLE_IN_USE', 'Affiliates who have not ended are on this table'));
+      }
+      const fallback = await tx.commissionTable.findFirstOrThrow({ where: { storeId, isDefault: true }, select: { id: true } });
+      await tx.affiliate.updateMany({ where: { tableId: table.id }, data: { tableId: fallback.id } });
+      await tx.commissionTable.deleteMany({ where: { id: table.id, isDefault: false } });
+    });
   }
 
   async setRate(storeSlug: string, userId: string, tableId: string, productId: string, dto: CommissionProductRateDto): Promise<CommissionProductRate> {

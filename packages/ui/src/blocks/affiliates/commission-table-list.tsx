@@ -62,7 +62,8 @@ export function CommissionTableList({ tables, hrefOf, onCreate, onEdit, onDelete
               </p>
               <p className="text-muted-foreground text-sm">
                 {format(text.rate, { rate: ratePercentOf(table.defaultRateBps, locale) })} ·{" "}
-                {table.productRateCount > 0 ? format(text.productRates, { count: String(table.productRateCount) }) : text.productRatesNone}
+                {table.productRateCount > 0 ? format(text.productRates, { count: String(table.productRateCount) }) : text.productRatesNone} ·{" "}
+                {table.affiliateCount === 0 ? text.affiliatesNone : table.affiliateCount === 1 ? text.affiliatesOne : format(text.affiliates, { count: String(table.affiliateCount) })}
               </p>
             </div>
             <div className="flex items-center gap-1">
