@@ -54,6 +54,10 @@ export interface Placement {
   deliveryCarrier: ShippingCarrier | null;
   /** The CPF of who receives a carrier's delivery, as their record held it (BEELINK-187); null otherwise. */
   deliveryDocument?: string | null;
+  /** The CPF an online payment is charged in (plan 2026-11-11--cobranca-do-visitante); absent on an order not paid online. */
+  payerDocument?: string | null;
+  /** The name a visitor's online payment is charged in, as they typed it; absent for the account and the panel. */
+  payerName?: string | null;
   /** What the shopkeeper typed, beyond the promotions and the coupon; zero from the cart. */
   discountCents: number;
   /** As it was typed; null is none. One that does not hold refuses the order. */
@@ -186,6 +190,8 @@ export class OrderPlacement {
           paymentMethod: placement.paymentMethod,
           paymentChannel: online ? 'ONLINE' : 'OFFLINE',
           paymentInstallments: installments,
+          payerDocument: online ? (placement.payerDocument ?? null) : null,
+          payerName: online ? (placement.payerName ?? null) : null,
           // A total closed at the checkout is paid within three days of it (BEELINK-206).
           paymentDueAt: online && priced.totals.deliveryFeeCents !== null ? paymentDueAtOf(new Date()) : null,
           ...delivery,

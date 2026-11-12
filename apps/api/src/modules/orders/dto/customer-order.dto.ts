@@ -187,7 +187,7 @@ export class PlaceCustomerOrderDto implements PlaceCustomerOrderPayload {
   @shippingChoice
   shipping?: OrderShippingChoice;
 
-  @ApiPropertyOptional({ type: String, example: '529.982.247-25', description: "The customer's CPF, when their record has none: a carrier's label is bought with it and an online payment is charged to it. Kept on the record." })
+  @ApiPropertyOptional({ type: String, example: '529.982.247-25', description: "The customer's CPF — a visitor's every time, an account's when its record has none: a carrier's label is bought with it and an online payment is charged to it. Kept on the order; an account's also on its record, a visitor's never." })
   @IsOptional()
   @Transform(({ value }: { value: unknown }) => cpfDigitsOf(value))
   @IsCpf({ context: { errorCode: 'CUSTOMER_CPF_INVALID' } })

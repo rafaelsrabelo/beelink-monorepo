@@ -86,6 +86,14 @@ model Order {
   /// The CPF of who receives a carrier's delivery, photographed as the order was placed (BEELINK-187):
   /// its label is bought with it, whatever the customer's record says later.
   deliveryDocument   String? @db.VarChar(14)
+  /// The CPF an online payment is charged in, photographed as the order was placed (plan
+  /// 2026-11-11--cobranca-do-visitante): a visitor's is the one they typed, never their record's — so a
+  /// visitor's order without it is not charged. Null on an order not paid online, and on an account's
+  /// placed before it was kept, which is charged in its record's CPF.
+  payerDocument      String? @db.Char(11)
+  /// The name a visitor's online payment is charged in: the one typed at the checkout, never the
+  /// record's, since Asaas's payment page shows it. Null for every other order, charged in its record's name.
+  payerName          String?
   /// Everything taken off the order: the promotions, the coupon and what the shopkeeper typed.
   /// `totalCents = subtotalCents + deliveryFeeCents − discountCents`, as before the first two existed.
   discountCents    Int @default(0)

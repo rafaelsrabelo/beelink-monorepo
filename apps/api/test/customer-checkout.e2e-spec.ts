@@ -3,7 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 
 // Types
-import type { CustomerCheckoutAnswer, CustomerOrder, CustomerPurchase, OrderQuote, PurchaseSession } from '@harness-monorepo/contracts';
+import type { CustomerCheckoutAnswer, CustomerOrder, CustomerOrderPaymentAnswer, CustomerPurchase, OrderQuote, PurchaseSession } from '@harness-monorepo/contracts';
 
 // App
 import { AsaasClient } from '../src/modules/integrations/asaas/asaas.client.js';
@@ -38,6 +38,7 @@ describe('P0 — a visitor buys with no code and no account (plan 2026-11-06--P0
 
   beforeEach(async () => {
     await resetDatabase(prisma);
+    asaas.reset();
     shop = await openOnlineShop(app, prisma, 'lessari');
     await clearInbox();
   });
@@ -122,18 +123,39 @@ describe('P0 — a visitor buys with no code and no account (plan 2026-11-06--P0
     expect(record.addresses).toEqual([]);
   });
 
-  /** Pix and card, by the visitor's session: the CPF the gateway needs is typed, never another person's. */
-  it.each(['PIX', 'CREDIT_CARD'] as const)('charges %s online with the CPF typed, and reads that payment alone', async (method) => {
-    const purchase = await sessionFor({ name: 'Ana Souza', email: newEmail('online'), phone: '(11) 98888-7777' });
+  /** The charge Asaas made for the order, and the customer it made it for. */
+  const chargeOf = async (number: number) => {
+    const { id } = await prisma.order.findFirstOrThrow({ where: { storeId: shop.storeId, number }, select: { id: true } });
+    const request = asaas.requests.find((made) => made.externalReference === id);
+    return { request, customer: asaas.customers.find((customer) => customer.id === request?.customerId) };
+  };
+
+  /**
+   * Pix and card, by the visitor's session: charged as the order is placed, in the CPF and the name
+   * typed — never in another person's (plan 2026-11-11--cobranca-do-visitante). A WhatsApp the shop
+   * did not know is a record with no CPF: its order was placed with no charge, and none could be made.
+   */
+  it.each([
+    ['PIX', 'a WhatsApp the shop did not know', '(11) 95555-4444'],
+    ['CREDIT_CARD', 'a WhatsApp the shop did not know', '(11) 95555-4444'],
+    ['PIX', "the WhatsApp of a record with someone's CPF", '(11) 98888-7777'],
+    ['CREDIT_CARD', "the WhatsApp of a record with someone's CPF", '(11) 98888-7777'],
+  ] as const)('charges %s online on %s, in the CPF and the name typed', async (method, _who, phone) => {
+    const purchase = await sessionFor({ name: 'Ana Souza', email: newEmail('online'), phone });
     const online = order({ paymentMethod: method, paymentChannel: 'ONLINE' });
 
     expect((await as(purchase, 'POST', '/api/stores/lessari/customer/orders', online)).json()).toMatchObject({ errorCode: 'ORDER_PAYER_DOCUMENT_MISSING' });
-    const placed = await as(purchase, 'POST', '/api/stores/lessari/customer/orders', { ...online, recipientDocument: '11144477735' });
+    const placed = await as(purchase, 'POST', '/api/stores/lessari/customer/orders', { ...online, recipientDocument: '111.444.777-35' });
     expect(placed.statusCode).toBe(201);
     const number = placed.json<CustomerOrder>().number;
-    expect((await as(purchase, 'GET', `/api/stores/lessari/customer/orders/${number}/payment`)).statusCode).toBe(200);
-    // Bia's own CPF, on the record of that phone, was neither used nor replaced.
-    expect((await prisma.customer.findFirstOrThrow({ where: { storeId: shop.storeId, phone: '5511988887777' } })).cpf).toBe('52998224725');
+
+    const { request, customer } = await chargeOf(number);
+    expect(request).toMatchObject({ billingType: method });
+    expect(customer).toMatchObject({ cpf: '11144477735', name: 'Ana Souza' });
+    expect((await as(purchase, 'GET', `/api/stores/lessari/customer/orders/${number}/payment`)).json<CustomerOrderPaymentAnswer>().payment).toMatchObject({ method });
+    // The record of that phone keeps the CPF it had — Bia's, or none — and none is written on it.
+    const record = await prisma.customer.findFirstOrThrow({ where: { storeId: shop.storeId, phone: `55${phone.replace(/\D/g, '')}` } });
+    expect(record.cpf).toBe(phone === '(11) 98888-7777' ? '52998224725' : null);
   });
 
   it("reads the orders it placed and no other session's, spends no credit, and stops at once when ended", async () => {

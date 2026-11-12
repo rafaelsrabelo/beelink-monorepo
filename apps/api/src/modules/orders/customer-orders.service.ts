@@ -64,8 +64,9 @@ export class CustomerOrdersService {
     // A carrier's label is bought with the CPF of who receives it (BEELINK-187): the checkout asks for it first.
     const deliveryDocument = terms.carrier ? await this.documentOf(customerId, dto.recipientDocument, 'ORDER_RECIPIENT_DOCUMENT_MISSING', purchaseId) : null;
     const { online, onlyIfNothingToPay } = await this.channelOf(storeId, dto);
-    // Asaas charges a person by their CPF (BEELINK-204): asked at checkout as a carrier's is.
-    if (online) await this.documentOf(customerId, dto.recipientDocument, 'ORDER_PAYER_DOCUMENT_MISSING', purchaseId);
+    // Asaas charges a person by their CPF (BEELINK-204): asked at checkout as a carrier's is, and kept on
+    // the order — a visitor's is on no record, so the charge has nowhere else to read it (plan 2026-11-11--cobranca-do-visitante).
+    const payerDocument = online ? await this.documentOf(customerId, dto.recipientDocument, 'ORDER_PAYER_DOCUMENT_MISSING', purchaseId) : null;
 
     const placed = await this.placement.place({
       storeId,
@@ -80,6 +81,8 @@ export class CustomerOrdersService {
       deliveryWindow: terms.window,
       deliveryCarrier: terms.carrier,
       deliveryDocument,
+      payerDocument,
+      payerName: purchase ? purchase.name : null,
       discountCents: 0,
       couponCode: dto.couponCode ?? null,
       cashbackCents: dto.cashbackCents ?? 0,
