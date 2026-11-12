@@ -4354,7 +4354,6 @@ export interface UiMessages {
     /** One affiliate, whole. Dates arrive formatted. */
     record: {
       back: string
-      contact: string
       email: string
       phone: string
       none: string
@@ -4374,7 +4373,6 @@ export interface UiMessages {
       endedOn: string
       /** `{sent}`, `{expires}`. */
       inviteOpen: string
-      condition: string
       cpf: string
       /** Under the phone and the CPF of an affiliate invited before they were asked. */
       identityMissing: string
@@ -4393,7 +4391,6 @@ export interface UiMessages {
       save: string
       saving: string
       saved: string
-      actions: string
       resend: string
       resending: string
       /** `{email}`. */
@@ -4408,6 +4405,27 @@ export interface UiMessages {
       cancelConfirm: { title: string; question: string; detail: string; confirm: string; confirming: string }
       endConfirm: { title: string; question: string; detail: string; confirm: string; confirming: string }
       keep: string
+      tabs: { label: string; general: string; commission: string; document: string; money: string; orders: string }
+      dataTitle: string
+      photo: string
+      name: string
+      edit: string
+      cancelEdit: string
+      copyLink: string
+      copied: string
+      moreActions: string
+      generalRate: string
+      generalRateHelp: string
+      byCategory: string
+      byProduct: string
+      noOwnRates: string
+      productsOwn: string
+      productsNone: string
+      seeTable: string
+      moneyInvited: string
+      ordersTitle: string
+      ordersEmpty: string
+      ordersEmptyHint: string
     }
     /** What the invite and record forms refuse before they ask, by field. */
     affiliateIssues: { name: string; email: string; phone: string; cpf: string; note: string; table: string }

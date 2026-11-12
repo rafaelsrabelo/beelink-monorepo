@@ -1,5 +1,5 @@
 // Block
-import type { AffiliateListItemView, AffiliateRecordFormValues, AffiliateRecordView, AffiliateTableOption } from "@harness-monorepo/ui/lib/affiliates"
+import type { AffiliateListItemView, AffiliateCommissionView, AffiliateRecordView, AffiliateTableOption } from "@harness-monorepo/ui/lib/affiliates"
 
 export const tableOptions: AffiliateTableOption[] = [
   { id: "t-padrao", name: "Padrão", rate: "10%" },
@@ -24,6 +24,9 @@ export const record: AffiliateRecordView = {
   terms: "Versão 2, aceita em 12 de nov.",
   history: ["Convidado em 11 de nov.", "Aceitou em 12 de nov."],
   invite: null,
+  photoUrl: "https://picsum.photos/seed/joao/96",
+  tagline: "Separei meus favoritos aqui",
+  note: "Indicou 3 amigas no lançamento.",
 }
 
 export const invitedRecord: AffiliateRecordView = {
@@ -37,9 +40,17 @@ export const invitedRecord: AffiliateRecordView = {
   terms: null,
   history: ["Convidado em 11 de nov."],
   invite: "Convite enviado em 11 de nov. O link vale até 18 de nov.",
+  photoUrl: null,
+  tagline: null,
+  note: null,
 }
 
-export const recordValue: AffiliateRecordFormValues = { tableId: "t-influ", phone: "(85) 99999-4321", cpf: "529.982.247-25", note: "Indicou 3 amigas no lançamento." }
-
-/** One invited before the phone and the CPF were asked. */
-export const recordValueMissing: AffiliateRecordFormValues = { tableId: "t-padrao", phone: "", cpf: "", note: "" }
+/** What the Influencers table pays, as the record's commission tab reads it. */
+export const commission: AffiliateCommissionView = {
+  general: "15%",
+  categories: [
+    { name: "Bolsas", rate: "20%" },
+    { name: "Acessórios", rate: "5%" },
+  ],
+  productsOwn: 2,
+}

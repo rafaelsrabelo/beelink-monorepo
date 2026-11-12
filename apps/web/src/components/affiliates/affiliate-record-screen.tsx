@@ -1,154 +1,95 @@
 "use client"
 
 // React
-import { useState, type ReactNode } from "react"
-
-// Next
-import { useRouter } from "next/navigation"
-
-// Libs
-import { ArrowLeftIcon } from "lucide-react"
+import type { ReactNode } from "react"
 
 // UI
-import { AffiliateConfirmDialog, type AffiliateConfirmText } from "@harness-monorepo/ui/blocks/affiliates/affiliate-confirm-dialog"
-import { AffiliateRecordActions, type AffiliateAction } from "@harness-monorepo/ui/blocks/affiliates/affiliate-record-actions"
-import { AffiliateRecordDetails } from "@harness-monorepo/ui/blocks/affiliates/affiliate-record-details"
-import { AffiliateRecordForm } from "@harness-monorepo/ui/blocks/affiliates/affiliate-record-form"
+import { AffiliateConfirmDialog } from "@harness-monorepo/ui/blocks/affiliates/affiliate-confirm-dialog"
+import { AffiliateRecordHeader } from "@harness-monorepo/ui/blocks/affiliates/affiliate-record-header"
+import { AffiliateRecordTabs } from "@harness-monorepo/ui/blocks/affiliates/affiliate-record-tabs"
 import { AffiliatesFailed } from "@harness-monorepo/ui/blocks/affiliates/affiliates-failed"
 import { AffiliatesSkeleton } from "@harness-monorepo/ui/blocks/affiliates/affiliates-skeleton"
-import type { AffiliateRecordFormValues, AffiliateRecordIssues } from "@harness-monorepo/ui/lib/affiliates"
-import { format } from "@harness-monorepo/ui/locales/index"
+import type { AffiliateRecordTab } from "@harness-monorepo/ui/lib/affiliates"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import { AppLink } from "@/components/app-link"
 import { AffiliateDocumentRecord } from "@/components/affiliates/affiliate-document-record"
 import { AffiliateMoneySection } from "@/components/affiliates/affiliate-money-section"
-import { AffiliateShowcaseSection } from "@/components/affiliates/affiliate-showcase-section"
 import { affiliateErrorOf } from "@/lib/affiliate-form"
-import { affiliateDateFormatter, affiliateLinkOf, affiliateRecordViewOf, affiliateTableOptionsOf, identityMissingOf, recordFormOf, recordPatchOf } from "@/lib/affiliate-people"
-import { useAffiliateProgram, useCommissionTable } from "@/services/affiliates/affiliate-hooks"
-import { AffiliateError } from "@/services/affiliates/affiliate-requests"
-import { useActOnAffiliate, useCancelAffiliateInvite, useShopAffiliate, useUpdateAffiliate } from "@/services/affiliates/shop-affiliate-hooks"
+import { affiliateDateFormatter, affiliateLinkOf, affiliateRecordViewOf } from "@/lib/affiliate-people"
+import { recordTabHrefOf } from "@/lib/affiliate-record-tab"
+import { useAffiliateProgram } from "@/services/affiliates/affiliate-hooks"
+import { useShopAffiliate } from "@/services/affiliates/shop-affiliate-hooks"
+import { RecordCommissionTab } from "./record/record-commission-tab"
+import { RecordGeneralTab } from "./record/record-general-tab"
+import { RecordOrdersTab } from "./record/record-orders-tab"
+import { useRecordActs } from "./record/use-record-acts"
 
 export interface AffiliateRecordScreenProps {
   slug: string
   affiliateId: string
+  /** The tab the address names (`?aba=`), Geral when none. */
+  tab: AffiliateRecordTab
   /** This site's origin, which the affiliate's link is spelled with. */
   origin: string
   locale: string
   messages: UiMessages
 }
 
-const codeOf = (error: Error | null): string => (error instanceof AffiliateError ? error.errorCode : "UNKNOWN")
-
 /**
- * One affiliate, as the shop keeps them (IMPULSEIA-104): who they are, the table and the note, and
- * the acts their standing allows — asked first when the act does not come back; since IMPULSEIA-107,
- * what the shop owes them and what its window shows of them.
+ * One affiliate, as the shop keeps them — in tabs since the user's review (12/11/2026): a header with
+ * who they are and the acts their standing allows, and Geral, Comissão, Documento, Financeiro and
+ * Pedidos, each an address of its own.
  */
-export function AffiliateRecordScreen({ slug, affiliateId, origin, locale, messages }: AffiliateRecordScreenProps) {
+export function AffiliateRecordScreen({ slug, affiliateId, tab, origin, locale, messages }: AffiliateRecordScreenProps) {
   const text = messages.affiliates
-  const router = useRouter()
   const affiliate = useShopAffiliate(slug, affiliateId)
   const program = useAffiliateProgram(slug)
-  const update = useUpdateAffiliate(slug, affiliateId)
-  const act = useActOnAffiliate(slug, affiliateId)
-  const cancel = useCancelAffiliateInvite(slug, affiliateId)
-  const makeOwn = useUpdateAffiliate(slug, affiliateId)
-  // The shared table they are on, to start their own commission from (12/11/2026).
-  const shared = useCommissionTable(slug, affiliate.data && !affiliate.data.table.personal ? affiliate.data.table.id : undefined)
-  const [draft, setDraft] = useState<AffiliateRecordFormValues | null>(null)
-  const [issues, setIssues] = useState<AffiliateRecordIssues>({})
-  const [saved, setSaved] = useState(false)
-  const [asking, setAsking] = useState<"cancel" | "end" | null>(null)
-  const [notice, setNotice] = useState("")
-
   const listHref = `/admin/${slug}/affiliates`
-  const frame = (children: ReactNode) => (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 lg:px-6">
-      <AppLink href={listHref} className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 self-start text-sm">
-        <ArrowLeftIcon aria-hidden="true" className="size-4" />
-        {text.record.back}
-      </AppLink>
-      {children}
-    </div>
-  )
+  const recordHref = `${listHref}/${affiliateId}`
+  const acts = useRecordActs(slug, { id: affiliateId, name: affiliate.data?.name ?? "", email: affiliate.data?.email ?? "" }, listHref, messages)
+
+  const frame = (children: ReactNode) => <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 lg:px-6">{children}</div>
   if (affiliate.isPending || program.isPending) return frame(<AffiliatesSkeleton shape="list" />)
   if (affiliate.isError || program.isError) return frame(<AffiliatesFailed onRetry={() => void Promise.all([affiliate.refetch(), program.refetch()])} messages={messages} />)
 
   const current = affiliate.data
-  const savedForm = recordFormOf(current)
-  const value = draft ?? savedForm
-  const outcome = recordPatchOf(value, savedForm, text.affiliateIssues)
   const view = affiliateRecordViewOf(current, { text: text.record, date: affiliateDateFormatter(locale), link: affiliateLinkOf(origin, slug, current.slug) })
-  const busy: AffiliateAction | null = act.isPending ? act.variables : cancel.isPending ? "cancel" : null
-  const actionError = act.error ?? cancel.error
 
-  function submit() {
-    if ("issues" in outcome) return setIssues(outcome.issues)
-    if ("pristine" in outcome) return
-    update.mutate(outcome.payload, {
-      onSuccess: () => {
-        setDraft(null)
-        setSaved(true)
-      },
-    })
+  const content: Record<AffiliateRecordTab, () => ReactNode> = {
+    geral: () => <RecordGeneralTab slug={slug} affiliate={current} view={view} messages={messages} />,
+    comissao: () => <RecordCommissionTab slug={slug} affiliate={current} tables={program.data.tables} locale={locale} messages={messages} />,
+    documento: () => <AffiliateDocumentRecord slug={slug} affiliate={current} locale={locale} messages={messages} />,
+    // Someone still invited has no books (IMPULSEIA-107).
+    financeiro: () =>
+      current.status === "INVITED" ? (
+        <p className="text-muted-foreground text-sm">{text.record.moneyInvited}</p>
+      ) : (
+        <AffiliateMoneySection slug={slug} affiliateId={current.id} pixKey={current.pixKey} locale={locale} messages={messages} />
+      ),
+    pedidos: () => <RecordOrdersTab slug={slug} affiliateId={current.id} locale={locale} messages={messages} />,
   }
-
-  function onAction(action: AffiliateAction) {
-    act.reset()
-    cancel.reset()
-    setNotice("")
-    if (action === "cancel" || action === "end") return setAsking(action)
-    act.mutate(action, { onSuccess: () => setNotice(action === "resend" ? format(text.record.resent, { email: current.email }) : "") })
-  }
-
-  function confirm() {
-    if (asking === "cancel") cancel.mutate(undefined, { onSuccess: () => router.replace(listHref as Parameters<typeof router.replace>[0]), onSettled: () => setAsking(null) })
-    else if (asking === "end") act.mutate("end", { onSettled: () => setAsking(null) })
-  }
-
-  const confirmText: AffiliateConfirmText | null = asking ? { ...text.record[asking === "cancel" ? "cancelConfirm" : "endConfirm"], question: format(text.record[asking === "cancel" ? "cancelConfirm" : "endConfirm"].question, { name: current.name }) } : null
 
   return frame(
     <>
-      <AffiliateRecordDetails affiliate={view} messages={messages} />
-      {/* Someone still invited has no books, and nothing on the window (IMPULSEIA-107). */}
-      {current.status !== "INVITED" ? <AffiliateMoneySection slug={slug} affiliateId={current.id} pixKey={current.pixKey} locale={locale} messages={messages} /> : null}
-      {current.status !== "INVITED" ? <AffiliateShowcaseSection slug={slug} affiliate={current} messages={messages} /> : null}
-      <AffiliateDocumentRecord slug={slug} affiliate={current} locale={locale} messages={messages} />
-      <AffiliateRecordForm
-        value={value}
-        onChange={(next) => {
-          setIssues({})
-          setSaved(false)
-          setDraft(next)
-        }}
-        onSubmit={submit}
-        tables={affiliateTableOptionsOf(program.data.tables, locale, current.table.personal ? { tableId: current.table.id, label: text.record.ownCommission } : undefined)}
-        own={current.table.personal ? { editHref: `/admin/${slug}/affiliates/tables/${current.table.id}` } : null}
-        onMakeOwn={
-          shared.data
-            ? () => {
-                const table = shared.data
-                makeOwn.mutate({ commission: { defaultRateBps: table.defaultRateBps, categoryRates: table.categoryRates, productRates: table.rates } })
-              }
-            : undefined
-        }
-        makingOwn={makeOwn.isPending}
+      <AffiliateRecordHeader
+        name={current.name}
+        email={current.email}
+        status={current.status}
+        link={view.link}
+        photoUrl={current.photoUrl}
+        backHref={listHref}
+        onAction={acts.onAction}
+        busy={acts.busy}
+        notice={acts.notice}
+        error={acts.errorCode ? affiliateErrorOf(acts.errorCode, text.errors) : undefined}
         linkComponent={AppLink}
-        tableLocked={current.status === "ENDED"}
-        identityMissing={identityMissingOf(current)}
-        issues={issues}
-        pending={update.isPending}
-        pristine={"pristine" in outcome}
-        saved={saved}
-        error={(update.error ?? makeOwn.error) ? affiliateErrorOf(codeOf(update.error ?? makeOwn.error), text.errors) : undefined}
         messages={messages}
       />
-      <AffiliateRecordActions status={current.status} onAction={onAction} busy={busy} notice={notice} error={actionError ? affiliateErrorOf(codeOf(actionError), text.errors) : undefined} messages={messages} />
-      <AffiliateConfirmDialog text={confirmText} keepLabel={text.record.keep} onConfirm={confirm} onCancel={() => setAsking(null)} pending={busy === "cancel" || busy === "end"} />
+      <AffiliateRecordTabs active={tab} hrefOf={(next) => recordTabHrefOf(recordHref, next)} linkComponent={AppLink} messages={messages} />
+      {content[tab]()}
+      <AffiliateConfirmDialog text={acts.confirmText} keepLabel={text.record.keep} onConfirm={acts.confirm} onCancel={acts.keep} pending={acts.busy === "cancel" || acts.busy === "end"} />
     </>,
   )
 }

@@ -31,6 +31,8 @@ export interface CustomerOrdersProps {
   locale?: string
   currency?: string
   linkComponent?: LinkComponent
+  /** Another list's own words — an affiliate's orders (12/11/2026) — over the customer's. */
+  text?: { title: string; empty: string; emptyHint: string }
   messages?: UiMessages
 }
 
@@ -47,9 +49,13 @@ export function CustomerOrders({
   locale = defaultLocale,
   currency = "BRL",
   linkComponent: Link = AnchorLink,
+  text: words,
   messages = defaultMessages,
 }: CustomerOrdersProps) {
   const text = messages.customers.record
+  const title = words?.title ?? text.history
+  const empty = words?.empty ?? text.historyEmpty
+  const emptyHint = words?.emptyHint ?? text.historyEmptyHint
   const titleId = useId()
   const money = (cents: number) => formatCents(cents, locale, currency)
   const thisYear = new Date().getFullYear()
@@ -64,7 +70,7 @@ export function CustomerOrders({
   return (
     <section aria-labelledby={titleId} className="bg-shell-surface border-shell-border flex flex-col gap-3 rounded-xl border p-4 shadow-xs">
       <h2 id={titleId} className="font-semibold">
-        {text.history}
+        {title}
       </h2>
 
       {loading ? (
@@ -75,8 +81,8 @@ export function CustomerOrders({
         </div>
       ) : orders.length === 0 ? (
         <div className="flex flex-col items-center gap-1 rounded-lg border border-dashed px-4 py-10 text-center">
-          <p className="font-medium">{text.historyEmpty}</p>
-          <p className="text-muted-foreground max-w-sm text-sm">{text.historyEmptyHint}</p>
+          <p className="font-medium">{empty}</p>
+          <p className="text-muted-foreground max-w-sm text-sm">{emptyHint}</p>
         </div>
       ) : (
         <ul className="divide-y">

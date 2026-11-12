@@ -5,7 +5,6 @@ import type {
   AffiliateOption,
   AffiliateOwedView,
   AffiliatePayoutFormValues,
-  AffiliateShowcaseView,
   AffiliateStatementRowView,
   OrderAffiliateView,
 } from "@harness-monorepo/ui/lib/affiliate-money"
@@ -63,4 +62,3 @@ export const owed: AffiliateOwedView = {
   ],
 }
 
-export const showcase: AffiliateShowcaseView = { name: "Maria Souza", photoUrl: "https://picsum.photos/seed/maria/96", tagline: "Separei meus favoritos aqui" }
