@@ -12,7 +12,7 @@ import { actOnAffiliate, cancelAffiliateInvite, fetchShopAffiliate, fetchShopAff
 
 /** A page of the list. The last page stays on screen while the next is read: the rows do not blink out. */
 export function useShopAffiliates(slug: string, query: AffiliateListQuery): UseQueryResult<ShopAffiliatePage> {
-  return useQuery({ queryKey: affiliateKeys.list(slug, query.status, query.page), queryFn: () => fetchShopAffiliates(slug, query), placeholderData: keepPreviousData })
+  return useQuery({ queryKey: [...affiliateKeys.list(slug, query.status, query.page), query.pageSize ?? null], queryFn: () => fetchShopAffiliates(slug, query), placeholderData: keepPreviousData })
 }
 
 export function useShopAffiliate(slug: string, affiliateId: string): UseQueryResult<ShopAffiliate> {

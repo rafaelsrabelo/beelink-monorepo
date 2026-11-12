@@ -22,6 +22,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // App
 import type { WebMessages } from "@/locales"
 import { AppLink } from "@/components/app-link"
+import { OrdersAffiliateFilter } from "@/components/affiliates/orders-affiliate-filter"
 import { pageErrorCopy } from "@/components/design/page-error-copy"
 import { useDebouncedValue } from "@/services/addresses/use-debounced-value"
 import { useOrders } from "@/services/orders/order-hooks"
@@ -49,6 +50,11 @@ function statusOf(raw: string | null): OrderStatusFilter | null {
 
 function paymentOf(raw: string | null): PaymentChoice | null {
   return PAYMENTS.find((payment) => payment === raw) ?? null
+}
+
+/** One affiliate's orders (IMPULSEIA-107), as their record links here; anything but an id is no filter. */
+function affiliateOf(raw: string | null): string | null {
+  return raw && /^[0-9a-f-]{36}$/i.test(raw) ? raw : null
 }
 
 interface Filters {
@@ -80,6 +86,7 @@ export function OrdersScreen({ slug, messages, web }: OrdersScreenProps) {
   const payment = paymentOf(params.get("payment"))
   const q = params.get("q") ?? ""
   const page = Math.max(Number(params.get("page") ?? 1) || 1, 1)
+  const affiliate = affiliateOf(params.get("affiliate"))
 
   // The box is held locally too: a history entry behind every letter would be noise, and reading
   // it back from the address would make the field lag. The address wins when it changes elsewhere.
@@ -92,15 +99,20 @@ export function OrdersScreen({ slug, messages, web }: OrdersScreenProps) {
   }
   const settled = useDebouncedValue(typed, SEARCH_DEBOUNCE_MS)
 
-  /** Writes the address. Any change but the page itself returns to page one. */
-  function apply(next: Filters, nextPage = 1) {
+  /** The address of the list. Any change but the page itself returns to page one; the affiliate stays until its chip is closed. */
+  function hrefOf(next: Filters, nextPage = 1, keptAffiliate = affiliate): string {
     const search = new URLSearchParams()
     if (next.status) search.set("status", next.status)
     if (next.payment) search.set("payment", next.payment)
     if (next.q.trim()) search.set("q", next.q.trim())
+    if (keptAffiliate) search.set("affiliate", keptAffiliate)
     if (nextPage > 1) search.set("page", String(nextPage))
     const query = search.toString()
-    router.replace(`/admin/${slug}/orders${query ? `?${query}` : ""}` as Parameters<typeof router.replace>[0])
+    return `/admin/${slug}/orders${query ? `?${query}` : ""}`
+  }
+
+  function apply(next: Filters, nextPage = 1) {
+    router.replace(hrefOf(next, nextPage) as Parameters<typeof router.replace>[0])
   }
 
   useEffect(() => {
@@ -111,7 +123,7 @@ export function OrdersScreen({ slug, messages, web }: OrdersScreenProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settled, typed, q])
 
-  const orders = useOrders(slug, { ...(status ? { status } : {}), ...(payment ? { payment } : {}), ...(q ? { q } : {}), page })
+  const orders = useOrders(slug, { ...(status ? { status } : {}), ...(payment ? { payment } : {}), ...(q ? { q } : {}), ...(affiliate ? { affiliateId: affiliate } : {}), page })
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 lg:px-6">
@@ -173,6 +185,7 @@ export function OrdersScreen({ slug, messages, web }: OrdersScreenProps) {
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
+        {affiliate ? <OrdersAffiliateFilter slug={slug} affiliateId={affiliate} clearHref={hrefOf({ status, payment, q }, 1, null)} messages={messages} /> : null}
       </div>
 
       {orders.error ? <p role="alert" className="text-destructive text-sm">{pageErrorCopy(orders.error, web)}</p> : null}
@@ -187,7 +200,7 @@ export function OrdersScreen({ slug, messages, web }: OrdersScreenProps) {
         <>
           <OrderList
             orders={orders.data.orders}
-            filtered={status !== null || payment !== null || q !== ""}
+            filtered={status !== null || payment !== null || q !== "" || affiliate !== null}
             hrefOf={(number) => `/admin/${slug}/orders/${number}`}
             newHref={`/admin/${slug}/orders/new`}
             linkComponent={AppLink}

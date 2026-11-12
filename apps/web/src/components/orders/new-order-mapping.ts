@@ -55,6 +55,8 @@ export interface OrderPayloadInput {
   cashbackCents?: number
   /** `yyyy-mm-dd`, the shopkeeper's today. */
   today: string
+  /** The affiliate the sale came by (IMPULSEIA-107); `""` or absent is nobody. */
+  affiliateId?: string
 }
 
 export interface SaleInput {
@@ -104,7 +106,7 @@ export function saleOf({ customerId, lines, fulfillment, deliveryFeeCents, disco
  * what was said. Of the customer's credit it carries the amount quoted, never "the most": the API
  * refuses the order rather than write it at another price than the summary showed.
  */
-export function orderPayloadOf({ customerId, lines, details, paymentMethod, totals, cashbackCents = 0, today }: OrderPayloadInput): CreateOrderPayload {
+export function orderPayloadOf({ customerId, lines, details, paymentMethod, totals, cashbackCents = 0, today, affiliateId = "" }: OrderPayloadInput): CreateOrderPayload {
   const note = details.note.trim()
 
   return {
@@ -112,6 +114,7 @@ export function orderPayloadOf({ customerId, lines, details, paymentMethod, tota
     paymentMethod,
     ...(cashbackCents > 0 ? { cashbackCents } : {}),
     ...(note ? { note } : {}),
+    ...(affiliateId ? { affiliateId } : {}),
   }
 }
 

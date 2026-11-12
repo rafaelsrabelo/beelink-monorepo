@@ -24,7 +24,8 @@ export class AffiliateError extends Error {
 /** Declared on every call: `refuseCrossOrigin` answers 415 to a request that does not say it speaks JSON. */
 const JSON_HEADERS: Record<string, string> = { "content-type": "application/json" }
 
-async function ask<T>(path: string, method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE" = "GET", body?: object): Promise<T> {
+/** One call through this app's handlers, failing with the API's code. The money's requests (IMPULSEIA-107) share it. */
+export async function ask<T>(path: string, method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE" = "GET", body?: object): Promise<T> {
   const response = await fetch(path, { method, headers: JSON_HEADERS, ...(body !== undefined ? { body: JSON.stringify(body) } : {}) })
   // A delete answers 204 with nothing to read.
   if (response.status === 204) return undefined as T
@@ -73,6 +74,8 @@ export function saveProductCommission(slug: string, tableId: string, productId: 
 export interface AffiliateListQuery {
   status: AffiliateStatus | null
   page: number
+  /** Absent is the API's own page size; a picker of affiliates asks for the most a page holds. */
+  pageSize?: number
 }
 
 /** An act on an affiliate, as the API names it. */
@@ -84,6 +87,7 @@ const affiliate = (slug: string, affiliateId: string) => `${affiliates(slug)}/${
 export function fetchShopAffiliates(slug: string, query: AffiliateListQuery): Promise<ShopAffiliatePage> {
   const search = new URLSearchParams({ page: String(query.page) })
   if (query.status) search.set("status", query.status)
+  if (query.pageSize) search.set("pageSize", String(query.pageSize))
   return ask(`${affiliates(slug)}?${search.toString()}`)
 }
 

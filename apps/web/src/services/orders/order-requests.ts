@@ -53,6 +53,7 @@ export async function fetchOrders(slug: string, query: OrderListQuery = {}): Pro
   if (query.payment) search.set("payment", query.payment)
   if (query.q) search.set("q", query.q)
   if (query.customerId) search.set("customerId", query.customerId)
+  if (query.affiliateId) search.set("affiliateId", query.affiliateId)
   if (query.page && query.page > 1) search.set("page", String(query.page))
   if (query.pageSize) search.set("pageSize", String(query.pageSize))
 

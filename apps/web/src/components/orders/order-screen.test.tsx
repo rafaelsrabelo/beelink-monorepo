@@ -27,6 +27,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push: mocks.push }) }))
 vi.mock("@/services/stores/store-hooks", () => ({ useStore: () => ({ data: { name: "Loja do Design" } }) }))
 vi.mock("@/components/conversations/order-conversation-section", () => ({ OrderConversationSection: () => null }))
 vi.mock("@/components/orders/order-label-section", () => ({ OrderLabelSection: () => null }))
+vi.mock("@/components/affiliates/order-affiliate-section", () => ({ OrderAffiliateSection: () => null }))
 
 const payment: NonNullable<Order["payment"]> = {
   status: "RECEIVED",
