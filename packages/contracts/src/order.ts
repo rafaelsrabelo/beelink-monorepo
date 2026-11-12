@@ -1,6 +1,7 @@
 /* ── orders: what a shop sold, as a fact about the past ───────────────────── */
 
 // Types
+import type { OrderAffiliateVisitInput } from "./affiliate.js";
 import type { OrderCashback, ShopOrderCashback } from "./cashback.js";
 import type { CustomerAddress } from "./customer.js";
 import type { OrderCancellationRefund, OrderPayment, OrderPaymentBrief, OrderPaymentChannel, OrderPaymentFilter, ShopOrderPayment } from "./payment.js";
@@ -390,6 +391,8 @@ export interface PlaceCustomerOrderPayload {
   origin?: OrderOriginInput;
   /** Present only while the buyer's yes to this shop's pixel stood (BEELINK-275): its absence is "no consent". */
   marketingConsent?: OrderMarketingConsentInput;
+  /** The affiliate's link the buyer arrived by (IMPULSEIA-106), from the shop window's cookie. */
+  affiliateVisit?: OrderAffiliateVisitInput;
 }
 
 /** One line as its customer reads it: what was bought, at the price of that moment. */

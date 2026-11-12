@@ -146,6 +146,12 @@ model Order {
   /// on an order placed before orders counted stock: cancelling it returns nothing never taken.
   stockTaken Boolean @default(false)
 
+  /// The affiliate it was credited to (IMPULSEIA-106), and when the buyer followed their link: checked
+  /// at the order, and null when no link credited it. Here so the shop filters by affiliate without a join.
+  affiliateId      String?    @db.Uuid
+  affiliate        Affiliate? @relation(fields: [affiliateId], references: [id], onDelete: SetNull)
+  affiliateVisitAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -176,6 +182,10 @@ model Order {
   refunds OrderRefund[]
   /// What stood in the buyer's browser with their yes to the shop's pixel (BEELINK-275), when there was one.
   marketingConsent OrderMarketingConsent?
+  /// What it owes its affiliate (IMPULSEIA-106), the lines it moved on their statement, and the e-mails it owes them.
+  affiliateCommission  AffiliateCommission?
+  affiliateEntries     AffiliateEntry[]
+  affiliateSaleNotices AffiliateSaleNotice[]
   /// The purchase owed to Meta from the server, and what came of it (BEELINK-274).
   metaPurchase     OrderMetaPurchase?
 
@@ -187,6 +197,7 @@ model Order {
   @@index([paymentDueAt])
   /// "Sales by origin" with no period, and "which orders came by this campaign"; a period's report rides `[storeId, placedAt]`.
   @@index([storeId, utmSource, utmMedium, utmCampaign])
+  @@index([affiliateId, placedAt])
   @@map("orders")
 }
 
@@ -245,6 +256,8 @@ model OrderItem {
 
   /// On a kit's line (plan 2026-11-10--kits-monte-seu-kit): what was chosen to go in each kit.
   kitParts OrderItemKitPart[]
+  /// What it took of its order's affiliate commission (IMPULSEIA-106).
+  affiliateCommissionLine AffiliateCommissionLine?
 
   @@index([orderId, position])
   @@index([productId])

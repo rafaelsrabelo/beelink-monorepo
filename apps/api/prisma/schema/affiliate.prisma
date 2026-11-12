@@ -114,9 +114,19 @@ model Affiliate {
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 
+  /// What the shop owes them (IMPULSEIA-106), read again from their commissions and their statement
+  /// under their row's lock at every change: `pendingCents`, what waits on a delivery or a due day —
+  /// 0 or more, by a CHECK; `availableCents`, the statement's sum, which may go below zero.
+  pendingCents   Int @default(0)
+  availableCents Int @default(0)
+
   invite AffiliateInvite?
   /// Visits through their link, a number a day (IMPULSEIA-105).
   visitDays AffiliateVisitDay[]
+  /// The orders credited to them, their commissions and their statement (IMPULSEIA-106).
+  orders      Order[]
+  commissions AffiliateCommission[]
+  entries     AffiliateEntry[]
 
   @@unique([storeId, slug])
   @@unique([storeId, email], where: raw("(status <> 'ENDED'::\"AffiliateStatus\")"), map: "affiliates_live_email_key")
@@ -160,4 +170,130 @@ model AffiliateVisitDay {
   /// The retention's delete reads by day alone.
   @@index([day])
   @@map("affiliate_visit_days")
+}
+
+/// Where an order's commission stands (IMPULSEIA-106). PENDING waits on the delivery and then on its
+/// due day; AVAILABLE is owed from that day; REVERSED is undone by a cancellation, for good. An order
+/// that leaves *delivered* waits again.
+enum AffiliateCommissionStatus {
+  PENDING
+  AVAILABLE
+  REVERSED
+}
+
+/// Why an attributed order's commission is nothing.
+enum AffiliateCommissionZeroReason {
+  /// The customer's e-mail or phone was the affiliate's own.
+  OWN_PURCHASE
+}
+
+/// What a line of an affiliate's statement records. A line is never edited: a mistake is answered by
+/// another line. ADJUSTED and PAID_OUT are the shop's, written by its money screens (AF7).
+enum AffiliateEntryKind {
+  /// A commission fell due.
+  RELEASED
+  /// A commission taken back after it had fallen due: its order cancelled, or out of *delivered*.
+  REVERSED
+  ADJUSTED
+  PAID_OUT
+}
+
+/// What an order owes the affiliate it was credited to (IMPULSEIA-106): its state, one per order.
+/// Worked out when the order is placed, at the affiliate's table then, and never again: the table's
+/// name and each line's rate are kept, so a table changed or deleted later rewrites nothing.
+model AffiliateCommission {
+  orderId     String                         @id @db.Uuid
+  order       Order                          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  /// The order's shop, repeated so the shop's own reads go by it without a join.
+  storeId     String                         @db.Uuid
+  store       Store                          @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  affiliateId String                         @db.Uuid
+  affiliate   Affiliate                      @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  status      AffiliateCommissionStatus      @default(PENDING)
+  /// What the customer paid for the products, never the delivery: the base the rates were taken of.
+  baseCents       Int
+  /// 0 or more, by a CHECK; 0 for an own purchase, or for products whose rates are 0.
+  commissionCents Int
+  /// The table's name as it was when the order was placed.
+  tableName       String                     @db.VarChar(60)
+  zeroReason      AffiliateCommissionZeroReason?
+  /// The day it falls due: the due day of the payout period of the delivery's day, at the programme's
+  /// delay then. Null until delivered, and again once the order leaves *delivered*.
+  dueOn           DateTime?                  @db.Date
+  /// When it fell due; null while pending.
+  availableAt     DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lines AffiliateCommissionLine[]
+
+  /// The sweep: what is due by today.
+  @@index([status, dueOn])
+  /// The affiliate's reads, and what a shop owes each by due day (AF7).
+  @@index([affiliateId, status, dueOn])
+  @@index([storeId, status, dueOn])
+  @@map("affiliate_commissions")
+}
+
+/// One line of an order's commission: what the line took of the base, at its rate then.
+model AffiliateCommissionLine {
+  orderItemId     String              @id @db.Uuid
+  orderItem       OrderItem           @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  orderId         String              @db.Uuid
+  commission      AffiliateCommission @relation(fields: [orderId], references: [orderId], onDelete: Cascade)
+  /// Basis points, 0 to 10000, by a CHECK: the product's own on the table, else the table's.
+  rateBps         Int
+  baseCents       Int
+  commissionCents Int
+
+  @@index([orderId])
+  @@map("affiliate_commission_lines")
+}
+
+/// One line of an affiliate's statement (IMPULSEIA-106). Only ever inserted. Its amounts add up to the
+/// affiliate's available balance, which may go below zero: a commission taken back after it was paid
+/// is what the next payment is short by.
+model AffiliateEntry {
+  id          String             @id @default(uuid(7)) @db.Uuid
+  storeId     String             @db.Uuid
+  store       Store              @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  affiliateId String             @db.Uuid
+  affiliate   Affiliate          @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  kind        AffiliateEntryKind
+  /// Signed, never 0, by a CHECK.
+  amountCents Int
+  /// The order whose commission it moved; null for the shop's own lines (AF7).
+  orderId     String?            @db.Uuid
+  order       Order?             @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  createdAt   DateTime           @default(now())
+
+  /// The statement, newest first.
+  @@index([affiliateId, createdAt])
+  @@index([orderId])
+  @@map("affiliate_entries")
+}
+
+/// The e-mails an affiliate's sales owe (IMPULSEIA-106): one when an order is credited to them, one
+/// when such an order is cancelled — one of each per order, by the unique index. An outbox: written by
+/// the transaction that owes it, sent by `AffiliateSaleMailer` on its own clock.
+enum AffiliateSaleNoticeKind {
+  SALE
+  CANCELLED
+}
+
+model AffiliateSaleNotice {
+  id            String                  @id @default(uuid(7)) @db.Uuid
+  orderId       String                  @db.Uuid
+  order         Order                   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  kind          AffiliateSaleNoticeKind
+  attempts      Int                     @default(0)
+  nextAttemptAt DateTime                @default(now())
+  sentAt        DateTime?
+  createdAt     DateTime                @default(now())
+
+  @@unique([orderId, kind])
+  /// What the outbox claims: owed and due.
+  @@index([sentAt, nextAttemptAt])
+  @@map("affiliate_sale_notices")
 }

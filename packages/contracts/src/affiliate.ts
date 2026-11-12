@@ -306,3 +306,33 @@ export interface PublicAffiliateLink {
 export interface AffiliateVisitInput {
   affiliateId: string;
 }
+
+/**
+ * The visit an order was placed after (IMPULSEIA-106), as the web's order handler reads it from the
+ * shop window's cookie — never from the page. The API checks it again at the order: an affiliate of
+ * the shop, active, the programme on, links live and the visit inside the programme's days. One that
+ * does not hold credits nobody, and never refuses the order: a value that is not one — an id that is
+ * no id, an instant in the future or past ninety days — is taken in as null, and credits nobody.
+ */
+export interface OrderAffiliateVisitInput {
+  affiliateId: string | null;
+  /** ISO-8601: when the visitor followed the link. */
+  visitedAt: string | null;
+}
+
+/**
+ * Where an order's commission stands (IMPULSEIA-106): waiting on the delivery and then on its due
+ * day (`PENDING`); owed by the shop from that day (`AVAILABLE`); or undone by a cancellation, for
+ * good (`REVERSED`). An order that leaves *delivered* waits again.
+ */
+export type AffiliateCommissionStatus = "PENDING" | "AVAILABLE" | "REVERSED";
+
+/** Why an attributed order's commission is nothing: the affiliate bought it themselves. */
+export type AffiliateCommissionZeroReason = "OWN_PURCHASE";
+
+/**
+ * What a line of an affiliate's statement records. `RELEASED`, a commission falling due; `REVERSED`,
+ * one taken back after it had — its order cancelled or out of *delivered*; `ADJUSTED`, the shop's
+ * correction, either way, with its reason; `PAID_OUT`, a payment the shop made outside bee-link.
+ */
+export type AffiliateEntryKind = "RELEASED" | "REVERSED" | "ADJUSTED" | "PAID_OUT";

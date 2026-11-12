@@ -16,6 +16,7 @@ import type {
   ReorderLeftReason,
   CustomerOrderSituation,
   CustomerOrderSummary,
+  OrderAffiliateVisitInput,
   OrderFulfillment,
   OrderMarketingConsentInput,
   OrderOriginInput,
@@ -143,6 +144,27 @@ export class OrderMarketingConsentDto implements OrderMarketingConsentInput {
   pageUrl?: string | null;
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * The affiliate's link the buyer arrived by (IMPULSEIA-106), read by the web's order handler from
+ * the shop window's cookie. Like the origin, cleaned or dropped as it comes in — never a refusal:
+ * whether it credits anyone is the placement's to say, and a link must not cost a sale.
+ */
+export class OrderAffiliateVisitDto implements OrderAffiliateVisitInput {
+  @ApiProperty({ type: String, nullable: true, format: 'uuid', description: 'Not an id is taken as null.' })
+  @Transform(({ value }: Sent) => (typeof value === 'string' && UUID.test(value) ? value.toLowerCase() : null))
+  @IsOptional()
+  @IsString()
+  affiliateId!: string | null;
+
+  @ApiProperty({ type: String, nullable: true, format: 'date-time', description: 'When the link was followed. One in the future, or older than ninety days, is taken as null.' })
+  @Transform(({ value }: Sent) => pastInstantOf(value))
+  @IsOptional()
+  @IsString()
+  visitedAt!: string | null;
+}
+
 /** The cart as the shopper sends it: no price, no customer, no address — the API has them. */
 export class PlaceCustomerOrderDto implements PlaceCustomerOrderPayload {
   @ApiProperty({ type: [OrderItemDto], minItems: 1, maxItems: ORDER_ITEMS_MAX })
@@ -212,6 +234,12 @@ export class PlaceCustomerOrderDto implements PlaceCustomerOrderPayload {
   @ValidateNested()
   @Type(() => OrderMarketingConsentDto)
   marketingConsent?: OrderMarketingConsentDto;
+
+  @ApiPropertyOptional({ type: OrderAffiliateVisitDto, description: "The affiliate's link the buyer arrived by, read by the web's order handler from the shop's own cookie; checked again here." })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => OrderAffiliateVisitDto)
+  affiliateVisit?: OrderAffiliateVisitDto;
 }
 
 export class CustomerOrderItemResponse implements CustomerOrderItem {
