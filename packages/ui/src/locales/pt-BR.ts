@@ -3535,7 +3535,7 @@ export const ptBR: UiMessages = {
       title: "Programa de afiliados",
       enabled: "Programa ligado",
       enabledHelp: "Desligado, nenhum link de afiliado atribui pedido novo. O que já foi atribuído continua valendo.",
-      attribution: "Uma venda conta para o afiliado quando o cliente chega pelo link dele e compra na mesma visita, antes de fechar o navegador. Se abrir o link de outro afiliado, vale o último.",
+      attribution: "Uma venda conta para o afiliado quando o cliente compra pelas páginas do link dele: o endereço da loja com o nome do afiliado, como sualoja.com.br/margarida. Fora desse endereço, a loja é só sua.",
       payoutDelay: "Prazo para pagar",
       payoutDelayHelp: "Dias depois que cada período fecha. A comissão entra no período do dia em que o pedido foi entregue.",
       days: "dias",

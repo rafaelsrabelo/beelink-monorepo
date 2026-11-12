@@ -66,7 +66,7 @@ export function affiliateSettingsPayloadOf(value: AffiliateSettingsFormValues, t
       },
     }
   }
-  // The stored days go back as they are: a visit counts only for its session, and nothing here edits them.
+  // The stored days go back as they are: a sale is the affiliate's by the address it was made at, and nothing here edits them.
   return { payload: { enabled: value.enabled, attributionDays: value.attributionDays, payoutDelayDays, termsText: terms || null } }
 }
 

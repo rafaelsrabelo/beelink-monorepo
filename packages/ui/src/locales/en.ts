@@ -3534,7 +3534,7 @@ export const en: UiMessages = {
       title: "Affiliate programme",
       enabled: "Programme on",
       enabledHelp: "Off, no affiliate link credits a new order. What was already credited still stands.",
-      attribution: "A sale counts for the affiliate when the customer comes by their link and buys in the same visit, before closing the browser. If they open another affiliate's link, the last one counts.",
+      attribution: "A sale counts for the affiliate when the customer buys through the pages of their link: the shop's address with the affiliate's name, like yourshop.com/margarida. Outside that address, the shop is yours alone.",
       payoutDelay: "Time to pay",
       payoutDelayHelp: "Days after each period closes. A commission falls in the period of the day its order was delivered.",
       days: "days",

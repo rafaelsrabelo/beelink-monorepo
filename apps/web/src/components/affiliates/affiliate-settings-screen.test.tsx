@@ -47,9 +47,9 @@ describe("AffiliateSettingsScreen (IMPULSEIA-102)", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Afiliados" })).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Tabelas" })).toHaveAttribute("href", "/admin/loja/affiliates/tables")
     expect(screen.getByRole("switch", { name: "Programa ligado" })).not.toBeChecked()
-    // A visit counts only in its own session: no days to set, the rule said in a sentence.
+    // A sale is the affiliate's by the address it was made at: no days to set, the rule said in a sentence.
     expect(screen.queryByLabelText("A visita pelo link vale por")).toBeNull()
-    expect(screen.getByText(/compra na mesma visita/)).toBeInTheDocument()
+    expect(screen.getByText(/compra pelas páginas do link dele/)).toBeInTheDocument()
     expect(calendar()).toEqual([
       "Entregues de 1 de nov. a 10 de nov. → pagar em 20 de nov.",
       "Entregues de 11 de nov. a 20 de nov. → pagar em 30 de nov.",

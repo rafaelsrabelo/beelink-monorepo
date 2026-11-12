@@ -8,8 +8,8 @@
 export interface AffiliateSettingsFormValues {
   enabled: boolean
   /**
-   * The stored attribution days, carried back as they are: a visit counts only for the browser's
-   * session (the user's call of 12/11), so no field on the screen sets them.
+   * The stored attribution days, carried back as they are: a sale is the affiliate's by the address
+   * it was made at — their sub-site (the user's call of 12/11) — so no field on the screen sets them.
    */
   attributionDays: number
   /** Whole days, as typed. */

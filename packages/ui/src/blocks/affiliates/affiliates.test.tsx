@@ -70,7 +70,7 @@ describe("AffiliateSettingsForm", () => {
 
     expect(screen.getByLabelText("Prazo para pagar")).toHaveAccessibleDescription("Informe de 0 a 60 dias.")
     expect(screen.queryByLabelText("A visita pelo link vale por")).toBeNull()
-    expect(screen.getByText(/compra na mesma visita/)).toBeInTheDocument()
+    expect(screen.getByText(/compra pelas páginas do link dele/)).toBeInTheDocument()
     expect(screen.getByText("Alguma configuração está fora do permitido.")).toBeInTheDocument()
     await userEvent.click(screen.getByRole("button", { name: "Salvar configurações" }))
     expect(onSubmit).toHaveBeenCalledOnce()

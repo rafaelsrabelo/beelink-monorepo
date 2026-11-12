@@ -389,15 +389,15 @@ describe("bee-link's legal texts (BEELINK-171)", () => {
     it("names the link's cookie: what it holds, that it waits for no consent, and that it lasts the browser's session", () => {
       const cookies = policy("Cookies")
 
-      expect(cookies).toMatch(/bl_affiliate: numa loja com programa de afiliados, o afiliado pelo link de quem você chegou, isto é, um identificador do afiliado e o momento da chegada, e nada sobre você/)
+      expect(cookies).toMatch(/bl_affiliate: numa loja com programa de afiliados, quando você abre as páginas do link de um afiliado, um identificador dele e o momento da chegada, e nada sobre você/)
       expect(cookies).toMatch(/não depende do aviso de cookies, porque serve ao acordo entre a loja e o afiliado, e não a publicidade/)
-      expect(cookies).toMatch(/dura até você fechar o navegador, de modo que só um pedido feito na mesma visita em que você chegou pelo link credita a comissão; o link de outro afiliado o substitui/)
+      expect(cookies).toMatch(/dura até você fechar o navegador; não é ele que credita a comissão, e sim o endereço do link pelo qual você comprou/)
       expect(cookies).not.toMatch(/bl_affiliate_hidden/)
-      expect(policy("Dados de quem visita uma loja sem conta")).toMatch(/o link de um afiliado de uma loja grava no seu navegador o cookie bl_affiliate/)
+      expect(policy("Dados de quem visita uma loja sem conta")).toMatch(/o link de um afiliado de uma loja abre as páginas da loja no endereço dele, com o nome do afiliado, e um pedido que você fizer por essas páginas credita a comissão dele/)
     })
 
     it("says on what basis, for how long, and how an affiliate asks", () => {
-      expect(policy("Para que os dados são usados")).toMatch(/creditar ao afiliado o pedido de quem chegou pelo link dele, pelo cookie bl_affiliate, e mostrar a ele o nome de quem comprou, para que a loja cumpra o acordo que fez com o afiliado/)
+      expect(policy("Para que os dados são usados")).toMatch(/creditar ao afiliado o pedido feito pelas páginas do link dele, e mostrar a ele o nome de quem comprou, para que a loja cumpra o acordo que fez com o afiliado/)
       expect(policy("Por quanto tempo os dados são guardados")).toMatch(/A contagem diária das visitas pelo link de um afiliado é guardada por 13 meses e depois apagada/)
       expect(policy("Como exercer os seus direitos")).toMatch(/Se você é afiliado de uma loja, os pedidos sobre a sua conta são feitos ao bee-link[\s\S]*à loja, que é a controladora deles/)
       expect(policy("Segurança")).toMatch(/links de convite de afiliado que valem uma única vez, por 7 dias/)
