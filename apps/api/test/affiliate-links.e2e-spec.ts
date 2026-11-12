@@ -7,7 +7,7 @@ import type { AffiliateProgramOverview, ApiErrorBody, AuthSession, PublicAffilia
 // App
 import { FunnelRetention } from '../src/modules/reports/funnel-retention.js';
 import { PrismaService } from '../src/shared/prisma/prisma.service.js';
-import { affiliateIdentity } from './support/affiliate-identity.js';
+import { affiliateDocumentFor, affiliateIdentity } from './support/affiliate-identity.js';
 import { PASSWORD, newEmail, signUpAndSignIn } from './support/auth-flow.js';
 import { createTestApp } from './support/create-test-app.js';
 import { clearInbox, tokenFromLink, waitForMessage } from './support/mailpit.js';
@@ -64,7 +64,7 @@ describe("an affiliate's link on the shop window, and the visits it brings (IMPU
   async function affiliate(slug: string, shop = 'lessari', session = owner): Promise<ShopAffiliate> {
     const tableId = (await call('GET', `/api/stores/${shop}/affiliate-program`, session)).json<AffiliateProgramOverview>().tables[0]!.id;
     const email = newEmail(slug);
-    const invited = await call('POST', `/api/stores/${shop}/affiliates`, session, { ...affiliateIdentity(), name: 'João Silva', email, tableId });
+    const invited = await call('POST', `/api/stores/${shop}/affiliates`, session, { ...affiliateIdentity(), document: await affiliateDocumentFor(prisma, `/api/stores/${shop}/affiliates`), name: 'João Silva', email, tableId });
     if (invited.statusCode !== 201) throw new Error(`POST affiliates answered ${invited.statusCode}: ${invited.payload}`);
     const token = tokenFromLink((await waitForMessage(email.toLowerCase())).Text, '/afiliado/convite');
     const accepted = await call('POST', `/api/affiliate-invites/${token}/sign-up`, undefined, { name: 'João Silva', password: PASSWORD, slug, pixKey: null, termsVersion: 0 });
@@ -135,7 +135,7 @@ describe("an affiliate's link on the shop window, and the visits it brings (IMPU
     it("answers an invited affiliate, who has no link yet, and another shop's, as no link of this shop", async () => {
       await programOn();
       const tableId = (await call('GET', '/api/stores/lessari/affiliate-program', owner)).json<AffiliateProgramOverview>().tables[0]!.id;
-      const invited = (await call('POST', '/api/stores/lessari/affiliates', owner, { ...affiliateIdentity(), name: 'Maria', email: newEmail('maria'), tableId })).json<ShopAffiliate>();
+      const invited = (await call('POST', '/api/stores/lessari/affiliates', owner, { ...affiliateIdentity(), document: await affiliateDocumentFor(prisma, '/api/stores/lessari/affiliates'), name: 'Maria', email: newEmail('maria'), tableId })).json<ShopAffiliate>();
       await programOn('vizinha', stranger);
       const theirs = await affiliate('delas', 'vizinha', stranger);
 

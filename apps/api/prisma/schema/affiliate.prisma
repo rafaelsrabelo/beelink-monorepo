@@ -34,13 +34,18 @@ model CommissionTable {
   /// Basis points of what the customer paid for a product, 0 to 10000, by a CHECK.
   defaultRateBps Int
   isDefault      Boolean @default(false)
+  /// The affiliate whose own commission this is (the user's review, 12/11/2026), made on the invite or
+  /// the record; null for a table the shop shares. One own table each, never the default one (a CHECK),
+  /// and nobody else is put on it. The affiliate's row deleted — an invite cancelled — takes it along.
+  affiliateId    String?    @unique @db.Uuid
+  owner          Affiliate? @relation("PersonalCommissionTable", fields: [affiliateId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   rates         CommissionTableRate[]
   categoryRates CommissionTableCategoryRate[]
-  affiliates    Affiliate[]
+  affiliates    Affiliate[]                   @relation("AffiliateTable")
 
   @@unique([storeId, name])
   /// One default table per shop, however many first readings open the programme at once.
@@ -121,7 +126,7 @@ model Affiliate {
   /// to the default table first, so the key never dangles. NO ACTION rather than RESTRICT: checked at
   /// the end of the statement, so a shop deleted takes its tables and its affiliates together.
   tableId String          @db.Uuid
-  table   CommissionTable @relation(fields: [tableId], references: [id], onDelete: NoAction)
+  table   CommissionTable @relation("AffiliateTable", fields: [tableId], references: [id], onDelete: NoAction)
   /// As the affiliate gave it, up to 140 characters; the shop pays through it, outside bee-link.
   pixKey  String?         @db.VarChar(140)
   /// What the shop window shows of them (AF5); edited in their own area (AF8).
@@ -144,6 +149,10 @@ model Affiliate {
   availableCents Int @default(0)
 
   invite AffiliateInvite?
+  /// Their own commission, when the shop set one for them rather than a shared table.
+  personalTable CommissionTable? @relation("PersonalCommissionTable")
+  /// Their identity document, the shop's alone to see (12/11/2026); none for one invited before.
+  document      AffiliateDocument?
   /// Visits through their link, a number a day (IMPULSEIA-105).
   visitDays AffiliateVisitDay[]
   /// The orders credited to them, their commissions and their statement (IMPULSEIA-106).
@@ -409,4 +418,53 @@ model AffiliateAttributionChange {
 
   @@index([orderId, createdAt])
   @@map("affiliate_attribution_changes")
+}
+
+/// An identity document's kind (the user's review, 12/11/2026). CIN is the Carteira de Identidade
+/// Nacional; RNE_CRNM, a foreigner's registration.
+enum AffiliateDocumentType {
+  RG
+  CNH
+  CIN
+  RNE_CRNM
+  PASSPORT
+}
+
+/// An affiliate's identity document (the user's review, 12/11/2026): its type and the photos of it,
+/// kept at Cloudinary as authenticated assets — never a public address. Read by the shop's owner
+/// alone, through addresses that expire. The row goes with the affiliate's; the files are deleted by
+/// whatever deletes it (an invite cancelled), best effort.
+model AffiliateDocument {
+  affiliateId   String                @id @db.Uuid
+  affiliate     Affiliate             @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  type          AffiliateDocumentType
+  frontPublicId String                @db.VarChar(255)
+  /// What Cloudinary said the file is (`jpg`, `png`, `webp`): its download is asked for in it.
+  frontFormat   String                @db.VarChar(10)
+  /// Null for a passport, whose back is not asked.
+  backPublicId  String?               @db.VarChar(255)
+  backFormat    String?               @db.VarChar(10)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("affiliate_documents")
+}
+
+/// A photo of a document uploaded and not yet named by an invite or a record: the shop's, for 24
+/// hours. Named, the row goes and the photo is the document's; left, the sweeper deletes the row and
+/// its file.
+model AffiliateDocumentUpload {
+  id       String   @id @default(uuid(7)) @db.Uuid
+  storeId  String   @db.Uuid
+  store    Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  publicId String   @unique @db.VarChar(255)
+  format   String   @db.VarChar(10)
+
+  createdAt DateTime @default(now())
+
+  /// What the sweeper deletes: the oldest first.
+  @@index([createdAt])
+  @@index([storeId])
+  @@map("affiliate_document_uploads")
 }

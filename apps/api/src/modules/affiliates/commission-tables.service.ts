@@ -32,14 +32,15 @@ export class CommissionTablesService {
     // The default table comes first, so no other can take its name before it exists.
     await openProgram(this.prisma, storeId);
 
-    // A guard against a runaway, not a rule of money: two creations at once may pass it by one.
-    if ((await this.prisma.commissionTable.count({ where: { storeId } })) >= COMMISSION_TABLES_MAX) {
+    // A guard against a runaway, not a rule of money: two creations at once may pass it by one. An
+    // affiliate's own table is born of the affiliate, and is not counted (12/11/2026).
+    if ((await this.prisma.commissionTable.count({ where: { storeId, affiliateId: null } })) >= COMMISSION_TABLES_MAX) {
       throw new ConflictException(affiliateError('COMMISSION_TABLE_LIMIT', `A shop keeps at most ${COMMISSION_TABLES_MAX} tables`));
     }
 
     try {
       const row = await this.prisma.commissionTable.create({ data: { storeId, name: dto.name, defaultRateBps: dto.defaultRateBps } });
-      return toCommissionTable({ ...row, rates: [], categoryRates: [] });
+      return toCommissionTable({ ...row, owner: null, rates: [], categoryRates: [] });
     } catch (error) {
       if (isUniqueViolation(error)) throw nameTaken();
       throw error;
@@ -132,10 +133,11 @@ export class CommissionTablesService {
   }
 
   private async tableWithRates(table: CommissionTableModel): Promise<CommissionTable> {
-    const [rates, categoryRates] = await Promise.all([
+    const [rates, categoryRates, owner] = await Promise.all([
       this.prisma.commissionTableRate.findMany({ where: { tableId: table.id }, orderBy: { productId: 'asc' } }),
       this.prisma.commissionTableCategoryRate.findMany({ where: { tableId: table.id }, orderBy: { categoryId: 'asc' } }),
+      table.affiliateId ? this.prisma.affiliate.findUnique({ where: { id: table.affiliateId }, select: { id: true, name: true } }) : null,
     ]);
-    return toCommissionTable({ ...table, rates, categoryRates });
+    return toCommissionTable({ ...table, owner, rates, categoryRates });
   }
 }

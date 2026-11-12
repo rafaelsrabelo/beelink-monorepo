@@ -54,6 +54,8 @@ export interface CommissionTableSummary {
   categoryRateCount: number;
   /** How many affiliates are on this table and not ended. A table with any is not deleted. */
   affiliateCount: number;
+  /** The affiliate whose own commission this is, set on the invite or the record (12/11/2026); null for a table the shop shares. */
+  affiliate: { id: string; name: string } | null;
 }
 
 /**
@@ -81,6 +83,8 @@ export interface CommissionTable {
   rates: CommissionProductRate[];
   /** By category: for the products of it with no rate of their own. */
   categoryRates: CommissionCategoryRate[];
+  /** The affiliate whose own commission this is, set on the invite or the record (12/11/2026); null for a table the shop shares. */
+  affiliate: { id: string; name: string } | null;
   /** ISO-8601. */
   updatedAt: string;
 }
@@ -127,6 +131,14 @@ export type AffiliateErrorCode =
   | "COMMISSION_TABLE_DEFAULT"
   /** The shop already has the most tables it may keep. */
   | "COMMISSION_TABLE_LIMIT"
+  /** The table is another affiliate's own commission: nobody else is put on it. */
+  | "COMMISSION_TABLE_PERSONAL"
+  /** A document's type unknown, or the back of one that has two missing. */
+  | "AFFILIATE_DOCUMENT_INVALID"
+  /** A photo named that is not this shop's upload, was already used, or is past its 24 hours. */
+  | "AFFILIATE_DOCUMENT_UPLOAD_NOT_FOUND"
+  /** The affiliate has no document: one invited before it was asked. */
+  | "AFFILIATE_DOCUMENT_NOT_FOUND"
   /** Affiliates who have not ended are on this table: move them before deleting it. */
   | "COMMISSION_TABLE_IN_USE"
   /** An affiliate's name, e-mail, phone, CPF, note or table out of its range or missing. */
@@ -189,7 +201,8 @@ export interface ShopAffiliateSummary {
   /** The `/name` chosen on accepting, unique in the shop for good; null while invited. */
   slug: string | null;
   status: AffiliateStatus;
-  table: { id: string; name: string };
+  /** `personal`: the affiliate's own commission, a table no one else may be put on. */
+  table: { id: string; name: string; personal: boolean };
   /** ISO-8601. */
   invitedAt: string;
   /** ISO-8601; null while invited. */
@@ -212,6 +225,8 @@ export interface ShopAffiliate extends ShopAffiliateSummary {
   endedAt: string | null;
   /** While invited: when the invite last went out, and when its link stops working. */
   invite: { sentAt: string; expiresAt: string } | null;
+  /** Their identity document, said without its photos; null for one invited before it was asked. */
+  document: ShopAffiliateDocument | null;
 }
 
 /** `GET /stores/:slug/affiliates`: newest invited first. */
@@ -223,11 +238,70 @@ export interface ShopAffiliatePage {
 }
 
 /** What inviting takes. The e-mail is where the invite goes, and the one account that may accept it. */
+/**
+ * An affiliate's own commission (the user's review, 12/11/2026), set on the invite or the record: the
+ * API makes it a table of theirs alone, which the table screen edits like any other. Each rate 0 to
+ * 10000; a category or a product at most once, and the shop's own.
+ */
+export interface AffiliateCommissionPayload {
+  defaultRateBps: number;
+  categoryRates: CommissionCategoryRate[];
+  productRates: CommissionProductRate[];
+}
+
+/**
+ * The identity document an affiliate is registered with (the user's review, 12/11/2026): RG, CNH,
+ * CIN (the Carteira de Identidade Nacional), RNE/CRNM (a foreigner's) or a passport.
+ */
+export type AffiliateDocumentType = "RG" | "CNH" | "CIN" | "RNE_CRNM" | "PASSPORT";
+
+/**
+ * `POST /stores/:slug/affiliate-documents`: one photo or PDF of a document, kept privately and waiting to be
+ * named by an invite or a record. The shop's alone, for 24 hours; unclaimed, it is deleted.
+ */
+export interface AffiliateDocumentUpload {
+  id: string;
+}
+
+/** A document as the invite or the record names it: its type and its uploaded photos. The back is required unless a passport. */
+export interface AffiliateDocumentPayload {
+  type: AffiliateDocumentType;
+  frontUploadId: string;
+  backUploadId: string | null;
+}
+
+/** What the shop's record says of the document: never an address — those come from `AffiliateDocumentView`, to the owner alone. */
+export interface ShopAffiliateDocument {
+  type: AffiliateDocumentType;
+  hasBack: boolean;
+  /** ISO-8601. */
+  uploadedAt: string;
+}
+
+/** `GET /stores/:slug/affiliates/:id/document`: the photos, at addresses that stop working at `expiresAt`. The shop's owner alone. */
+export interface AffiliateDocumentView {
+  type: AffiliateDocumentType;
+  frontUrl: string;
+  /** What the file is — `jpg`, `png`, `webp` or `pdf` — so a PDF is linked rather than drawn. */
+  frontFormat: string;
+  backUrl: string | null;
+  backFormat: string | null;
+  /** ISO-8601: ask again after it. */
+  expiresAt: string;
+  /** ISO-8601. */
+  uploadedAt: string;
+}
+
 export interface CreateAffiliatePayload {
   /** 2 to 120 characters, trimmed. */
   name: string;
   email: string;
-  tableId: string;
+  /** A table the shop shares — or `commission`, never both. */
+  tableId?: string;
+  /** Their own commission — or `tableId`, never both. */
+  commission?: AffiliateCommissionPayload;
+  /** Optional: the shop may attach it later, on the record (the user's design, 12/11/2026). */
+  document?: AffiliateDocumentPayload;
   /** Any way a person writes it; kept as digits with the country code. */
   phone: string;
   /** With or without points and dash; kept as its eleven digits, and checked. */
@@ -238,7 +312,10 @@ export interface CreateAffiliatePayload {
 
 /** A patch: a key left out is left alone. The phone and the CPF are completed or corrected, never cleared. */
 export interface UpdateAffiliatePayload {
+  /** A table the shop shares, or their own; leaving their own for a shared one deletes it. Never with `commission`. */
   tableId?: string;
+  /** Their own commission: made when they have none, its rates replaced when they have one. Never with `tableId`. */
+  commission?: AffiliateCommissionPayload;
   phone?: string;
   cpf?: string;
   note?: string | null;

@@ -22,6 +22,7 @@ import type { AuthenticatedUser } from '../auth/auth.decorators.js';
 import { CurrentUser } from '../auth/auth.decorators.js';
 import { AffiliateListQueryDto, CreateAffiliateDto, UpdateAffiliateDto } from './dto/affiliate.dto.js';
 import { ShopAffiliatePageResponse, ShopAffiliateResponse } from './dto/affiliate.response.js';
+import { AffiliateRegistrationService } from './affiliate-registration.service.js';
 import { StoreAffiliatesService } from './store-affiliates.service.js';
 
 /**
@@ -35,15 +36,18 @@ import { StoreAffiliatesService } from './store-affiliates.service.js';
 @ApiForbiddenResponse({ description: 'STORE_FORBIDDEN · PAGE_LOCKED' })
 @Controller('stores/:storeSlug/affiliates')
 export class StoreAffiliatesController {
-  constructor(private readonly affiliates: StoreAffiliatesService) {}
+  constructor(
+    private readonly affiliates: StoreAffiliatesService,
+    private readonly registration: AffiliateRegistrationService,
+  ) {}
 
   @Post()
-  @ApiOperation({ summary: 'Invite someone to sell through the shop: INVITED, and the invite e-mailed' })
+  @ApiOperation({ summary: 'Invite someone to sell through the shop — on a shared table or their own commission, with their identity document: INVITED, and the invite e-mailed' })
   @ApiCreatedResponse({ type: ShopAffiliateResponse })
   @ApiBadRequestResponse({ description: 'AFFILIATE_INVALID' })
-  @ApiConflictResponse({ description: 'AFFILIATE_EMAIL_TAKEN' })
+  @ApiConflictResponse({ description: 'AFFILIATE_EMAIL_TAKEN · AFFILIATE_CPF_TAKEN · COMMISSION_TABLE_PERSONAL' })
   create(@Param('storeSlug') storeSlug: string, @CurrentUser() current: AuthenticatedUser, @Body() dto: CreateAffiliateDto): Promise<ShopAffiliate> {
-    return this.affiliates.create(storeSlug, current.id, dto);
+    return this.registration.create(storeSlug, current.id, dto);
   }
 
   @Get()
@@ -62,7 +66,7 @@ export class StoreAffiliatesController {
   }
 
   @Patch(':affiliateId')
-  @ApiOperation({ summary: "The affiliate's table and the shop's note. Another table applies to orders placed from now on" })
+  @ApiOperation({ summary: "The affiliate's table — shared, or their own commission made or replaced — their phone, CPF and the shop's note. Another table applies to orders placed from now on" })
   @ApiOkResponse({ type: ShopAffiliateResponse })
   @ApiBadRequestResponse({ description: 'AFFILIATE_INVALID' })
   update(
@@ -71,7 +75,7 @@ export class StoreAffiliatesController {
     @CurrentUser() current: AuthenticatedUser,
     @Body() dto: UpdateAffiliateDto,
   ): Promise<ShopAffiliate> {
-    return this.affiliates.update(storeSlug, current.id, affiliateId, dto);
+    return this.registration.update(storeSlug, current.id, affiliateId, dto);
   }
 
   @Delete(':affiliateId')

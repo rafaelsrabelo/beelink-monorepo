@@ -348,9 +348,9 @@ describe("bee-link's legal texts (BEELINK-171)", () => {
 
     // BEELINK-329's version (2026-10-15) said the courier form no longer asks for the city; that sentence stays, checked above.
     it("is the version that tells of affiliates", () => {
-      expect(legalTexts.version).toBe("2026-11-12")
-      expect(legalTexts.privacy.effective).toBe("Vigente desde 12 de novembro de 2026")
-      expect(legalTexts.terms.effective).toBe("Vigente desde 12 de novembro de 2026")
+      expect(legalTexts.version).toBe("2026-11-13")
+      expect(legalTexts.privacy.effective).toBe("Vigente desde 13 de novembro de 2026")
+      expect(legalTexts.terms.effective).toBe("Vigente desde 13 de novembro de 2026")
     })
 
     it("gives the affiliates' data a section of its own, after the shopkeepers'", () => {

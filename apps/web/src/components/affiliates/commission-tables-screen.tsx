@@ -75,7 +75,7 @@ export function CommissionTablesScreen({ slug, locale, messages }: CommissionTab
   return (
     <AffiliatesFrame slug={slug} active="tables" messages={messages}>
       <CommissionTableList
-        tables={overview.data.tables}
+        tables={overview.data.tables.map((table) => ({ ...table, ownerName: table.affiliate?.name ?? null }))}
         hrefOf={(tableId) => `/admin/${slug}/affiliates/tables/${tableId}`}
         onCreate={() => open({ mode: "create" })}
         onEdit={(table) => open({ mode: "edit", table })}

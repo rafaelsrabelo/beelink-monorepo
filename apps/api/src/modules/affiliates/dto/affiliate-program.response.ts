@@ -27,6 +27,11 @@ export class AffiliatePayoutPeriodResponse implements AffiliatePayoutPeriod {
   @ApiProperty({ format: 'date', example: '2026-11-20', description: 'The last day plus the programme\'s delay.' }) dueOn!: string;
 }
 
+class CommissionTableOwnerResponse {
+  @ApiProperty({ format: 'uuid' }) id!: string;
+  @ApiProperty() name!: string;
+}
+
 export class CommissionTableSummaryResponse implements CommissionTableSummary {
   @ApiProperty({ format: 'uuid' }) id!: string;
   @ApiProperty() name!: string;
@@ -35,6 +40,7 @@ export class CommissionTableSummaryResponse implements CommissionTableSummary {
   @ApiProperty() productRateCount!: number;
   @ApiProperty() categoryRateCount!: number;
   @ApiProperty({ description: 'Affiliates on it who have not ended; a table with any is not deleted.' }) affiliateCount!: number;
+  @ApiProperty({ nullable: true, type: CommissionTableOwnerResponse, description: "The affiliate whose own commission it is; null for a shared table." }) affiliate!: CommissionTableOwnerResponse | null;
 }
 
 export class AffiliateProgramOverviewResponse implements AffiliateProgramOverview {
@@ -61,5 +67,6 @@ export class CommissionTableResponse implements CommissionTable {
   @ApiProperty() isDefault!: boolean;
   @ApiProperty({ type: [CommissionProductRateResponse], description: 'By product: these come first.' }) rates!: CommissionProductRateResponse[];
   @ApiProperty({ type: [CommissionCategoryRateResponse], description: 'By category: for the products of it with no rate of their own.' }) categoryRates!: CommissionCategoryRateResponse[];
+  @ApiProperty({ nullable: true, type: CommissionTableOwnerResponse, description: "The affiliate whose own commission it is; null for a shared table." }) affiliate!: CommissionTableOwnerResponse | null;
   @ApiProperty({ format: 'date-time' }) updatedAt!: string;
 }

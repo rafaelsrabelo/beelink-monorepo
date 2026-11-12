@@ -34,6 +34,8 @@ export interface CommissionTableView {
   categoryRateCount: number
   /** Affiliates on it who have not ended: a table with any is not deleted. */
   affiliateCount: number
+  /** The affiliate whose own commission it is (12/11/2026); absent or null for a shared table. */
+  ownerName?: string | null
 }
 
 /** A table's name and rate as the dialog edits them. */
@@ -91,19 +93,6 @@ export interface AffiliateTableOption {
   /** "10%". */
   rate: string
 }
-
-/** Inviting, as the dialog edits it: what was typed. */
-export interface AffiliateInviteFormValues {
-  name: string
-  email: string
-  tableId: string
-  phone: string
-  /** As typed, masked to `000.000.000-00`. */
-  cpf: string
-  note: string
-}
-
-export type AffiliateInviteIssues = Partial<Record<"name" | "email" | "tableId" | "phone" | "cpf" | "note", string>>
 
 /** One affiliate, whole, its lines already in words. */
 export interface AffiliateRecordView {

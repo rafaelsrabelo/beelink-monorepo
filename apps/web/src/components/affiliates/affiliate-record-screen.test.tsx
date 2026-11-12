@@ -14,18 +14,19 @@ import { AffiliateError } from "@/services/affiliates/affiliate-requests"
 import { AffiliateRecordScreen } from "./affiliate-record-screen"
 
 const mocks = vi.hoisted(() => ({ overview: vi.fn(), one: vi.fn(), update: vi.fn(), act: vi.fn(), cancel: vi.fn(), replace: vi.fn() }))
-vi.mock("@/services/affiliates/affiliate-hooks", () => ({ useAffiliateProgram: mocks.overview }))
+vi.mock("@/services/affiliates/affiliate-hooks", () => ({ useAffiliateProgram: mocks.overview, useCommissionTable: () => ({ data: undefined }) }))
 vi.mock("@/services/affiliates/shop-affiliate-hooks", () => ({ useShopAffiliate: mocks.one, useUpdateAffiliate: mocks.update, useActOnAffiliate: mocks.act, useCancelAffiliateInvite: mocks.cancel }))
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: mocks.replace }) }))
 // Their own screens, with their own reads (IMPULSEIA-107).
 vi.mock("@/components/affiliates/affiliate-money-section", () => ({ AffiliateMoneySection: () => null }))
 vi.mock("@/components/affiliates/affiliate-showcase-section", () => ({ AffiliateShowcaseSection: () => null }))
+vi.mock("@/components/affiliates/affiliate-document-record", () => ({ AffiliateDocumentRecord: () => null }))
 
 const overview: AffiliateProgramOverview = {
   program: { enabled: true, attributionDays: 30, payoutDelayDays: 10, termsText: null, termsVersion: 0, updatedAt: "2026-11-11T12:00:00.000Z" },
   tables: [
-    { id: "t1", name: "Padrão", defaultRateBps: 1000, isDefault: true, productRateCount: 0, categoryRateCount: 0, affiliateCount: 1 },
-    { id: "t2", name: "Influencers", defaultRateBps: 1500, isDefault: false, productRateCount: 0, categoryRateCount: 0, affiliateCount: 0 },
+    { id: "t1", name: "Padrão", defaultRateBps: 1000, isDefault: true, productRateCount: 0, categoryRateCount: 0, affiliateCount: 1, affiliate: null },
+    { id: "t2", name: "Influencers", defaultRateBps: 1500, isDefault: false, productRateCount: 0, categoryRateCount: 0, affiliateCount: 0, affiliate: null },
   ],
   periods: [],
   linksLive: true,
@@ -38,7 +39,7 @@ const joao: ShopAffiliate = {
   cpf: null,
   slug: "joao",
   status: "ACTIVE",
-  table: { id: "t1", name: "Padrão" },
+  table: { id: "t1", name: "Padrão", personal: false },
   invitedAt: "2026-11-11T13:00:00.000Z",
   acceptedAt: "2026-11-11T15:00:00.000Z",
   note: null,
@@ -49,6 +50,7 @@ const joao: ShopAffiliate = {
   termsAcceptedAt: "2026-11-11T15:00:00.000Z",
   endedAt: null,
   invite: null,
+  document: null,
 }
 const update = vi.fn()
 const act = vi.fn()

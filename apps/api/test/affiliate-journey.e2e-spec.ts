@@ -27,7 +27,7 @@ import { payoutPeriodOf } from '../src/modules/affiliates/affiliate-payout-calen
 import { AffiliateSaleMailer } from '../src/modules/affiliates/affiliate-sale-mailer.js';
 import { brasiliaDayOf, dayOfDateColumn, openOfBrasiliaDay } from '../src/modules/billing/billing-dates.js';
 import { PrismaService } from '../src/shared/prisma/prisma.service.js';
-import { affiliateIdentity } from './support/affiliate-identity.js';
+import { affiliateDocumentFor, affiliateIdentity } from './support/affiliate-identity.js';
 import { PASSWORD, newEmail, signUpAndSignIn, verifyEmailOf } from './support/auth-flow.js';
 import { createTestApp } from './support/create-test-app.js';
 import { clearInbox, tokenFromLink, waitForMessage } from './support/mailpit.js';
@@ -107,7 +107,7 @@ describe('the affiliates epic, end to end: invite → accept → link → order 
     const overview = (await call('PUT', '/api/stores/lessari/affiliate-program', owner, { enabled: true, attributionDays: 30, payoutDelayDays: 10, termsText: 'Comissão paga por Pix.' })).json<AffiliateProgramOverview>();
     expect(overview.program).toMatchObject({ enabled: true, termsVersion: 1 });
 
-    const invited = await call('POST', '/api/stores/lessari/affiliates', owner, { ...affiliateIdentity(), name: 'Maria Souza', email: mariaEmail, tableId: overview.tables[0]!.id });
+    const invited = await call('POST', '/api/stores/lessari/affiliates', owner, { ...affiliateIdentity(), document: await affiliateDocumentFor(prisma, '/api/stores/lessari/affiliates'), name: 'Maria Souza', email: mariaEmail, tableId: overview.tables[0]!.id });
     expect(invited.statusCode).toBe(201);
     expect(invited.json<ShopAffiliate>()).toMatchObject({ status: 'INVITED', slug: null });
     mariaId = invited.json<ShopAffiliate>().id;

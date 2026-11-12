@@ -8,7 +8,7 @@ import type { ShopAffiliate } from "@harness-monorepo/contracts"
 import { ptBR } from "@harness-monorepo/ui/locales/index"
 
 // App
-import { affiliateDateFormatter, affiliateLinkOf, affiliateListItemOf, affiliateRecordViewOf, identityMissingOf, invitePayloadOf, recordFormOf, recordPatchOf } from "./affiliate-people"
+import { affiliateDateFormatter, affiliateLinkOf, affiliateListItemOf, affiliateRecordViewOf, identityMissingOf, recordFormOf, recordPatchOf } from "./affiliate-people"
 
 const text = ptBR.affiliates
 const date = affiliateDateFormatter("pt-BR")
@@ -21,7 +21,7 @@ const joao: ShopAffiliate = {
   cpf: "52998224725",
   slug: "joao",
   status: "ACTIVE",
-  table: { id: "t2", name: "Influencers" },
+  table: { id: "t2", name: "Influencers", personal: false },
   invitedAt: "2026-11-11T13:00:00.000Z",
   acceptedAt: "2026-11-12T02:30:00.000Z",
   note: "Indicou amigas",
@@ -32,6 +32,7 @@ const joao: ShopAffiliate = {
   termsAcceptedAt: "2026-11-12T02:30:00.000Z",
   endedAt: null,
   invite: null,
+  document: null,
 }
 
 describe("the affiliates in words (IMPULSEIA-104)", () => {
@@ -53,21 +54,6 @@ describe("the affiliates in words (IMPULSEIA-104)", () => {
 
     expect(view.invite).toBe("Convite enviado em 11/11/2026. O link vale até 18/11/2026.")
     expect(view.terms).toBeNull()
-  })
-})
-
-describe("the invite form", () => {
-  const typed = { name: " Maria Souza ", email: " Maria@Exemplo.com ", tableId: "t1", phone: " (85) 99999-4321 ", cpf: "529.982.247-25", note: "  " }
-
-  it("trims, lowers the e-mail, sends the CPF as its digits and a blank note as none", () => {
-    expect(invitePayloadOf(typed, text.affiliateIssues)).toEqual({ payload: { name: "Maria Souza", email: "maria@exemplo.com", tableId: "t1", phone: "(85) 99999-4321", cpf: "52998224725", note: null } })
-  })
-
-  it("says what to correct, field by field — the phone and the CPF are required", () => {
-    expect(invitePayloadOf({ name: "M", email: "maria@", tableId: "", phone: "1234", cpf: "529.982.247-26", note: "x".repeat(501) }, text.affiliateIssues)).toEqual({
-      issues: { name: text.affiliateIssues.name, email: text.affiliateIssues.email, tableId: text.affiliateIssues.table, phone: text.affiliateIssues.phone, cpf: text.affiliateIssues.cpf, note: text.affiliateIssues.note },
-    })
-    expect(invitePayloadOf({ ...typed, phone: "", cpf: "" }, text.affiliateIssues)).toEqual({ issues: { phone: text.affiliateIssues.phone, cpf: text.affiliateIssues.cpf } })
   })
 })
 

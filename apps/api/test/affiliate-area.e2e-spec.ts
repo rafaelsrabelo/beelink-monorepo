@@ -23,7 +23,7 @@ import type {
 import { AffiliateCommissionSweeper } from '../src/modules/affiliates/affiliate-commission-sweeper.js';
 import { brasiliaDayOf, dayOfDateColumn, openOfBrasiliaDay } from '../src/modules/billing/billing-dates.js';
 import { PrismaService } from '../src/shared/prisma/prisma.service.js';
-import { affiliateIdentity } from './support/affiliate-identity.js';
+import { affiliateDocumentFor, affiliateIdentity } from './support/affiliate-identity.js';
 import { PASSWORD, newEmail, signUpAndSignIn, verifyEmailOf } from './support/auth-flow.js';
 import { createTestApp } from './support/create-test-app.js';
 import { clearInbox, tokenFromLink, waitForMessage } from './support/mailpit.js';
@@ -101,7 +101,7 @@ describe("the affiliate's own area: the shops they sell for, their links, orders
   /** An affiliate through the real door — invited, signed up by the invite's link — and the session it opened. */
   async function affiliate(slug: string, name: string, email = newEmail(slug)): Promise<{ record: ShopAffiliate; session: AuthSession; email: string }> {
     const tableId = (await call('GET', '/api/stores/lessari/affiliate-program', owner)).json<AffiliateProgramOverview>().tables[0]!.id;
-    const record = (await call('POST', '/api/stores/lessari/affiliates', owner, { ...affiliateIdentity(), name, email, tableId })).json<ShopAffiliate>();
+    const record = (await call('POST', '/api/stores/lessari/affiliates', owner, { ...affiliateIdentity(), document: await affiliateDocumentFor(prisma, '/api/stores/lessari/affiliates'), name, email, tableId })).json<ShopAffiliate>();
     const token = tokenFromLink((await waitForMessage(email.toLowerCase(), 10_000, 'convidou você')).Text, '/afiliado/convite');
     const accepted = await call('POST', `/api/affiliate-invites/${token}/sign-up`, undefined, { name, password: PASSWORD, slug, pixKey: `${slug}@pix.test`, termsVersion: 0 });
     if (accepted.statusCode !== 201) throw new Error(`sign-up answered ${accepted.statusCode}: ${accepted.payload}`);
@@ -144,7 +144,7 @@ describe("the affiliate's own area: the shops they sell for, their links, orders
       // Invited again: the account exists, so it accepts signed in, as a new standing.
       const tableId = (await call('GET', '/api/stores/lessari/affiliate-program', owner)).json<AffiliateProgramOverview>().tables[0]!.id;
       await clearInbox();
-      await call('POST', '/api/stores/lessari/affiliates', owner, { ...affiliateIdentity(), name: 'Maria Souza', email: maria.email, tableId });
+      await call('POST', '/api/stores/lessari/affiliates', owner, { ...affiliateIdentity(), document: await affiliateDocumentFor(prisma, '/api/stores/lessari/affiliates'), name: 'Maria Souza', email: maria.email, tableId });
       const token = tokenFromLink((await waitForMessage(maria.email, 10_000, 'convidou você')).Text, '/afiliado/convite');
       expect((await call('POST', `/api/affiliate-invites/${token}/accept`, maria.session, { slug: 'maria-de-novo', pixKey: null, termsVersion: 0 })).statusCode).toBe(200);
 

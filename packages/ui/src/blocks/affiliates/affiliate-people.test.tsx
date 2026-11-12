@@ -6,9 +6,8 @@ import { describe, expect, it, vi } from "vitest"
 // Block
 import { expectNoA11yViolations } from "../../test/a11y"
 import { AffiliateConfirmDialog } from "./affiliate-confirm-dialog"
-import { AffiliateInviteDialog } from "./affiliate-invite-dialog"
 import { AffiliateListSection } from "./affiliate-list-section"
-import { inviteValue, invitedRecord, people, record, recordValue, recordValueMissing, tableOptions } from "./affiliate-people.fixtures"
+import { invitedRecord, people, record, recordValue, recordValueMissing, tableOptions } from "./affiliate-people.fixtures"
 import { AffiliateRecordActions } from "./affiliate-record-actions"
 import { AffiliateRecordDetails } from "./affiliate-record-details"
 import { AffiliateRecordForm } from "./affiliate-record-form"
@@ -58,41 +57,6 @@ describe("the affiliates list (IMPULSEIA-104)", () => {
     render(<AffiliateRows affiliates={[]} hrefOf={(id) => id} />)
 
     expect(screen.getByText("Nenhum afiliado ainda")).toBeInTheDocument()
-  })
-})
-
-describe("AffiliateInviteDialog", () => {
-  it("edits each field with the rest as it was, says what to correct, and submits", async () => {
-    const onChange = vi.fn()
-    const onSubmit = vi.fn()
-    render(<AffiliateInviteDialog open onOpenChange={noop} value={inviteValue} onChange={onChange} onSubmit={onSubmit} tables={tableOptions} issues={{ email: "Informe um e-mail válido." }} error="Este e-mail já é de um afiliado da loja." />)
-
-    await userEvent.type(screen.getByLabelText("Telefone"), "8")
-    expect(onChange).toHaveBeenLastCalledWith({ ...inviteValue, phone: `${inviteValue.phone}8` })
-    expect(screen.getByText("Com DDD. Só a loja vê.")).toBeInTheDocument()
-    await userEvent.type(screen.getByLabelText("Anotação (opcional)"), "x")
-    expect(onChange).toHaveBeenLastCalledWith({ ...inviteValue, note: "x" })
-    expect(screen.getByLabelText("E-mail")).toHaveAttribute("aria-invalid", "true")
-    expect(screen.getByText("Informe um e-mail válido.")).toBeInTheDocument()
-    expect(screen.getByText("Este e-mail já é de um afiliado da loja.")).toHaveAttribute("role", "alert")
-    await userEvent.click(screen.getByRole("button", { name: "Enviar convite" }))
-    expect(onSubmit).toHaveBeenCalled()
-  })
-
-  it("masks the CPF as it is typed, and says when it is not one", async () => {
-    const onChange = vi.fn()
-    render(<AffiliateInviteDialog open onOpenChange={noop} value={{ ...inviteValue, cpf: "" }} onChange={onChange} onSubmit={noop} tables={tableOptions} issues={{ cpf: "Informe um CPF válido." }} />)
-
-    await userEvent.type(screen.getByLabelText("CPF"), "5")
-    expect(onChange).toHaveBeenLastCalledWith({ ...inviteValue, cpf: "5" })
-    expect(screen.getByLabelText("CPF")).toHaveAttribute("aria-invalid", "true")
-    expect(screen.getByText("Informe um CPF válido.")).toBeInTheDocument()
-  })
-
-  it("has no a11y violations", async () => {
-    render(<AffiliateInviteDialog open onOpenChange={noop} value={inviteValue} onChange={noop} onSubmit={noop} tables={tableOptions} />)
-
-    await expectNoA11yViolations(screen.getByRole("dialog"))
   })
 })
 

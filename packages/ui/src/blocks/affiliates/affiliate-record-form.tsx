@@ -4,7 +4,7 @@
 import { useId } from "react"
 
 // UI
-import { Button } from "@harness-monorepo/ui/components/button"
+import { Button, buttonVariants } from "@harness-monorepo/ui/components/button"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@harness-monorepo/ui/components/field"
 import { Input } from "@harness-monorepo/ui/components/input"
 import { Textarea } from "@harness-monorepo/ui/components/textarea"
@@ -16,6 +16,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // Block
 import type { AffiliateRecordFormValues, AffiliateRecordIssues, AffiliateTableOption } from "@harness-monorepo/ui/lib/affiliates"
 import { maskCpf } from "@harness-monorepo/ui/lib/cpf"
+import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import { AffiliateTableSelect } from "./affiliate-table-select"
 
 export interface AffiliateRecordFormProps {
@@ -27,6 +28,12 @@ export interface AffiliateRecordFormProps {
   tableLocked?: boolean
   /** Invited before the phone and the CPF were asked: say so, so the shop completes them. */
   identityMissing?: boolean
+  /** On their own commission (12/11/2026): where its table is edited. */
+  own?: { editHref: string } | null
+  /** On a shared table: give them their own, starting from it. */
+  onMakeOwn?: () => void
+  makingOwn?: boolean
+  linkComponent?: LinkComponent
   issues?: AffiliateRecordIssues
   pending?: boolean
   /** Nothing typed differs from what is saved: there is nothing to save. */
@@ -38,7 +45,7 @@ export interface AffiliateRecordFormProps {
 }
 
 /** The shop's side of an affiliate (IMPULSEIA-104): their phone and CPF, the table they are on, and the shop's own note. */
-export function AffiliateRecordForm({ value, onChange, onSubmit, tables, tableLocked = false, identityMissing = false, issues = {}, pending = false, pristine = false, saved = false, error, messages = defaultMessages }: AffiliateRecordFormProps) {
+export function AffiliateRecordForm({ value, onChange, onSubmit, tables, tableLocked = false, identityMissing = false, own = null, onMakeOwn, makingOwn = false, linkComponent: Link = AnchorLink, issues = {}, pending = false, pristine = false, saved = false, error, messages = defaultMessages }: AffiliateRecordFormProps) {
   const text = messages.affiliates.record
   const id = useId()
 
@@ -105,6 +112,20 @@ export function AffiliateRecordForm({ value, onChange, onSubmit, tables, tableLo
           />
           {issues.tableId ? <FieldError id={`${id}-table-help`}>{issues.tableId}</FieldError> : <FieldDescription id={`${id}-table-help`}>{text.tableHelp}</FieldDescription>}
         </Field>
+
+        {own ? (
+          <div className="flex flex-col gap-1.5 text-sm">
+            <span className="font-medium">{text.ownCommission}</span>
+            <span className="text-muted-foreground">{text.ownCommissionHelp}</span>
+            <Link href={own.editHref} className={buttonVariants({ variant: "outline", size: "sm", className: "self-start" })}>
+              {text.editCommission}
+            </Link>
+          </div>
+        ) : onMakeOwn && !tableLocked ? (
+          <Button type="button" variant="outline" size="sm" className="self-start" disabled={pending || makingOwn} onClick={onMakeOwn}>
+            {makingOwn ? text.makingOwn : text.makeOwn}
+          </Button>
+        ) : null}
 
         <Field data-invalid={issues.note ? true : undefined}>
           <FieldLabel htmlFor={`${id}-note`}>{text.note}</FieldLabel>

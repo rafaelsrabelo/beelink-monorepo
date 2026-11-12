@@ -10,7 +10,7 @@ import { payoutPeriodOf } from '../src/modules/affiliates/affiliate-payout-calen
 import { AffiliateSaleMailer } from '../src/modules/affiliates/affiliate-sale-mailer.js';
 import { brasiliaDayOf, dayOfDateColumn, openOfBrasiliaDay } from '../src/modules/billing/billing-dates.js';
 import { PrismaService } from '../src/shared/prisma/prisma.service.js';
-import { affiliateIdentity } from './support/affiliate-identity.js';
+import { affiliateDocumentFor, affiliateIdentity } from './support/affiliate-identity.js';
 import { PASSWORD, newEmail, signUpAndSignIn, verifyEmailOf } from './support/auth-flow.js';
 import { createTestApp } from './support/create-test-app.js';
 import { clearInbox, tokenFromLink, waitForMessage } from './support/mailpit.js';
@@ -84,7 +84,7 @@ describe("an order's affiliate commission: credited at the order, due by the cal
   /** An affiliate through the real door: invited by the shop, signed up by the invite's link. */
   async function affiliate(slug: string, email = newEmail(slug), shop = 'lessari', session = owner): Promise<ShopAffiliate & { email: string }> {
     const tableId = (await call('GET', `/api/stores/${shop}/affiliate-program`, session)).json<AffiliateProgramOverview>().tables[0]!.id;
-    const invited = await call('POST', `/api/stores/${shop}/affiliates`, session, { ...affiliateIdentity(), name: 'João Silva', email, tableId });
+    const invited = await call('POST', `/api/stores/${shop}/affiliates`, session, { ...affiliateIdentity(), document: await affiliateDocumentFor(prisma, `/api/stores/${shop}/affiliates`), name: 'João Silva', email, tableId });
     if (invited.statusCode !== 201) throw new Error(`POST affiliates answered ${invited.statusCode}: ${invited.payload}`);
     const token = tokenFromLink((await waitForMessage(email.toLowerCase(), 10_000, 'convidou você')).Text, '/afiliado/convite');
     const accepted = await call('POST', `/api/affiliate-invites/${token}/sign-up`, undefined, { name: 'João Silva', password: PASSWORD, slug, pixKey: null, termsVersion: 0 });
