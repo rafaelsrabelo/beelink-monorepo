@@ -83,3 +83,53 @@ abrir.
 
 - Copiar uma tabela pronta para começar a própria a partir dela.
 - Mostrar ao afiliado que a tabela é "só dele": o convite mostra o nome e as taxas, como sempre.
+
+## Adendo — o convite passo a passo, o documento e o desenho do Rafael (12/11/2026)
+
+O Rafael, criando um afiliado:
+
+> "na criação tem que ser passo a passo … hoje é um formulário num dialog, não tá iterativo, não tá
+> intuitivo, tá faltando a personalização da comissão e anexo de documento com foto, frente e costa
+> e qual tipo de documento"
+
+Depois mandou uma referência ("queria um multi step form") e, por fim, **desenhou o convite ele
+mesmo**. O desenho dele é a referência; as decisões abaixo são dele, com os ajustes combinados.
+
+### O convite vira uma página em quatro passos
+
+`/admin/<loja>/affiliates/new`, com o diálogo antigo apagado:
+
+1. **Dados do afiliado** ("Nome, e-mail, telefone e CPF") — telefone e CPF obrigatórios, com
+   máscara, CPF conferido pelos dígitos já no navegador, e o erro debaixo de cada campo.
+2. **Tabela de comissão** ("Por categoria ou produto") — "Partir de" uma tabela pronta, a comissão
+   padrão grande com −/+, a barra e os atalhos 5/10/15/20%, e a árvore de categorias com os
+   produtos, cada linha com "Segue o padrão" / "Segue a categoria" e "Personalizar", que vira um
+   controle −/+ com volta ao herdado; busca; e, por produto, "afiliado ganha R$ X por venda".
+   Sem nenhuma personalização, o afiliado fica na tabela de partida; com qualquer mudança, vira a
+   tabela própria dele, que começa da de partida (o `commission` do convite).
+3. **Documento** ("Foto da frente e do verso") — tipo RG, CNH, CIN, RNE/CRNM ou Passaporte (o
+   passaporte não pede verso), JPG, PNG, WebP ou PDF, arrastar ou clicar, trocar ou remover, e
+   **"Dá para anexar depois"**: o documento é opcional no convite, e a ficha mostra "Documento
+   pendente" com o envio ali.
+4. **Revisão** ("Conferir e enviar") — um cartão por passo, cada um com "Editar", e a anotação.
+
+Depois, "Convite enviado", com "Convidar outro afiliado" e "Ver afiliado". O progresso é
+"Passo N/4", com a barra em N/4. No celular, o passo a passo vira uma barra no topo.
+
+### O documento é privado
+
+As fotos vão para o Cloudinary como arquivos `authenticated`, numa pasta da loja, e o banco guarda
+só o tipo e os ids. A loja lê por links que a API assina e que valem dez minutos; o afiliado, o
+cartão da vitrine, os e-mails e os logs nunca os veem. Cada foto sobe enquanto o convite é
+preenchido e espera um dia para ser usada; a não usada é apagada pelo sweeper. Cancelar o convite
+apaga as fotos (com aviso no log, sem nome de arquivo, se o Cloudinary não confirmar).
+
+### A política de privacidade ganha uma versão nova
+
+A `2026-11-12` foi publicada e não se edita: a `2026-11-13` diz que a loja guarda o tipo e as fotos
+do documento do afiliado, quem vê e por quanto tempo. Revisão jurídica antes do deploy.
+
+### Fora de escopo, do desenho
+
+- **"Tipo de comissão" com valor fixo em R$ por venda.** A API calcula só percentual; o valor fixo
+  muda a conta do pedido (AF6) e o extrato, e é uma tarefa própria.
