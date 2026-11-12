@@ -25,6 +25,8 @@ import { StorefrontSignInSection } from "@/components/storefront/storefront-sign
 import { StorefrontVerifyEmailSection } from "@/components/storefront/storefront-verify-email-section"
 import { TrackView } from "@/components/storefront/tracking/track-view"
 import { getMessages } from "@/lib/locale"
+import { affiliateArrivalHref } from "@/lib/affiliate-arrival"
+import { affiliateLinkAt } from "@/lib/affiliate-link"
 import { cartAt } from "@/lib/cart"
 import { COUPON_KEY, couponIn } from "@/lib/cart-coupon"
 import { cartQuoteOf } from "@/lib/cart-pricing"
@@ -98,7 +100,13 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
   if (shop?.unavailable && offTheAirAt(section, shop.routeWords)) return <ShopUnavailable store={shop} messages={(await getMessages()).ui} />
   const place = await placeOf(slug, section, query)
 
-  if (!place) notFound()
+  if (!place) {
+    // The segment's third reading, after a route word and a category (IMPULSEIA-105): an affiliate's
+    // link leads to the shop — with the affiliate, while the link credits them — and never to a 404.
+    const link = shop && !shop.unavailable ? await affiliateLinkAt(slug, { slug: section }) : null
+    if (shop && link) redirect(affiliateArrivalHref(storefrontRoutes(shop).home, link.affiliate?.slug ?? null, query) as Parameters<typeof redirect>[0])
+    notFound()
+  }
   // A page of its own, with none of the shop's header around it.
   if (place.section.kind === "checkout") return <StorefrontCheckoutSection place={place} query={query} />
 

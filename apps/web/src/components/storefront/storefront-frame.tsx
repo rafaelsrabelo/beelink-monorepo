@@ -11,6 +11,7 @@ import type { LinkComponent } from "@harness-monorepo/ui/blocks/auth/auth-link"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
+import { StorefrontAffiliateBand } from "./affiliate/storefront-affiliate-band"
 import { ctaOf, menuOf, pageLinksOf, siteFooterColumnsOf } from "./site-chrome"
 import { shopFooterColumnsOf } from "./shop-chrome"
 import { announcementOf } from "./announcement-of"
@@ -203,7 +204,14 @@ export function StorefrontFrame({
           />
         ) : undefined
       }
-      {...(notice ? { notice } : {})}
+      // Whom the visitor came by (IMPULSEIA-105), on every page drawn in the frame and above the page's
+      // own notice: it is nothing outside a shop's layout, the design preview's among them.
+      notice={
+        <>
+          <StorefrontAffiliateBand messages={messages} />
+          {notice}
+        </>
+      }
       {...(blocks ? { blocks } : {})}
       {...(pageHeader ? { pageHeader } : {})}
       {...body}

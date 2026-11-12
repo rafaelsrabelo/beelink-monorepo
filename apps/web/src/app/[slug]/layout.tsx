@@ -3,6 +3,8 @@ import type { Metadata, Viewport } from "next"
 import { cookies } from "next/headers"
 
 // App
+import { AffiliateReferralProvider } from "@/components/storefront/affiliate/affiliate-referral-provider"
+import { StorefrontAffiliateArrival } from "@/components/storefront/affiliate/storefront-affiliate-arrival"
 import { CartProvider } from "@/components/storefront/cart-provider"
 import { FavoritesProvider } from "@/components/storefront/favorites/favorites-provider"
 import { ShopAddressProvider } from "@/components/storefront/shop-address-provider"
@@ -11,6 +13,7 @@ import { ShopperRealtime } from "@/components/storefront/shopper-realtime"
 import { StorefrontConsentGate } from "@/components/storefront/storefront-consent-gate"
 import { StorefrontOrigin } from "@/components/storefront/storefront-origin"
 import { StorefrontTracking } from "@/components/storefront/tracking/storefront-tracking"
+import { affiliateReferralAt } from "@/lib/affiliate-link"
 import { cartLinesAt } from "@/lib/cart"
 import { consentAt } from "@/lib/consent"
 import { funnelCountedAt } from "@/lib/funnel-count"
@@ -55,6 +58,11 @@ import { storefrontRoutes } from "@/lib/storefront-routes"
  * session — a shopkeeper looking at a shop is not a visit, and the cookie is read only to leave
  * them out.
  *
+ * And whom the visitor came by is read and told from here (IMPULSEIA-105): an affiliate's link
+ * arrives as `?afiliado=` on the landing, which `StorefrontAffiliateArrival` tells the shop from the
+ * browser, and the `bl_affiliate` it leaves is read here per request — the affiliate's name and face
+ * a kept read, the cookie this visitor's — for the strip, the card and the order's line below.
+ *
  * And whether the request arrived by the shop's own domain is handed down from here (BEELINK-283),
  * around everything: the components that run in the browser spell the shop's addresses and write its
  * cookies, and are given a slug and nothing of the request.
@@ -86,6 +94,8 @@ export default async function StorefrontLayout({ children, params }: LayoutProps
   const { slug } = await params
   const [lines, shopper, store, { ui }, choice, jar] = await Promise.all([cartLinesAt(), shopperAt(slug), shopAt(slug), getMessages(), consentAt(), cookies()])
   const countAt = funnelCountedAt(store, jar.has(REFRESH_COOKIE))
+  // Off the air, a shop credits nobody: its link's read is refused like every one of the shop's.
+  const referral = store && !store.unavailable ? await affiliateReferralAt(slug, jar) : null
   const routes = store ? storefrontRoutes(store) : null
 
   const pages = routes ? (
@@ -103,8 +113,11 @@ export default async function StorefrontLayout({ children, params }: LayoutProps
           {shopper ? <ShopperRealtime slug={slug} /> : null}
           <StorefrontConsentGate slug={slug} store={store} choice={choice} messages={ui}>
             {store ? <StorefrontOrigin slug={slug} pixelId={store.metaPixelId ?? null} /> : null}
+            {store && !store.unavailable ? <StorefrontAffiliateArrival slug={slug} /> : null}
             <StorefrontTracking pixelId={store?.metaPixelId ?? null} quietPaths={store ? quietPathsOf(store) : []} countAt={countAt}>
-              {pages}
+              <AffiliateReferralProvider slug={slug} referral={referral}>
+                {pages}
+              </AffiliateReferralProvider>
             </StorefrontTracking>
           </StorefrontConsentGate>
         </CartProvider>
