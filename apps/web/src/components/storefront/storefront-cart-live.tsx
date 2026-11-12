@@ -20,6 +20,7 @@ import { format } from "@harness-monorepo/ui/locales/index"
 
 // App
 import { AppLink } from "@/components/app-link"
+import { StorefrontAffiliateNoteLive } from "./affiliate/storefront-affiliate-note-live"
 import { CartPriceControls } from "./cart-price-controls"
 import { useCart } from "./cart-provider"
 import { useCartPricing } from "./use-cart-pricing"
@@ -117,6 +118,7 @@ export function StorefrontCartLive({ slug, products, askedIds, hrefs, continueHr
         notice={goneOnArrival ? messages.storefront.cartGone : null}
         checkout={
           <>
+            <StorefrontAffiliateNoteLive messages={messages} />
             {/* A visitor types no code — the checkout says where it goes — but the banner's arrives here applied. */}
             {signedOut && !pricing.coupon.applied ? null : (
               <CartPriceControls pricing={{ coupon: pricing.coupon, credit: null }} signedOut={signedOut} collapsed disabled={view.count === 0} onChange={(change) => change()} locale={locale} messages={messages} />

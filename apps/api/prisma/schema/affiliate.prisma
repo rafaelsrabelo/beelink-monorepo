@@ -115,6 +115,8 @@ model Affiliate {
   updatedAt  DateTime  @updatedAt
 
   invite AffiliateInvite?
+  /// Visits through their link, a number a day (IMPULSEIA-105).
+  visitDays AffiliateVisitDay[]
 
   @@unique([storeId, slug])
   @@unique([storeId, email], where: raw("(status <> 'ENDED'::\"AffiliateStatus\")"), map: "affiliates_live_email_key")
@@ -137,4 +139,25 @@ model AffiliateInvite {
   usedAt      DateTime?
 
   @@map("affiliate_invites")
+}
+
+/// One affiliate's visits through their link on one day (IMPULSEIA-105, decision 10 of the epic): a
+/// number, and nothing of who. Written by one statement, `INSERT … ON CONFLICT … visits + 1`, never
+/// read first, like `StoreFunnelDay`; days older than thirteen months go with the funnel's
+/// (`reports/funnel-retention.ts`).
+model AffiliateVisitDay {
+  affiliateId String    @db.Uuid
+  affiliate   Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  /// The affiliate's shop, repeated so the shop's own reads go by it without a join.
+  storeId     String    @db.Uuid
+  store       Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  /// The day on the shop's clock (Brasília, a fixed -03:00), decided by the API when the visit arrives.
+  day         DateTime  @db.Date
+  visits      Int       @default(0)
+
+  @@id([affiliateId, day])
+  @@index([storeId, day])
+  /// The retention's delete reads by day alone.
+  @@index([day])
+  @@map("affiliate_visit_days")
 }

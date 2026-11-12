@@ -211,6 +211,16 @@ const envSchema = z.object({
   ASAAS_PLATFORM_WEBHOOK_TOKEN: blankAsAbsent(z.string().regex(/^\S{32,255}$/, 'ASAAS_PLATFORM_WEBHOOK_TOKEN must be 32 to 255 characters with no space')),
 
   /**
+   * Whether an affiliate's link credits anyone in this deployment (IMPULSEIA-105). Off — and absent
+   * is off — the shop window reads every link as one that credits nobody: no banner, no visit
+   * counted, no cookie written. It stays off in production until the privacy policy that tells of
+   * that cookie is published (AF9 of the affiliates epic).
+   */
+  AFFILIATE_LINKS_ENABLED: z
+    .preprocess((value) => (value === '' ? undefined : value), z.enum(['true', 'false']).default('false'))
+    .transform((value) => value === 'true'),
+
+  /**
    * Whether bee-link charges a page for its plan and locks one that does not pay (BEELINK-218). Off
    * by default, and off is the product as it was before plans existed: nothing locks, and the panel
    * shows no plan, no notice and no payment screen. A page's trial is counted either way, from the

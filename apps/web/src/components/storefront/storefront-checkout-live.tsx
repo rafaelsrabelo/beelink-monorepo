@@ -21,6 +21,7 @@ import { formatCents } from "@harness-monorepo/ui/blocks/storefront/storefront-p
 
 // App
 import { AppLink } from "@/components/app-link"
+import { StorefrontAffiliateNoteLive } from "./affiliate/storefront-affiliate-note-live"
 import { CartPriceControls } from "./cart-price-controls"
 import { useCart } from "./cart-provider"
 import { useCartCheckout } from "./use-cart-checkout"
@@ -167,6 +168,7 @@ export function StorefrontCheckoutLive({
           linkComponent={AppLink}
           messages={messages}
         >
+          <StorefrontAffiliateNoteLive messages={messages} />
           <StorefrontCartTotals
             subtotalCents={pricing.subtotalCents}
             count={view.count}

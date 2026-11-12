@@ -8,6 +8,9 @@ import { DELETE as removeTable, GET as readTable, PUT as updateTable } from "./t
 import { POST as createTable } from "./tables/route"
 import { GET, PUT } from "./route"
 
+const mocks = vi.hoisted(() => ({ revalidateStore: vi.fn() }))
+vi.mock("@/lib/revalidate", () => ({ revalidateStore: mocks.revalidateStore }))
+
 type Fetched = (url: string, init?: RequestInit) => Promise<Response>
 
 function request(path: string, init: { method?: string; body?: object; origin?: string } = {}) {
@@ -24,6 +27,7 @@ const rate = { params: Promise.resolve({ slug: "loja", tableId: "t 1", productId
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  mocks.revalidateStore.mockReset()
 })
 
 describe("the shop's affiliate programme, for the panel (IMPULSEIA-102)", () => {
@@ -38,6 +42,8 @@ describe("the shop's affiliate programme, for the panel (IMPULSEIA-102)", () => 
 
     expect((await PUT(request("/api/stores/loja/affiliate-program", { method: "PUT", body: rules }), shop)).status).toBe(200)
     expect(fetched.mock.calls[1]?.[1]?.method).toBe("PUT")
+    // Whether the programme is on is read by the shop window now (IMPULSEIA-105).
+    expect(mocks.revalidateStore).toHaveBeenCalledWith("loja")
     expect(JSON.parse(String(fetched.mock.calls[1]?.[1]?.body))).toEqual(rules)
   })
 
