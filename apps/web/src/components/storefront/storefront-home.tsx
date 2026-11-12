@@ -17,8 +17,8 @@ export interface StorefrontHomeProps {
   store: ServedShop
   /**
    * The affiliate an address names, when the home is drawn at an affiliate's link and the link
-   * credits them (IMPULSEIA-105): the arrival is told from it, and the card is drawn for it. Null at
-   * the shop's own address, and at a link that credits nobody.
+   * credits them (IMPULSEIA-105): the arrival is told from it. Null at the shop's own address, and at
+   * a link that credits nobody.
    */
   arrivedBy?: string | null
 }
@@ -60,7 +60,6 @@ export async function StorefrontHome({ slug, store, arrivedBy = null }: Storefro
         shopper={shopper}
         // Under the header: the invitation to open an account, or a shopper's first-order benefit.
         notice={<StorefrontOffers store={store} messages={ui} />}
-        arrivedBy={arrivedBy}
         messages={ui}
         blocks={
           <>

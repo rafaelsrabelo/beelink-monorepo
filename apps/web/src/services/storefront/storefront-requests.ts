@@ -84,10 +84,13 @@ export class RestockRequestError extends Error {
 
 /**
  * The signed-in shopper's cart, placed as an order. To the shop's own handler (`/<slug>/api/orders`),
- * where the shopper's cookies reach — never the API, and never a token in page code.
+ * where the shopper's cookies reach — never the API, and never a token in page code. From an
+ * affiliate's sub-site, under their name (`/<slug>/<name>/api/orders`): the proxy stamps the handler
+ * with it, and the order is theirs.
  */
-export async function placeShopperOrder(slug: string, payload: PlaceCustomerOrderPayload): Promise<CustomerOrder> {
-  const response = await fetch(`/${encodeURIComponent(slug)}/api/orders`, {
+export async function placeShopperOrder(slug: string, payload: PlaceCustomerOrderPayload, affiliate: string | null = null): Promise<CustomerOrder> {
+  const under = affiliate ? `/${encodeURIComponent(affiliate)}` : ""
+  const response = await fetch(`/${encodeURIComponent(slug)}${under}/api/orders`, {
     method: "POST",
     headers: { "content-type": "application/json", accept: "application/json" },
     body: JSON.stringify(payload),

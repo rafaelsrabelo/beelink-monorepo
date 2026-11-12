@@ -5,7 +5,8 @@ import { NextResponse, type NextRequest } from "next/server"
 import type { ApiErrorBody } from "@harness-monorepo/contracts"
 
 // App
-import { AFFILIATE_COOKIE, heldBeforeSessions, orderAffiliateVisitOf } from "@/lib/affiliate-cookie"
+import { AFFILIATE_COOKIE, heldBeforeSessions } from "@/lib/affiliate-cookie"
+import { orderAffiliateVisitAt } from "@/lib/affiliate-link"
 import { callApi } from "@/lib/api"
 import { clientIpOf, readJsonBody, refuseCrossOrigin } from "@/lib/bff"
 import { clearCustomerSessionCookies, setCustomerSessionCookies } from "@/lib/customer-session-cookies"
@@ -37,11 +38,12 @@ function refusal(statusCode: number, errorCode: string, message: string) {
  * place an order in the shopper's name. The API's answer goes back as it came — the placed order,
  * or its refusal and code — with a renewed pair stored on the way.
  *
- * Where the buyer came from, their yes to the shop's pixel, and the affiliate's link they followed
- * are read here and nowhere else (BEELINK-275, IMPULSEIA-106): from the shop's own cookies on this
- * request, which is why this handler is under the shop's path. What the page's body says in those
- * fields is dropped — a script on the page does not get to say which campaign sold, that its visitor
- * consented, nor whom the sale is credited to.
+ * Where the buyer came from and their yes to the shop's pixel are read here and nowhere else
+ * (BEELINK-275): from the shop's own cookies on this request, which is why this handler is under the
+ * shop's path. Whom the sale is credited to is the proxy's stamp (IMPULSEIA-106, the user's call of
+ * 12/11): the handler asked under an affiliate's sub-site, `/<slug>/<name>/api/orders`. What the
+ * page's body says in those fields is dropped — a script on the page does not get to say which
+ * campaign sold, that its visitor consented, nor whom the sale is credited to.
  *
  * An order that took a coupon may have taken its last use, and a shown coupon may be what the shop
  * window says of a first purchase: such an order drops the shop's kept offers (`revalidateOffers`),
@@ -58,7 +60,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
   const sent = (await readJsonBody(request)) ?? {}
   // Anything but an object is the API's to refuse, as it came.
   const now = Date.now()
-  const affiliateVisit = orderAffiliateVisitOf(request.cookies.get(AFFILIATE_COOKIE)?.value, now)
+  const affiliateVisit = await orderAffiliateVisitAt(slug, request.headers, now)
   const body = isCart(sent)
     ? { ...withoutOrigin(sent), ...orderOriginOf(request, slug, await marketingConsentAt(request, slug), now), ...(affiliateVisit ? { affiliateVisit } : {}) }
     : sent

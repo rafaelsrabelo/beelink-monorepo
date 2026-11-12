@@ -6,16 +6,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 // App
 import { StorefrontAffiliateArrival } from "./storefront-affiliate-arrival"
 
-const router = vi.hoisted(() => ({ refresh: vi.fn() }))
-vi.mock("next/navigation", () => ({ useRouter: () => router }))
-
 beforeEach(() => {
   window.history.replaceState(null, "", "/")
 })
 
 afterEach(() => {
   vi.unstubAllGlobals()
-  router.refresh.mockReset()
 })
 
 function arriving(status: number) {
@@ -24,48 +20,31 @@ function arriving(status: number) {
   return fetched
 }
 
-describe("an arrival by an affiliate's link (IMPULSEIA-105)", () => {
-  it("tells the shop which link, once however many times the effect runs, and draws the page again when it was kept", async () => {
-    window.history.replaceState(null, "", "/lessari?utm_source=instagram&afiliado=joao")
+describe("a visit on an affiliate's sub-site (IMPULSEIA-105)", () => {
+  it("tells the shop whose sub-site it is, once however many times the effect runs", async () => {
+    window.history.replaceState(null, "", "/lessari/joao/produtos/whey?utm_source=instagram")
     const fetched = arriving(200)
 
     render(
       <StrictMode>
-        <StorefrontAffiliateArrival slug="lessari" />
+        <StorefrontAffiliateArrival slug="lessari" name="joao" />
       </StrictMode>,
     )
 
-    await waitFor(() => expect(router.refresh).toHaveBeenCalledOnce())
-    expect(fetched).toHaveBeenCalledOnce()
+    await waitFor(() => expect(fetched).toHaveBeenCalledOnce())
     expect(fetched).toHaveBeenCalledWith("/lessari/api/affiliate-arrival", expect.objectContaining({ body: '{"slug":"joao"}' }))
   })
 
-  it("tells the name the page hands over, at the link's own address that carries no `?afiliado=`", async () => {
-    window.history.replaceState(null, "", "/lessari/joao?utm_source=instagram")
-    const fetched = arriving(200)
-
-    render(<StorefrontAffiliateArrival slug="lessari" name="joao" />)
-
-    await waitFor(() => expect(router.refresh).toHaveBeenCalledOnce())
-    expect(fetched).toHaveBeenCalledWith("/lessari/api/affiliate-arrival", expect.objectContaining({ body: '{"slug":"joao"}' }))
-  })
-
-  it("draws nothing again for a link that credits nobody", async () => {
-    window.history.replaceState(null, "", "/lessari/produtos/whey?afiliado=joao")
+  it("tells it again on the next page, whose count the shop's handler keeps to one a session", async () => {
+    window.history.replaceState(null, "", "/lessari/joao")
     const fetched = arriving(204)
 
-    render(<StorefrontAffiliateArrival slug="lessari" />)
-
+    const { unmount } = render(<StorefrontAffiliateArrival slug="lessari" name="joao" />)
     await waitFor(() => expect(fetched).toHaveBeenCalledOnce())
-    expect(router.refresh).not.toHaveBeenCalled()
-  })
+    unmount()
 
-  it("asks nothing of a page that arrived by no link", () => {
-    window.history.replaceState(null, "", "/lessari/produtos?utm_source=instagram")
-    const fetched = arriving(200)
-
-    render(<StorefrontAffiliateArrival slug="lessari" />)
-
-    expect(fetched).not.toHaveBeenCalled()
+    window.history.replaceState(null, "", "/lessari/joao/carrinho")
+    render(<StorefrontAffiliateArrival slug="lessari" name="joao" />)
+    await waitFor(() => expect(fetched).toHaveBeenCalledTimes(2))
   })
 })

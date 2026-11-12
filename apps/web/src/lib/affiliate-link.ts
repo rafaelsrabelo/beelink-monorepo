@@ -1,11 +1,11 @@
 import "server-only"
 
 // Types
-import type { PublicAffiliate, PublicAffiliateLink } from "@harness-monorepo/contracts"
+import type { OrderAffiliateVisitInput, PublicAffiliate, PublicAffiliateLink } from "@harness-monorepo/contracts"
 
 // App
-import { AFFILIATE_COOKIE, affiliateVisitOf } from "./affiliate-cookie"
 import { callPublicApi } from "./public-api"
+import { AFFILIATE_HEADER } from "./shop-address"
 import { storeTag } from "./revalidate"
 
 /** One of the two: the `/name` an address carries, or the id the shop window's cookie keeps. */
@@ -26,27 +26,31 @@ export async function affiliateLinkAt(shopSlug: string, ask: AffiliateLinkAsk): 
   return (await response.json()) as PublicAffiliateLink
 }
 
-/** Who this browser came to the shop by, as the shop window says it. */
+/** Whose sub-site the page is under, as the shop window says it. */
 export interface AffiliateReferral {
   affiliate: PublicAffiliate
 }
 
-/** What the reads of a request's cookies need: the shop layout hands it `cookies()`. */
-export interface CookieReader {
-  get(name: string): { value: string } | undefined
+/**
+ * The referral of a page under an affiliate's sub-site (the user's call of 12/11): the affiliate the
+ * proxy stamped the request with, read again — the kept read the link's own page makes — so the band
+ * and the order's line name them as the shop keeps them. Null when they no longer credit: the
+ * proxy's answer is up to a minute old. Nothing of it comes from a cookie: outside the sub-site the
+ * shop is the shop's, whatever the browser holds.
+ */
+export async function affiliateReferralOf(shopSlug: string, name: string): Promise<AffiliateReferral | null> {
+  const affiliate = (await affiliateLinkAt(shopSlug, { slug: name }))?.affiliate ?? null
+  return affiliate ? { affiliate } : null
 }
 
 /**
- * The referral a request carries: the visit its cookie holds, if the affiliate still credits and the
- * visit is inside the programme's days. Read per request and never kept: the answer about the
- * affiliate is everyone's, the cookie is this visitor's.
+ * What an order placed from an affiliate's sub-site says of the visit (IMPULSEIA-106, the user's call
+ * of 12/11): the affiliate the proxy stamped the order's handler with, read again, at this instant —
+ * the API checks once more that they credit. Null for an order placed anywhere else, whatever cookie
+ * the browser holds.
  */
-export async function affiliateReferralAt(shopSlug: string, jar: CookieReader, now = Date.now()): Promise<AffiliateReferral | null> {
-  const visit = affiliateVisitOf(jar.get(AFFILIATE_COOKIE)?.value, now)
-  if (!visit) return null
-
-  const affiliate = (await affiliateLinkAt(shopSlug, { id: visit.affiliateId }))?.affiliate ?? null
-  if (!affiliate || now - visit.visitedAt >= affiliate.attributionDays * 24 * 60 * 60 * 1000) return null
-
-  return { affiliate }
+export async function orderAffiliateVisitAt(shopSlug: string, headers: Pick<Headers, "get">, now: number): Promise<OrderAffiliateVisitInput | null> {
+  const name = headers.get(AFFILIATE_HEADER)
+  const referral = name ? await affiliateReferralOf(shopSlug, name) : null
+  return referral ? { affiliateId: referral.affiliate.id, visitedAt: new Date(now).toISOString() } : null
 }

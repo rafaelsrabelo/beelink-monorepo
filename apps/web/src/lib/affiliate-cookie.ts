@@ -17,9 +17,6 @@
  * API checks again, at the order, whether the affiliate still credits and the visit still counts.
  */
 
-// Types
-import type { OrderAffiliateVisitInput } from "@harness-monorepo/contracts"
-
 export const AFFILIATE_COOKIE = "bl_affiliate"
 
 /**
@@ -72,13 +69,4 @@ export function affiliateVisitOf(raw: string | undefined, now: number): Affiliat
   if (!Number.isSafeInteger(visitedAt) || visitedAt > now + CLOCK_SKEW_MS || now - visitedAt >= ATTRIBUTION_DAYS_MAX * DAY_MS) return null
 
   return { affiliateId: match[1]!, visitedAt: Math.min(visitedAt, now) }
-}
-
-/**
- * What an order placed now says of the visit (IMPULSEIA-106): the cookie's, read on the server by the
- * order's handler — never the page's. Null with none, or none believed; the API checks it again.
- */
-export function orderAffiliateVisitOf(raw: string | undefined, now: number): OrderAffiliateVisitInput | null {
-  const visit = affiliateVisitOf(raw, now)
-  return visit ? { affiliateId: visit.affiliateId, visitedAt: new Date(visit.visitedAt).toISOString() } : null
 }

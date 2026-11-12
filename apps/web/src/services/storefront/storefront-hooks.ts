@@ -183,8 +183,8 @@ export function useAnsweredCartQuote(slug: string, shopperId: string | null, car
  * The cart's order. Nothing cached is dropped: the cart page reads its products fresh on every
  * visit, and the shopper's orders are not on the shop window.
  */
-export function usePlaceShopperOrder(slug: string): UseMutationResult<CustomerOrder, Error, PlaceCustomerOrderPayload> {
-  return useMutation({ mutationFn: (payload: PlaceCustomerOrderPayload) => placeShopperOrder(slug, payload) })
+export function usePlaceShopperOrder(slug: string, affiliate: string | null = null): UseMutationResult<CustomerOrder, Error, PlaceCustomerOrderPayload> {
+  return useMutation({ mutationFn: (payload: PlaceCustomerOrderPayload) => placeShopperOrder(slug, payload, affiliate) })
 }
 
 /** The shopper's cancel. The list is server-drawn, so the page is read again once it settles. */
