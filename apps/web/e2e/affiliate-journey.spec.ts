@@ -8,6 +8,19 @@ import { linkFrom, newEmail, waitForMessage } from "./support/mailpit"
 const PASSWORD = "uma-senha-bem-comprida"
 const json = { "content-type": "application/json" }
 
+/** A CPF whose check digits hold, so the invite takes it; a new one each run. */
+function validCpf(): string {
+  const digits = Array.from({ length: 9 }, () => Math.floor(Math.random() * 10))
+  // Nine equal digits pass the arithmetic and are refused all the same.
+  if (digits.every((digit) => digit === digits[0])) digits[0] = (digits[0]! + 1) % 10
+  const check = (part: number[]) => {
+    const rest = (part.reduce((sum, digit, index) => sum + digit * (part.length + 1 - index), 0) * 10) % 11
+    return rest === 10 ? 0 : rest
+  }
+  const first = check(digits)
+  return [...digits, first, check([...digits, first])].join("")
+}
+
 /** A shopkeeper with a confirmed account, signed in to the panel on this page. */
 async function shopkeeper(page: Page, request: APIRequestContext): Promise<void> {
   const email = newEmail("loja-afiliados")
@@ -57,15 +70,33 @@ test.describe("a shop's affiliate, in the browser", () => {
       expect(program.status()).toBe(200)
     })
 
-    await test.step("the panel invites Maria by e-mail", async () => {
+    await test.step("the panel invites Maria, step by step", async () => {
       await page.goto(`/admin/${slug}/affiliates`)
       await page.getByRole("button", { name: "Convidar afiliado" }).first().click()
-      const dialog = page.getByRole("dialog")
-      await dialog.getByLabel("Nome").fill("Maria Souza")
-      await dialog.getByLabel("E-mail").fill(mariaEmail)
-      await dialog.getByRole("button", { name: "Enviar convite" }).click()
+      await expect(page).toHaveURL(new RegExp(`/admin/${slug}/affiliates/new$`))
 
-      await expect(page.getByText(`Convite enviado para ${mariaEmail}.`)).toBeVisible()
+      await expect(page.getByRole("heading", { level: 1, name: "Quem você quer convidar?" })).toBeVisible()
+      await page.getByLabel("Nome").fill("Maria Souza")
+      await page.getByLabel("E-mail").fill(mariaEmail)
+      await page.getByLabel("Telefone").fill("11988887777")
+      await page.getByLabel("CPF").fill(validCpf())
+      await page.getByRole("button", { name: "Continuar" }).click()
+
+      // The commission starts from the Padrão; nothing changed keeps her on it.
+      await expect(page.getByRole("heading", { level: 1, name: "Monte a tabela de comissão" })).toBeVisible()
+      await page.getByRole("button", { name: "Continuar" }).click()
+
+      // The document may come later, from her record.
+      await expect(page.getByRole("heading", { level: 1, name: "Anexe o documento" })).toBeVisible()
+      await page.getByRole("button", { name: "Continuar" }).click()
+
+      await expect(page.getByRole("heading", { level: 1, name: "Confira e envie o convite" })).toBeVisible()
+      await page.getByRole("button", { name: "Enviar convite" }).click()
+
+      await expect(page.getByRole("heading", { level: 1, name: "Convite enviado" })).toBeVisible()
+      await expect(page.getByText(`Foi para ${mariaEmail}`, { exact: false })).toBeVisible()
+
+      await page.goto(`/admin/${slug}/affiliates`)
       await expect(page.getByText("Maria Souza")).toBeVisible()
     })
 
