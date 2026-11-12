@@ -7,7 +7,7 @@ import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
-import { attributionOf, holdOrderCommission, type PlacedAffiliateVisit } from '../affiliates/affiliate-orders.js';
+import { attributionOf, chosenAttributionOf, holdOrderCommission, type PlacedAffiliateVisit } from '../affiliates/affiliate-orders.js';
 import { earningForOrder, holdOrderCashback } from '../cashback/cashback-orders.js';
 import { redeemCashback } from '../cashback/cashback-redemption.js';
 import { noteOrderStatus } from '../conversations/order-status-notice.js';
@@ -89,6 +89,8 @@ export interface Placement {
   marketingConsent?: PlacedMarketingConsent | null;
   /** The affiliate's link the buyer arrived by (IMPULSEIA-106), as the shop window's cookie kept it; checked again here. Absent on a sale registered in the panel. */
   affiliateVisit?: PlacedAffiliateVisit | null;
+  /** The affiliate the shopkeeper chose for a sale registered in the panel (IMPULSEIA-107); one that cannot be credited refuses the sale. */
+  affiliateChoice?: string | null;
   /** Who it is for, inside the transaction: a customer registered with the order goes back with a refusal. */
   customerOf: (tx: Tx) => Promise<string>;
 }
@@ -182,8 +184,11 @@ export class OrderPlacement {
       const parts = earningPartsOf(lines, priced, cashbackUsedCents);
       // What it will earn, at the shop's rules as they are now (BEELINK-239).
       const cashback = await earningForOrder(tx, storeId, parts);
-      // Whom it is credited to, checked now: a link that credits nobody places the order all the same (IMPULSEIA-106).
-      const attribution = await attributionOf(tx, storeId, placement.affiliateVisit ?? null, now);
+      // Whom it is credited to, checked now: a link that credits nobody places the order all the same
+      // (IMPULSEIA-106); the shopkeeper's own choice is refused aloud instead (IMPULSEIA-107).
+      const attribution = placement.affiliateChoice
+        ? await chosenAttributionOf(tx, storeId, placement.affiliateChoice)
+        : await attributionOf(tx, storeId, placement.affiliateVisit ?? null, now);
 
       const order = await tx.order.create({
         data: {

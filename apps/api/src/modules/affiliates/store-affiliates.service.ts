@@ -158,6 +158,18 @@ export class StoreAffiliatesService {
     return toShopAffiliate(after);
   }
 
+  /**
+   * What the shop window shows of them, taken off by the shop (IMPULSEIA-107, addendum D): the window
+   * is the shop's, so it may remove their photo or their phrase. Putting them there is the affiliate's,
+   * in their own area (AF8).
+   */
+  async clear(storeSlug: string, userId: string, affiliateId: string, field: 'photoUrl' | 'tagline'): Promise<ShopAffiliate> {
+    const storeId = await this.stores.ownedStoreId(storeSlug, userId);
+    const current = await this.affiliateOf(storeId, affiliateId);
+    const row = await this.prisma.affiliate.update({ where: { id: current.id }, data: { [field]: null }, include: affiliateInclude });
+    return toShopAffiliate(row);
+  }
+
   private async sendInvite(storeId: string, name: string, email: string, token: string): Promise<void> {
     const store = await this.prisma.store.findUniqueOrThrow({ where: { id: storeId }, select: { name: true } });
     await this.mail.sendAffiliateInvite(email, { name, shopName: store.name, days: AFFILIATE_INVITE_TTL_MS / DAY_MS }, token);

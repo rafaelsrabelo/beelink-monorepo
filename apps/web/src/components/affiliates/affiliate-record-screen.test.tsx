@@ -17,6 +17,9 @@ const mocks = vi.hoisted(() => ({ overview: vi.fn(), one: vi.fn(), update: vi.fn
 vi.mock("@/services/affiliates/affiliate-hooks", () => ({ useAffiliateProgram: mocks.overview }))
 vi.mock("@/services/affiliates/shop-affiliate-hooks", () => ({ useShopAffiliate: mocks.one, useUpdateAffiliate: mocks.update, useActOnAffiliate: mocks.act, useCancelAffiliateInvite: mocks.cancel }))
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: mocks.replace }) }))
+// Their own screens, with their own reads (IMPULSEIA-107).
+vi.mock("@/components/affiliates/affiliate-money-section", () => ({ AffiliateMoneySection: () => null }))
+vi.mock("@/components/affiliates/affiliate-showcase-section", () => ({ AffiliateShowcaseSection: () => null }))
 
 const overview: AffiliateProgramOverview = {
   program: { enabled: true, attributionDays: 30, payoutDelayDays: 10, termsText: null, termsVersion: 0, updatedAt: "2026-11-11T12:00:00.000Z" },
@@ -25,6 +28,7 @@ const overview: AffiliateProgramOverview = {
     { id: "t2", name: "Influencers", defaultRateBps: 1500, isDefault: false, productRateCount: 0, affiliateCount: 0 },
   ],
   periods: [],
+  linksLive: true,
 }
 const joao: ShopAffiliate = {
   id: "a1",

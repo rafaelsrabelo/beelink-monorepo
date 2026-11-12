@@ -1,7 +1,7 @@
 "use client"
 
 // React
-import { useRef } from "react"
+import { useRef, useState } from "react"
 import type { KeyboardEvent } from "react"
 
 // Libs
@@ -21,6 +21,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // App
 import type { WebMessages } from "@/locales"
 import { AppLink } from "@/components/app-link"
+import { NewOrderAffiliateSection } from "@/components/affiliates/new-order-affiliate-section"
 import { pageErrorCopy } from "@/components/design/page-error-copy"
 import { useStore } from "@/services/stores/store-hooks"
 import { useNewOrder } from "./use-new-order"
@@ -63,7 +64,9 @@ export function NewOrderScreen({ slug, customerId, messages, web }: NewOrderScre
   const text = messages.orders.form
   const store = useStore(slug)
   const customer = useOrderCustomer(slug, customerId, messages, web)
-  const order = useNewOrder(slug, customer.selected, messages)
+  // `""` is nobody: a sale credits an affiliate only when the shopkeeper names one (IMPULSEIA-107).
+  const [affiliateId, setAffiliateId] = useState("")
+  const order = useNewOrder(slug, customer.selected, messages, affiliateId)
   const form = useRef<HTMLFormElement>(null)
 
   return (
@@ -124,6 +127,8 @@ export function NewOrderScreen({ slug, customerId, messages, web }: NewOrderScre
             </h2>
             <OrderDetailsFields {...order.details} paymentMethods={store.data?.paymentMethods ?? []} issues={order.issues} messages={messages} />
           </section>
+
+          <NewOrderAffiliateSection slug={slug} value={affiliateId} onChange={setAffiliateId} disabled={order.save.isPending} messages={messages} />
         </div>
 
         {/* Below the panel's fixed header, not under it. */}

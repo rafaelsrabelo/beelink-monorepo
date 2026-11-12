@@ -86,6 +86,12 @@ export interface AffiliateProgramOverview {
   program: AffiliateProgram;
   tables: CommissionTableSummary[];
   periods: AffiliatePayoutPeriod[];
+  /**
+   * Whether this deployment credits orders to affiliates yet (IMPULSEIA-107): off until the privacy
+   * policy names the affiliates' cookie and that the buyer's name reaches them (AF9). While it is,
+   * neither a link nor the panel credits an order to anyone.
+   */
+  linksLive: boolean;
 }
 
 /** What the programme's routes answer besides the shop's and the catalogue's own codes. */
@@ -127,7 +133,19 @@ export type AffiliateErrorCode =
   /** The account already sells for this shop, under another invite. */
   | "AFFILIATE_ALREADY_LINKED"
   /** No affiliate of the shop has this `/name` or id: the address is nobody's link. */
-  | "AFFILIATE_LINK_NOT_FOUND";
+  | "AFFILIATE_LINK_NOT_FOUND"
+  /** An order cannot be credited to anyone now: the programme is off, or crediting is not live in this deployment yet. */
+  | "AFFILIATE_ATTRIBUTION_CLOSED"
+  /** The order's commission is not pending: `details` is `AffiliateCommissionStatusDetails`. Once available, a correction is an adjustment. */
+  | "AFFILIATE_COMMISSION_NOT_PENDING"
+  /** A change of an order's affiliate without its reason, or with one out of range. */
+  | "AFFILIATE_ORDER_CHANGE_INVALID"
+  /** An adjustment of 0, out of range, or with no reason. */
+  | "AFFILIATE_ADJUSTMENT_INVALID"
+  /** A payout of nothing, out of range, dated in the future or with an unknown method. */
+  | "AFFILIATE_PAYOUT_INVALID"
+  /** A payout past what is available: `details` is `AffiliatePayoutExceedsDetails`. An advance is an adjustment. */
+  | "AFFILIATE_PAYOUT_EXCEEDS_BALANCE";
 
 /**
  * Where an affiliate stands with a shop (IMPULSEIA-103): invited and not yet in; selling; paused —
@@ -336,3 +354,171 @@ export type AffiliateCommissionZeroReason = "OWN_PURCHASE";
  * correction, either way, with its reason; `PAID_OUT`, a payment the shop made outside bee-link.
  */
 export type AffiliateEntryKind = "RELEASED" | "REVERSED" | "ADJUSTED" | "PAID_OUT";
+
+/* ── the shop's money (IMPULSEIA-107) ─────────────────────────────────────────── */
+
+/** `details` of `AFFILIATE_COMMISSION_NOT_PENDING`. */
+export interface AffiliateCommissionStatusDetails {
+  status: AffiliateCommissionStatus;
+}
+
+/** `details` of `AFFILIATE_PAYOUT_EXCEEDS_BALANCE`: what can be paid now. */
+export interface AffiliatePayoutExceedsDetails {
+  availableCents: number;
+}
+
+/** An order's commission, as the shop reads it. */
+export interface OrderAffiliateCommission {
+  status: AffiliateCommissionStatus;
+  /** What the customer paid for the products, never the delivery. */
+  baseCents: number;
+  commissionCents: number;
+  /** The affiliate's table as it was named when the commission was worked out. */
+  tableName: string;
+  zeroReason: AffiliateCommissionZeroReason | null;
+  /** `YYYY-MM-DD`: the day it falls due; null until delivered. */
+  dueOn: string | null;
+  /** ISO-8601: when it fell due; null while pending. */
+  availableAt: string | null;
+}
+
+/** Whom an order was credited to, before or after a change: their id, if they still exist, and their name then. */
+export interface OrderAffiliateParty {
+  id: string | null;
+  name: string;
+}
+
+/** One change of whom an order is credited to, by the shopkeeper. */
+export interface OrderAffiliateChange {
+  /** Null when the order was credited to nobody before. */
+  from: OrderAffiliateParty | null;
+  /** Null when it was taken off its affiliate. */
+  to: OrderAffiliateParty | null;
+  reason: string;
+  /** ISO-8601. */
+  at: string;
+}
+
+/**
+ * `GET /stores/:slug/orders/:number/affiliate`: whom the order is credited to, its commission, and
+ * every change the shopkeeper made of it, oldest first.
+ */
+export interface OrderAffiliate {
+  /** Null when the order is credited to nobody. */
+  affiliate: { id: string; name: string; slug: string | null; status: AffiliateStatus } | null;
+  commission: OrderAffiliateCommission | null;
+  changes: OrderAffiliateChange[];
+  /** Money given back on the order (BEELINK-208): the commission did not change by itself, and the shop may adjust it. */
+  refundedCents: number;
+  /** Whether whom it is credited to may change: the order not cancelled, and its commission — if any — pending. */
+  changeable: boolean;
+}
+
+/** `PUT /stores/:slug/orders/:number/affiliate`: credit it to another affiliate — or, with null, to nobody — and why. */
+export interface OrderAffiliatePayload {
+  affiliateId: string | null;
+  /** 3 to 200 characters, trimmed. */
+  reason: string;
+}
+
+/** How a payout made outside bee-link went. */
+export type AffiliatePayoutMethod = "PIX" | "TRANSFER" | "CASH";
+
+/** A payout as its line on the statement shows it. */
+export interface AffiliatePayoutSummary {
+  /** `YYYY-MM-DD`: the day the shop paid. */
+  paidOn: string;
+  method: AffiliatePayoutMethod;
+  note: string | null;
+}
+
+/** One line of an affiliate's statement, as the shop reads it. */
+export interface AffiliateStatementEntry {
+  id: string;
+  kind: AffiliateEntryKind;
+  /** Signed, never 0. */
+  amountCents: number;
+  /** The order whose commission it moved; null for the shop's own lines. */
+  orderNumber: number | null;
+  /** The shop's words, on an adjustment. */
+  reason: string | null;
+  /** On a `PAID_OUT`. */
+  payout: AffiliatePayoutSummary | null;
+  /** ISO-8601. */
+  createdAt: string;
+}
+
+/** `GET /stores/:slug/affiliates/:id/statement`: the balances and a page of the statement, newest first. */
+export interface AffiliateStatement {
+  /** What waits on a delivery or a due day. */
+  pendingCents: number;
+  /** What the statement adds up to: owed now, or — below zero — what the next payment is short by. */
+  availableCents: number;
+  entries: AffiliateStatementEntry[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+/** `POST /stores/:slug/affiliates/:id/adjustments`. */
+export interface AffiliateAdjustmentPayload {
+  /** Cents, signed and never 0, up to R$ 1.000.000,00 either way. */
+  amountCents: number;
+  /** 3 to 200 characters, trimmed: why, in the shopkeeper's words. The affiliate reads it too. */
+  reason: string;
+}
+
+/** `POST /stores/:slug/affiliates/:id/payouts`: a payment made outside bee-link, recorded. */
+export interface AffiliatePayoutPayload {
+  /** 1 or more, and no more than what is available. */
+  amountCents: number;
+  /** `YYYY-MM-DD`, not in the future. */
+  paidOn: string;
+  method: AffiliatePayoutMethod;
+  /** Up to 200 characters; null for none. */
+  note: string | null;
+}
+
+/** Whether a due day of what is owed has passed, is today, or is still to come. */
+export type AffiliateOwedDayState = "OVERDUE" | "TODAY" | "UPCOMING";
+
+/** What falls or fell due on one day, across the shop's affiliates. */
+export interface AffiliateOwedDay {
+  /** `YYYY-MM-DD`. */
+  dueOn: string;
+  amountCents: number;
+  affiliateCount: number;
+  state: AffiliateOwedDayState;
+}
+
+/** One affiliate's part of what the shop owes. */
+export interface AffiliateOwedRow {
+  affiliate: { id: string; name: string; slug: string | null; status: AffiliateStatus; pixKey: string | null };
+  /** May be below zero: what the next payment is short by. */
+  availableCents: number;
+  pendingCents: number;
+  /** `YYYY-MM-DD`: the earliest due day of what is still owed; null when nothing is, or only what has no due day. */
+  oldestDueOn: string | null;
+  overdue: boolean;
+}
+
+/**
+ * `GET /stores/:slug/affiliate-program/owed`: what the shop owes its affiliates, by due day. A payout
+ * settles what fell due first, so what is still owed is the most recent of it.
+ */
+export interface AffiliateOwed {
+  /** `YYYY-MM-DD`, in Brasília. */
+  today: string;
+  /** What the shop owes now: the positive balances added up. */
+  owedCents: number;
+  /** Owed, by the day it fell due — overdue or today — oldest first. */
+  due: AffiliateOwedDay[];
+  /** Owed past every commission — an adjustment in the affiliate's favour — with no due day. */
+  undatedCents: number;
+  /** Delivered and waiting for their day, soonest first. */
+  upcoming: AffiliateOwedDay[];
+  /** Waiting on a delivery: no due day yet. */
+  awaitingDeliveryCents: number;
+  /** Every affiliate with something owed, pending or short, the most owed first. */
+  affiliates: AffiliateOwedRow[];
+}

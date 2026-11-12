@@ -40,7 +40,7 @@ function localDay(date: Date): string {
 const noSubscription = () => () => {}
 
 /** The products, lines, details and totals of the order being written, and the save that sends it. */
-export function useNewOrder(slug: string, customer: OrderCustomerOption | null, messages: UiMessages) {
+export function useNewOrder(slug: string, customer: OrderCustomerOption | null, messages: UiMessages, affiliateId = "") {
   const text = messages.orders.form
   const router = useRouter()
   const queryClient = useQueryClient()
@@ -149,7 +149,7 @@ export function useNewOrder(slug: string, customer: OrderCustomerOption | null, 
     }
 
     // The amounts typed, never the API's price of them: the order is priced again as it is written.
-    const payload = orderPayloadOf({ customerId: customer.id, lines, details: { ...details, placedOn }, paymentMethod: details.paymentMethod, totals: own, cashbackCents: spending ? (quoted?.cashbackUse?.appliedCents ?? 0) : 0, today })
+    const payload = orderPayloadOf({ customerId: customer.id, lines, details: { ...details, placedOn }, paymentMethod: details.paymentMethod, totals: own, cashbackCents: spending ? (quoted?.cashbackUse?.appliedCents ?? 0) : 0, today, affiliateId })
     save.mutate(payload, {
       onSuccess: (order) => router.push(`/admin/${slug}/orders/${order.number}` as Parameters<typeof router.push>[0]),
       // The stock moved since the products were read: each short line learns how many are left, and says so.

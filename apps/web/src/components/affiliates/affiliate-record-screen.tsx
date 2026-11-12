@@ -22,6 +22,8 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import { AppLink } from "@/components/app-link"
+import { AffiliateMoneySection } from "@/components/affiliates/affiliate-money-section"
+import { AffiliateShowcaseSection } from "@/components/affiliates/affiliate-showcase-section"
 import { affiliateErrorOf } from "@/lib/affiliate-form"
 import { affiliateDateFormatter, affiliateLinkOf, affiliateRecordViewOf, affiliateTableOptionsOf, recordFormOf, recordPatchOf } from "@/lib/affiliate-people"
 import { useAffiliateProgram } from "@/services/affiliates/affiliate-hooks"
@@ -41,7 +43,8 @@ const codeOf = (error: Error | null): string => (error instanceof AffiliateError
 
 /**
  * One affiliate, as the shop keeps them (IMPULSEIA-104): who they are, the table and the note, and
- * the acts their standing allows — asked first when the act does not come back.
+ * the acts their standing allows — asked first when the act does not come back; since IMPULSEIA-107,
+ * what the shop owes them and what its window shows of them.
  */
 export function AffiliateRecordScreen({ slug, affiliateId, origin, locale, messages }: AffiliateRecordScreenProps) {
   const text = messages.affiliates
@@ -107,6 +110,9 @@ export function AffiliateRecordScreen({ slug, affiliateId, origin, locale, messa
   return frame(
     <>
       <AffiliateRecordDetails affiliate={view} messages={messages} />
+      {/* Someone still invited has no books, and nothing on the window (IMPULSEIA-107). */}
+      {current.status !== "INVITED" ? <AffiliateMoneySection slug={slug} affiliateId={current.id} pixKey={current.pixKey} locale={locale} messages={messages} /> : null}
+      {current.status !== "INVITED" ? <AffiliateShowcaseSection slug={slug} affiliate={current} messages={messages} /> : null}
       <AffiliateRecordForm
         value={value}
         onChange={(next) => {

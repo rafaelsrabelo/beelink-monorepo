@@ -235,6 +235,12 @@ export class CreateOrderDto {
   @IsOptional()
   @IsISO8601({ strict: true })
   placedAt?: string;
+
+  @ApiPropertyOptional({ nullable: true, type: String, format: 'uuid', description: 'The affiliate the sale came by (IMPULSEIA-107): active, with the programme on and crediting live. Absent or null credits nobody.' })
+  @IsOptional()
+  @IsUUID()
+  @lowerCase
+  affiliateId?: string | null;
 }
 
 export class UpdateOrderStatusDto implements UpdateOrderStatusPayload {
@@ -278,6 +284,12 @@ export class ListOrdersDto implements OrderListQuery {
   @IsUUID()
   @lowerCase
   customerId?: string;
+
+  @ApiPropertyOptional({ format: 'uuid', description: "One affiliate's orders only (IMPULSEIA-107); another shop's affiliate finds none." })
+  @IsOptional()
+  @IsUUID()
+  @lowerCase
+  affiliateId?: string;
 
   // `@Type(() => Number)` and not the pipe's implicit conversion — apps/api/AGENTS.md, rule 6.
   @ApiPropertyOptional({ minimum: 1, maximum: ORDERS_PAGE_MAX, default: 1 })

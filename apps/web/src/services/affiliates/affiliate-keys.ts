@@ -8,4 +8,9 @@ export const affiliateKeys = {
   people: (slug: string) => [...affiliateKeys.shop(slug), "people"] as const,
   list: (slug: string, status: string | null, page: number) => [...affiliateKeys.people(slug), "list", status ?? "ALL", page] as const,
   person: (slug: string, affiliateId: string) => [...affiliateKeys.people(slug), "one", affiliateId] as const,
+  /** The money (IMPULSEIA-107): an affiliate's statement pages, what is owed, and an order's affiliate — dropped together when any of it moves. */
+  money: (slug: string) => [...affiliateKeys.shop(slug), "money"] as const,
+  statement: (slug: string, affiliateId: string, page: number) => [...affiliateKeys.money(slug), "statement", affiliateId, page] as const,
+  owed: (slug: string) => [...affiliateKeys.money(slug), "owed"] as const,
+  order: (slug: string, number: number) => [...affiliateKeys.money(slug), "order", number] as const,
 }

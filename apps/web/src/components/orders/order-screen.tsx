@@ -15,6 +15,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // App
 import type { WebMessages } from "@/locales"
 import { AppLink } from "@/components/app-link"
+import { OrderAffiliateSection } from "@/components/affiliates/order-affiliate-section"
 import { OrderConversationSection } from "@/components/conversations/order-conversation-section"
 import { OrderLabelSection } from "@/components/orders/order-label-section"
 import { usePaymentSeen } from "@/components/orders/use-payment-seen"
@@ -121,6 +122,7 @@ export function OrderScreen({ slug, number, messages, web }: OrderScreenProps) {
           ) : undefined
         }
         conversation={<OrderConversationSection slug={slug} number={current.number} locale={defaultLocale} messages={messages} />}
+        affiliate={<OrderAffiliateSection slug={slug} number={current.number} locale={defaultLocale} messages={messages} />}
         linkComponent={AppLink}
         messages={messages}
       />

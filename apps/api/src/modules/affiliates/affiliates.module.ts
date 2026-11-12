@@ -5,6 +5,9 @@ import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module.js';
 import { StoresModule } from '../stores/stores.module.js';
 import { AffiliateCommissionSweeper } from './affiliate-commission-sweeper.js';
+import { AffiliateMoneyController } from './affiliate-money.controller.js';
+import { AffiliateMoneyService } from './affiliate-money.service.js';
+import { AffiliateOrderChangesService } from './affiliate-order-changes.service.js';
 import { AffiliateInvitationsService } from './affiliate-invitations.service.js';
 import { AffiliateLinksService } from './affiliate-links.service.js';
 import { AffiliateSaleMailer } from './affiliate-sale-mailer.js';
@@ -23,13 +26,24 @@ import { StorefrontAffiliatesController } from './storefront-affiliates.controll
  * invited accepts it. AF5 (IMPULSEIA-105): the link on the shop window and the visits it brings.
  * AF6 (IMPULSEIA-106): the clock's part of an order's commission — falling due — and the e-mails a
  * sale owes; what an order does to it goes through `affiliate-orders.ts`, inside the order's own
- * transaction.
+ * transaction. AF7 (IMPULSEIA-107): the shop's money — whom an order is credited to, each affiliate's
+ * statement, adjustments and payouts, and what is owed by due day.
  * StoresModule for who owns the shop; AuthModule for the session an account made
  * by an invite opens with. PrismaModule and MailModule are global.
  */
 @Module({
   imports: [StoresModule, AuthModule],
-  controllers: [AffiliatesController, CommissionTablesController, StoreAffiliatesController, AffiliateInvitesController, StorefrontAffiliatesController],
-  providers: [AffiliatesService, CommissionTablesService, StoreAffiliatesService, AffiliateInvitationsService, AffiliateLinksService, AffiliateCommissionSweeper, AffiliateSaleMailer],
+  controllers: [AffiliatesController, CommissionTablesController, StoreAffiliatesController, AffiliateInvitesController, StorefrontAffiliatesController, AffiliateMoneyController],
+  providers: [
+    AffiliatesService,
+    CommissionTablesService,
+    StoreAffiliatesService,
+    AffiliateInvitationsService,
+    AffiliateLinksService,
+    AffiliateCommissionSweeper,
+    AffiliateSaleMailer,
+    AffiliateMoneyService,
+    AffiliateOrderChangesService,
+  ],
 })
 export class AffiliatesModule {}

@@ -39,6 +39,7 @@ export class AffiliateProgramOverviewResponse implements AffiliateProgramOvervie
   @ApiProperty({ type: AffiliateProgramResponse }) program!: AffiliateProgramResponse;
   @ApiProperty({ type: [CommissionTableSummaryResponse], description: 'The default table first, then by name.' }) tables!: CommissionTableSummaryResponse[];
   @ApiProperty({ type: [AffiliatePayoutPeriodResponse], description: "The running month's three periods, at the saved delay." }) periods!: AffiliatePayoutPeriodResponse[];
+  @ApiProperty({ description: 'Whether this deployment credits orders to affiliates yet: off until the privacy policy names them (AFFILIATE_LINKS_ENABLED).' }) linksLive!: boolean;
 }
 
 export class CommissionProductRateResponse implements CommissionProductRate {

@@ -197,6 +197,9 @@ model Store {
   /// Its affiliates' commissions and statements (IMPULSEIA-106).
   affiliateCommissions AffiliateCommission[]
   affiliateEntries     AffiliateEntry[]
+  /// What it paid its affiliates, and the orders it moved between them (IMPULSEIA-107).
+  affiliatePayouts            AffiliatePayout[]
+  affiliateAttributionChanges AffiliateAttributionChange[]
   /// Its affiliate programme (IMPULSEIA-101); none until the owner first opens it.
   affiliateProgram  AffiliateProgram?
   commissionTables  CommissionTable[]
