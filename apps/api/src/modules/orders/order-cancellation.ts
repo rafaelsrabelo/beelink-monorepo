@@ -2,6 +2,7 @@
 import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
+import { revokeOrderCommission } from '../affiliates/affiliate-orders.js';
 import { revokeOrderCashback } from '../cashback/cashback-orders.js';
 import { returnCashback } from '../cashback/cashback-redemption.js';
 import { refreshBooks } from '../customers/customer-books.js';
@@ -11,7 +12,7 @@ import { returnStock } from './order-stock.js';
 /**
  * What cancelling an order takes back, whoever cancels it — the shop from the panel or the customer
  * while it is received: the order off the customer's books, the stock placing it took, the use of
- * its coupon, the credit it spent and the cashback it earned. Only what it took: an order from before orders counted stock
+ * its coupon, the credit it spent, the cashback it earned and its affiliate's commission. Only what it took: an order from before orders counted stock
  * gives nothing back.
  */
 export async function settleCancellation(
@@ -24,4 +25,5 @@ export async function settleCancellation(
   const now = new Date();
   await returnCashback(tx, order.id, now);
   await revokeOrderCashback(tx, order.id, 'CANCELLED', now);
+  await revokeOrderCommission(tx, order.id, 'CANCELLED', now);
 }

@@ -194,6 +194,9 @@ model Store {
   coupons           Coupon[]
   /// Its cashback rules (BEELINK-238); none until first saved.
   cashbackSettings  CashbackSettings?
+  /// Its affiliates' commissions and statements (IMPULSEIA-106).
+  affiliateCommissions AffiliateCommission[]
+  affiliateEntries     AffiliateEntry[]
   /// Its affiliate programme (IMPULSEIA-101); none until the owner first opens it.
   affiliateProgram  AffiliateProgram?
   commissionTables  CommissionTable[]

@@ -16,6 +16,7 @@ import type {
   ReorderLeftReason,
   CustomerOrderSituation,
   CustomerOrderSummary,
+  OrderAffiliateVisitInput,
   OrderFulfillment,
   OrderMarketingConsentInput,
   OrderOriginInput,
@@ -32,6 +33,7 @@ import type {
 import { OrderCashbackResponse } from '../../cashback/dto/cashback.response.js';
 import { ShippingWindowResponse } from '../../delivery/dto/delivery.response.js';
 import { cpfDigitsOf, IsCpf } from '../../../shared/http/cpf.js';
+import { UUID } from '../../affiliates/affiliates.constants.js';
 import { clickIdOf, FBCLID_MAX, FBP_MAX, fbpOf, ORIGIN_LABEL_MAX, originLabelOf, PAGE_URL_MAX, pageUrlOf, pastInstantOf, USER_AGENT_MAX, userAgentOf } from '../order-origin.js';
 import { ORDER_PAYMENT_CHANNELS, OrderPaymentBriefResponse, OrderPaymentResponse } from '../../payments/dto/payment.response.js';
 import { blankToNull, trim } from '../../stores/dto/store-fields.dto.js';
@@ -143,6 +145,25 @@ export class OrderMarketingConsentDto implements OrderMarketingConsentInput {
   pageUrl?: string | null;
 }
 
+/**
+ * The affiliate's link the buyer arrived by (IMPULSEIA-106), read by the web's order handler from
+ * the shop window's cookie. Like the origin, cleaned or dropped as it comes in — never a refusal:
+ * whether it credits anyone is the placement's to say, and a link must not cost a sale.
+ */
+export class OrderAffiliateVisitDto implements OrderAffiliateVisitInput {
+  @ApiProperty({ type: String, nullable: true, format: 'uuid', description: 'Not an id is taken as null.' })
+  @Transform(({ value }: Sent) => (typeof value === 'string' && UUID.test(value) ? value.toLowerCase() : null))
+  @IsOptional()
+  @IsString()
+  affiliateId!: string | null;
+
+  @ApiProperty({ type: String, nullable: true, format: 'date-time', description: 'When the link was followed. One in the future, or older than ninety days, is taken as null.' })
+  @Transform(({ value }: Sent) => pastInstantOf(value))
+  @IsOptional()
+  @IsString()
+  visitedAt!: string | null;
+}
+
 /** The cart as the shopper sends it: no price, no customer, no address — the API has them. */
 export class PlaceCustomerOrderDto implements PlaceCustomerOrderPayload {
   @ApiProperty({ type: [OrderItemDto], minItems: 1, maxItems: ORDER_ITEMS_MAX })
@@ -212,6 +233,12 @@ export class PlaceCustomerOrderDto implements PlaceCustomerOrderPayload {
   @ValidateNested()
   @Type(() => OrderMarketingConsentDto)
   marketingConsent?: OrderMarketingConsentDto;
+
+  @ApiPropertyOptional({ type: OrderAffiliateVisitDto, description: "The affiliate's link the buyer arrived by, read by the web's order handler from the shop's own cookie; checked again here." })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => OrderAffiliateVisitDto)
+  affiliateVisit?: OrderAffiliateVisitDto;
 }
 
 export class CustomerOrderItemResponse implements CustomerOrderItem {

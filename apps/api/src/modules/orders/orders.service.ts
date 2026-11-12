@@ -21,6 +21,7 @@ import { OrderStatusMailer } from './order-status-mailer.js';
 import { orderError, ORDERS_PAGE_SIZE, ORDERS_PAGE_SIZE_MAX } from './orders.constants.js';
 import { ORDER_INCLUDE, ORDER_SUMMARY_INCLUDE, toOrder, toOrderSummary } from './orders.mapper.js';
 import { releaseOrderCashback, revokeOrderCashback } from '../cashback/cashback-orders.js';
+import { dateOrderCommission, revokeOrderCommission } from '../affiliates/affiliate-orders.js';
 import { isOpen } from '../conversations/conversations.constants.js';
 import { noteOrderStatus } from '../conversations/order-status-notice.js';
 import { OrderPayments } from '../payments/order-payments.service.js';
@@ -246,8 +247,13 @@ export class OrdersService {
       const now = new Date();
       if (status === 'CANCELLED') await settleCancellation(tx, current);
       // The cashback follows the delivery (BEELINK-239): made usable by it, taken back by leaving it.
-      else if (current.status === 'DELIVERED') await revokeOrderCashback(tx, current.id, 'BACK', now);
+      // So does an affiliate's commission (IMPULSEIA-106): dated by the delivery, waiting again once it is left.
+      else if (current.status === 'DELIVERED') {
+        await revokeOrderCashback(tx, current.id, 'BACK', now);
+        await revokeOrderCommission(tx, current.id, 'BACK', now);
+      }
       const cashbackCents = status === 'DELIVERED' ? await releaseOrderCashback(tx, current.id, now) : null;
+      if (status === 'DELIVERED') await dateOrderCommission(tx, current.id, now);
       // Told to the customer in the conversation, before a move that closes it: the last line is why.
       // The system cancels for one reason alone, and the line says it (BEELINK-207).
       await noteOrderStatus(tx, { order: current, status, at: now, seen: false, cashbackCents, unpaid: by.actor === 'SYSTEM' });

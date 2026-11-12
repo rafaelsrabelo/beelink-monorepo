@@ -5,6 +5,7 @@ import { NextResponse, type NextRequest } from "next/server"
 import type { ApiErrorBody } from "@harness-monorepo/contracts"
 
 // App
+import { AFFILIATE_COOKIE, orderAffiliateVisitOf } from "@/lib/affiliate-cookie"
 import { callApi } from "@/lib/api"
 import { clientIpOf, readJsonBody, refuseCrossOrigin } from "@/lib/bff"
 import { clearCustomerSessionCookies, setCustomerSessionCookies } from "@/lib/customer-session-cookies"
@@ -17,8 +18,11 @@ function isCart(body: unknown): body is Record<string, unknown> {
   return typeof body === "object" && body !== null && !Array.isArray(body)
 }
 
+/** What only the shop's cookies may say, taken out of what the page sent. */
+const COOKIE_FIELDS = new Set(["origin", "marketingConsent", "affiliateVisit"])
+
 function withoutOrigin(cart: Record<string, unknown>): Record<string, unknown> {
-  return Object.fromEntries(Object.entries(cart).filter(([field]) => field !== "origin" && field !== "marketingConsent"))
+  return Object.fromEntries(Object.entries(cart).filter(([field]) => !COOKIE_FIELDS.has(field)))
 }
 
 function refusal(statusCode: number, errorCode: string, message: string) {
@@ -33,10 +37,11 @@ function refusal(statusCode: number, errorCode: string, message: string) {
  * place an order in the shopper's name. The API's answer goes back as it came — the placed order,
  * or its refusal and code — with a renewed pair stored on the way.
  *
- * Where the buyer came from, and their yes to the shop's pixel, are read here and nowhere else
- * (BEELINK-275): from the shop's own cookies on this request, which is why this handler is under
- * the shop's path. What the page's body says in those two fields is dropped — a script on the page
- * does not get to say which campaign sold, nor that its visitor consented.
+ * Where the buyer came from, their yes to the shop's pixel, and the affiliate's link they followed
+ * are read here and nowhere else (BEELINK-275, IMPULSEIA-106): from the shop's own cookies on this
+ * request, which is why this handler is under the shop's path. What the page's body says in those
+ * fields is dropped — a script on the page does not get to say which campaign sold, that its visitor
+ * consented, nor whom the sale is credited to.
  *
  * An order that took a coupon may have taken its last use, and a shown coupon may be what the shop
  * window says of a first purchase: such an order drops the shop's kept offers (`revalidateOffers`),
@@ -52,7 +57,11 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
 
   const sent = (await readJsonBody(request)) ?? {}
   // Anything but an object is the API's to refuse, as it came.
-  const body = isCart(sent) ? { ...withoutOrigin(sent), ...orderOriginOf(request, slug, await marketingConsentAt(request, slug), Date.now()) } : sent
+  const now = Date.now()
+  const affiliateVisit = orderAffiliateVisitOf(request.cookies.get(AFFILIATE_COOKIE)?.value, now)
+  const body = isCart(sent)
+    ? { ...withoutOrigin(sent), ...orderOriginOf(request, slug, await marketingConsentAt(request, slug), now), ...(affiliateVisit ? { affiliateVisit } : {}) }
+    : sent
   const clientIp = clientIpOf(request)
   const placed = await callAsShopper(request, slug, (accessToken) =>
     callApi({ path: `/stores/${encodeURIComponent(slug)}/customer/orders`, body, accessToken, clientIp }).catch(() => null),

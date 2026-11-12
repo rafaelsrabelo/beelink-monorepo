@@ -7,6 +7,7 @@ import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
+import { attributionOf, holdOrderCommission, type PlacedAffiliateVisit } from '../affiliates/affiliate-orders.js';
 import { earningForOrder, holdOrderCashback } from '../cashback/cashback-orders.js';
 import { redeemCashback } from '../cashback/cashback-redemption.js';
 import { noteOrderStatus } from '../conversations/order-status-notice.js';
@@ -86,6 +87,8 @@ export interface Placement {
   origin?: PlacedOrigin | null;
   /** The buyer's yes to the shop's pixel as it stood, and what was kept with it; absent or null is no consent, and nothing is written. */
   marketingConsent?: PlacedMarketingConsent | null;
+  /** The affiliate's link the buyer arrived by (IMPULSEIA-106), as the shop window's cookie kept it; checked again here. Absent on a sale registered in the panel. */
+  affiliateVisit?: PlacedAffiliateVisit | null;
   /** Who it is for, inside the transaction: a customer registered with the order goes back with a refusal. */
   customerOf: (tx: Tx) => Promise<string>;
 }
@@ -176,8 +179,11 @@ export class OrderPlacement {
         throw new BadRequestException(orderError('ORDER_PAYMENT_NOT_ACCEPTED', 'The shop does not take that payment'));
       }
       const cashbackUsedCents = priced.cashbackUse?.appliedCents ?? 0;
+      const parts = earningPartsOf(lines, priced, cashbackUsedCents);
       // What it will earn, at the shop's rules as they are now (BEELINK-239).
-      const cashback = await earningForOrder(tx, storeId, earningPartsOf(lines, priced, cashbackUsedCents));
+      const cashback = await earningForOrder(tx, storeId, parts);
+      // Whom it is credited to, checked now: a link that credits nobody places the order all the same (IMPULSEIA-106).
+      const attribution = await attributionOf(tx, storeId, placement.affiliateVisit ?? null, now);
 
       const order = await tx.order.create({
         data: {
@@ -205,6 +211,8 @@ export class OrderPlacement {
           cashbackEarnedCents: cashback?.earnedCents ?? 0,
           cashbackRateBps: cashback?.rateBps ?? null,
           ...originColumnsOf(placement.origin, placement.marketingConsent),
+          affiliateId: attribution?.affiliateId ?? null,
+          affiliateVisitAt: attribution?.visitedAt ?? null,
           ...(placement.marketingConsent ? { marketingConsent: { create: placement.marketingConsent } } : {}),
           note: placement.note,
           placedAt: placement.placedAt,
@@ -230,6 +238,9 @@ export class OrderPlacement {
       if (priced.coupon) await redeemCoupon(tx, priced.coupon.id, order.id, priced.couponDiscountCents);
       if (cashbackUsedCents > 0) await redeemCashback(tx, { storeId, customerId, orderId: order.id, cents: cashbackUsedCents, now });
       if (cashback) await holdOrderCashback(tx, { storeId, customerId, orderId: order.id, earnedCents: cashback.earnedCents, validityDays: cashback.validityDays });
+      if (attribution) {
+        await holdOrderCommission(tx, { storeId, orderId: order.id, customerId, contactEmail: placement.contactEmail ?? null, attribution, parts, productIds: lines.map((line) => line.productId) });
+      }
       await refreshBooks(tx, customerId);
       // The conversation is born with the order, its first status the first line. Told now, whatever
       // day the shopkeeper dated the sale; not news to a customer who placed it themselves.
