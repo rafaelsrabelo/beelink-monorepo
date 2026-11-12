@@ -106,3 +106,11 @@ encerrar não é excluir.
 - O dinheiro (extrato, "quanto devo") e tirar a foto ou a frase: AF7.
 - A área `/afiliado` e a edição de foto, frase, Pix e telefone pelo afiliado: AF8.
 - Entrar com Google pelo convite: o painel não tem Google (AF3).
+
+## Correção — depois do cadastro, a página não recomeça (11/11)
+
+A decisão "O cadastro pelo convite grava a sessão por `/api/session/…`" dizia que, depois, a página
+recomeçaria (`startOver`). Não recomeça: o convite já foi usado, e a página recarregada mostraria
+"Convite não encontrado" no lugar do link. A tela de pronto aparece ali mesmo. Não há o que limpar: o
+cadastro só é oferecido a quem não está conectado, então a aba não guarda leitura de outra pessoa.
+Quem sai de outra conta para aceitar (`Sair e continuar`), esse sim recomeça a página.
