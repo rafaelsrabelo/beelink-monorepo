@@ -60,7 +60,7 @@ export function AffiliateHomePanel({ home, copied, onCopy, messages = defaultMes
             </h2>
             <p className="text-muted-foreground text-sm">{text.linkHelp}</p>
           </div>
-          <AffiliateCopyLink url={home.link} name={text.link} copied={copied} onCopy={onCopy} messages={messages} />
+          <AffiliateCopyLink url={home.link} name={text.link} label={text.copyLink} copied={copied} onCopy={onCopy} messages={messages} />
           <p className="text-muted-foreground text-xs">{home.table}</p>
         </section>
       ) : null}

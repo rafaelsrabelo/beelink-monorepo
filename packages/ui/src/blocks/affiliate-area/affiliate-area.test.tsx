@@ -74,7 +74,7 @@ describe("the affiliate's own area (IMPULSEIA-108)", () => {
     expect(screen.getByText("R$ 30,00")).toBeInTheDocument()
     expect(screen.getByText("30 de nov. · R$ 120,00")).toBeInTheDocument()
     expect(screen.getByText("Tabela Padrão · 10% por venda")).toBeInTheDocument()
-    await userEvent.click(screen.getByRole("button", { name: "Copiar o link de Seu link" }))
+    await userEvent.click(screen.getByRole("button", { name: "Copiar o seu link" }))
     expect(onCopy).toHaveBeenCalledWith("https://bee-link.com.br/loja-da-ana/maria")
     expect(screen.getByText("Visitas pelo link")).toBeInTheDocument()
     await expectNoA11yViolations(container)

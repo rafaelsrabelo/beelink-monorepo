@@ -3951,6 +3951,7 @@ export const en: UiMessages = {
       nextNone: "No delivered sale waiting for its payment day.",
       link: "Your link",
       linkHelp: "Whoever buys after opening this link counts as your sale.",
+      copyLink: "Copy your link",
       table: "{table} table · {rate} per sale",
       paused: "The shop paused you: your links open the shop, but do not count sales for now.",
       ended: "You no longer sell for this shop. Your history and payouts stay here.",

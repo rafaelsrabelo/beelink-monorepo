@@ -4552,6 +4552,7 @@ export interface UiMessages {
       nextNone: string
       link: string
       linkHelp: string
+      copyLink: string
       /** `{table}` · `{rate}`. */
       table: string
       paused: string

@@ -25,7 +25,7 @@ import { areaWordsOf } from "./affiliate-area-words"
 export interface AffiliateShopScreenProps {
   slug: string
   /** The section the address asks for; one the standing does not offer opens the front page. */
-  tab: string
+  tab: AffiliateAreaTab
   origin: string
   locale: string
   messages: UiMessages

@@ -3952,6 +3952,7 @@ export const ptBR: UiMessages = {
       nextNone: "Nenhuma venda entregue esperando o dia do pagamento.",
       link: "Seu link",
       linkHelp: "Quem compra depois de abrir este link conta como venda sua.",
+      copyLink: "Copiar o seu link",
       table: "Tabela {table} · {rate} por venda",
       paused: "A loja pausou a sua participação: seus links abrem a loja, mas não contam vendas agora.",
       ended: "Sua participação nesta loja foi encerrada. O histórico e os pagamentos continuam aqui.",

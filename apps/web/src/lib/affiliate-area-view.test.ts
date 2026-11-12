@@ -8,7 +8,7 @@ import type { AffiliateHome, AffiliateOrder } from "@harness-monorepo/contracts"
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 
 // App
-import { affiliateShopHrefOf, homeViewOf, orderViewOf, productLinkViewOf, shopCardOf } from "./affiliate-area-view"
+import { affiliateShopHrefOf, areaTabOf, homeViewOf, orderViewOf, productLinkViewOf, shopCardOf } from "./affiliate-area-view"
 import { profileFormOf, profilePatchOf } from "./affiliate-profile-form"
 
 const text = defaultMessages.affiliateArea
@@ -30,8 +30,16 @@ const home: AffiliateHome = {
 describe("the affiliate's area in words (IMPULSEIA-108)", () => {
   it("addresses a shop's page and its sections", () => {
     expect(affiliateShopHrefOf("loja da ana")).toBe("/afiliado/loja%20da%20ana")
-    expect(affiliateShopHrefOf("loja", "orders")).toBe("/afiliado/loja?aba=orders")
+    expect(affiliateShopHrefOf("loja", "orders")).toBe("/afiliado/loja?aba=vendas")
+    expect(affiliateShopHrefOf("loja", "statement")).toBe("/afiliado/loja?aba=extrato")
     expect(affiliateShopHrefOf("loja", "home")).toBe("/afiliado/loja")
+  })
+
+  it("reads the section from the address's word, the payout e-mail's included, else the front page", () => {
+    expect(areaTabOf("extrato")).toBe("statement")
+    expect(areaTabOf("dados")).toBe("profile")
+    expect(areaTabOf("statement")).toBe("home")
+    expect(areaTabOf(undefined)).toBe("home")
   })
 
   it("says a shop's balance, below zero with its sign", () => {

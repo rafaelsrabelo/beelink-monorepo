@@ -2,6 +2,7 @@
 import type { AffiliateHome, AffiliateOrder, AffiliateProductLink, AffiliateReceivedPayout, AffiliateShop } from "@harness-monorepo/contracts"
 import type { AffiliateHomeView, AffiliateOrderView, AffiliatePayoutView, AffiliateProductLinkView, AffiliateShopCardView } from "@harness-monorepo/ui/lib/affiliate-area"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
+import type { AffiliateAreaTab } from "@harness-monorepo/ui/blocks/affiliate-area/affiliate-area-tabs"
 
 // UI
 import { ratePercentOf } from "@harness-monorepo/ui/lib/cashback"
@@ -18,10 +19,19 @@ export interface AreaWords extends MoneyWords {
   origin: string
 }
 
+/** Each section's word in the address (`?aba=`), as the product speaks: the payout's e-mail links to `extrato`. The front page has none. */
+const TAB_WORDS: Record<AffiliateAreaTab, string> = { home: "", products: "produtos", orders: "vendas", statement: "extrato", profile: "dados" }
+
 /** The address of one shop's page in the area, and of one of its sections. */
-export function affiliateShopHrefOf(storeSlug: string, tab?: string): string {
+export function affiliateShopHrefOf(storeSlug: string, tab: AffiliateAreaTab = "home"): string {
   const base = `/afiliado/${encodeURIComponent(storeSlug)}`
-  return tab && tab !== "home" ? `${base}?aba=${tab}` : base
+  return TAB_WORDS[tab] ? `${base}?aba=${TAB_WORDS[tab]}` : base
+}
+
+/** The section an address asks for; a word that names none is the front page. */
+export function areaTabOf(word: string | undefined): AffiliateAreaTab {
+  const found = (Object.entries(TAB_WORDS) as [AffiliateAreaTab, string][]).find(([, each]) => each !== "" && each === word)
+  return found ? found[0] : "home"
 }
 
 export function shopCardOf(shop: AffiliateShop, money: (cents: number) => string): AffiliateShopCardView {
