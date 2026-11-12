@@ -22,11 +22,12 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import { AppLink } from "@/components/app-link"
+import { AffiliateDocumentRecord } from "@/components/affiliates/affiliate-document-record"
 import { AffiliateMoneySection } from "@/components/affiliates/affiliate-money-section"
 import { AffiliateShowcaseSection } from "@/components/affiliates/affiliate-showcase-section"
 import { affiliateErrorOf } from "@/lib/affiliate-form"
 import { affiliateDateFormatter, affiliateLinkOf, affiliateRecordViewOf, affiliateTableOptionsOf, identityMissingOf, recordFormOf, recordPatchOf } from "@/lib/affiliate-people"
-import { useAffiliateProgram } from "@/services/affiliates/affiliate-hooks"
+import { useAffiliateProgram, useCommissionTable } from "@/services/affiliates/affiliate-hooks"
 import { AffiliateError } from "@/services/affiliates/affiliate-requests"
 import { useActOnAffiliate, useCancelAffiliateInvite, useShopAffiliate, useUpdateAffiliate } from "@/services/affiliates/shop-affiliate-hooks"
 
@@ -54,6 +55,9 @@ export function AffiliateRecordScreen({ slug, affiliateId, origin, locale, messa
   const update = useUpdateAffiliate(slug, affiliateId)
   const act = useActOnAffiliate(slug, affiliateId)
   const cancel = useCancelAffiliateInvite(slug, affiliateId)
+  const makeOwn = useUpdateAffiliate(slug, affiliateId)
+  // The shared table they are on, to start their own commission from (12/11/2026).
+  const shared = useCommissionTable(slug, affiliate.data && !affiliate.data.table.personal ? affiliate.data.table.id : undefined)
   const [draft, setDraft] = useState<AffiliateRecordFormValues | null>(null)
   const [issues, setIssues] = useState<AffiliateRecordIssues>({})
   const [saved, setSaved] = useState(false)
@@ -113,6 +117,7 @@ export function AffiliateRecordScreen({ slug, affiliateId, origin, locale, messa
       {/* Someone still invited has no books, and nothing on the window (IMPULSEIA-107). */}
       {current.status !== "INVITED" ? <AffiliateMoneySection slug={slug} affiliateId={current.id} pixKey={current.pixKey} locale={locale} messages={messages} /> : null}
       {current.status !== "INVITED" ? <AffiliateShowcaseSection slug={slug} affiliate={current} messages={messages} /> : null}
+      <AffiliateDocumentRecord slug={slug} affiliate={current} locale={locale} messages={messages} />
       <AffiliateRecordForm
         value={value}
         onChange={(next) => {
@@ -121,14 +126,25 @@ export function AffiliateRecordScreen({ slug, affiliateId, origin, locale, messa
           setDraft(next)
         }}
         onSubmit={submit}
-        tables={affiliateTableOptionsOf(program.data.tables, locale)}
+        tables={affiliateTableOptionsOf(program.data.tables, locale, current.table.personal ? { tableId: current.table.id, label: text.record.ownCommission } : undefined)}
+        own={current.table.personal ? { editHref: `/admin/${slug}/affiliates/tables/${current.table.id}` } : null}
+        onMakeOwn={
+          shared.data
+            ? () => {
+                const table = shared.data
+                makeOwn.mutate({ commission: { defaultRateBps: table.defaultRateBps, categoryRates: table.categoryRates, productRates: table.rates } })
+              }
+            : undefined
+        }
+        makingOwn={makeOwn.isPending}
+        linkComponent={AppLink}
         tableLocked={current.status === "ENDED"}
         identityMissing={identityMissingOf(current)}
         issues={issues}
         pending={update.isPending}
         pristine={"pristine" in outcome}
         saved={saved}
-        error={update.error ? affiliateErrorOf(codeOf(update.error), text.errors) : undefined}
+        error={(update.error ?? makeOwn.error) ? affiliateErrorOf(codeOf(update.error ?? makeOwn.error), text.errors) : undefined}
         messages={messages}
       />
       <AffiliateRecordActions status={current.status} onAction={onAction} busy={busy} notice={notice} error={actionError ? affiliateErrorOf(codeOf(actionError), text.errors) : undefined} messages={messages} />

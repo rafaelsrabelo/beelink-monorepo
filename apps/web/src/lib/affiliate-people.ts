@@ -1,6 +1,6 @@
 // Types
-import type { CommissionTableSummary, CreateAffiliatePayload, ShopAffiliate, ShopAffiliateSummary, UpdateAffiliatePayload } from "@harness-monorepo/contracts"
-import type { AffiliateInviteFormValues, AffiliateInviteIssues, AffiliateListItemView, AffiliateRecordFormValues, AffiliateRecordIssues, AffiliateRecordView, AffiliateTableOption } from "@harness-monorepo/ui/lib/affiliates"
+import type { CommissionTableSummary, ShopAffiliate, ShopAffiliateSummary, UpdateAffiliatePayload } from "@harness-monorepo/contracts"
+import type { AffiliateListItemView, AffiliateRecordFormValues, AffiliateRecordIssues, AffiliateRecordView, AffiliateTableOption } from "@harness-monorepo/ui/lib/affiliates"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // UI
@@ -20,11 +20,9 @@ import { cpfLineOf } from "@/lib/customer-identity"
 
 type Text = UiMessages["affiliates"]
 
-const NAME = { min: 2, max: 120 }
 const NOTE_MAX = 500
 /** The API keeps a phone as 12 to 15 digits with the country code; a Brazilian one is typed with 10 or 11. */
 const PHONE_DIGITS = { min: 10, max: 15 }
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 const lengthOf = (text: string): number => [...text].length
 const digitsOf = (text: string): string => text.replace(/\D/g, "")
@@ -47,31 +45,14 @@ export function affiliateListItemOf(affiliate: ShopAffiliateSummary, text: Text[
   }
 }
 
-/** The tables an affiliate can be put on, the default first, as the programme lists them. */
-export function affiliateTableOptionsOf(tables: readonly CommissionTableSummary[], locale: string): AffiliateTableOption[] {
-  return tables.map((table) => ({ id: table.id, name: table.name, rate: ratePercentOf(table.defaultRateBps, locale) }))
-}
-
-export function emptyInviteOf(defaultTableId: string): AffiliateInviteFormValues {
-  return { name: "", email: "", tableId: defaultTableId, phone: "", cpf: "", note: "" }
-}
-
-/** The invite as the API takes it, or what to correct, field by field. The phone and the CPF are required; a blank note is none. */
-export function invitePayloadOf(value: AffiliateInviteFormValues, text: Text["affiliateIssues"]): { payload: CreateAffiliatePayload } | { issues: AffiliateInviteIssues } {
-  const name = value.name.trim()
-  const email = value.email.trim().toLowerCase()
-  const phone = value.phone.trim()
-  const note = value.note.trim()
-  const issues: AffiliateInviteIssues = {
-    ...(lengthOf(name) < NAME.min || lengthOf(name) > NAME.max ? { name: text.name } : {}),
-    ...(EMAIL.test(email) ? {} : { email: text.email }),
-    ...(value.tableId ? {} : { tableId: text.table }),
-    ...(isPhone(phone) ? {} : { phone: text.phone }),
-    ...(isCpf(value.cpf) ? {} : { cpf: text.cpf }),
-    ...(lengthOf(note) > NOTE_MAX ? { note: text.note } : {}),
-  }
-  if (Object.keys(issues).length > 0) return { issues }
-  return { payload: { name, email, tableId: value.tableId, phone, cpf: digitsOf(value.cpf), note: note || null } }
+/**
+ * The tables an affiliate can be put on, the default first, as the programme lists them: the shared
+ * ones, and their own commission when they have one (12/11/2026) — another's own is nobody else's.
+ */
+export function affiliateTableOptionsOf(tables: readonly CommissionTableSummary[], locale: string, own?: { tableId: string; label: string }): AffiliateTableOption[] {
+  return tables
+    .filter((table) => table.affiliate === null || table.id === own?.tableId)
+    .map((table) => ({ id: table.id, name: table.id === own?.tableId ? own.label : table.name, rate: ratePercentOf(table.defaultRateBps, locale) }))
 }
 
 /** The affiliate's own address in the shop window: `<origin>/<shop>/<name>`, once they chose the name. */
