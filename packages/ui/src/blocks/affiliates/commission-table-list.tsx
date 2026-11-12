@@ -64,6 +64,7 @@ export function CommissionTableList({ tables, hrefOf, onCreate, onEdit, onDelete
               <p className="flex items-center gap-2 font-medium">
                 <span className="truncate">{table.name}</span>
                 {table.isDefault ? <Badge variant="secondary">{text.defaultBadge}</Badge> : null}
+                {table.ownerName ? <Badge variant="outline">{format(text.ownBadge, { name: table.ownerName })}</Badge> : null}
               </p>
               <p className="text-muted-foreground text-sm">
                 {format(text.rate, { rate: ratePercentOf(table.defaultRateBps, locale) })} ·{" "}

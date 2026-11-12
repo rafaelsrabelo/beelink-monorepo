@@ -1,5 +1,5 @@
 // Block
-import type { AffiliateInviteFormValues, AffiliateListItemView, AffiliateRecordFormValues, AffiliateRecordView, AffiliateTableOption } from "@harness-monorepo/ui/lib/affiliates"
+import type { AffiliateListItemView, AffiliateRecordFormValues, AffiliateRecordView, AffiliateTableOption } from "@harness-monorepo/ui/lib/affiliates"
 
 export const tableOptions: AffiliateTableOption[] = [
   { id: "t-padrao", name: "Padrão", rate: "10%" },
@@ -12,7 +12,6 @@ export const people: AffiliateListItemView[] = [
   { id: "a-ana", name: "Ana Lima", email: "ana@exemplo.com", status: "PAUSED", tableName: "Padrão", since: "Desde 2 de out." },
 ]
 
-export const inviteValue: AffiliateInviteFormValues = { name: "Maria Souza", email: "maria@exemplo.com", tableId: "t-padrao", phone: "(85) 98888-1234", cpf: "529.982.247-25", note: "" }
 
 export const record: AffiliateRecordView = {
   name: "João Silva",

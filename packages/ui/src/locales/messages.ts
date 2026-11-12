@@ -4139,6 +4139,8 @@ export interface UiMessages {
       create: string
       /** Marks the table born with the programme. */
       defaultBadge: string
+      /** `{name}`: marks an affiliate's own table (12/11/2026). */
+      ownBadge: string
       /** `{rate}`: the table's own rate. */
       rate: string
       /** `{count}`, 2 or more: the products with a rate of their own on it. */
@@ -4242,26 +4244,112 @@ export interface UiMessages {
       /** `{from}`, `{to}`, `{total}`. */
       range: string
     }
-    /** Inviting someone, in a dialog. */
-    inviteDialog: {
+    /** The step-by-step invite (the user's design, 12/11/2026). */
+    wizard: {
+      back: string
+      next: string
+      send: string
+      sending: string
+      /** `{step}`, `{total}`. */
+      progress: string
+      stepsLabel: string
+      /** Read aloud for the asterisk of a required field. */
+      required: string
+      steps: Record<"person" | "commission" | "document" | "review", { label: string; hint: string; title: string; subtitle: string; cardTitle: string; cardDescription: string }>
+      person: { name: string; email: string; emailHelp: string; phone: string; cpf: string }
+      commission: {
+        startFrom: string
+        startFromHelp: string
+        base: string
+        baseHelp: string
+        decrease: string
+        increase: string
+        sliderLabel: string
+        exceptions: string
+        exceptionsHelp: string
+        search: string
+        noResults: string
+        customize: string
+        reset: string
+        /** `{price}`, `{earn}`. */
+        earn: string
+        /** `{name}`: the rate of a category or a product. */
+        rateOf: string
+        /** `{name}`. */
+        expand: string
+        ownTag: string
+        /** `{name}`: the start table, when nothing changed. */
+        startsFrom: string
+        /** `{rate}`. */
+        inheritBase: string
+        /** `{rate}`. */
+        inheritCategory: string
+        /** `{count}`, 2 or more. */
+        products: string
+        productsOne: string
+        /** `{count}`, 2 or more. */
+        customized: string
+        customizedOne: string
+        noCategory: string
+      }
+      document: {
+        type: string
+        /** `{side}`. */
+        drop: string
+        dropActive: string
+        choose: string
+        replace: string
+        remove: string
+        uploading: string
+        tip: string
+        later: string
+        incomplete: string
+        stillUploading: string
+        tooLarge: string
+        wrongType: string
+        sides: Record<"front" | "back", string>
+        types: Record<"RG" | "CNH" | "CIN" | "RNE_CRNM" | "PASSPORT", string>
+      }
+      review: {
+        person: string
+        commission: string
+        /** `{type}`. */
+        document: string
+        noDocument: string
+        editShort: string
+        /** `{step}`: read aloud with the button. */
+        edit: string
+        note: string
+        noteHelp: string
+        notAttached: string
+        product: string
+        category: string
+        baseHint: string
+      }
+      sent: {
+        title: string
+        /** `{email}`. */
+        description: string
+        another: string
+        view: string
+      }
+    }
+    /** An affiliate's identity document on their record (12/11/2026): the photos, or the upload when none was sent. */
+    documentSection: {
       title: string
-      description: string
-      name: string
-      email: string
-      emailHelp: string
-      table: string
-      tableHelp: string
-      phone: string
-      phoneHelp: string
-      cpf: string
-      cpfHelp: string
-      note: string
-      noteHelp: string
-      submit: string
-      submitting: string
+      pending: string
+      pendingHelp: string
+      send: string
+      sending: string
+      replace: string
       cancel: string
-      /** `{email}`. */
-      sent: string
+      /** `{side}`. */
+      openPdf: string
+      /** `{side}`. */
+      photoAlt: string
+      /** `{type}`, `{date}`. */
+      summary: string
+      expires: string
     }
     /** One affiliate, whole. Dates arrive formatted. */
     record: {
@@ -4294,6 +4382,12 @@ export interface UiMessages {
       cpfHelp: string
       table: string
       tableHelp: string
+      /** On an affiliate's own table (12/11/2026). */
+      ownCommission: string
+      ownCommissionHelp: string
+      editCommission: string
+      makeOwn: string
+      makingOwn: string
       note: string
       noteHelp: string
       save: string
@@ -4488,6 +4582,16 @@ export interface UiMessages {
       AFFILIATE_PAYOUT_EXCEEDS_BALANCE: string
       ORDER_NOT_FOUND: string
       ORDER_CANCELLED: string
+      COMMISSION_TABLE_PERSONAL: string
+      AFFILIATE_DOCUMENT_INVALID: string
+      AFFILIATE_DOCUMENT_UPLOAD_NOT_FOUND: string
+      AFFILIATE_DOCUMENT_NOT_FOUND: string
+      PRODUCT_CATEGORY_NOT_FOUND: string
+      UNSUPPORTED_MEDIA_TYPE: string
+      PAYLOAD_TOO_LARGE: string
+      UPLOAD_NOT_CONFIGURED: string
+      BAD_GATEWAY: string
+      RATE_LIMITED: string
       UNKNOWN: string
     }
     failed: string

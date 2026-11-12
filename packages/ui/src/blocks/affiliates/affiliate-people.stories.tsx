@@ -1,9 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 import { AffiliateConfirmDialog } from "./affiliate-confirm-dialog"
-import { AffiliateInviteDialog } from "./affiliate-invite-dialog"
 import { AffiliateListSection } from "./affiliate-list-section"
-import { inviteValue, invitedRecord, people, record, recordValue, recordValueMissing, tableOptions } from "./affiliate-people.fixtures"
+import { invitedRecord, people, record, recordValue, recordValueMissing, tableOptions } from "./affiliate-people.fixtures"
 import { AffiliateRecordActions } from "./affiliate-record-actions"
 import { AffiliateRecordDetails } from "./affiliate-record-details"
 import { AffiliateRecordForm } from "./affiliate-record-form"
@@ -48,27 +47,6 @@ export const ListaVazia: Story = {
         </AffiliateStatusTabs>
       </AffiliateListSection>
     </div>
-  ),
-}
-
-/** O convite, num diálogo. */
-export const Convidar: Story = {
-  render: () => <AffiliateInviteDialog open onOpenChange={noop} value={inviteValue} onChange={noop} onSubmit={noop} tables={tableOptions} />,
-}
-
-/** O convite recusado: os campos e a resposta da API. */
-export const ConvidarRecusado: Story = {
-  render: () => (
-    <AffiliateInviteDialog
-      open
-      onOpenChange={noop}
-      value={{ ...inviteValue, email: "maria@" }}
-      onChange={noop}
-      onSubmit={noop}
-      tables={tableOptions}
-      issues={{ email: "Informe um e-mail válido." }}
-      error="Este e-mail já é de um afiliado da loja."
-    />
   ),
 }
 
