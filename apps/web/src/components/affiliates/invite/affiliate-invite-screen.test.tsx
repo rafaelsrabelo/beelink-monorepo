@@ -38,7 +38,7 @@ const accept = vi.fn()
 const signUp = vi.fn()
 const signOut = vi.fn()
 const refetch = vi.fn()
-const mutation = (mutate: ReturnType<typeof vi.fn>, extra: object = {}) => ({ mutate, isPending: false, error: null, ...extra })
+const mutation = (mutate: ReturnType<typeof vi.fn>, extra: object = {}) => ({ mutate, isPending: false, error: null, data: undefined, ...extra })
 
 function renderScreen(props: { signedInEmail?: string | null; token?: string } = {}) {
   return render(<AffiliateInviteScreen token={props.token ?? "tok"} signedInEmail={props.signedInEmail ?? null} origin="https://beelink.com.br" locale="pt-BR" messages={ui} />)
@@ -54,8 +54,7 @@ beforeEach(() => {
 })
 
 describe("AffiliateInviteScreen (IMPULSEIA-104)", () => {
-  it("makes the account and accepts, then hands over the link", async () => {
-    signUp.mockImplementation((_payload, options: { onSuccess: (accepted: object) => void }) => options.onSuccess({ storeName: "Lessari", storeSlug: "lessari", slug: "joao" }))
+  it("makes the account and accepts", async () => {
     renderScreen()
 
     expect(screen.getByText("Disponível. Seu link fica beelink.com.br/lessari/joao")).toBeInTheDocument()
@@ -64,6 +63,12 @@ describe("AffiliateInviteScreen (IMPULSEIA-104)", () => {
     await userEvent.click(screen.getByRole("button", { name: "Criar conta e aceitar" }))
 
     expect(signUp).toHaveBeenCalledWith({ slug: "joao", pixKey: null, termsVersion: 3, name: "João Silva", password: "segredo123" }, expect.anything())
+  })
+
+  it("hands over the link once either way accepted", () => {
+    mocks.signUp.mockReturnValue(mutation(signUp, { data: { storeName: "Lessari", storeSlug: "lessari", slug: "joao" } }))
+    renderScreen()
+
     expect(screen.getByText("Pronto! Você vende pela Lessari")).toBeInTheDocument()
     expect(screen.getByText("https://beelink.com.br/lessari/joao")).toBeInTheDocument()
   })

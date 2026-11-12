@@ -13,9 +13,6 @@ import { Button, buttonVariants } from "@harness-monorepo/ui/components/button"
 import { format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
-// Types
-import type { AcceptedAffiliate } from "@harness-monorepo/contracts"
-
 // App
 import { AppLink } from "@/components/app-link"
 import { invitationViewOf } from "@/lib/affiliate-invite-form"
@@ -23,7 +20,7 @@ import { affiliateDateFormatter, affiliateLinkOf } from "@/lib/affiliate-people"
 import { AFFILIATE_INVITE_PATH, signInHrefOf } from "@/lib/panel-return"
 import { startOver } from "@/lib/start-over"
 import { useSignOut } from "@/services/auth/auth-hooks"
-import { useAffiliateInvitation } from "@/services/affiliates/affiliate-invite-hooks"
+import { useAcceptAffiliateInvite, useAffiliateInvitation, useAffiliateInviteSignUp } from "@/services/affiliates/affiliate-invite-hooks"
 import { AffiliateInviteError } from "@/services/affiliates/affiliate-invite-requests"
 import { AffiliateAcceptance } from "./affiliate-acceptance"
 
@@ -46,7 +43,9 @@ export function AffiliateInviteScreen({ token, signedInEmail, origin, locale, me
   const text = messages.affiliateInvite
   const invitation = useAffiliateInvitation(token)
   const signOut = useSignOut()
-  const [accepted, setAccepted] = useState<AcceptedAffiliate | null>(null)
+  const accept = useAcceptAffiliateInvite(token)
+  const signUpAndAccept = useAffiliateInviteSignUp(token)
+  const accepted = accept.data ?? signUpAndAccept.data
   const [copied, setCopied] = useState(false)
   const here = `${AFFILIATE_INVITE_PATH}?token=${encodeURIComponent(token)}`
 
@@ -121,7 +120,7 @@ export function AffiliateInviteScreen({ token, signedInEmail, origin, locale, me
       />
     )
   } else {
-    way = <AffiliateAcceptance token={token} invitation={data} signUp={!signedInEmail} host={new URL(origin).host} onTermsChanged={() => void invitation.refetch()} onAccepted={setAccepted} messages={messages} />
+    way = <AffiliateAcceptance token={token} invitation={data} signUp={!signedInEmail} host={new URL(origin).host} onTermsChanged={() => void invitation.refetch()} accept={accept} signUpAndAccept={signUpAndAccept} messages={messages} />
   }
 
   return card(
