@@ -3,7 +3,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 // Libs
 import { Transform, Type } from 'class-transformer';
-import { IsEmail, IsIn, IsInt, IsOptional, IsString, IsUUID, Matches, Max, MaxLength, Min, MinLength, ValidateIf } from 'class-validator';
+import { IsEmail, IsIn, IsInt, IsOptional, IsString, IsUUID, Matches, Max, MaxLength, Min, MinLength, ValidateIf, ValidateNested } from 'class-validator';
 
 // Types
 import type {
@@ -30,6 +30,7 @@ import {
   AFFILIATES_PAGE_SIZE_MAX,
   PIX_KEY_MAX,
 } from '../affiliates.constants.js';
+import { AffiliateCommissionDto, AffiliateDocumentDto } from './affiliate-commission.dto.js';
 
 /** The code a failed constraint answers, read by `ApiValidationPipe`. */
 const answering = (errorCode: AffiliateErrorCode) => ({ context: { errorCode } });
@@ -61,9 +62,23 @@ export class CreateAffiliateDto implements CreateAffiliatePayload {
   @MaxLength(EMAIL_MAX, AFFILIATE)
   email!: string;
 
-  @ApiProperty({ format: 'uuid', description: "One of the shop's commission tables." })
+  @ApiPropertyOptional({ format: 'uuid', description: "A table the shop shares — or `commission`, never both." })
+  // Asked for when there is no own commission; with both, the service refuses.
+  @ValidateIf((dto: CreateAffiliateDto) => dto.commission === undefined)
   @IsUUID('all', AFFILIATE)
-  tableId!: string;
+  tableId?: string;
+
+  @ApiPropertyOptional({ type: AffiliateCommissionDto, description: 'Their own commission — or `tableId`, never both.' })
+  @ValidateIf((dto: CreateAffiliateDto) => dto.commission !== undefined)
+  @ValidateNested(AFFILIATE)
+  @Type(() => AffiliateCommissionDto)
+  commission?: AffiliateCommissionDto;
+
+  @ApiPropertyOptional({ type: AffiliateDocumentDto, description: "Optional: the shop may attach it later, on the record (the user's design, 12/11/2026)." })
+  @IsOptional()
+  @ValidateNested(answering('AFFILIATE_DOCUMENT_INVALID'))
+  @Type(() => AffiliateDocumentDto)
+  document?: AffiliateDocumentDto;
 
   @ApiProperty({ example: '(11) 99999-8888', description: 'Required (the user\'s review, 12/11/2026). Kept as digits with the country code.' })
   @normaliseWhatsapp
@@ -88,10 +103,16 @@ export class CreateAffiliateDto implements CreateAffiliatePayload {
 
 /** A patch: a key left out is left alone, and a null note clears it. The phone and the CPF are corrected, never cleared. */
 export class UpdateAffiliateDto implements UpdateAffiliatePayload {
-  @ApiPropertyOptional({ format: 'uuid' })
+  @ApiPropertyOptional({ format: 'uuid', description: 'A shared table, or their own; never with `commission`.' })
   @IsOptional()
   @IsUUID('all', AFFILIATE)
   tableId?: string;
+
+  @ApiPropertyOptional({ type: AffiliateCommissionDto, description: 'Their own commission: made, or its rates replaced. Never with `tableId`.' })
+  @IsOptional()
+  @ValidateNested(AFFILIATE)
+  @Type(() => AffiliateCommissionDto)
+  commission?: AffiliateCommissionDto;
 
   @ApiPropertyOptional({ example: '(11) 99999-8888' })
   // Left out is left alone; null is refused — the phone and the CPF are corrected, never cleared.

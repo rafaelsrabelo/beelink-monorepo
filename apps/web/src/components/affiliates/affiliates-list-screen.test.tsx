@@ -21,14 +21,14 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: mocks.replace }
 const overview: AffiliateProgramOverview = {
   program: { enabled: true, attributionDays: 30, payoutDelayDays: 10, termsText: null, termsVersion: 0, updatedAt: "2026-11-11T12:00:00.000Z" },
   tables: [
-    { id: "t1", name: "Padrão", defaultRateBps: 1000, isDefault: true, productRateCount: 0, categoryRateCount: 0, affiliateCount: 1 },
-    { id: "t2", name: "Influencers", defaultRateBps: 1500, isDefault: false, productRateCount: 0, categoryRateCount: 0, affiliateCount: 0 },
+    { id: "t1", name: "Padrão", defaultRateBps: 1000, isDefault: true, productRateCount: 0, categoryRateCount: 0, affiliateCount: 1, affiliate: null },
+    { id: "t2", name: "Influencers", defaultRateBps: 1500, isDefault: false, productRateCount: 0, categoryRateCount: 0, affiliateCount: 0, affiliate: null },
   ],
   periods: [],
   linksLive: true,
 }
 const page: ShopAffiliatePage = {
-  affiliates: [{ id: "a1", name: "Maria Souza", email: "maria@exemplo.com", phone: null, slug: null, status: "INVITED", table: { id: "t1", name: "Padrão" }, invitedAt: "2026-11-11T13:00:00.000Z", acceptedAt: null }],
+  affiliates: [{ id: "a1", name: "Maria Souza", email: "maria@exemplo.com", phone: null, slug: null, status: "INVITED", table: { id: "t1", name: "Padrão", personal: false }, invitedAt: "2026-11-11T13:00:00.000Z", acceptedAt: null }],
   total: 1,
   page: 1,
   pageSize: 20,

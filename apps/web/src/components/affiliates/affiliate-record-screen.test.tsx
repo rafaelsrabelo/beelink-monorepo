@@ -24,8 +24,8 @@ vi.mock("@/components/affiliates/affiliate-showcase-section", () => ({ Affiliate
 const overview: AffiliateProgramOverview = {
   program: { enabled: true, attributionDays: 30, payoutDelayDays: 10, termsText: null, termsVersion: 0, updatedAt: "2026-11-11T12:00:00.000Z" },
   tables: [
-    { id: "t1", name: "Padrão", defaultRateBps: 1000, isDefault: true, productRateCount: 0, categoryRateCount: 0, affiliateCount: 1 },
-    { id: "t2", name: "Influencers", defaultRateBps: 1500, isDefault: false, productRateCount: 0, categoryRateCount: 0, affiliateCount: 0 },
+    { id: "t1", name: "Padrão", defaultRateBps: 1000, isDefault: true, productRateCount: 0, categoryRateCount: 0, affiliateCount: 1, affiliate: null },
+    { id: "t2", name: "Influencers", defaultRateBps: 1500, isDefault: false, productRateCount: 0, categoryRateCount: 0, affiliateCount: 0, affiliate: null },
   ],
   periods: [],
   linksLive: true,
@@ -38,7 +38,7 @@ const joao: ShopAffiliate = {
   cpf: null,
   slug: "joao",
   status: "ACTIVE",
-  table: { id: "t1", name: "Padrão" },
+  table: { id: "t1", name: "Padrão", personal: false },
   invitedAt: "2026-11-11T13:00:00.000Z",
   acceptedAt: "2026-11-11T15:00:00.000Z",
   note: null,
@@ -49,6 +49,7 @@ const joao: ShopAffiliate = {
   termsAcceptedAt: "2026-11-11T15:00:00.000Z",
   endedAt: null,
   invite: null,
+  document: null,
 }
 const update = vi.fn()
 const act = vi.fn()

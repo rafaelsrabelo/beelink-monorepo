@@ -1,5 +1,5 @@
 // Types
-import type { AffiliateErrorCode, AffiliatePayoutMethod, AffiliateProgramPayload, AffiliateStatus, AuthErrorCode, CatalogErrorCode, OrderErrorCode } from '@harness-monorepo/contracts';
+import type { AffiliateDocumentType, AffiliateErrorCode, AffiliatePayoutMethod, AffiliateProgramPayload, AffiliateStatus, AuthErrorCode, CatalogErrorCode, OrderErrorCode } from '@harness-monorepo/contracts';
 
 /**
  * What a programme reads the first time its owner opens it (IMPULSEIA-101): switched off, so nothing
@@ -29,6 +29,24 @@ export const COMMISSION_TABLE_NAME_MAX = 60;
 export const COMMISSION_TABLES_MAX = 50;
 
 export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * The rows one own commission may carry (12/11/2026): past this, a pasted catalogue rather than a
+ * condition — and a shop that wants every product priced uses a table, edited a page at a time.
+ */
+export const OWN_COMMISSION_RATES_MAX = 500;
+
+export const AFFILIATE_DOCUMENT_TYPES = ['RG', 'CNH', 'CIN', 'RNE_CRNM', 'PASSPORT'] as const satisfies readonly AffiliateDocumentType[];
+/** A phone's photo of a document: larger than a logo's 2 MB, inside what Cloudinary takes for an image. */
+export const DOCUMENT_MAX_BYTES = 8 * 1024 * 1024;
+/** A photo, or a PDF of the document (the user's design, 12/11/2026). */
+export const DOCUMENT_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'] as const;
+/** Where the photos land inside the account's folder, one subfolder per shop. */
+export const DOCUMENT_FOLDER = 'affiliate-documents';
+/** How long a photo waits to be named by an invite or a record before the sweeper deletes it. */
+export const DOCUMENT_UPLOAD_TTL_MS = 24 * 60 * 60 * 1000;
+/** How long a link to a photo works: enough to look, short enough that a copied link dies. */
+export const DOCUMENT_LINK_TTL_MS = 10 * 60 * 1000;
 
 /** Every code this module answers: its own, and those it shares with the catalogue, the accounts and the orders. */
 type AnsweredCode =

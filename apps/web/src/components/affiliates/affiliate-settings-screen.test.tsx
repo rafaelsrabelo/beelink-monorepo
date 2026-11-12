@@ -18,7 +18,7 @@ vi.mock("@/services/affiliates/affiliate-hooks", () => ({ useAffiliateProgram: m
 
 const overview: AffiliateProgramOverview = {
   program: { enabled: false, attributionDays: 30, payoutDelayDays: 10, termsText: null, termsVersion: 0, updatedAt: "2026-11-11T12:00:00.000Z" },
-  tables: [{ id: "t1", name: "Padrão", defaultRateBps: 1000, isDefault: true, productRateCount: 0, categoryRateCount: 0, affiliateCount: 0 }],
+  tables: [{ id: "t1", name: "Padrão", defaultRateBps: 1000, isDefault: true, productRateCount: 0, categoryRateCount: 0, affiliateCount: 0, affiliate: null }],
   periods: [
     { firstDay: "2026-11-01", lastDay: "2026-11-10", dueOn: "2026-11-20" },
     { firstDay: "2026-11-11", lastDay: "2026-11-20", dueOn: "2026-11-30" },

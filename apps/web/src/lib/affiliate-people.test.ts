@@ -21,7 +21,7 @@ const joao: ShopAffiliate = {
   cpf: "52998224725",
   slug: "joao",
   status: "ACTIVE",
-  table: { id: "t2", name: "Influencers" },
+  table: { id: "t2", name: "Influencers", personal: false },
   invitedAt: "2026-11-11T13:00:00.000Z",
   acceptedAt: "2026-11-12T02:30:00.000Z",
   note: "Indicou amigas",
@@ -32,6 +32,7 @@ const joao: ShopAffiliate = {
   termsAcceptedAt: "2026-11-12T02:30:00.000Z",
   endedAt: null,
   invite: null,
+  document: null,
 }
 
 describe("the affiliates in words (IMPULSEIA-104)", () => {

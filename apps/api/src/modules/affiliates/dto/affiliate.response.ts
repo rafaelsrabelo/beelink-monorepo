@@ -17,6 +17,7 @@ import type {
 } from '@harness-monorepo/contracts';
 
 // App
+import { ShopAffiliateDocumentResponse } from './affiliate-document.response.js';
 import { AuthSessionResponse } from '../../auth/dto/auth.response.js';
 import { AFFILIATE_STATUSES } from '../affiliates.constants.js';
 
@@ -25,6 +26,7 @@ const SLUG_REASONS = ['INVALID', 'RESERVED', 'TAKEN'] as const satisfies readonl
 class AffiliateTableRefResponse {
   @ApiProperty({ format: 'uuid' }) id!: string;
   @ApiProperty() name!: string;
+  @ApiProperty({ description: 'Their own commission, a table nobody else may be put on.' }) personal!: boolean;
 }
 
 class AffiliateInviteStateResponse {
@@ -54,6 +56,7 @@ export class ShopAffiliateResponse extends ShopAffiliateSummaryResponse implemen
   @ApiProperty({ nullable: true, type: String, format: 'date-time' }) termsAcceptedAt!: string | null;
   @ApiProperty({ nullable: true, type: String, format: 'date-time' }) endedAt!: string | null;
   @ApiProperty({ nullable: true, type: AffiliateInviteStateResponse, description: 'While invited only.' }) invite!: AffiliateInviteStateResponse | null;
+  @ApiProperty({ nullable: true, type: ShopAffiliateDocumentResponse, description: 'Said without its photos; null for one invited before it was asked.' }) document!: ShopAffiliateDocumentResponse | null;
 }
 
 export class ShopAffiliatePageResponse implements ShopAffiliatePage {

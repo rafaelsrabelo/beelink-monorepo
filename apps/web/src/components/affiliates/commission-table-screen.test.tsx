@@ -29,7 +29,7 @@ const table: CommissionTable = {
   defaultRateBps: 1000,
   isDefault: true,
   rates: [{ productId: "p1", rateBps: 2500 }],
-  categoryRates: [{ categoryId: "c1", rateBps: 1500 }],
+  categoryRates: [{ categoryId: "c1", rateBps: 1500 }], affiliate: null,
   updatedAt: "2026-11-11T12:00:00.000Z",
 }
 const products = [

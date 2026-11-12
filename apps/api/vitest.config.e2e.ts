@@ -35,6 +35,8 @@ export default defineConfig({
       CUSTOMER_MESSAGE_RATE_LIMIT_MAX: '1000',
       // And the menu reads, whose real limit is five in ten minutes: one suite reads more than that.
       PRODUCT_IMPORT_RATE_LIMIT_MAX: '1000',
+      // And the photos of affiliates' documents: one suite sends more of them than a shop would in a minute.
+      UPLOAD_RATE_LIMIT_MAX: '1000',
       // Google's door switched on; its suite stands a fake Google in for the real one.
       GOOGLE_CLIENT_ID: 'test-client.apps.googleusercontent.com',
       GOOGLE_CLIENT_SECRET: 'test-secret',

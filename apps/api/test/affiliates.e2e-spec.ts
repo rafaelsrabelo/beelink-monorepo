@@ -19,7 +19,7 @@ import type {
 
 // App
 import { PrismaService } from '../src/shared/prisma/prisma.service.js';
-import { affiliateIdentity } from './support/affiliate-identity.js';
+import { affiliateDocumentFor, affiliateIdentity } from './support/affiliate-identity.js';
 import { PASSWORD, login, newEmail, signUpAndSignIn } from './support/auth-flow.js';
 import { createTestApp } from './support/create-test-app.js';
 import { clearInbox, countMessages, tokenFromLink, waitForMessage } from './support/mailpit.js';
@@ -69,7 +69,7 @@ describe("a shop's affiliates: the invite, and accepting it", () => {
 
   async function invite(body: Partial<{ name: string; email: string; tableId: string; phone: string | null; note: string | null }> = {}): Promise<ShopAffiliate & { token: string }> {
     const email = body.email ?? newEmail('afiliado');
-    const response = await call('POST', base, owner, { ...affiliateIdentity(), name: 'João Silva', tableId: defaultTable, ...body, email });
+    const response = await call('POST', base, owner, { ...affiliateIdentity(), document: await affiliateDocumentFor(prisma, base), name: 'João Silva', tableId: defaultTable, ...body, email });
     if (response.statusCode !== 201) throw new Error(`POST affiliates answered ${response.statusCode}: ${response.payload}`);
     const message = await waitForMessage(email.toLowerCase());
     return { ...response.json<ShopAffiliate>(), token: tokenFromLink(message.Text, INVITE_PATH) };
@@ -88,7 +88,7 @@ describe("a shop's affiliates: the invite, and accepting it", () => {
   describe('the shop invites', () => {
     it('makes an INVITED affiliate and e-mails the invite, from the shop, to bee-link\'s own page', async () => {
       const email = newEmail('joao');
-      const response = await call('POST', base, owner, { name: '  João Silva  ', email: email.toUpperCase(), tableId: defaultTable, phone: '(11) 98888-7777', cpf: '529.982.247-25', note: 'Veio da feira' });
+      const response = await call('POST', base, owner, { name: '  João Silva  ', email: email.toUpperCase(), tableId: defaultTable, phone: '(11) 98888-7777', cpf: '529.982.247-25', note: 'Veio da feira', document: await affiliateDocumentFor(prisma, base) });
 
       expect(response.statusCode).toBe(201);
       expect(response.json<ShopAffiliate>()).toMatchObject({
@@ -112,16 +112,16 @@ describe("a shop's affiliates: the invite, and accepting it", () => {
 
     it('refuses an e-mail another live affiliate of the shop has, and takes it again once that one ended', async () => {
       const email = newEmail('dupla');
-      await call('POST', base, owner, { ...affiliateIdentity(), name: 'Primeira', email, tableId: defaultTable });
+      await call('POST', base, owner, { ...affiliateIdentity(), document: await affiliateDocumentFor(prisma, base), name: 'Primeira', email, tableId: defaultTable });
 
-      const again = await call('POST', base, owner, { ...affiliateIdentity(), name: 'Segunda', email: email.toUpperCase(), tableId: defaultTable });
+      const again = await call('POST', base, owner, { ...affiliateIdentity(), document: await affiliateDocumentFor(prisma, base), name: 'Segunda', email: email.toUpperCase(), tableId: defaultTable });
       expect(again.statusCode).toBe(409);
       expect(errorOf(again)).toBe('AFFILIATE_EMAIL_TAKEN');
-      expect((await call('POST', '/api/stores/vizinha/affiliates', stranger, { ...affiliateIdentity(), name: 'Lá', email, tableId: (await call('GET', '/api/stores/vizinha/affiliate-program', stranger)).json<AffiliateProgramOverview>().tables[0]!.id })).statusCode).toBe(201);
+      expect((await call('POST', '/api/stores/vizinha/affiliates', stranger, { ...affiliateIdentity(), document: await affiliateDocumentFor(prisma, '/api/stores/vizinha/affiliates'), name: 'Lá', email, tableId: (await call('GET', '/api/stores/vizinha/affiliate-program', stranger)).json<AffiliateProgramOverview>().tables[0]!.id })).statusCode).toBe(201);
 
       const active = await activeAffiliate();
       await call('POST', `${base}/${active.id}/end`, owner);
-      expect((await call('POST', base, owner, { ...affiliateIdentity(), name: 'De volta', email: active.email, tableId: defaultTable })).statusCode).toBe(201);
+      expect((await call('POST', base, owner, { ...affiliateIdentity(), document: await affiliateDocumentFor(prisma, base), name: 'De volta', email: active.email, tableId: defaultTable })).statusCode).toBe(201);
     });
 
     it.each([
@@ -136,7 +136,7 @@ describe("a shop's affiliates: the invite, and accepting it", () => {
       ['a note past 500 characters', { note: 'a'.repeat(501) }],
       ['a table that is no id', { tableId: 'tabela' }],
     ])('refuses an affiliate with %s', async (_, change) => {
-      const response = await call('POST', base, owner, { ...affiliateIdentity(), name: 'João', email: newEmail('x'), tableId: defaultTable, ...change });
+      const response = await call('POST', base, owner, { ...affiliateIdentity(), document: await affiliateDocumentFor(prisma, base), name: 'João', email: newEmail('x'), tableId: defaultTable, ...change });
 
       expect(response.statusCode).toBe(400);
       expect(errorOf(response)).toBe('AFFILIATE_INVALID');
@@ -146,14 +146,14 @@ describe("a shop's affiliates: the invite, and accepting it", () => {
       const first = await activeAffiliate();
       expect((await call('PATCH', `${base}/${first.id}`, owner, { cpf: '529.982.247-25' })).statusCode).toBe(200);
 
-      const again = await call('POST', base, owner, { ...affiliateIdentity(), name: 'Segunda', email: newEmail('cpf-b'), tableId: defaultTable, cpf: '52998224725' });
+      const again = await call('POST', base, owner, { ...affiliateIdentity(), document: await affiliateDocumentFor(prisma, base), name: 'Segunda', email: newEmail('cpf-b'), tableId: defaultTable, cpf: '52998224725' });
       expect(again.statusCode).toBe(409);
       expect(errorOf(again)).toBe('AFFILIATE_CPF_TAKEN');
       const vizinha = (await call('GET', '/api/stores/vizinha/affiliate-program', stranger)).json<AffiliateProgramOverview>().tables[0]!.id;
-      expect((await call('POST', '/api/stores/vizinha/affiliates', stranger, { ...affiliateIdentity(), name: 'Lá', email: newEmail('cpf-c'), tableId: vizinha, cpf: '52998224725' })).statusCode).toBe(201);
+      expect((await call('POST', '/api/stores/vizinha/affiliates', stranger, { ...affiliateIdentity(), document: await affiliateDocumentFor(prisma, '/api/stores/vizinha/affiliates'), name: 'Lá', email: newEmail('cpf-c'), tableId: vizinha, cpf: '52998224725' })).statusCode).toBe(201);
 
       await call('POST', `${base}/${first.id}/end`, owner);
-      expect((await call('POST', base, owner, { ...affiliateIdentity(), name: 'De volta', email: newEmail('cpf-d'), tableId: defaultTable, cpf: '52998224725' })).statusCode).toBe(201);
+      expect((await call('POST', base, owner, { ...affiliateIdentity(), document: await affiliateDocumentFor(prisma, base), name: 'De volta', email: newEmail('cpf-d'), tableId: defaultTable, cpf: '52998224725' })).statusCode).toBe(201);
     });
 
     it('completes and corrects the phone and the CPF on the record, and never clears them', async () => {
@@ -182,9 +182,9 @@ describe("a shop's affiliates: the invite, and accepting it", () => {
     it("refuses another shop's table, and is the owner's alone", async () => {
       const foreign = (await call('GET', '/api/stores/vizinha/affiliate-program', stranger)).json<AffiliateProgramOverview>().tables[0]!.id;
       for (const tableId of [foreign, MISSING]) {
-        expect(errorOf(await call('POST', base, owner, { ...affiliateIdentity(), name: 'João', email: newEmail('x'), tableId }))).toBe('COMMISSION_TABLE_NOT_FOUND');
+        expect(errorOf(await call('POST', base, owner, { ...affiliateIdentity(), document: await affiliateDocumentFor(prisma, base), name: 'João', email: newEmail('x'), tableId }))).toBe('COMMISSION_TABLE_NOT_FOUND');
       }
-      expect((await call('POST', base, stranger, { ...affiliateIdentity(), name: 'João', email: newEmail('x'), tableId: defaultTable })).statusCode).toBe(403);
+      expect((await call('POST', base, stranger, { ...affiliateIdentity(), document: await affiliateDocumentFor(prisma, base), name: 'João', email: newEmail('x'), tableId: defaultTable })).statusCode).toBe(403);
       expect((await call('GET', base)).statusCode).toBe(401);
     });
 

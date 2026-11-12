@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 // App
 import { env } from '../../shared/config/env.js';
+import { signCloudinary } from './cloudinary-signature.js';
 import { ACCEPTED_TYPES, MAX_UPLOAD_BYTES } from './uploads.constants.js';
 
 /** What the adapter needs to sign and address an upload. All three, or uploads are not configured. */
@@ -81,7 +82,7 @@ export class CloudinaryService {
     // Only what is signed goes in here. `file` and `api_key` are sent but never signed — that is
     // Cloudinary's rule, and including them produces a signature the service rejects.
     const timestamp = Math.floor(Date.now() / 1000).toString();
-    const signature = await sign({ folder: config.folder, timestamp }, config.apiSecret);
+    const signature = await signCloudinary({ folder: config.folder, timestamp }, config.apiSecret);
 
     const body = new FormData();
     body.append('file', new Blob([new Uint8Array(file.bytes)], { type: file.type }), file.filename);
@@ -93,7 +94,7 @@ export class CloudinaryService {
     let payload: unknown;
 
     try {
-      const response = await fetch(`https://api.cloudinary.com/v1_1/${config.cloudName}/image/upload`, {
+      const response = await fetch(`${env.CLOUDINARY_API_URL}/v1_1/${config.cloudName}/image/upload`, {
         method: 'POST',
         body,
         signal: AbortSignal.timeout(TIMEOUT_MS),
@@ -134,30 +135,11 @@ export class CloudinaryService {
 }
 
 /**
- * Cloudinary's own signing scheme: the signed parameters, sorted by name, joined as a query
- * string, with the API secret appended, digested with SHA-1. The algorithm is theirs and not a
- * choice made here — it authenticates a request with a shared secret, and the service echoes the
- * string it signed back on a refusal, which is what this was checked against.
- */
-async function sign(params: Record<string, string>, apiSecret: string): Promise<string> {
-  const payload = Object.keys(params)
-    .sort()
-    .map((name) => `${name}=${params[name]}`)
-    .join('&');
-
-  const digest = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(payload + apiSecret));
-
-  return Array.from(new Uint8Array(digest))
-    .map((byte) => byte.toString(16).padStart(2, '0'))
-    .join('');
-}
-
-/**
  * Cloudinary's own explanation, for the log and never for the caller. Read defensively: a refusal
  * from a proxy in front of it is not JSON, and a diagnostic that throws while reporting a failure
  * replaces the real error with its own.
  */
-async function reasonOf(response: Response): Promise<string> {
+export async function reasonOf(response: Response): Promise<string> {
   try {
     const body: unknown = await response.json();
     if (typeof body === 'object' && body !== null && 'error' in body) {

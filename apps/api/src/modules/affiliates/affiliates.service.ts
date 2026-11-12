@@ -11,7 +11,7 @@ import { brasiliaDayOf } from '../billing/billing-dates.js';
 import { StoresService } from '../stores/stores.service.js';
 import { payoutPeriodsOfMonth } from './affiliate-payout-calendar.js';
 import { openProgram } from './affiliate-program.js';
-import { toAffiliateProgram, toCommissionTableSummary } from './affiliates.mapper.js';
+import { tableOwnerInclude, toAffiliateProgram, toCommissionTableSummary } from './affiliates.mapper.js';
 import type { AffiliateProgramDto } from './dto/affiliate-program.dto.js';
 
 /** A shop's affiliate programme as its owner keeps it (IMPULSEIA-101): the rules, and its tables listed. */
@@ -56,9 +56,10 @@ export class AffiliatesService {
     const program = await openProgram(this.prisma, storeId);
     const tables = await this.prisma.commissionTable.findMany({
       where: { storeId },
-      orderBy: [{ isDefault: 'desc' }, { name: 'asc' }],
+      // The default first, then the shared ones, then each affiliate's own (12/11/2026), by name.
+      orderBy: [{ isDefault: 'desc' }, { affiliateId: { sort: 'asc', nulls: 'first' } }, { name: 'asc' }],
       // Ended affiliates are no one's to move: a table with only those is deleted, and they go to the default one.
-      include: { _count: { select: { rates: true, categoryRates: true, affiliates: { where: { status: { not: 'ENDED' } } } } } },
+      include: { ...tableOwnerInclude, _count: { select: { rates: true, categoryRates: true, affiliates: { where: { status: { not: 'ENDED' } } } } } },
     });
 
     return {

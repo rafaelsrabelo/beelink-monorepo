@@ -4,6 +4,11 @@ import { Module } from '@nestjs/common';
 // App
 import { AuthModule } from '../auth/auth.module.js';
 import { StoresModule } from '../stores/stores.module.js';
+import { UploadsModule } from '../uploads/uploads.module.js';
+import { AffiliateDocumentSweeper } from './affiliate-document-sweeper.js';
+import { AffiliateDocumentsController } from './affiliate-documents.controller.js';
+import { AffiliateDocumentsService } from './affiliate-documents.service.js';
+import { AffiliateRegistrationService } from './affiliate-registration.service.js';
 import { AffiliateAreaController } from './affiliate-area.controller.js';
 import { AffiliateAreaService } from './affiliate-area.service.js';
 import { AffiliateCommissionSweeper } from './affiliate-commission-sweeper.js';
@@ -32,12 +37,13 @@ import { StorefrontAffiliatesController } from './storefront-affiliates.controll
  * transaction. AF7 (IMPULSEIA-107): the shop's money — whom an order is credited to, each affiliate's
  * statement, adjustments and payouts, and what is owed by due day. AF8 (IMPULSEIA-108): the
  * affiliate's own area — what an account reads of the shops it sells for — and the e-mail a payout owes.
- * StoresModule for who owns the shop; AuthModule for the session an account made
+ * Since the user's review of 12/11/2026: an affiliate's own commission, and their identity document,
+ * whose photos UploadsModule keeps privately. StoresModule for who owns the shop; AuthModule for the session an account made
  * by an invite opens with. PrismaModule and MailModule are global.
  */
 @Module({
-  imports: [StoresModule, AuthModule],
-  controllers: [AffiliatesController, CommissionTablesController, StoreAffiliatesController, AffiliateInvitesController, StorefrontAffiliatesController, AffiliateMoneyController, AffiliateAreaController],
+  imports: [StoresModule, AuthModule, UploadsModule],
+  controllers: [AffiliatesController, CommissionTablesController, StoreAffiliatesController, AffiliateInvitesController, StorefrontAffiliatesController, AffiliateMoneyController, AffiliateAreaController, AffiliateDocumentsController],
   providers: [
     AffiliatesService,
     CommissionTablesService,
@@ -50,6 +56,9 @@ import { StorefrontAffiliatesController } from './storefront-affiliates.controll
     AffiliateOrderChangesService,
     AffiliatePayoutMailer,
     AffiliateAreaService,
+    AffiliateRegistrationService,
+    AffiliateDocumentsService,
+    AffiliateDocumentSweeper,
   ],
 })
 export class AffiliatesModule {}

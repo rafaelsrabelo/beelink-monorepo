@@ -93,6 +93,12 @@ const envSchema = z.object({
   CLOUDINARY_API_SECRET: z.string().min(1).optional(),
   /** Where the files land inside the account, so one Cloudinary can serve more than this product. */
   CLOUDINARY_FOLDER: z.string().min(1).default('bee-link'),
+  /**
+   * Cloudinary's API, where files are uploaded, deleted and downloaded. Only ever changed to point a
+   * local run or a test at a stand-in: the private documents of affiliates (12/11/2026) are read
+   * through it, and a browser check needs somewhere to send them that is not the real account.
+   */
+  CLOUDINARY_API_URL: z.url().default('https://api.cloudinary.com'),
 
   /**
    * MapTiler, for the panel's address box and the map beside it. Optional: without it the address
