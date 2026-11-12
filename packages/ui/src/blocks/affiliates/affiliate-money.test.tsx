@@ -8,10 +8,9 @@ import { expectNoA11yViolations } from "../../test/a11y"
 import { AffiliateAdjustmentDialog } from "./affiliate-adjustment-dialog"
 import { AffiliateBalanceCard } from "./affiliate-balance-card"
 import { AffiliateFilterChip } from "./affiliate-filter-chip"
-import { adjustmentValue, affiliateOptions, balance, creditedOrder, owed, payoutValue, settledOrder, shortBalance, showcase, statementRows, uncreditedOrder } from "./affiliate-money.fixtures"
+import { adjustmentValue, affiliateOptions, balance, creditedOrder, owed, payoutValue, settledOrder, shortBalance, statementRows, uncreditedOrder } from "./affiliate-money.fixtures"
 import { AffiliateOwedView } from "./affiliate-owed-view"
 import { AffiliatePayoutDialog } from "./affiliate-payout-dialog"
-import { AffiliateShowcaseCard } from "./affiliate-showcase-card"
 import { AffiliateStatement } from "./affiliate-statement"
 import { OrderAffiliateCard } from "./order-affiliate-card"
 import { OrderAffiliateDialog } from "./order-affiliate-dialog"
@@ -135,19 +134,6 @@ describe("an affiliate's money (IMPULSEIA-107)", () => {
     await userEvent.click(dialog.getByRole("button", { name: "Registrar" }))
     expect(onSubmit).toHaveBeenCalled()
     await expectNoA11yViolations(document.body)
-  })
-
-  it("lets the shop take the photo and the phrase off its window", async () => {
-    const onRemovePhoto = vi.fn()
-    const onRemoveTagline = vi.fn()
-    const { container } = render(<AffiliateShowcaseCard showcase={showcase} onRemovePhoto={onRemovePhoto} onRemoveTagline={onRemoveTagline} />)
-
-    expect(screen.getByRole("img", { name: "Foto de Maria Souza" })).toBeInTheDocument()
-    await userEvent.click(screen.getByRole("button", { name: "Tirar a foto" }))
-    await userEvent.click(screen.getByRole("button", { name: "Tirar a frase" }))
-    expect(onRemovePhoto).toHaveBeenCalled()
-    expect(onRemoveTagline).toHaveBeenCalled()
-    await expectNoA11yViolations(container)
   })
 })
 

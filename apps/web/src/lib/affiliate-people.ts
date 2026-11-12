@@ -1,6 +1,6 @@
 // Types
-import type { CommissionTableSummary, ShopAffiliate, ShopAffiliateSummary, UpdateAffiliatePayload } from "@harness-monorepo/contracts"
-import type { AffiliateListItemView, AffiliateRecordFormValues, AffiliateRecordIssues, AffiliateRecordView, AffiliateTableOption } from "@harness-monorepo/ui/lib/affiliates"
+import type { CommissionTable, CommissionTableSummary, ShopAffiliate, ShopAffiliateSummary, UpdateAffiliatePayload } from "@harness-monorepo/contracts"
+import type { AffiliateCommissionView, AffiliateListItemView, AffiliateRecordFormValues, AffiliateRecordIssues, AffiliateRecordView, AffiliateTableOption } from "@harness-monorepo/ui/lib/affiliates"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // UI
@@ -77,6 +77,26 @@ export function affiliateRecordViewOf(affiliate: ShopAffiliate, input: { text: T
       ...(affiliate.endedAt ? [format(text.endedOn, { date: date(affiliate.endedAt) })] : []),
     ],
     invite: affiliate.invite ? format(text.inviteOpen, { sent: date(affiliate.invite.sentAt), expires: date(affiliate.invite.expiresAt) }) : null,
+    photoUrl: affiliate.photoUrl,
+    tagline: affiliate.tagline,
+    note: affiliate.note,
+  }
+}
+
+/**
+ * What the table an affiliate is on pays, for the record's commission tab (12/11/2026): the general
+ * rate, the categories with a rate of their own by name — one since deleted drops out — and how many
+ * products have one.
+ */
+export function affiliateCommissionViewOf(table: Pick<CommissionTable, "defaultRateBps" | "categoryRates" | "rates">, categories: readonly { id: string; name: string }[], locale: string): AffiliateCommissionView {
+  const nameOf = new Map(categories.map((category) => [category.id, category.name]))
+  return {
+    general: ratePercentOf(table.defaultRateBps, locale),
+    categories: table.categoryRates.flatMap((rate) => {
+      const name = nameOf.get(rate.categoryId)
+      return name ? [{ name, rate: ratePercentOf(rate.rateBps, locale) }] : []
+    }),
+    productsOwn: table.rates.length,
   }
 }
 

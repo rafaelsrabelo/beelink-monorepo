@@ -3,10 +3,9 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 import { AffiliateAdjustmentDialog } from "./affiliate-adjustment-dialog"
 import { AffiliateBalanceCard } from "./affiliate-balance-card"
 import { AffiliateFilterChip } from "./affiliate-filter-chip"
-import { adjustmentValue, affiliateOptions, balance, creditedOrder, owed, payoutValue, settledOrder, shortBalance, showcase, statementRows, uncreditedOrder } from "./affiliate-money.fixtures"
+import { adjustmentValue, affiliateOptions, balance, creditedOrder, owed, payoutValue, settledOrder, shortBalance, statementRows, uncreditedOrder } from "./affiliate-money.fixtures"
 import { AffiliateOwedView } from "./affiliate-owed-view"
 import { AffiliatePayoutDialog } from "./affiliate-payout-dialog"
-import { AffiliateShowcaseCard } from "./affiliate-showcase-card"
 import { AffiliateStatement } from "./affiliate-statement"
 import { AffiliatesTabs } from "./affiliates-tabs"
 import { OrderAffiliateCard } from "./order-affiliate-card"
@@ -65,7 +64,7 @@ export const VendaEFiltro: Story = {
   ),
 }
 
-/** O saldo e o extrato na ficha; o saldo negativo; a vitrine. */
+/** O saldo e o extrato na ficha; o saldo negativo. */
 export const NaFicha: Story = {
   render: () => (
     <div className="flex max-w-4xl flex-col gap-6">
@@ -73,7 +72,6 @@ export const NaFicha: Story = {
         <AffiliateStatement rows={statementRows} page={1} pageSize={3} total={7} onPage={noop} />
       </AffiliateBalanceCard>
       <AffiliateBalanceCard balance={shortBalance} ordersHref="#pedidos" onPay={noop} onAdjust={noop} />
-      <AffiliateShowcaseCard showcase={showcase} onRemovePhoto={noop} onRemoveTagline={noop} />
     </div>
   ),
 }

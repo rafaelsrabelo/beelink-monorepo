@@ -119,9 +119,3 @@ export interface AffiliateOwedView {
   affiliates: AffiliateOwedRowView[]
 }
 
-/** What the shop window shows of an affiliate. */
-export interface AffiliateShowcaseView {
-  name: string
-  photoUrl: string | null
-  tagline: string | null
-}

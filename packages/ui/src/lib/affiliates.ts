@@ -112,6 +112,35 @@ export interface AffiliateRecordView {
   history: string[]
   /** While invited: when it went out and until when it works. */
   invite: string | null
+  /** What the shop window shows of them, which the shop may take off. */
+  photoUrl: string | null
+  tagline: string | null
+  /** The shop's own note; null when there is none. */
+  note: string | null
+}
+
+/** Up to two initials, for an affiliate with no photo. */
+export function initialsOf(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0]?.toUpperCase() ?? "")
+    .join("")
+}
+
+/** The record's sections (12/11/2026), each an address: `?aba=<tab>`. */
+export type AffiliateRecordTab = "geral" | "comissao" | "documento" | "financeiro" | "pedidos"
+
+export const AFFILIATE_RECORD_TABS = ["geral", "comissao", "documento", "financeiro", "pedidos"] as const satisfies readonly AffiliateRecordTab[]
+
+/** The commission an affiliate is on, in words: what the table pays, and what has a rate of its own. */
+export interface AffiliateCommissionView {
+  /** "10%". */
+  general: string
+  categories: { name: string; rate: string }[]
+  /** How many products have a rate of their own on the table. */
+  productsOwn: number
 }
 
 /** The record's own form: the table, and the shop's note. */
