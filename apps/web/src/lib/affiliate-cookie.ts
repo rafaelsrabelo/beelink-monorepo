@@ -16,15 +16,12 @@
 // Types
 import type { OrderAffiliateVisitInput } from "@harness-monorepo/contracts"
 
-// App
-import { shopHomeOf, type ShopAddress } from "./shop-address"
-
 export const AFFILIATE_COOKIE = "bl_affiliate"
 
 /**
- * The affiliate whose strip this browser closed, for as long as the browser stays open. Written by
- * the page, read by the server so the next page arrives without the strip; a link of another
- * affiliate shows theirs again.
+ * The cookie a closed strip used to leave, for the browser's session. Nothing writes or reads it
+ * since the band shows only where the link is in the address; an arrival still clears it, so a
+ * browser that holds one from before keeps nothing of it.
  */
 export const AFFILIATE_HIDDEN_COOKIE = "bl_affiliate_hidden"
 
@@ -71,9 +68,4 @@ export function affiliateVisitOf(raw: string | undefined, now: number): Affiliat
 export function orderAffiliateVisitOf(raw: string | undefined, now: number): OrderAffiliateVisitInput | null {
   const visit = affiliateVisitOf(raw, now)
   return visit ? { affiliateId: visit.affiliateId, visitedAt: new Date(visit.visitedAt).toISOString() } : null
-}
-
-/** The `Set-Cookie` the page writes when the strip is closed: the shop's path, and the browser's session alone. */
-export function hiddenCookieOf(shop: ShopAddress, affiliateId: string, secure: boolean): string {
-  return `${AFFILIATE_HIDDEN_COOKIE}=${encodeURIComponent(affiliateId)}; Path=${shopHomeOf(shop)}; SameSite=Lax${secure ? "; Secure" : ""}`
 }

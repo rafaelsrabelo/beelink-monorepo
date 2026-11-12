@@ -67,3 +67,19 @@ mesma altura de sempre, para não empurrar o conteúdo a cada página.
 ## Fora de escopo
 
 - O cabeçalho da loja, a linha do carrinho e do checkout, o cartão de prévia na área do afiliado.
+
+## Adendo — a faixa só pelo link, na cor primária (12/11)
+
+Rafael, testando em produção: entrando direto em `mutantesuplementos.com.br/` depois de ter aberto o
+link da Margarida, a faixa continuava dizendo "Comprando pela indicação de MARGARIDA".
+
+- **A faixa aparece só onde o link está no endereço**: a página inicial em `/<nome>` (na plataforma e
+  no domínio próprio) e qualquer página com `?afiliado=<nome>`, desde que esse nome seja o do
+  afiliado que a loja credita. Uma visita direta à loja não mostra faixa nenhuma.
+- **A atribuição não muda**: o `bl_affiliate` continua valendo pelos dias do programa e o pedido
+  continua creditado; o carrinho e o checkout continuam dizendo de quem é a indicação.
+- **Sem botão de fechar**: a faixa só aparece pelo link, então não há o que fechar. Nada mais grava
+  o `bl_affiliate_hidden`; a chegada ainda o apaga, para o navegador que guardou um de antes.
+  Nenhum cookie novo — a política publicada já nomeia os dois.
+- **A cor é a primária da loja** (`shop-primary`, com o texto legível sobre ela); o selo ganha um
+  fundo leve do mesmo texto, como destaque, legível numa primária escura e numa clara.

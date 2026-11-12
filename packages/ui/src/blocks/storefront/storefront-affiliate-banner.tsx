@@ -1,5 +1,5 @@
 // Libs
-import { CheckIcon, XIcon } from "lucide-react"
+import { CheckIcon } from "lucide-react"
 
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
@@ -13,20 +13,18 @@ export interface StorefrontAffiliateBannerProps {
   /** The affiliate's whole name, as the shop keeps it. */
   name: string
   photoUrl: string | null
-  /** Their own phrase, up to 100 characters: only on the page the link arrived at. */
+  /** Their own phrase, up to 100 characters. */
   tagline?: string | null
-  /** Hides the band. Absent, there is no button — the page the link arrived at is never closed. */
-  onDismiss?: () => void
   messages?: UiMessages
 }
 
 /**
  * Whom the visitor came by (IMPULSEIA-105), as the shopkeeper drew it: a band in the shop's brand
  * colour under its header — the affiliate's face, their whole name with the official-partner badge,
- * and what the link does for the visitor's orders. In the page's flow: it covers nothing. Closing it
- * hides the band and nothing else — the order is still credited to whoever's link it was.
+ * and what the link does for the visitor's orders. In the page's flow: it covers nothing. Drawn only
+ * where the link is in the address, so it has nothing to close.
  */
-export function StorefrontAffiliateBanner({ name, photoUrl, tagline = null, onDismiss, messages = defaultMessages }: StorefrontAffiliateBannerProps) {
+export function StorefrontAffiliateBanner({ name, photoUrl, tagline = null, messages = defaultMessages }: StorefrontAffiliateBannerProps) {
   const text = messages.storefront.affiliate
 
   return (
@@ -44,7 +42,7 @@ export function StorefrontAffiliateBanner({ name, photoUrl, tagline = null, onDi
               <p className="text-xs leading-snug text-shop-on-primary/80">{text.bannerLead}</p>
               <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
                 <p className="text-base leading-tight font-extrabold tracking-wide break-words uppercase shop-sm:text-lg">{name}</p>
-                <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-shop-on-primary/60 px-2.5 py-0.5 text-[11px] font-semibold tracking-wider uppercase">
+                <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-shop-on-primary/60 bg-shop-on-primary/10 px-2.5 py-0.5 text-[11px] font-semibold tracking-wider uppercase">
                   <CheckIcon aria-hidden="true" className="size-3" />
                   {text.partner}
                 </span>
@@ -54,16 +52,6 @@ export function StorefrontAffiliateBanner({ name, photoUrl, tagline = null, onDi
           </div>
           <p className="text-xs leading-snug text-shop-on-primary/85 shop-sm:ms-auto shop-sm:max-w-sm shop-sm:text-end shop-sm:text-sm">{text.bannerNote}</p>
         </div>
-        {onDismiss ? (
-          <button
-            type="button"
-            onClick={onDismiss}
-            aria-label={text.dismiss}
-            className="-me-2 flex size-11 shrink-0 items-center justify-center rounded-full hover:bg-shop-on-primary/10 shop-md:size-9"
-          >
-            <XIcon aria-hidden="true" className="size-4" />
-          </button>
-        ) : null}
       </div>
     </section>
   )

@@ -330,7 +330,6 @@ export interface UiMessages {
       note: string
       /** `{name}` — the same, said of the order: the affiliate reads the buyer's name on it. */
       noteDetail: string
-      dismiss: string
     }
     offers: {
       /** The strip's accessible name. */

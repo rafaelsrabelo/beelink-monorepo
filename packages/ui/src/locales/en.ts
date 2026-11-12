@@ -226,7 +226,6 @@ export const en: UiMessages = {
       bannerNote: "What you buy through this link counts for this referral.",
       note: "Recommended by {name}",
       noteDetail: "{name} will see your name on this order.",
-      dismiss: "Close referral",
     },
     offers: {
       region: "Shop offer",

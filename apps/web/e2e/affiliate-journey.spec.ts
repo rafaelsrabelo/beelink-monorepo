@@ -120,7 +120,7 @@ test.describe("a shop's affiliate, in the browser", () => {
 
     const visitor = await (await browser.newContext()).newPage()
 
-    await test.step("a visitor who follows the link is told whose recommendation brought them, everywhere it counts", async () => {
+    await test.step("a visitor who follows the link sees whose recommendation it is where the link is, and on the order", async () => {
       await visitor.goto(`/${slug}/maria`)
       // The link keeps its own address: the shop's home is drawn there, with the name in it.
       await expect(visitor).toHaveURL(new RegExp(`/${slug}/maria$`))
@@ -128,14 +128,23 @@ test.describe("a shop's affiliate, in the browser", () => {
       await expect(band.getByText("Você está na loja de")).toBeVisible()
       await expect(band.getByText("Maria Souza")).toBeVisible()
       await expect(band.getByText("Parceria oficial")).toBeVisible()
+      await expect(visitor.getByRole("button", { name: "Fechar indicação" })).toHaveCount(0)
       await expect.poll(async () => (await visitor.context().cookies()).some((cookie) => cookie.name === "bl_affiliate")).toBe(true)
 
+      // Straight to the shop: the referral still holds, and no band says so.
+      await visitor.goto(`/${slug}`)
+      await expect(visitor.getByRole("link", { name: /Whey/ }).first()).toBeVisible()
+      await expect(visitor.getByRole("region", { name: "Indicação" })).toHaveCount(0)
       await visitor.goto(`/${slug}/produtos/${productSlug}`)
-      // Every page after the arrival wears the same band, which the visitor may close.
+      await expect(visitor.getByRole("button", { name: "Adicionar ao carrinho" }).first()).toBeVisible()
+      await expect(visitor.getByRole("region", { name: "Indicação" })).toHaveCount(0)
+
+      // A page the link names her on wears it again.
+      await visitor.goto(`/${slug}/produtos/${productSlug}?afiliado=maria`)
       await expect(visitor.getByRole("region", { name: "Indicação" }).getByText("Maria Souza")).toBeVisible()
-      await expect(visitor.getByRole("button", { name: "Fechar indicação" })).toBeVisible()
       await visitor.getByRole("button", { name: "Adicionar ao carrinho" }).first().click()
 
+      // The order says whose it is whenever the referral holds.
       await visitor.goto(`/${slug}/carrinho`)
       await expect(visitor.getByText(/^Indicação de Maria/)).toBeVisible()
       await expect(visitor.getByText(/^Maria( Souza)? verá seu nome neste pedido\.$/)).toBeVisible()

@@ -1,7 +1,6 @@
 // Libs
 import { render, screen } from "@testing-library/react"
-import userEvent from "@testing-library/user-event"
-import { describe, expect, it, vi } from "vitest"
+import { describe, expect, it } from "vitest"
 
 // Locales
 import { en } from "../../locales/en"
@@ -44,14 +43,10 @@ describe("StorefrontAffiliateBanner", () => {
     expect(screen.queryByText(/“/)).toBeNull()
   })
 
-  it("has no close button unless it is handed what closing does, and calls it", async () => {
-    const onDismiss = vi.fn()
-    const { rerender } = render(<StorefrontAffiliateBanner name="Margarida Marino Pereira" photoUrl={null} />)
-    expect(screen.queryByRole("button")).toBeNull()
+  it("has nothing to close: it is drawn only where the link is in the address", () => {
+    render(<StorefrontAffiliateBanner name="Margarida Marino Pereira" photoUrl={null} />)
 
-    rerender(<StorefrontAffiliateBanner name="Margarida Marino Pereira" photoUrl={null} onDismiss={onDismiss} />)
-    await userEvent.click(screen.getByRole("button", { name: "Fechar indicação" }))
-    expect(onDismiss).toHaveBeenCalledOnce()
+    expect(screen.queryByRole("button")).toBeNull()
   })
 
   it("speaks the language it is handed", () => {
@@ -60,11 +55,11 @@ describe("StorefrontAffiliateBanner", () => {
     expect(screen.getByRole("region", { name: "Referral" })).toHaveTextContent("Official partner")
   })
 
-  it("has no accessibility violations, closable or not", async () => {
+  it("has no accessibility violations, with and without the phrase", async () => {
     const { container, rerender } = render(<StorefrontAffiliateBanner name="Margarida Marino Pereira" photoUrl={null} tagline="Meus favoritos" />)
     await expectNoA11yViolations(container)
 
-    rerender(<StorefrontAffiliateBanner name="Margarida Marino Pereira" photoUrl={null} onDismiss={() => undefined} />)
+    rerender(<StorefrontAffiliateBanner name="Margarida Marino Pereira" photoUrl={null} />)
     await expectNoA11yViolations(container)
   })
 })
