@@ -4,18 +4,7 @@
 import { useState } from "react"
 
 // UI
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@harness-monorepo/ui/components/alert-dialog"
-import { Button, buttonVariants } from "@harness-monorepo/ui/components/button"
-import { cn } from "@harness-monorepo/ui/lib/utils"
+import { Button } from "@harness-monorepo/ui/components/button"
 import { photoValuesOf, setPhotoValues } from "@harness-monorepo/ui/lib/variation-photos"
 import { combinationCountOf, type VariationsValue } from "@harness-monorepo/ui/lib/variations"
 
@@ -27,8 +16,10 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { PhotoValuesPicker } from "./photo-values-picker"
 import { ProductBasicsFields } from "./product-basics-fields"
 import { ProductCashbackField } from "./product-cashback-field"
+import { ProductCommissionField } from "./product-commission-field"
 import type { ProductCategoryOption, ProductFormIssues, ProductFormValues } from "./product-form-types"
 import { ProductInventoryFields } from "./product-inventory-fields"
+import { ProductLeaveDialog } from "./product-leave-dialog"
 import { ProductMediaField } from "./product-media-field"
 import { ProductOrganizationFields } from "./product-organization-fields"
 import { ProductPricingFields } from "./product-pricing-fields"
@@ -62,6 +53,8 @@ export interface ProductEditorProps {
   }
   /** The shop gives its cashback by product (BEELINK-313): the editor asks this product's rate. */
   cashback?: boolean
+  /** The shop's affiliate programme is on (IMPULSEIA-102): the editor asks this product's commission, which empty follows `defaultRate`. */
+  commission?: { defaultRate: string }
   /** Something is not saved: the footer says so, and Cancel asks before throwing it away. */
   dirty?: boolean
   messages?: UiMessages
@@ -97,6 +90,7 @@ export function ProductEditor({
   submitLabel,
   variations,
   cashback = false,
+  commission,
   dirty = false,
   messages = defaultMessages,
 }: ProductEditorProps) {
@@ -173,6 +167,7 @@ export function ProductEditor({
       </ProductSection>
 
       {cashback ? <ProductCashbackField value={value} onChange={onChange} errors={errors} disabled={pending} messages={messages} /> : null}
+      {commission ? <ProductCommissionField value={value} onChange={onChange} defaultRate={commission.defaultRate} errors={errors} disabled={pending} messages={messages} /> : null}
 
       {variations && !value.isKit ? (
         <ProductSection title={sections.variations} hint={sections.variationsHint}>
@@ -229,21 +224,7 @@ export function ProductEditor({
         </Button>
       </div>
 
-      <AlertDialog open={leaving} onOpenChange={(open: boolean) => setLeaving(open)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{text.leaveTitle}</AlertDialogTitle>
-            <AlertDialogDescription>{text.leaveBody}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            {/* Staying keeps the default focus: Enter on this question must not lose the edit. */}
-            <AlertDialogCancel>{text.keepEditing}</AlertDialogCancel>
-            <AlertDialogAction className={cn(buttonVariants({ variant: "destructive" }))} onClick={onCancel}>
-              {text.leaveConfirm}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ProductLeaveDialog open={leaving} onOpenChange={setLeaving} onLeave={onCancel} messages={messages} />
     </form>
   )
 }

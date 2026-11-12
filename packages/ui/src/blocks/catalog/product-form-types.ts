@@ -17,6 +17,11 @@ export interface ProductFormValues {
   cost: string
   /** A percentage as typed, "5" or "2,5"; `""` is none. Asked only in a shop whose cashback is by product. */
   cashback: string
+  /**
+   * The product's own affiliate commission on the shop's default table (IMPULSEIA-102), "10" or "0";
+   * `""` follows the table's rate. Asked only while the shop's affiliate programme is on.
+   */
+  commission: string
   /** `""` is "no category": a select cannot hold null, and the screen turns it back. */
   categoryId: string
   /** On sale, or still being written. See the API's ProductStatus for why it is not a boolean. */
@@ -69,6 +74,7 @@ export const EMPTY_PRODUCT: ProductFormValues = {
   compareAtPrice: "",
   cost: "",
   cashback: "",
+  commission: "",
   categoryId: "",
   status: "ACTIVE",
   origin: "",

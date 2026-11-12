@@ -12,7 +12,7 @@ import { expectNoA11yViolations } from "../../test/a11y"
 import { ProductShippingFields } from "./product-shipping-fields"
 
 const base: ProductFormValues = {
-  name: "", slug: "", description: "", price: "", compareAtPrice: "", cost: "", cashback: "",
+  name: "", slug: "", description: "", price: "", compareAtPrice: "", cost: "", cashback: "", commission: "",
   categoryId: "", status: "ACTIVE", origin: "", imageUrls: [], sku: "", barcode: "",
   trackStock: false, stock: "", weight: "", length: "", width: "", height: "",
   isKit: false, kitSize: "", kitScope: "ALL", kitCategoryIds: [],

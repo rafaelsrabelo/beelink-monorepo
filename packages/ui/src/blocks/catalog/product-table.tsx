@@ -17,9 +17,12 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import { ProductCashbackCell } from "./product-cashback-cell"
+import { ProductCommissionCell } from "./product-commission-cell"
 import { ProductNameCell } from "./product-name-cell"
+import { ProductPriceCell } from "./product-price-cell"
 import { ProductRowActions } from "./product-row-actions"
 import { ProductStatusBadge } from "./product-status-badge"
+import { ProductStockCell } from "./product-stock-cell"
 
 export interface ProductTableItem {
   id: string
@@ -50,6 +53,8 @@ export interface ProductTableItem {
   carrierGap?: "NO_WEIGHT" | "NO_SIZE" | null
   /** Its own cashback, in basis points (BEELINK-313); null or absent has none. Shown only with `onAddCashback`. */
   cashbackRateBps?: number | null
+  /** Its own affiliate commission on the default table (IMPULSEIA-102); null or absent pays the table's. */
+  commissionRateBps?: number | null
 }
 
 export interface ProductTableProps {
@@ -61,6 +66,8 @@ export interface ProductTableProps {
    * product's rate, and offers this on a product with none. Absent, there is no such column.
    */
   onAddCashback?: (productId: string) => void
+  /** The shop's affiliate programme is on (IMPULSEIA-102): a column says each product's commission, and leads to it. */
+  commission?: { defaultRateBps: number; onEdit: (productId: string) => void }
   /**
    * What to say when there is nothing to show. It is a prop because "no products yet" and "no
    * product matches this filter" are different facts, and telling a shopkeeper with 200 products
@@ -100,6 +107,7 @@ export function ProductTable({
   onEdit,
   onDelete,
   onAddCashback,
+  commission,
   emptyTitle,
   emptyHint,
   locale = defaultLocale,
@@ -153,6 +161,7 @@ export function ProductTable({
             <TableHead className="w-32">{columns.origin}</TableHead>
             <TableHead className="w-32 text-right">{columns.price}</TableHead>
             {onAddCashback ? <TableHead className="w-40">{columns.cashback}</TableHead> : null}
+            {commission ? <TableHead className="w-36">{columns.commission}</TableHead> : null}
             {/* Read aloud, never drawn: a visible "Actions" over two icon buttons is a column
                 heading that describes the furniture rather than the data. */}
             <TableHead className="w-32">
@@ -185,15 +194,8 @@ export function ProductTable({
                 <ProductStatusBadge status={product.status} soldOut={product.soldOut} messages={messages} />
               </TableCell>
 
-              {/* "Not tracked" and "none left" are different facts, and the shop that sells made to
-                  order is the first kind. Printing 0 for both is what sends someone looking for a
-                  stock screen that has nothing to do with why the product is hidden. */}
               <TableCell className="text-right tabular-nums">
-                {product.trackStock ? (
-                  (product.stockQuantity ?? 0)
-                ) : (
-                  <span className="text-muted-foreground text-xs">{columns.stockUntracked}</span>
-                )}
+                <ProductStockCell trackStock={product.trackStock} stockQuantity={product.stockQuantity} untrackedLabel={columns.stockUntracked} />
               </TableCell>
 
               <TableCell className="truncate">
@@ -209,19 +211,17 @@ export function ProductTable({
               </TableCell>
 
               <TableCell className="text-right">
-                <span className="font-medium tabular-nums">{money.format(product.priceCents / 100)}</span>
-                {/* The old price is struck through here as it is in the window, so the shopkeeper
-                    sees the discount the way a customer will rather than two numbers side by side. */}
-                {product.compareAtPriceCents ? (
-                  <span className="text-muted-foreground block text-xs line-through tabular-nums">
-                    {money.format(product.compareAtPriceCents / 100)}
-                  </span>
-                ) : null}
+                <ProductPriceCell priceCents={product.priceCents} compareAtPriceCents={product.compareAtPriceCents} money={money} />
               </TableCell>
 
               {onAddCashback ? (
                 <TableCell>
                   <ProductCashbackCell name={product.name} rateBps={product.cashbackRateBps ?? null} onAdd={() => onAddCashback(product.id)} disabled={busyId === product.id} locale={locale} messages={messages} />
+                </TableCell>
+              ) : null}
+              {commission ? (
+                <TableCell>
+                  <ProductCommissionCell name={product.name} rateBps={product.commissionRateBps ?? null} defaultRateBps={commission.defaultRateBps} onEdit={() => commission.onEdit(product.id)} disabled={busyId === product.id} locale={locale} messages={messages} />
                 </TableCell>
               ) : null}
 
