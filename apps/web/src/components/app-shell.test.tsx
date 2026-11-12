@@ -79,6 +79,8 @@ describe("AppShell — the menu's live counts (BEELINK-309)", () => {
     expect(screen.getByRole("link", { name: "Avaliações, 1 avaliação nova" })).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Produtos" })).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Clientes" })).toBeInTheDocument()
+    // IMPULSEIA-102: the affiliate programme has its own item.
+    expect(screen.getByRole("link", { name: "Afiliados" })).toHaveAttribute("href", "/admin/loja/affiliates")
   })
 
   it("draws no badge at zero", async () => {
