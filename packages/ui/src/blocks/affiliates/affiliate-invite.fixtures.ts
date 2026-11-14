@@ -15,4 +15,4 @@ export const invitation: AffiliateInvitationView = {
   expires: "18/11/2026",
 }
 
-export const acceptance: AffiliateAcceptanceFormValues = { slug: "joao", pixKey: "", name: "João Silva", password: "", agreed: false }
+export const acceptance: AffiliateAcceptanceFormValues = { slug: "joao", pixKey: "", name: "João Silva", password: "", agreed: false, cpf: "" }

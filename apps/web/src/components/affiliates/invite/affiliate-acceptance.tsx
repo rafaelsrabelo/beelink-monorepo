@@ -69,7 +69,7 @@ export function AffiliateAcceptance({ token, invitation, signUp, host, onTermsCh
   }
 
   function submit() {
-    const result = acceptancePayloadOf(value, { signUp, termsVersion: invitation.terms.version }, text.issues)
+    const result = acceptancePayloadOf(value, { signUp, termsVersion: invitation.terms.version, cpfRequired: invitation.cpfRequired }, text.issues)
     if ("issues" in result) return setIssues(result.issues)
     const options = { onError: refused }
     if (signUp) signUpAndAccept.mutate(result.payload as AffiliateSignUpPayload, options)
@@ -92,6 +92,7 @@ export function AffiliateAcceptance({ token, invitation, signUp, host, onTermsCh
       onSubmit={submit}
       slugHint={hint}
       hasTerms={invitation.terms.text !== null}
+      cpfRequired={invitation.cpfRequired}
       issues={issues}
       pending={sending.isPending}
       notice={notice || undefined}

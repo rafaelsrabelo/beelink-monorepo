@@ -14,10 +14,13 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { affiliateErrorOf, affiliateSettingsFormOf, affiliateSettingsPayloadOf, payoutCalendarOf, payoutDayFormatter } from "@/lib/affiliate-form"
 import { AffiliateError } from "@/services/affiliates/affiliate-requests"
 import { useAffiliateProgram, useSaveAffiliateProgram } from "@/services/affiliates/affiliate-hooks"
+import { AffiliatePageCardSection } from "./affiliate-page-card-section"
 import { AffiliatesFrame } from "./affiliates-frame"
 
 export interface AffiliateSettingsScreenProps {
   slug: string
+  /** The platform's own origin: the "Seja afiliado" page's address on a shop with no domain of its own. */
+  origin: string
   locale: string
   messages: UiMessages
 }
@@ -27,8 +30,9 @@ const NO_ISSUES: AffiliateSettingsIssues = {}
 /**
  * The shop's affiliate programme (IMPULSEIA-102). The form starts from the rules as saved and holds
  * what is typed until it is saved again; the month's calendar under the delay follows every keystroke.
+ * Under it, the shop's "Seja afiliado" page (plan 2026-11-14), saved on its own.
  */
-export function AffiliateSettingsScreen({ slug, locale, messages }: AffiliateSettingsScreenProps) {
+export function AffiliateSettingsScreen({ slug, origin, locale, messages }: AffiliateSettingsScreenProps) {
   const text = messages.affiliates
   const overview = useAffiliateProgram(slug)
   const save = useSaveAffiliateProgram(slug)
@@ -66,6 +70,7 @@ export function AffiliateSettingsScreen({ slug, locale, messages }: AffiliateSet
         saved={save.isSuccess}
         messages={messages}
       />
+      <AffiliatePageCardSection slug={slug} origin={origin} tables={overview.data.tables} locale={locale} messages={messages} />
     </AffiliatesFrame>
   )
 }

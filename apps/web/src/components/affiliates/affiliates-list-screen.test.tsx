@@ -15,6 +15,7 @@ import { AffiliatesListScreen } from "./affiliates-list-screen"
 const mocks = vi.hoisted(() => ({ list: vi.fn(), replace: vi.fn(), push: vi.fn(), params: { current: new URLSearchParams() } }))
 vi.mock("@/services/affiliates/shop-affiliate-hooks", () => ({ useShopAffiliates: mocks.list }))
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: mocks.replace, push: mocks.push }), useSearchParams: () => mocks.params.current }))
+vi.mock("@/services/affiliates/affiliate-page-hooks", () => ({ useAffiliatePage: () => ({ data: undefined }) }))
 
 const page: ShopAffiliatePage = {
   affiliates: [{ id: "a1", name: "Maria Souza", email: "maria@exemplo.com", phone: null, slug: null, status: "INVITED", table: { id: "t1", name: "Padrão", personal: false }, invitedAt: "2026-11-11T13:00:00.000Z", acceptedAt: null }],

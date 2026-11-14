@@ -15,6 +15,7 @@ import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
+import { maskCpf } from "@harness-monorepo/ui/lib/cpf"
 import type { AffiliateAcceptanceFormValues, AffiliateAcceptanceIssues, AffiliateSlugHint } from "@harness-monorepo/ui/lib/affiliates"
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 
@@ -28,6 +29,8 @@ export interface AffiliateAcceptanceFormProps {
   slugHint: AffiliateSlugHint
   /** The shop wrote terms: the box says they were read; without, that the condition is accepted. */
   hasTerms: boolean
+  /** The invite came from an application (plan 2026-11-14): the CPF is asked here, not by the shop. */
+  cpfRequired?: boolean
   issues?: AffiliateAcceptanceIssues
   pending?: boolean
   /** Said over the form: the shop changed its terms meanwhile. */
@@ -40,8 +43,8 @@ export interface AffiliateAcceptanceFormProps {
   messages?: UiMessages
 }
 
-/** Accepting an invite (IMPULSEIA-104): the `/name`, the Pix key, the shop's terms — and the account, when there is none yet. */
-export function AffiliateAcceptanceForm({ signUp, value, onChange, onSubmit, slugHint, hasTerms, issues = {}, pending = false, notice, error, termsHref = "/termos", privacyHref = "/privacidade", linkComponent: Link = AnchorLink, messages = defaultMessages }: AffiliateAcceptanceFormProps) {
+/** Accepting an invite (IMPULSEIA-104): the `/name`, the Pix key, the shop's terms — the account, when there is none yet, and the CPF, when an application's invite asks it. */
+export function AffiliateAcceptanceForm({ signUp, value, onChange, onSubmit, slugHint, hasTerms, cpfRequired = false, issues = {}, pending = false, notice, error, termsHref = "/termos", privacyHref = "/privacidade", linkComponent: Link = AnchorLink, messages = defaultMessages }: AffiliateAcceptanceFormProps) {
   const text = messages.affiliateInvite
   const legal = messages.legal
   const id = useId()
@@ -84,6 +87,24 @@ export function AffiliateAcceptanceForm({ signUp, value, onChange, onSubmit, slu
             {issues.password ? <FieldError id={`${id}-password-help`}>{issues.password}</FieldError> : <FieldDescription id={`${id}-password-help`}>{text.passwordHelp}</FieldDescription>}
           </Field>
         </>
+      ) : null}
+
+      {cpfRequired ? (
+        <Field data-invalid={issues.cpf ? true : undefined}>
+          <FieldLabel htmlFor={`${id}-cpf`}>{text.cpf}</FieldLabel>
+          <Input
+            id={`${id}-cpf`}
+            inputMode="numeric"
+            autoComplete="off"
+            placeholder="000.000.000-00"
+            value={value.cpf}
+            disabled={pending}
+            aria-invalid={issues.cpf ? true : undefined}
+            aria-describedby={`${id}-cpf-help`}
+            onChange={(event) => onChange({ ...value, cpf: maskCpf(event.target.value) })}
+          />
+          {issues.cpf ? <FieldError id={`${id}-cpf-help`}>{issues.cpf}</FieldError> : <FieldDescription id={`${id}-cpf-help`}>{text.cpfHelp}</FieldDescription>}
+        </Field>
       ) : null}
 
       <Field data-invalid={slugLine ? true : undefined}>

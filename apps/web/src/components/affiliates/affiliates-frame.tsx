@@ -1,3 +1,5 @@
+"use client"
+
 // React
 import type { ReactNode } from "react"
 
@@ -7,10 +9,11 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import { AppLink } from "@/components/app-link"
+import { useAffiliatePage } from "@/services/affiliates/affiliate-page-hooks"
 
 export interface AffiliatesFrameProps {
   slug: string
-  active: "affiliates" | "owed" | "settings" | "tables"
+  active: "affiliates" | "applications" | "owed" | "settings" | "tables"
   messages: UiMessages
   children: ReactNode
 }
@@ -18,6 +21,8 @@ export interface AffiliatesFrameProps {
 /** The affiliate screens' heading and sections (IMPULSEIA-102, the list since IMPULSEIA-104, what is owed since IMPULSEIA-107), around whichever one is open. */
 export function AffiliatesFrame({ slug, active, messages, children }: AffiliatesFrameProps) {
   const text = messages.affiliates
+  // The applications waiting (plan 2026-11-14), beside their tab on every section; nothing until read.
+  const pendingApplications = useAffiliatePage(slug).data?.pendingApplications ?? 0
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 lg:px-6">
@@ -28,6 +33,8 @@ export function AffiliatesFrame({ slug, active, messages, children }: Affiliates
       <AffiliatesTabs
         active={active}
         affiliatesHref={`/admin/${slug}/affiliates`}
+        applicationsHref={`/admin/${slug}/affiliates/applications`}
+        pendingApplications={pendingApplications}
         owedHref={`/admin/${slug}/affiliates/owed`}
         settingsHref={`/admin/${slug}/affiliates/settings`}
         tablesHref={`/admin/${slug}/affiliates/tables`}
