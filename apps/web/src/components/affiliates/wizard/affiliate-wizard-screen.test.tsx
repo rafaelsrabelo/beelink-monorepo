@@ -37,6 +37,7 @@ vi.mock("@/services/catalog/catalog-hooks", () => ({
 }))
 vi.mock("@/services/affiliates/shop-affiliate-hooks", () => ({ useInviteAffiliate: () => ({ mutate: mocks.invite, reset: vi.fn(), isPending: false, error: null }) }))
 vi.mock("@/services/affiliates/affiliate-document-hooks", () => ({ useStageAffiliateDocument: () => ({ mutateAsync: mocks.stage }) }))
+vi.mock("@/services/affiliates/affiliate-page-hooks", () => ({ useAffiliatePage: () => ({ data: undefined }) }))
 
 beforeEach(() => {
   mocks.invite.mockReset()

@@ -40,7 +40,13 @@ export function AffiliatesTabs({ active, affiliatesHref, applicationsHref, pendi
       )}
     >
       {label}
-      {count > 0 ? <span className="bg-primary text-primary-foreground ms-1.5 rounded-full px-1.5 py-0.5 text-xs">{count}</span> : null}
+      {/* The space is the name's: without it a screen reader reads "Candidaturas1". */}
+      {count > 0 ? (
+        <>
+          {" "}
+          <span className="bg-primary text-primary-foreground ms-1 rounded-full px-1.5 py-0.5 text-xs">{count}</span>
+        </>
+      ) : null}
     </Link>
   )
 

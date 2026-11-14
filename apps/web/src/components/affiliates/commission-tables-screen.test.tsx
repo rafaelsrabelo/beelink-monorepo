@@ -20,6 +20,7 @@ vi.mock("@/services/affiliates/affiliate-hooks", () => ({
   useUpdateCommissionTable: mocks.update,
   useDeleteCommissionTable: mocks.remove,
 }))
+vi.mock("@/services/affiliates/affiliate-page-hooks", () => ({ useAffiliatePage: () => ({ data: undefined }) }))
 
 const overview: AffiliateProgramOverview = {
   program: { enabled: true, attributionDays: 30, payoutDelayDays: 10, termsText: null, termsVersion: 0, updatedAt: "2026-11-11T12:00:00.000Z" },

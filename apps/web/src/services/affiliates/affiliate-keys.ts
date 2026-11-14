@@ -15,4 +15,8 @@ export const affiliateKeys = {
   statement: (slug: string, affiliateId: string, page: number) => [...affiliateKeys.money(slug), "statement", affiliateId, page] as const,
   owed: (slug: string) => [...affiliateKeys.money(slug), "owed"] as const,
   order: (slug: string, number: number) => [...affiliateKeys.money(slug), "order", number] as const,
+  /** The "Seja afiliado" page (plan 2026-11-14) and the applications it took, dropped together when one is decided. */
+  page: (slug: string) => [...affiliateKeys.shop(slug), "page"] as const,
+  applications: (slug: string) => [...affiliateKeys.shop(slug), "applications"] as const,
+  applicationList: (slug: string, status: string, page: number) => [...affiliateKeys.applications(slug), status, page] as const,
 }

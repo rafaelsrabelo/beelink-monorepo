@@ -22,6 +22,7 @@ vi.mock("@/services/affiliates/affiliate-hooks", () => ({
 }))
 vi.mock("@/services/catalog/catalog-hooks", () => ({ useProducts: mocks.products, useProductCategories: mocks.categories }))
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: mocks.replace }), useSearchParams: () => new URLSearchParams() }))
+vi.mock("@/services/affiliates/affiliate-page-hooks", () => ({ useAffiliatePage: () => ({ data: undefined }) }))
 
 const table: CommissionTable = {
   id: "t1",

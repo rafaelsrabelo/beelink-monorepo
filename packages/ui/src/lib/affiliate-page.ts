@@ -56,6 +56,8 @@ export const AFFILIATE_PAGE_MAX = {
   highlight: 60,
   highlights: 3,
   sectionTitle: 60,
+  stepsTitle: 60,
+  questionsTitle: 60,
   itemTitle: 60,
   itemText: 240,
   steps: 4,
