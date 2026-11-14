@@ -1,6 +1,5 @@
 // Types
 import type { AffiliatePageBenefit, AffiliatePageContent, AffiliatePageQuestion, AffiliatePageStep } from '@harness-monorepo/contracts';
-import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
 import { EMPTY_AFFILIATE_PAGE_CONTENT } from './affiliate-page.constants.js';
@@ -38,7 +37,7 @@ const questionOf: (raw: unknown) => AffiliatePageQuestion | null = pairOf('quest
  * lacks it, and a missing text is the product's own. A list of steps left empty is the product's own
  * too: a page explains how it works, or it is no page.
  */
-export function affiliatePageContentOf(json: Prisma.JsonValue | null | undefined): AffiliatePageContent {
+export function affiliatePageContentOf(json: unknown): AffiliatePageContent {
   if (!isRecord(json)) return { ...EMPTY_AFFILIATE_PAGE_CONTENT };
   const steps = listOf(json.steps, stepOf);
   return {
