@@ -6,7 +6,7 @@ import { accountOrderNumberOf, conversationOrderOf, listingFiltersOf, safeBackOf
 
 const routes = storefrontRoutes({
   slug: "mutante",
-  routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha", account: "conta", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", cashback: "cashback", profile: "perfil", messages: "conversas" } },
+  routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha", account: "conta", affiliateJoin: "seja-afiliado", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", cashback: "cashback", profile: "perfil", messages: "conversas" } },
 })
 
 describe("listingFiltersOf", () => {
@@ -82,7 +82,7 @@ describe("a landing page's address", () => {
   it("is under lp, whatever words the shop speaks", () => {
     const english = storefrontRoutes({
       slug: "mutante",
-      routeWords: { products: "products", categories: "categories", search: "search", cart: "cart", signIn: "login", verifyEmail: "verify-email", resetPassword: "reset-password", account: "account", accountTabs: { orders: "orders", favorites: "favorites", reviews: "reviews", cashback: "cashback", profile: "profile", messages: "messages" } },
+      routeWords: { products: "products", categories: "categories", search: "search", cart: "cart", signIn: "login", verifyEmail: "verify-email", resetPassword: "reset-password", account: "account", affiliateJoin: "become-an-affiliate", accountTabs: { orders: "orders", favorites: "favorites", reviews: "reviews", cashback: "cashback", profile: "profile", messages: "messages" } },
     })
 
     expect(routes.landing("lancamento")).toBe("/mutante/lp/lancamento")
@@ -92,7 +92,7 @@ describe("a landing page's address", () => {
 
 describe("the checkout's address (plan 2026-11-06--carrinho-e-checkout)", () => {
   it("is a page of its own, apart from the cart, and `checkout` whatever words the shop speaks", () => {
-    const words = { products: "products", categories: "categories", search: "search", cart: "cart", signIn: "login", verifyEmail: "verify-email", resetPassword: "reset-password", account: "account", accountTabs: { orders: "orders", favorites: "favorites", reviews: "reviews", cashback: "cashback", profile: "profile", messages: "messages" } }
+    const words = { products: "products", categories: "categories", search: "search", cart: "cart", signIn: "login", verifyEmail: "verify-email", resetPassword: "reset-password", account: "account", affiliateJoin: "become-an-affiliate", accountTabs: { orders: "orders", favorites: "favorites", reviews: "reviews", cashback: "cashback", profile: "profile", messages: "messages" } }
     const english = storefrontRoutes({ slug: "mutante", routeWords: words })
 
     expect(routes.checkout()).toBe("/mutante/checkout")
@@ -105,7 +105,7 @@ describe("the checkout's address (plan 2026-11-06--carrinho-e-checkout)", () => 
 
 describe("the sign-in page's addresses", () => {
   it("is a route word of its own, with its faces and its way back in the address", () => {
-    const shop = { slug: "loja", routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha", account: "conta", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", cashback: "cashback", profile: "perfil", messages: "conversas" } } }
+    const shop = { slug: "loja", routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha", account: "conta", affiliateJoin: "seja-afiliado", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", cashback: "cashback", profile: "perfil", messages: "conversas" } } }
     const shopRoutes = storefrontRoutes(shop)
 
     expect(sectionOf("entrar", shop.routeWords)).toEqual({ kind: "signIn" })
@@ -140,12 +140,12 @@ describe("the sign-in page's addresses", () => {
 
 
 describe("the shopper's area", () => {
-  const shop = { slug: "loja", routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha", account: "conta", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", cashback: "cashback", profile: "perfil", messages: "conversas" } } }
+  const shop = { slug: "loja", routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha", account: "conta", affiliateJoin: "seja-afiliado", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", cashback: "cashback", profile: "perfil", messages: "conversas" } } }
 
   it("addresses each tab under the account, in the shop's words", () => {
     expect(storefrontRoutes(shop).account()).toBe("/loja/conta")
     expect(storefrontRoutes(shop).accountTab("profile")).toBe("/loja/conta/perfil")
-    expect(storefrontRoutes({ ...shop, routeWords: { ...shop.routeWords, account: "account", accountTabs: { ...shop.routeWords.accountTabs, profile: "profile" } } }).accountTab("profile")).toBe("/loja/account/profile")
+    expect(storefrontRoutes({ ...shop, routeWords: { ...shop.routeWords, account: "account", affiliateJoin: "become-an-affiliate", accountTabs: { ...shop.routeWords.accountTabs, profile: "profile" } } }).accountTab("profile")).toBe("/loja/account/profile")
   })
 
   it("reads a third segment back into its tab, and nothing else into one", () => {
@@ -157,7 +157,7 @@ describe("the shopper's area", () => {
 })
 
 describe("an order's address", () => {
-  const shop = { slug: "loja", routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha", account: "conta", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", cashback: "cashback", profile: "perfil", messages: "conversas" } } }
+  const shop = { slug: "loja", routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha", account: "conta", affiliateJoin: "seja-afiliado", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", cashback: "cashback", profile: "perfil", messages: "conversas" } } }
 
   it("sits under the orders tab, and its receipt is the same page asked as a document", () => {
     expect(storefrontRoutes(shop).accountOrder(14)).toBe("/loja/conta/pedidos/14")
@@ -184,7 +184,7 @@ describe("an order's address", () => {
 })
 
 describe("a shop at its own domain (BEELINK-283)", () => {
-  const words = { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha", account: "conta", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", cashback: "cashback", profile: "perfil", messages: "conversas" } }
+  const words = { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha", account: "conta", affiliateJoin: "seja-afiliado", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", cashback: "cashback", profile: "perfil", messages: "conversas" } }
   const own = storefrontRoutes({ slug: "loja", routeWords: words, ownDomain: true })
   const platform = storefrontRoutes({ slug: "loja", routeWords: words })
 
@@ -264,7 +264,7 @@ describe("a shop at its own domain (BEELINK-283)", () => {
 })
 
 describe("an affiliate's sub-site (the user's call of 12/11)", () => {
-  const words = { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha", account: "conta", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", cashback: "cashback", profile: "perfil", messages: "conversas" } }
+  const words = { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha", account: "conta", affiliateJoin: "seja-afiliado", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", cashback: "cashback", profile: "perfil", messages: "conversas" } }
 
   it("keeps the affiliate's name in front of every address the pages draw, on the platform's host", () => {
     const sub = storefrontRoutes({ slug: "mutante", routeWords: words, affiliate: "margarida" })

@@ -46,6 +46,8 @@ model CommissionTable {
   rates         CommissionTableRate[]
   categoryRates CommissionTableCategoryRate[]
   affiliates    Affiliate[]                   @relation("AffiliateTable")
+  /// The shop's "Seja afiliado" page, when it announces this table (plan 2026-11-14).
+  pages         AffiliatePage[]
 
   @@unique([storeId, name])
   /// One default table per shop, however many first readings open the programme at once.
@@ -163,6 +165,8 @@ model Affiliate {
   payouts      AffiliatePayout[]
   changesFrom  AffiliateAttributionChange[] @relation("AffiliateChangeFrom")
   changesTo    AffiliateAttributionChange[] @relation("AffiliateChangeTo")
+  /// The application whose approval invited them, if one did (plan 2026-11-14).
+  applications AffiliateApplication[]
 
   @@unique([storeId, slug])
   @@unique([storeId, email], where: raw("(status <> 'ENDED'::\"AffiliateStatus\")"), map: "affiliates_live_email_key")
@@ -467,4 +471,81 @@ model AffiliateDocumentUpload {
   @@index([createdAt])
   @@index([storeId])
   @@map("affiliate_document_uploads")
+}
+
+/// Whether the shopkeeper approves each application, or every one becomes an invite at once (plan 2026-11-14).
+enum AffiliateApprovalMode {
+  MANUAL
+  AUTO
+}
+
+/// A shop's "Seja afiliado" page (plan 2026-11-14--afiliados-candidatura-publica): where the shop window
+/// leads to it, the table it announces, how its applications are decided and what the shop wrote on it.
+/// One per shop, written the first time its owner saves it; none reads as closed, with every text the
+/// product's own.
+model AffiliatePage {
+  storeId String @id @db.Uuid
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  open       Boolean               @default(false)
+  homeBanner Boolean               @default(true)
+  footerLink Boolean               @default(true)
+  topStrip   Boolean               @default(false)
+  /// The table the page announces and approvals start from; null is the shop's default table. A table
+  /// deleted hands the page back to the default one.
+  tableId    String?               @db.Uuid
+  table      CommissionTable?      @relation(fields: [tableId], references: [id], onDelete: SetNull)
+  approval   AffiliateApprovalMode @default(MANUAL)
+  /// What the shop wrote, as `AffiliatePageContent` — every text null for the product's own. Checked on
+  /// the way in by the DTO; read through `affiliate-page-content.ts`, which falls back on whatever a row
+  /// written before a field existed lacks.
+  content    Json                  @default("{}")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tableId])
+  @@map("affiliate_pages")
+}
+
+/// Where an application stands: waiting on the shopkeeper, made an invite, or turned down.
+enum AffiliateApplicationStatus {
+  PENDING
+  APPROVED
+  REFUSED
+}
+
+/// Someone who asked, on the shop's page, to be its affiliate (plan 2026-11-14). Nothing of it is an
+/// affiliate: an approval makes one, by the invite that already exists. A decided one is deleted 90 days
+/// after its decision; one e-mail has one pending at a time in a shop.
+model AffiliateApplication {
+  id      String @id @default(uuid(7)) @db.Uuid
+  storeId String @db.Uuid
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  name          String  @db.VarChar(120)
+  /// Lower case.
+  email         String  @db.VarChar(254)
+  /// Digits only, with the country code.
+  phone         String  @db.VarChar(20)
+  /// The page's extra question as it was asked, and the answer; both null when not asked.
+  extraQuestion String? @db.VarChar(80)
+  extraAnswer   String? @db.VarChar(200)
+
+  status      AffiliateApplicationStatus @default(PENDING)
+  decidedAt   DateTime?
+  /// The affiliate an approval invited; null otherwise, and again if that affiliate's row goes.
+  affiliateId String?                    @db.Uuid
+  affiliate   Affiliate?                 @relation(fields: [affiliateId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([storeId, email], where: raw("(status = 'PENDING'::\"AffiliateApplicationStatus\")"), map: "affiliate_applications_pending_email_key")
+  /// The shop's list, newest first, by status.
+  @@index([storeId, status, createdAt])
+  /// The sweeper's: decided ones past their 90 days.
+  @@index([decidedAt])
+  @@index([affiliateId])
+  @@map("affiliate_applications")
 }

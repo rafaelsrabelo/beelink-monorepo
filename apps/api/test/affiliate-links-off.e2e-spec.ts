@@ -2,9 +2,10 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 
 // Types
-import type { AffiliateProgramOverview, AuthSession, PublicAffiliateLink, ShopAffiliate } from '@harness-monorepo/contracts';
+import type { AffiliatePageOverview, AffiliateProgramOverview, ApiErrorBody, AuthSession, PublicAffiliateLink, PublicStore, ShopAffiliate } from '@harness-monorepo/contracts';
 
 // App
+import { EMPTY_AFFILIATE_PAGE_CONTENT } from '../src/modules/affiliates/affiliate-page.constants.js';
 import { PrismaService } from '../src/shared/prisma/prisma.service.js';
 import { affiliateDocumentFor, affiliateIdentity } from './support/affiliate-identity.js';
 import { PASSWORD, newEmail, signUpAndSignIn } from './support/auth-flow.js';
@@ -59,5 +60,26 @@ describe('a deployment with AFFILIATE_LINKS_ENABLED off', () => {
 
     expect((await call('POST', '/api/stores/lessari/affiliate-visits', undefined, { affiliateId: joao.id })).statusCode).toBe(204);
     expect(await prisma.affiliateVisitDay.count()).toBe(0);
+  });
+
+  it('keeps the "Seja afiliado" page closed, opened and on, and says why to its owner (plan 2026-11-14)', async () => {
+    await call('PUT', '/api/stores/lessari/affiliate-program', owner, { enabled: true, attributionDays: 30, payoutDelayDays: 10, termsText: null });
+    const saved = await call('PUT', '/api/stores/lessari/affiliate-page', owner, {
+      open: true,
+      placements: { homeBanner: true, footerLink: true, topStrip: true },
+      tableId: null,
+      approval: 'AUTO',
+      content: { ...EMPTY_AFFILIATE_PAGE_CONTENT },
+    });
+    expect(saved.json<AffiliatePageOverview>().blockedBy).toBe('LINKS_OFF');
+
+    const page = await call('GET', '/api/stores/lessari/affiliate-join');
+    expect(page.statusCode).toBe(404);
+    expect(page.json<ApiErrorBody>().errorCode).toBe('AFFILIATE_PAGE_CLOSED');
+    expect((await call('GET', '/api/stores/lessari/public')).json<PublicStore>().affiliatePage).toBeNull();
+    const sent = await call('POST', '/api/stores/lessari/affiliate-join/applications', undefined, { name: 'Ana Souza', email: 'ana@exemplo.com', phone: '(11) 95555-4444', extraAnswer: null, accepted: true });
+    expect(sent.statusCode).toBe(404);
+    expect(await prisma.affiliateApplication.count()).toBe(0);
+    expect(await prisma.affiliate.count()).toBe(0);
   });
 });

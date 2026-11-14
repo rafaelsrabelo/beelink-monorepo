@@ -32,7 +32,7 @@ const invitation: AffiliateInvitation = {
   terms: { text: "Pago por Pix.", version: 3 },
   expiresAt: "2026-11-18T13:00:00.000Z",
   hasAccount: false,
-  suggestedSlug: "joao",
+  suggestedSlug: "joao", cpfRequired: false,
 }
 const accept = vi.fn()
 const signUp = vi.fn()

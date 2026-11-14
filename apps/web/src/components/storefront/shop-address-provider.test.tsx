@@ -9,7 +9,7 @@ import { ShopAddressProvider, useShopAddress } from "./shop-address-provider"
 import { CART_COOKIE } from "@/lib/cart-cookie"
 import { storefrontRoutes } from "@/lib/storefront-routes"
 
-const WORDS = { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha", account: "conta", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", cashback: "cashback", profile: "perfil", messages: "conversas" } }
+const WORDS = { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha", account: "conta", affiliateJoin: "seja-afiliado", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", cashback: "cashback", profile: "perfil", messages: "conversas" } }
 
 /** A component of the shop window as most are: handed the shop's slug and words, and nothing of the request. */
 function Probe({ slug }: { slug: string }) {

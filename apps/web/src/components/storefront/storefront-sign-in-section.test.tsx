@@ -18,7 +18,7 @@ import { ptBR as web } from "@/locales/pt-BR"
 import { storefrontRoutes } from "@/lib/storefront-routes"
 import type { SectionPlace } from "@/lib/storefront-section"
 
-const WORDS = { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha", account: "conta", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", cashback: "cashback", profile: "perfil", messages: "conversas" } }
+const WORDS = { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha", account: "conta", affiliateJoin: "seja-afiliado", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", cashback: "cashback", profile: "perfil", messages: "conversas" } }
 
 async function drawn(ownDomain: boolean, query: Record<string, string> = {}) {
   const store = { slug: "loja", name: "Loja", routeWords: WORDS, ownDomain } as unknown as PublicStore & { ownDomain: boolean }

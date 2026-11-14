@@ -110,6 +110,7 @@ describe('toPublicStore', () => {
       verifyEmail: 'confirmar-email',
       resetPassword: 'nova-senha',
       account: 'conta',
+      affiliateJoin: 'seja-afiliado',
       accountTabs: { orders: 'pedidos', favorites: 'favoritos', reviews: 'avaliacoes', cashback: 'cashback', profile: 'perfil', messages: 'conversas' },
     });
   });
@@ -126,6 +127,7 @@ describe('toPublicStore', () => {
       verifyEmail: 'verify-email',
       resetPassword: 'reset-password',
       account: 'account',
+      affiliateJoin: 'become-an-affiliate',
       accountTabs: { orders: 'orders', favorites: 'favorites', reviews: 'reviews', cashback: 'cashback', profile: 'profile', messages: 'messages' },
     });
   });

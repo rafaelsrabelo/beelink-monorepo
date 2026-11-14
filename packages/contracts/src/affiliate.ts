@@ -181,7 +181,16 @@ export type AffiliateErrorCode =
   /** A payout past what is available: `details` is `AffiliatePayoutExceedsDetails`. An advance is an adjustment. */
   | "AFFILIATE_PAYOUT_EXCEEDS_BALANCE"
   /** The affiliate's own data out of its range: a Pix key of no known shape, a phone, a photo not uploaded here, a phrase past 100. */
-  | "AFFILIATE_PROFILE_INVALID";
+  | "AFFILIATE_PROFILE_INVALID"
+  /** The "Seja afiliado" page's settings or a text of it out of range, or a table that is not the shop's to announce. */
+  | "AFFILIATE_PAGE_INVALID"
+  /** Visitors do not see the shop's affiliate page now: closed, the programme off, or affiliates not live in this deployment. */
+  | "AFFILIATE_PAGE_CLOSED"
+  /** An application's name, e-mail, phone or answer out of its range, or the terms not accepted. */
+  | "AFFILIATE_APPLICATION_INVALID"
+  | "AFFILIATE_APPLICATION_NOT_FOUND"
+  /** The application was already approved or refused: `details` is `AffiliateApplicationDecidedDetails`. */
+  | "AFFILIATE_APPLICATION_DECIDED";
 
 /**
  * Where an affiliate stands with a shop (IMPULSEIA-103): invited and not yet in; selling; paused —
@@ -378,6 +387,11 @@ export interface AffiliateInvitation {
   hasAccount: boolean;
   /** A `/name` free now, from the affiliate's name; null when none is. */
   suggestedSlug: string | null;
+  /**
+   * Whether accepting asks for the CPF: the invite of an application (plan 2026-11-14) is made with
+   * none, so the person gives it here; an invite the shop filled in already has it.
+   */
+  cpfRequired: boolean;
 }
 
 /** What accepting takes, signed in. */
@@ -388,6 +402,8 @@ export interface AffiliateAcceptancePayload {
   pixKey: string | null;
   /** The `terms.version` the invite showed. */
   termsVersion: number;
+  /** With or without points and dash, checked; required when the invite says `cpfRequired`, ignored otherwise. */
+  cpf?: string;
 }
 
 /** What accepting takes with no account yet: the account is made with the invited e-mail, already verified. */

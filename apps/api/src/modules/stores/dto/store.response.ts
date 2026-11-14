@@ -1,5 +1,5 @@
 // Nest
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 // Types
 import type {
@@ -18,6 +18,7 @@ import type {
 } from '@harness-monorepo/contracts';
 
 // App
+import { PublicAffiliatePagePlacementResponse } from '../../affiliates/dto/affiliate-page.response.js';
 import { PublicCashbackResponse } from '../../cashback/dto/cashback.response.js';
 import { PublicCustomDomainResponse } from '../../custom-domain/dto/custom-domain.response.js';
 import { PublicSectionResponse } from '../../page/dto/page.response.js';
@@ -93,6 +94,7 @@ export class StorefrontRouteWordsResponse implements StorefrontRouteWords {
   @ApiProperty({ example: 'nova-senha', description: "Where a shopper's new-password link opens: ?token=…&voltar=…" })
   resetPassword!: string;
   @ApiProperty({ example: 'conta' }) account!: string;
+  @ApiProperty({ example: 'seja-afiliado' }) affiliateJoin!: string;
   @ApiProperty({ type: StorefrontAccountTabsResponse, description: "The account's tabs, each a third segment under it." })
   accountTabs!: StorefrontAccountTabsResponse;
 }
@@ -135,6 +137,9 @@ export class PublicStoreResponse implements PublicStore {
 
   @ApiProperty({ type: PublicCashbackResponse, nullable: true, description: 'Its cashback while switched on; null while off.' })
   cashback!: PublicCashbackResponse | null;
+
+  @ApiPropertyOptional({ type: PublicAffiliatePagePlacementResponse, nullable: true, description: 'Where the shop window leads to its "Seja afiliado" page; absent or null while visitors do not see it.' })
+  affiliatePage?: PublicAffiliatePagePlacementResponse | null;
 
   @ApiProperty({ nullable: true, type: String, example: '1234567890123456', description: "The shop's Meta Pixel ID, digits only; null with none saved." })
   metaPixelId!: string | null;

@@ -203,6 +203,9 @@ model Store {
   /// Its affiliate programme (IMPULSEIA-101); none until the owner first opens it.
   affiliateProgram  AffiliateProgram?
   commissionTables  CommissionTable[]
+  /// Its "Seja afiliado" page and the applications it took (plan 2026-11-14); none until first saved.
+  affiliatePage         AffiliatePage?
+  affiliateApplications AffiliateApplication[]
   /// Photos of affiliates' documents uploaded and not yet named by an invite (12/11/2026).
   affiliateDocumentUploads AffiliateDocumentUpload[]
   affiliateVisitDays AffiliateVisitDay[]

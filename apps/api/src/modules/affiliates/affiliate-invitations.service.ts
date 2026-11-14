@@ -1,5 +1,5 @@
 // Nest
-import { ConflictException, ForbiddenException, GoneException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, GoneException, Injectable, NotFoundException } from '@nestjs/common';
 
 // Libs
 import { hash } from '@node-rs/argon2';
@@ -23,6 +23,7 @@ import { legalAcceptanceOf } from '../auth/auth.constants.js';
 import { hashToken } from '../auth/auth.tokens.js';
 import { SessionService } from '../auth/session.service.js';
 import { lockShopSegment, shopSegmentHolder } from '../catalog/shop-segments.js';
+import { cpfTaken, takenBy } from './affiliate-records.js';
 import { slugAvailability, slugProblemOf, suggestedSlugOf } from './affiliate-slug.js';
 import { affiliateError, isUniqueViolation } from './affiliates.constants.js';
 import type { AffiliateAcceptanceDto, AffiliateSignUpDto } from './dto/affiliate.dto.js';
@@ -33,6 +34,8 @@ interface LiveInvite {
   storeId: string;
   name: string;
   email: string;
+  /** Null for the invite of an application (plan 2026-11-14): the person gives it on accepting. */
+  cpf: string | null;
   tableId: string;
   expiresAt: Date;
   store: { name: string; slug: string; logoUrl: string | null };
@@ -85,6 +88,7 @@ export class AffiliateInvitationsService {
       expiresAt: invite.expiresAt.toISOString(),
       hasAccount: account !== null,
       suggestedSlug,
+      cpfRequired: invite.cpf === null,
     };
   }
 
@@ -102,7 +106,11 @@ export class AffiliateInvitationsService {
         affiliateError<AffiliateInviteEmailMismatchDetails>('AFFILIATE_INVITE_EMAIL_MISMATCH', 'This invite is for another e-mail', { email: invite.email }),
       );
     }
-    return this.prisma.$transaction((tx) => this.acceptWithin(tx, invite, userId, dto));
+    try {
+      return await this.prisma.$transaction((tx) => this.acceptWithin(tx, invite, userId, dto));
+    } catch (error) {
+      throw await this.cpfTakenMeanwhile(error, invite, dto);
+    }
   }
 
   /**
@@ -128,7 +136,7 @@ export class AffiliateInvitationsService {
     } catch (error) {
       // The account made by someone else in between: the e-mail is unique among bee-link's accounts.
       if (isUniqueViolation(error) && (await this.prisma.user.findFirst({ where: { email: invite.email, storeId: null }, select: { id: true } }))) throw taken();
-      throw error;
+      throw await this.cpfTakenMeanwhile(error, invite, dto);
     }
 
     return { session: await this.sessions.start(result.user, userAgent), affiliate: result.affiliate };
@@ -152,13 +160,15 @@ export class AffiliateInvitationsService {
     const linked = await tx.affiliate.findFirst({ where: { storeId: invite.storeId, userId, status: { not: 'ENDED' } }, select: { id: true } });
     if (linked) throw new ConflictException(affiliateError('AFFILIATE_ALREADY_LINKED', 'This account already sells for this shop'));
 
+    const cpf = await this.cpfOf(tx, invite, dto);
+
     await lockShopSegment(tx, invite.storeId, slug);
     if (await shopSegmentHolder(tx, invite.storeId, slug, { affiliateId: invite.affiliateId })) throw slugRefused('TAKEN');
 
     const now = new Date();
     const moved = await tx.affiliate.updateMany({
       where: { id: invite.affiliateId, status: 'INVITED' },
-      data: { status: 'ACTIVE', slug, userId, pixKey: dto.pixKey, termsVersion: program.termsVersion, termsAcceptedAt: now, acceptedAt: now },
+      data: { status: 'ACTIVE', slug, userId, pixKey: dto.pixKey, termsVersion: program.termsVersion, termsAcceptedAt: now, acceptedAt: now, ...(cpf ? { cpf } : {}) },
     });
     if (moved.count === 0) throw inviteMissing();
     await tx.affiliateInvite.update({ where: { affiliateId: invite.affiliateId }, data: { usedAt: now } });
@@ -178,6 +188,34 @@ export class AffiliateInvitationsService {
     }
 
     const { affiliate } = row;
-    return { affiliateId: affiliate.id, storeId: affiliate.storeId, name: affiliate.name, email: affiliate.email, tableId: affiliate.tableId, expiresAt: row.expiresAt, store: affiliate.store };
+    return {
+      affiliateId: affiliate.id,
+      storeId: affiliate.storeId,
+      name: affiliate.name,
+      email: affiliate.email,
+      cpf: affiliate.cpf,
+      tableId: affiliate.tableId,
+      expiresAt: row.expiresAt,
+      store: affiliate.store,
+    };
+  }
+
+  /**
+   * The CPF an invite of an application is accepted with (plan 2026-11-14): given here, checked by the
+   * DTO, and one per shop among the affiliates not ended — as the shop's own form keeps it. An invite
+   * the shop filled in has one, and what is sent is ignored.
+   */
+  private async cpfOf(tx: Prisma.TransactionClient, invite: LiveInvite, dto: AffiliateAcceptanceDto): Promise<string | null> {
+    if (invite.cpf !== null) return null;
+    if (!dto.cpf) throw new BadRequestException(affiliateError('AFFILIATE_ACCEPTANCE_INVALID', 'This invite is accepted with the CPF'));
+    const other = await tx.affiliate.findFirst({ where: { storeId: invite.storeId, cpf: dto.cpf, status: { not: 'ENDED' }, id: { not: invite.affiliateId } }, select: { id: true } });
+    if (other) throw cpfTaken();
+    return dto.cpf;
+  }
+
+  /** A unique key broken by a CPF someone else took between the check and the write is that refusal; anything else is itself. */
+  private async cpfTakenMeanwhile(error: unknown, invite: LiveInvite, dto: AffiliateAcceptanceDto): Promise<unknown> {
+    if (isUniqueViolation(error) && invite.cpf === null && dto.cpf && (await takenBy(this.prisma, invite.storeId, { cpf: dto.cpf }, invite.affiliateId))) return cpfTaken();
+    return error;
   }
 }

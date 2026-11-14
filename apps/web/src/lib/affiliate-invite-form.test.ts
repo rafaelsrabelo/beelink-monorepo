@@ -19,7 +19,7 @@ const invitation: AffiliateInvitation = {
   terms: { text: "Pago por Pix.", version: 3 },
   expiresAt: "2026-11-18T13:00:00.000Z",
   hasAccount: false,
-  suggestedSlug: "joao-silva",
+  suggestedSlug: "joao-silva", cpfRequired: false,
 }
 
 describe("the invite, in words (IMPULSEIA-104)", () => {

@@ -23,7 +23,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => router }))
 
 const ORDER_ID = "0b9f6c1e-5a44-4a8b-9d55-3f1f1c2a7e10"
 const BLUSA = "01a0d395-c1ab-7399-a472-000000000001"
-const routeWords = { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha", account: "conta", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", cashback: "cashback", profile: "perfil", messages: "conversas" } }
+const routeWords = { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha", account: "conta", affiliateJoin: "seja-afiliado", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", cashback: "cashback", profile: "perfil", messages: "conversas" } }
 const bia = { id: "c1", name: "Bia Cliente", email: "bia@exemplo.com", phone: "11988887777" } as CustomerProfile
 const payload: PlaceCustomerOrderPayload = { items: [{ variantId: "v1", quantity: 2 }], fulfillment: "PICKUP", paymentMethod: "MONEY" }
 

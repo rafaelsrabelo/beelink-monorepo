@@ -185,6 +185,13 @@ export class AffiliateAcceptanceDto implements AffiliateAcceptancePayload {
   @IsInt(ACCEPTANCE)
   @Min(0, ACCEPTANCE)
   termsVersion!: number;
+
+  @ApiPropertyOptional({ example: '529.982.247-25', description: 'Required when the invite says `cpfRequired`, and checked; ignored otherwise.' })
+  @IsOptional()
+  @cpfDigits
+  @IsString(ACCEPTANCE)
+  @IsCpf(ACCEPTANCE)
+  cpf?: string;
 }
 
 export class AffiliateSignUpDto extends AffiliateAcceptanceDto implements AffiliateSignUpPayload {
