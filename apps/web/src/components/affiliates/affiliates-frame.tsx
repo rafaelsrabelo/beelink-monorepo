@@ -10,7 +10,7 @@ import { AppLink } from "@/components/app-link"
 
 export interface AffiliatesFrameProps {
   slug: string
-  active: "affiliates" | "owed" | "settings" | "tables"
+  active: "affiliates" | "applications" | "owed" | "settings" | "tables"
   messages: UiMessages
   children: ReactNode
 }
@@ -28,6 +28,7 @@ export function AffiliatesFrame({ slug, active, messages, children }: Affiliates
       <AffiliatesTabs
         active={active}
         affiliatesHref={`/admin/${slug}/affiliates`}
+        applicationsHref={`/admin/${slug}/affiliates/applications`}
         owedHref={`/admin/${slug}/affiliates/owed`}
         settingsHref={`/admin/${slug}/affiliates/settings`}
         tablesHref={`/admin/${slug}/affiliates/tables`}
