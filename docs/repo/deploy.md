@@ -159,6 +159,23 @@ The affiliates epic (IMPULSEIA-100) arrives as nine stacked pull requests. Every
 4. **The migrations run by themselves** in the `migrate` service, in this order: `20261111120000_affiliate_program`, `20261111130000_affiliates`, `20261112120000_affiliate_visits`, `20261112130000_affiliate_commissions`, `20261112140000_affiliate_payouts`, `20261112150000_affiliate_payout_notices`. Of the tables that existed before, only `orders` changes, by two nullable columns (`affiliateId`, `affiliateVisitAt`): no existing row is rewritten.
 5. **Only after the new policy is live**, set `AFFILIATE_LINKS_ENABLED=true` in the API's Environment and redeploy. Until then every store's programme can be set up and its affiliates invited, but no link credits, no `bl_affiliate` cookie is written, no visit is counted, and no order can be given an affiliate, whether placed on the window or registered in the panel. After the switch, check one store: `/<store>/<name>` of an active affiliate shows the card, and the cart shows "Indicação de …".
 
+### The "Seja afiliado" page
+
+A shop's public affiliate page and its applications (plan `2026-11-14--afiliados-candidatura-publica`) arrive as two stacked pull requests on top of the epic: #321 — the API, and the panel, which #322 merged into it — into `main`, then #323 (the storefront).
+
+1. **Before the first deploy, check the page's two new words**, now reserved in every vocabulary: no category of any shop — now or before a rename — and no affiliate's `/name` takes `seja-afiliado` or `become-an-affiliate`:
+
+   ```sql
+   SELECT 'category' AS kind, "storeId", slug FROM product_categories WHERE slug IN ('seja-afiliado', 'become-an-affiliate')
+   UNION ALL SELECT 'category (old)', "storeId", s FROM product_categories, unnest("slugHistory") AS s WHERE s IN ('seja-afiliado', 'become-an-affiliate')
+   UNION ALL SELECT 'affiliate', "storeId", slug FROM affiliates WHERE slug IN ('seja-afiliado', 'become-an-affiliate');
+   ```
+
+   A row found there keeps working until #323 is deployed, and then its address is the page's instead: rename the category, or ask the affiliate to choose another `/name`, first.
+2. **The migration runs by itself**: `20261114172819_affiliate_page_applications` creates `affiliate_pages` and `affiliate_applications`, and touches no table that existed.
+3. **`AFFILIATE_APPLICATION_RATE_LIMIT_MAX` and `_WINDOW`** may be left out: the defaults are 5 a 10 minutes per address.
+4. **Nothing of it is seen before `AFFILIATE_LINKS_ENABLED=true`** (step 5 above): until then the panel saves the page and its texts, and the shop window neither draws it nor takes an application. The privacy policy that tells of the applications is the unpublished one the switch already waits on: its review covers the page too.
+
 ## Homologation
 
 A second Compose service in Dokploy, on the branch `homolog`, from the same file. It is a stack of its own, and **none of its Environment is copied from production**: a value pasted across is how one of the two stops working.

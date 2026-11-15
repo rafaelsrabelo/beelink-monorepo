@@ -163,3 +163,12 @@ robô vê, não grava nada. O limite por endereço é o de uma escrita pública.
 - Avisar o candidato de que foi recusado.
 - Campos de formulário além da pergunta extra.
 - Medir o funil da página (visitas, cliques no botão, envios).
+
+## Seguimento — 14 e 15/11/2026, na implementação
+
+- **PRs:** #321 (API e contracts), #322 (painel) e o da vitrine, empilhados nessa ordem.
+- **Endereço das rotas públicas:** ficaram em `affiliate-join`, num controller só delas (item 4 do DoD). O limite por endereço do formulário segue o do formulário de entregador: `AFFILIATE_APPLICATION_RATE_LIMIT_*`, 5 a cada 10 minutos.
+- **Textos padrão:** moram em `affiliateJoin.defaults` no locale do `packages/ui`. O painel e a vitrine leem os mesmos.
+- **Editor:** mostra todo texto preenchido, o do produto quando a loja não escreveu nada. Um texto salvo igual ao padrão, ou em branco, volta como `null`.
+- **Faixa do topo:** aparece só se a loja não tiver uma faixa própria. A dela vem primeiro, e só cabe uma acima do cabeçalho.
+- **Política de privacidade:** os trechos sobre as candidaturas entraram na versão `2026-11-14`, que ainda espera a revisão jurídica. Se ela já estiver publicada quando o PR da vitrine for aprovado, os trechos vão para uma versão nova.

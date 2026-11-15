@@ -4685,6 +4685,40 @@ export interface UiMessages {
    * announced table's general rate — through `format`, as the shop's own texts do.
    */
   affiliateJoin: {
+    /** The page's own words, which the shop does not write: what the form and the law ask. */
+    heading: string
+    footerLink: string
+    back: string
+    /** `slug`: the name a link shows, as an example. */
+    linkPreview: { title: string; lead: string; name: string; partner: string; initials: string; slug: string }
+    /** `{sale}`, `{earning}`: what a sale through the link earns at the announced rate. */
+    example: string
+    form: {
+      close: string
+      name: string
+      email: string
+      phone: string
+      phonePlaceholder: string
+      optional: string
+      /** `{terms}`, `{privacy}`: the links' words, below. */
+      accept: string
+      terms: string
+      privacy: string
+      submit: string
+      sending: string
+      /** `{loja}`. */
+      note: string
+      issues: { name: string; email: string; phone: string; accepted: string }
+      errors: { AFFILIATE_PAGE_CLOSED: string; AFFILIATE_APPLICATION_INVALID: string; RATE_LIMITED: string; UNKNOWN: string }
+    }
+    sent: {
+      /** `{name}`: the first name typed. */
+      title: string
+      titleNoName: string
+      steps: string[]
+      back: string
+    }
+    terms: { title: string; none: string; close: string }
     defaults: {
       badge: string
       title: string

@@ -284,3 +284,18 @@ describe("an affiliate's sub-site (the user's call of 12/11)", () => {
     expect(storefrontRoutes({ slug: "mutante", ownDomain: true, routeWords: words }).home).toBe("/")
   })
 })
+
+describe("the shop's \"Seja afiliado\" page (plan 2026-11-14)", () => {
+  const words = { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha", account: "conta", affiliateJoin: "seja-afiliado", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", cashback: "cashback", profile: "perfil", messages: "conversas" } }
+
+  it("reads its word as the page, and a shop read before it was spelled as a category", () => {
+    expect(sectionOf("seja-afiliado", words)).toEqual({ kind: "affiliateJoin" })
+    expect(sectionOf("seja-afiliado", { ...words, affiliateJoin: "" })).toEqual({ kind: "category", slug: "seja-afiliado" })
+  })
+
+  it("is always the shop's own address — at its domain, and never under an affiliate's name", () => {
+    expect(storefrontRoutes({ slug: "loja", routeWords: words }).affiliateJoin()).toBe("/loja/seja-afiliado")
+    expect(storefrontRoutes({ slug: "loja", routeWords: words, affiliate: "joao" }).affiliateJoin()).toBe("/loja/seja-afiliado")
+    expect(storefrontRoutes({ slug: "loja", routeWords: words, ownDomain: true }).affiliateJoin()).toBe("/seja-afiliado")
+  })
+})
