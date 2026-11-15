@@ -161,7 +161,7 @@ The affiliates epic (IMPULSEIA-100) arrives as nine stacked pull requests. Every
 
 ### The "Seja afiliado" page
 
-A shop's public affiliate page and its applications (plan `2026-11-14--afiliados-candidatura-publica`) arrive as three stacked pull requests on top of the epic: #321 (the API) into `main`, then #322 (the panel) and the storefront's, each after the one below it.
+A shop's public affiliate page and its applications (plan `2026-11-14--afiliados-candidatura-publica`) arrive as three stacked pull requests on top of the epic: #321 (the API) into `main`, then #322 (the panel) and #323 (the storefront), each after the one below it.
 
 1. **Before the first deploy, check the page's two new words**, now reserved in every vocabulary: no category of any shop — now or before a rename — and no affiliate's `/name` takes `seja-afiliado` or `become-an-affiliate`:
 
@@ -171,7 +171,7 @@ A shop's public affiliate page and its applications (plan `2026-11-14--afiliados
    UNION ALL SELECT 'affiliate', "storeId", slug FROM affiliates WHERE slug IN ('seja-afiliado', 'become-an-affiliate');
    ```
 
-   A row found there keeps working until the storefront's PR is deployed, and then its address is the page's instead: rename the category, or ask the affiliate to choose another `/name`, first.
+   A row found there keeps working until #323 is deployed, and then its address is the page's instead: rename the category, or ask the affiliate to choose another `/name`, first.
 2. **The migration runs by itself**: `20261114172819_affiliate_page_applications` creates `affiliate_pages` and `affiliate_applications`, and touches no table that existed.
 3. **`AFFILIATE_APPLICATION_RATE_LIMIT_MAX` and `_WINDOW`** may be left out: the defaults are 5 a 10 minutes per address.
 4. **Nothing of it is seen before `AFFILIATE_LINKS_ENABLED=true`** (step 5 above): until then the panel saves the page and its texts, and the shop window neither draws it nor takes an application. The privacy policy that tells of the applications is the unpublished one the switch already waits on: its review covers the page too.
