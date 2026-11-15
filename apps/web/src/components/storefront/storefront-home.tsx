@@ -1,10 +1,15 @@
+// UI
+import { StorefrontAffiliateJoinBanner } from "@harness-monorepo/ui/blocks/storefront/storefront-affiliate-join-banner"
+
 // App
+import { AppLink } from "@/components/app-link"
 import { StorefrontAffiliateArrival } from "@/components/storefront/affiliate/storefront-affiliate-arrival"
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
 import { StorefrontOffers } from "@/components/storefront/storefront-offers"
 import { contactCopyOf } from "@/components/storefront/storefront-contact-copy"
 import { StorefrontSections } from "@/components/storefront/storefront-sections"
 import { orderHrefOf } from "@/components/storefront/storefront-links"
+import { joinBannerOf, joinMarksOf, recruitingOf } from "@/lib/affiliate-join"
 import { getMessages } from "@/lib/locale"
 import { shopperAt } from "@/lib/shopper"
 import { navigationAt, paymentOptionsAt, type ServedShop } from "@/lib/storefront-data"
@@ -42,6 +47,8 @@ export async function StorefrontHome({ slug, store, arrivedBy = null }: Storefro
 
   const routes = storefrontRoutes(store)
   const layout = store.layoutSettings
+  // The invitation to the shop's "Seja afiliado" page (plan 2026-11-14): never at an affiliate's link.
+  const recruiting = arrivedBy ? null : recruitingOf(store)
 
   return (
     <>
@@ -81,6 +88,9 @@ export async function StorefrontHome({ slug, store, arrivedBy = null }: Storefro
               contact={{ slug, whatsappHref: orderHrefOf(store) ?? null, copy: contactCopyOf(web) }}
               messages={ui}
             />
+            {recruiting?.placements.homeBanner ? (
+              <StorefrontAffiliateJoinBanner view={joinBannerOf(recruiting, ui.affiliateJoin.defaults, joinMarksOf(store, recruiting.rateBps, "pt-BR"))} href={routes.affiliateJoin()} linkComponent={AppLink} />
+            ) : null}
           </>
         }
       />

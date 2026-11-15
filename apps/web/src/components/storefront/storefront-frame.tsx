@@ -17,10 +17,12 @@ import { shopFooterColumnsOf } from "./shop-chrome"
 import { announcementOf } from "./announcement-of"
 import { shopHeaderOf } from "./shop-header"
 import { addressLineOf, orderHrefOf, storefrontLinksOf } from "./storefront-links"
+import { joinBannerOf, joinMarksOf, joinStripOf, recruitingOf } from "@/lib/affiliate-join"
 import { storefrontRoutes } from "@/lib/storefront-routes"
 
 export interface StorefrontFrameProps {
-  store: PublicStore
+  /** Under an affiliate's sub-site, their name: the shop window leads nowhere to its affiliate page there. */
+  store: PublicStore & { affiliate?: string | null }
   /**
    * Every category the shop has, parents and children alike, never the ones a filter left:
    * navigation must not vanish in use. The menu draws the first level; the second belongs to the
@@ -174,7 +176,12 @@ export function StorefrontFrame({
     : shopFooterColumnsOf(store, routes, messages, pages)
   // The strip is above the masthead on every page, so it is read here from the same bands the
   // landing page's blocks come from — the draft's in design mode, the shop's everywhere else.
-  const announcement = announcementOf(drawn)
+  // The shop's own strip, else — where the shopkeeper chose it (plan 2026-11-14) — the invitation to its
+  // "Seja afiliado" page in the same place: one strip at a time above the masthead.
+  const recruiting = recruitingOf(store)
+  const announcement =
+    announcementOf(drawn) ??
+    (recruiting?.placements.topStrip && !site ? joinStripOf(joinBannerOf(recruiting, messages.affiliateJoin.defaults, joinMarksOf(store, recruiting.rateBps, "pt-BR")), routes.affiliateJoin()) : null)
 
   return (
     <StorefrontWindow

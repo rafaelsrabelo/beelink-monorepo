@@ -153,6 +153,8 @@ export function headingOf({ section, category, navigation, scope, signInMode, me
       return text.newPasswordTitle
     case "account":
       return text.account
+    case "affiliateJoin":
+      return messages.affiliateJoin.heading
     case "category":
       return category?.name ?? text.catalogTitle
   }
@@ -211,6 +213,8 @@ export function canonicalOf({ section, category }: SectionPlace, routes: Storefr
       return routes.resetPassword()
     case "account":
       return routes.account()
+    case "affiliateJoin":
+      return routes.affiliateJoin()
     case "catalog":
       return routes.catalog()
   }
