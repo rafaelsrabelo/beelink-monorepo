@@ -161,7 +161,7 @@ The affiliates epic (IMPULSEIA-100) arrives as nine stacked pull requests. Every
 
 ### The "Seja afiliado" page
 
-A shop's public affiliate page and its applications (plan `2026-11-14--afiliados-candidatura-publica`) arrive as three stacked pull requests on top of the epic: #321 (the API) into `main`, then #322 (the panel) and #323 (the storefront), each after the one below it.
+A shop's public affiliate page and its applications (plan `2026-11-14--afiliados-candidatura-publica`) arrive as two stacked pull requests on top of the epic: #321 — the API, and the panel, which #322 merged into it — into `main`, then #323 (the storefront).
 
 1. **Before the first deploy, check the page's two new words**, now reserved in every vocabulary: no category of any shop — now or before a rename — and no affiliate's `/name` takes `seja-afiliado` or `become-an-affiliate`:
 
