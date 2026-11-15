@@ -478,6 +478,10 @@ export const legalTexts = {
             kind: "paragraph",
             text: "O convite chega ao e-mail que a loja digitou e vale uma única vez, por 7 dias. Um convite cancelado antes do aceite é apagado, com o que a loja anotou nele.",
           },
+          {
+            kind: "paragraph",
+            text: "Uma loja também pode receber candidaturas pela página \"Seja afiliado\" dela. Quem se candidata informa o nome, o e-mail, o WhatsApp e, se a loja perguntar, onde vai divulgar, e declara ter lido os termos do programa da loja e esta Política. O bee-link guarda a candidatura em nome da loja, que é a controladora desses dados, e só a loja a vê, no painel. Se a loja aprovar, a pessoa recebe o convite no e-mail que informou, e o CPF é pedido só quando ela aceita o convite. Se a loja recusar, a pessoa não é avisada.",
+          },
         ],
       },
       {
@@ -597,7 +601,7 @@ export const legalTexts = {
           {
             kind: "list",
             items: [
-              "Execução de contrato: criar e manter contas, confirmar o e-mail, redefinir a senha, publicar a loja e localizá-la no mapa, preencher endereços pelo CEP, registrar pedidos e conversas, enviar os e-mails de andamento dos pedidos, registrar o aceite dos Termos de uso e atender o que você pede pelo formulário de contato ou pelo \"Avise-me\"; e, no programa de afiliados de uma loja, enviar o convite, criar a conta do afiliado e manter o vínculo dele com a loja, calcular e registrar as comissões e avisar o afiliado de cada venda, de cada cancelamento e de cada pagamento registrado.",
+              "Execução de contrato: criar e manter contas, confirmar o e-mail, redefinir a senha, publicar a loja e localizá-la no mapa, preencher endereços pelo CEP, registrar pedidos e conversas, enviar os e-mails de andamento dos pedidos, registrar o aceite dos Termos de uso e atender o que você pede pelo formulário de contato ou pelo \"Avise-me\"; e, no programa de afiliados de uma loja, receber as candidaturas pela página \"Seja afiliado\" dela, enviar o convite, criar a conta do afiliado e manter o vínculo dele com a loja, calcular e registrar as comissões e avisar o afiliado de cada venda, de cada cancelamento e de cada pagamento registrado.",
               "Procedimentos preliminares a um contrato, a pedido de quem se candidata: guardar o cadastro de quem quer fazer entregas pelo bee-link e falar com a pessoa para concluí-lo.",
               "Cumprimento de obrigação legal: guardar registros de acesso e atender ordens de autoridades, quando a lei exigir.",
               "Legítimo interesse: proteger as contas e a plataforma, prevenir fraudes e abusos, limitar tentativas repetidas e investigar erros, sempre dentro do que se espera de um serviço como este; e, para a loja que tem um programa de afiliados, creditar ao afiliado o pedido feito pelas páginas do link dele, e mostrar a ele o nome de quem comprou, para que a loja cumpra o acordo que fez com o afiliado.",
@@ -812,7 +816,7 @@ export const legalTexts = {
           },
           {
             kind: "paragraph",
-            text: "A contagem diária das visitas pelo link de um afiliado é guardada por 13 meses e depois apagada. O vínculo de um afiliado com uma loja, depois de encerrado, continua guardado com os pedidos, o extrato e os pagamentos, porque é a história do que a loja deveu e pagou. Um convite cancelado antes do aceite é apagado. As fotos do documento de identidade do afiliado ficam guardadas enquanto o vínculo com a loja existir, inclusive depois de encerrado, e são apagadas quando a loja as troca por outras ou cancela o convite.",
+            text: "A contagem diária das visitas pelo link de um afiliado é guardada por 13 meses e depois apagada. O vínculo de um afiliado com uma loja, depois de encerrado, continua guardado com os pedidos, o extrato e os pagamentos, porque é a história do que a loja deveu e pagou. Um convite cancelado antes do aceite é apagado. As fotos do documento de identidade do afiliado ficam guardadas enquanto o vínculo com a loja existir, inclusive depois de encerrado, e são apagadas quando a loja as troca por outras ou cancela o convite. Uma candidatura pela página \"Seja afiliado\" de uma loja fica guardada enquanto espera a decisão da loja e é apagada 90 dias depois de a loja aprovar ou recusar.",
           },
           {
             kind: "paragraph",
