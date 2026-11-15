@@ -115,14 +115,9 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
     if (shop && link) return <StorefrontHome slug={slug} store={shop} arrivedBy={link.affiliate?.slug ?? null} />
     notFound()
   }
-  // A page of its own, with none of the shop's header around it.
+  // A page of its own, with none of the shop's header around it; the "Seja afiliado" page (plan 2026-11-14) read before anything streams, a 404 while closed.
   if (place.section.kind === "checkout") return <StorefrontCheckoutSection place={place} query={query} />
-  // The shop's "Seja afiliado" page (plan 2026-11-14), read before anything streams: closed, it is a 404.
-  if (place.section.kind === "affiliateJoin") {
-    const join = await affiliateJoinAt(place.store.slug)
-    if (!join) notFound()
-    return <StorefrontAffiliateJoinSection place={place} page={join} />
-  }
+  if (place.section.kind === "affiliateJoin") return <StorefrontAffiliateJoinSection place={place} page={(await affiliateJoinAt(place.store.slug)) ?? notFound()} />
 
   const { store, category, navigation, messages: ui, scope } = place
   const routes = storefrontRoutes(store)
