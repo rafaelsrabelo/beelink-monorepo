@@ -15,6 +15,9 @@ import { AffiliateSettingsScreen } from "./affiliate-settings-screen"
 
 const mocks = vi.hoisted(() => ({ overview: vi.fn(), save: vi.fn() }))
 vi.mock("@/services/affiliates/affiliate-hooks", () => ({ useAffiliateProgram: mocks.overview, useSaveAffiliateProgram: mocks.save }))
+vi.mock("@/services/affiliates/affiliate-page-hooks", () => ({ useAffiliatePage: () => ({ data: undefined }) }))
+// The "Seja afiliado" card is its own section, tested on its own (plan 2026-11-14).
+vi.mock("./affiliate-page-card-section", () => ({ AffiliatePageCardSection: () => null }))
 
 const overview: AffiliateProgramOverview = {
   program: { enabled: false, attributionDays: 30, payoutDelayDays: 10, termsText: null, termsVersion: 0, updatedAt: "2026-11-11T12:00:00.000Z" },
@@ -42,7 +45,7 @@ beforeEach(() => {
 
 describe("AffiliateSettingsScreen (IMPULSEIA-102)", () => {
   it("shows the rules as saved, the month's calendar and the sections", () => {
-    render(<AffiliateSettingsScreen slug="loja" locale="pt-BR" messages={ui} />)
+    render(<AffiliateSettingsScreen slug="loja" origin="https://beelink.com.br" locale="pt-BR" messages={ui} />)
 
     expect(screen.getByRole("heading", { level: 1, name: "Afiliados" })).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Tabelas" })).toHaveAttribute("href", "/admin/loja/affiliates/tables")
@@ -58,7 +61,7 @@ describe("AffiliateSettingsScreen (IMPULSEIA-102)", () => {
   })
 
   it("follows the delay as it is typed, and saves the rules in the API's units", async () => {
-    render(<AffiliateSettingsScreen slug="loja" locale="pt-BR" messages={ui} />)
+    render(<AffiliateSettingsScreen slug="loja" origin="https://beelink.com.br" locale="pt-BR" messages={ui} />)
 
     await userEvent.clear(screen.getByLabelText("Prazo para pagar"))
     await userEvent.type(screen.getByLabelText("Prazo para pagar"), "5")
@@ -71,7 +74,7 @@ describe("AffiliateSettingsScreen (IMPULSEIA-102)", () => {
   })
 
   it("says what to correct before asking the API, and sends nothing", async () => {
-    render(<AffiliateSettingsScreen slug="loja" locale="pt-BR" messages={ui} />)
+    render(<AffiliateSettingsScreen slug="loja" origin="https://beelink.com.br" locale="pt-BR" messages={ui} />)
 
     await userEvent.clear(screen.getByLabelText("Prazo para pagar"))
     await userEvent.type(screen.getByLabelText("Prazo para pagar"), "61")
@@ -82,7 +85,7 @@ describe("AffiliateSettingsScreen (IMPULSEIA-102)", () => {
 
   it("says the API's refusal in words", () => {
     saving({ error: new AffiliateError("AFFILIATE_PROGRAM_INVALID") })
-    render(<AffiliateSettingsScreen slug="loja" locale="pt-BR" messages={ui} />)
+    render(<AffiliateSettingsScreen slug="loja" origin="https://beelink.com.br" locale="pt-BR" messages={ui} />)
 
     expect(screen.getByText("Alguma configuração está fora do permitido. Confira os campos.")).toBeInTheDocument()
   })
@@ -90,11 +93,11 @@ describe("AffiliateSettingsScreen (IMPULSEIA-102)", () => {
   it("holds the place while reading, and offers to read again when it fails", async () => {
     const refetch = vi.fn()
     mocks.overview.mockReturnValue({ isPending: true, isError: false })
-    const { rerender } = render(<AffiliateSettingsScreen slug="loja" locale="pt-BR" messages={ui} />)
+    const { rerender } = render(<AffiliateSettingsScreen slug="loja" origin="https://beelink.com.br" locale="pt-BR" messages={ui} />)
     expect(screen.queryByRole("switch")).not.toBeInTheDocument()
 
     mocks.overview.mockReturnValue({ isPending: false, isError: true, refetch })
-    rerender(<AffiliateSettingsScreen slug="loja" locale="pt-BR" messages={ui} />)
+    rerender(<AffiliateSettingsScreen slug="loja" origin="https://beelink.com.br" locale="pt-BR" messages={ui} />)
     await userEvent.click(screen.getByRole("button", { name: "Tentar de novo" }))
     expect(refetch).toHaveBeenCalledOnce()
   })

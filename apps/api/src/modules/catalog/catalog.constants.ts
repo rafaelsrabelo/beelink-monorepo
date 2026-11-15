@@ -16,6 +16,7 @@ export const ROUTE_WORDS = {
     verifyEmail: 'confirmar-email',
     resetPassword: 'nova-senha',
     account: 'conta',
+    affiliateJoin: 'seja-afiliado',
     accountTabs: { orders: 'pedidos', favorites: 'favoritos', reviews: 'avaliacoes', cashback: 'cashback', profile: 'perfil', messages: 'conversas' },
   },
   EN: {
@@ -27,6 +28,7 @@ export const ROUTE_WORDS = {
     verifyEmail: 'verify-email',
     resetPassword: 'reset-password',
     account: 'account',
+    affiliateJoin: 'become-an-affiliate',
     accountTabs: { orders: 'orders', favorites: 'favorites', reviews: 'reviews', cashback: 'cashback', profile: 'profile', messages: 'messages' },
   },
 } as const satisfies Record<RouteVocabulary, StorefrontRouteWords>;
@@ -87,6 +89,9 @@ export const RESERVED_PATH_SEGMENTS: readonly string[] = [
   'orders',
   'sobre',
   'about',
+  // The shop's "Seja afiliado" page (plan 2026-11-14), in both languages.
+  'seja-afiliado',
+  'become-an-affiliate',
   // A shop's landing pages, at `/<shop>/lp/<address>`.
   'lp',
   // bee-link's terms and privacy policy. At a shop's own domain (BEELINK-283) the second segment

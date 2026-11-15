@@ -21,6 +21,7 @@ vi.mock("@/lib/storefront-data", () => ({
             cart: "carrinho",
             signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha",
             account: "conta",
+            affiliateJoin: "seja-afiliado",
             accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", cashback: "cashback", profile: "perfil", messages: "conversas" },
           },
         }

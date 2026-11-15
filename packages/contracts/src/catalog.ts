@@ -48,6 +48,8 @@ export interface StorefrontRouteWords {
   resetPassword: string;
   /** The shopper's own page at this shop: `/<shop>/conta`. */
   account: string;
+  /** The shop's "Seja afiliado" page (plan 2026-11-14): `/<shop>/seja-afiliado`. */
+  affiliateJoin: string;
   /**
    * That page's tabs, each a third segment under `account`: `/<shop>/conta/perfil`. Every tab the
    * area will have is spelled now, so an address never changes on the day its tab arrives.

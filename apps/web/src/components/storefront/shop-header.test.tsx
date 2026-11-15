@@ -14,7 +14,7 @@ import { shopHeaderOf } from "./shop-header"
 // next/font runs only in Next's compiler, and the conversations' panel draws in the shop's face.
 vi.mock("@/components/storefront/shop-font", () => ({ figtree: { variable: "font-figtree", style: {} }, shopFontStyle: {} }))
 
-const routeWords = { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha", account: "conta", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", cashback: "cashback", profile: "perfil", messages: "conversas" } }
+const routeWords = { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha", account: "conta", affiliateJoin: "seja-afiliado", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", cashback: "cashback", profile: "perfil", messages: "conversas" } }
 const shop = { slug: "mutante", routeWords, socialNetworks: { whatsapp: "5585999998888" } } as unknown as PublicStore
 const routes = storefrontRoutes(shop)
 const options = { scopes: [], scope: "", messages: ptBR }

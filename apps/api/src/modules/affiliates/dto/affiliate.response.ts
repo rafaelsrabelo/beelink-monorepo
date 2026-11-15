@@ -109,6 +109,7 @@ export class AffiliateInvitationResponse implements AffiliateInvitation {
   @ApiProperty({ format: 'date-time' }) expiresAt!: string;
   @ApiProperty({ description: 'Whether the invited e-mail has a bee-link account.' }) hasAccount!: boolean;
   @ApiProperty({ nullable: true, type: String }) suggestedSlug!: string | null;
+  @ApiProperty({ description: "Whether accepting asks for the CPF: an application's invite is made without it." }) cpfRequired!: boolean;
 }
 
 export class AffiliateSlugAvailabilityResponse implements AffiliateSlugAvailability {

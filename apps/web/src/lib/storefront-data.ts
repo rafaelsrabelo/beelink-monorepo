@@ -2,7 +2,7 @@
 import { headers } from "next/headers"
 
 // Types
-import type { CustomerSignInOptions, PublicLanding, StorefrontOffers, PublicProductCategory, PublicProductDetail, PublicProductReviews, PublicReviewListQuery, PublicStore, StorefrontCartProducts, StorefrontCatalog, StorefrontKitParts, StorefrontPaymentOptions, StorefrontSort } from "@harness-monorepo/contracts"
+import type { CustomerSignInOptions, PublicAffiliatePage, PublicLanding, StorefrontOffers, PublicProductCategory, PublicProductDetail, PublicProductReviews, PublicReviewListQuery, PublicStore, StorefrontCartProducts, StorefrontCatalog, StorefrontKitParts, StorefrontPaymentOptions, StorefrontSort } from "@harness-monorepo/contracts"
 
 // App
 import { callPublicApi } from "./public-api"
@@ -207,6 +207,18 @@ export async function landingAt(slug: string, pageSlug: string): Promise<PublicL
   if (!response?.ok) return null
 
   return (await response.json()) as PublicLanding
+}
+
+/**
+ * The shop's "Seja afiliado" page as a visitor reads it (plan 2026-11-14): kept under the shop's tag,
+ * which the page's save drops. Null whenever visitors do not see it — closed, the programme off, or
+ * affiliates not live in this deployment — and the address is then a 404.
+ */
+export async function affiliateJoinAt(slug: string): Promise<PublicAffiliatePage | null> {
+  const response = await callPublicApi({ path: `/stores/${slug}/affiliate-join`, tags: [storeTag(slug)] }).catch(() => null)
+  if (!response?.ok) return null
+
+  return (await response.json()) as PublicAffiliatePage
 }
 
 export async function productAt(slug: string, productSlug: string): Promise<PublicProductDetail | null> {

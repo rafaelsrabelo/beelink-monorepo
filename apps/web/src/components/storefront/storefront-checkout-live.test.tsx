@@ -19,7 +19,7 @@ import { CartProvider } from "./cart-provider"
 import { CartStepper } from "./cart-stepper.fixtures"
 import { StorefrontCheckoutLive, type StorefrontCheckoutLiveProps } from "./storefront-checkout-live"
 
-const routeWords = { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha", account: "conta", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", cashback: "cashback", profile: "perfil", messages: "conversas" } }
+const routeWords = { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha", account: "conta", affiliateJoin: "seja-afiliado", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", cashback: "cashback", profile: "perfil", messages: "conversas" } }
 
 const mocks = vi.hoisted(() => ({ refresh: vi.fn() }))
 

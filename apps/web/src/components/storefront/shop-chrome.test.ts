@@ -14,7 +14,7 @@ import { StorefrontConsentReopen } from "./storefront-consent-reopen"
 
 const routes = storefrontRoutes({
   slug: "mutante",
-  routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha", account: "conta", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", cashback: "cashback", profile: "perfil", messages: "conversas" } },
+  routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha", account: "conta", affiliateJoin: "seja-afiliado", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", cashback: "cashback", profile: "perfil", messages: "conversas" } },
 })
 
 describe("shopFooterColumnsOf", () => {
@@ -31,6 +31,16 @@ describe("shopFooterColumnsOf", () => {
     const store = { socialNetworks: { whatsapp: "5585999998888" }, unavailable: true } as unknown as PublicStore
 
     expect(shopFooterColumnsOf(store, routes, ptBR, [{ id: "page-ofertas", label: "Ofertas", href: "/mutante/lp/ofertas" }]).map((column) => column.id)).toEqual(["legal"])
+  })
+
+  it("links the shop's \"Seja afiliado\" page where the shopkeeper chose the footer, never under an affiliate's name (plan 2026-11-14)", () => {
+    const affiliatePage = { placements: { homeBanner: false, footerLink: true, topStrip: false }, rateBps: 1000, bannerTitle: null, bannerText: null, bannerCta: null }
+    const store = { type: "ECOMMERCE", socialNetworks: { whatsapp: null }, affiliatePage } as unknown as PublicStore
+    const hrefs = (shop: PublicStore & { affiliate?: string | null }) => shopFooterColumnsOf(shop, routes, ptBR)[0]?.items.map((item) => item.href)
+
+    expect(hrefs(store)).toContain("/mutante/seja-afiliado")
+    expect(hrefs({ ...store, affiliate: "joao" })).not.toContain("/mutante/seja-afiliado")
+    expect(hrefs({ ...store, affiliatePage: { ...affiliatePage, placements: { ...affiliatePage.placements, footerLink: false } } })).not.toContain("/mutante/seja-afiliado")
   })
 
   it("has no contact column for a shop no one can message", () => {

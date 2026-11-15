@@ -146,6 +146,13 @@ const envSchema = z.object({
   COURIER_APPLICATION_RATE_LIMIT_WINDOW: z.string().default('10 minutes'),
 
   /**
+   * Per IP, on POST /stores/:slug/affiliate-join/applications — a shop's "Seja afiliado" form (plan
+   * 2026-11-14). The courier's numbers, for the same reason: a stranger's data, kept, from a public form.
+   */
+  AFFILIATE_APPLICATION_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(5),
+  AFFILIATE_APPLICATION_RATE_LIMIT_WINDOW: z.string().default('10 minutes'),
+
+  /**
    * Per IP, on POST /stores/:slug/funnel-events — the shop window counting a step of its funnel
    * (BEELINK-276). Generous on purpose: a mobile carrier puts many visitors behind one address, and
    * a count refused is a visit missing from a shopkeeper's numbers, not an error anyone sees. It

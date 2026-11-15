@@ -182,9 +182,11 @@ export interface AffiliateAcceptanceFormValues {
   name: string
   password: string
   agreed: boolean
+  /** As typed, masked; asked only when the invite came from an application. */
+  cpf: string
 }
 
-export type AffiliateAcceptanceIssues = Partial<Record<"slug" | "pixKey" | "name" | "password" | "agreed", string>>
+export type AffiliateAcceptanceIssues = Partial<Record<"slug" | "pixKey" | "name" | "password" | "agreed" | "cpf", string>>
 
 /** What the `/name` field says under it while the person types. */
 export type AffiliateSlugHint =

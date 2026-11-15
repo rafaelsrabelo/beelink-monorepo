@@ -4111,7 +4111,7 @@ export interface UiMessages {
   affiliates: {
     title: string
     intro: string
-    tabs: { label: string; affiliates: string; settings: string; tables: string; owed: string }
+    tabs: { label: string; affiliates: string; settings: string; tables: string; owed: string; applications: string }
     settings: {
       title: string
       enabled: string
@@ -4659,8 +4659,12 @@ export interface UiMessages {
     expired: { title: string; body: string }
     termsChanged: string
     done: { title: string; body: string; copy: string; copied: string; next: string }
-    issues: { slug: string; pixKey: string; name: string; password: string; terms: string }
+    /** Asked only of an invite made by approving an application (plan 2026-11-14). */
+    cpf: string
+    cpfHelp: string
+    issues: { slug: string; pixKey: string; name: string; password: string; terms: string; cpf: string }
     errors: {
+      AFFILIATE_CPF_TAKEN: string
       AFFILIATE_INVITE_NOT_FOUND: string
       AFFILIATE_INVITE_EXPIRED: string
       AFFILIATE_INVITE_EMAIL_MISMATCH: string
@@ -4670,6 +4674,170 @@ export interface UiMessages {
       AFFILIATE_ALREADY_LINKED: string
       AUTH_EMAIL_TAKEN: string
       RATE_LIMITED: string
+      UNKNOWN: string
+    }
+    failed: string
+    retry: string
+  }
+  /**
+   * A shop's "Seja afiliado" page (plan 2026-11-14), the product's own texts: what a page reads where
+   * its shop wrote nothing. `{loja}` and `{comissao}` work in every one — the shop's name and the
+   * announced table's general rate — through `format`, as the shop's own texts do.
+   */
+  affiliateJoin: {
+    /** The page's own words, which the shop does not write: what the form and the law ask. */
+    heading: string
+    footerLink: string
+    back: string
+    /** `slug`: the name a link shows, as an example. */
+    linkPreview: { title: string; lead: string; name: string; partner: string; initials: string; slug: string }
+    /** `{sale}`, `{earning}`: what a sale through the link earns at the announced rate. */
+    example: string
+    form: {
+      close: string
+      name: string
+      email: string
+      phone: string
+      phonePlaceholder: string
+      optional: string
+      /** `{terms}`, `{privacy}`: the links' words, below. */
+      accept: string
+      terms: string
+      privacy: string
+      submit: string
+      sending: string
+      /** `{loja}`. */
+      note: string
+      issues: { name: string; email: string; phone: string; accepted: string }
+      errors: { AFFILIATE_PAGE_CLOSED: string; AFFILIATE_APPLICATION_INVALID: string; RATE_LIMITED: string; UNKNOWN: string }
+    }
+    sent: {
+      /** `{name}`: the first name typed. */
+      title: string
+      titleNoName: string
+      steps: string[]
+      back: string
+    }
+    terms: { title: string; none: string; close: string }
+    defaults: {
+      badge: string
+      title: string
+      subtitle: string
+      ctaLabel: string
+      highlights: string[]
+      stepsTitle: string
+      steps: { title: string; text: string }[]
+      benefits: { title: string; text: string }[]
+      questionsTitle: string
+      questions: { question: string; answer: string }[]
+      closingTitle: string
+      closingText: string
+      formTitle: string
+      formSubtitle: string
+      extraQuestion: string
+      successMessage: string
+      bannerTitle: string
+      bannerText: string
+      bannerCta: string
+    }
+  }
+  /** The page as its owner sets it, in the programme's settings, and writes it, on its own screen (plan 2026-11-14). */
+  affiliatePage: {
+    card: {
+      title: string
+      badge: string
+      intro: string
+      open: string
+      /** `{address}`. */
+      openHelp: string
+      live: string
+      /** Why visitors do not see the page, by the API's reason. */
+      blocked: { CLOSED: string; PROGRAM_OFF: string; LINKS_OFF: string }
+      address: string
+      addressHelp: string
+      copy: string
+      copied: string
+      view: string
+      content: string
+      contentHelp: string
+      editContent: string
+      placements: string
+      homeBanner: string
+      footerLink: string
+      topStrip: string
+      table: string
+      tableHelp: string
+      approval: string
+      manual: string
+      manualHelp: string
+      auto: string
+      autoHelp: string
+      save: string
+      saving: string
+      saved: string
+    }
+    editor: {
+      title: string
+      back: string
+      view: string
+      /** Said once, at the top: every text is the shop's, and the two marks. */
+      marks: string
+      restore: string
+      /** `{count}`, `{max}`. */
+      count: string
+      /** `{max}`. */
+      tooLong: string
+      required: string
+      add: string
+      /** `{n}`. */
+      remove: string
+      /** `{n}`: one highlight's field. */
+      top: { title: string; badge: string; heading: string; subtitle: string; cta: string; highlights: string; highlight: string; image: string; imageHelp: string }
+      steps: { title: string; heading: string; item: string; itemTitle: string; itemText: string }
+      benefits: { title: string; item: string; itemTitle: string; itemText: string; none: string }
+      questions: { title: string; heading: string; item: string; question: string; answer: string; none: string }
+      closing: { title: string; heading: string; text: string }
+      form: { title: string; heading: string; subtitle: string; fixed: string; askExtra: string; extraQuestion: string; success: string; privacy: string }
+      banner: { title: string; heading: string; text: string; cta: string }
+      preview: string
+      previewNote: string
+      save: string
+      saving: string
+      saved: string
+    }
+    errors: {
+      AFFILIATE_PAGE_INVALID: string
+      COMMISSION_TABLE_NOT_FOUND: string
+      COMMISSION_TABLE_PERSONAL: string
+      UNKNOWN: string
+    }
+    failed: string
+    retry: string
+  }
+  /** The applications the page took, in the panel (plan 2026-11-14). */
+  affiliateApplications: {
+    title: string
+    notice: string
+    filters: { label: string; PENDING: string; APPROVED: string; REFUSED: string }
+    /** `{date}`. */
+    received: string
+    /** The extra question as the product asks it, for an application that answered it. */
+    extraDefault: string
+    approve: string
+    refuse: string
+    /** Where the affiliate an approval invited stands now. */
+    affiliate: { INVITED: string; ACTIVE: string; PAUSED: string; ENDED: string; gone: string }
+    refused: string
+    empty: { PENDING: string; APPROVED: string; REFUSED: string }
+    retention: string
+    approveDialog: { title: string; body: string; table: string; confirm: string; sending: string; cancel: string }
+    refuseDialog: { title: string; body: string; confirm: string; cancel: string }
+    errors: {
+      AFFILIATE_APPLICATION_DECIDED: string
+      AFFILIATE_APPLICATION_NOT_FOUND: string
+      AFFILIATE_EMAIL_TAKEN: string
+      COMMISSION_TABLE_NOT_FOUND: string
+      COMMISSION_TABLE_PERSONAL: string
       UNKNOWN: string
     }
     failed: string

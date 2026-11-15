@@ -5,6 +5,8 @@ import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module.js';
 import { StoresModule } from '../stores/stores.module.js';
 import { UploadsModule } from '../uploads/uploads.module.js';
+import { AffiliateApplicationSweeper } from './affiliate-application-sweeper.js';
+import { AffiliateApplicationsService } from './affiliate-applications.service.js';
 import { AffiliateDocumentSweeper } from './affiliate-document-sweeper.js';
 import { AffiliateDocumentsController } from './affiliate-documents.controller.js';
 import { AffiliateDocumentsService } from './affiliate-documents.service.js';
@@ -15,6 +17,8 @@ import { AffiliateCommissionSweeper } from './affiliate-commission-sweeper.js';
 import { AffiliateMoneyController } from './affiliate-money.controller.js';
 import { AffiliateMoneyService } from './affiliate-money.service.js';
 import { AffiliateOrderChangesService } from './affiliate-order-changes.service.js';
+import { AffiliatePageController } from './affiliate-page.controller.js';
+import { AffiliatePageService } from './affiliate-page.service.js';
 import { AffiliatePayoutMailer } from './affiliate-payout-mailer.js';
 import { AffiliateInvitationsService } from './affiliate-invitations.service.js';
 import { AffiliateLinksService } from './affiliate-links.service.js';
@@ -26,6 +30,7 @@ import { CommissionTablesController } from './commission-tables.controller.js';
 import { CommissionTablesService } from './commission-tables.service.js';
 import { StoreAffiliatesController } from './store-affiliates.controller.js';
 import { StoreAffiliatesService } from './store-affiliates.service.js';
+import { StorefrontAffiliatePageController } from './storefront-affiliate-page.controller.js';
 import { StorefrontAffiliatesController } from './storefront-affiliates.controller.js';
 
 /**
@@ -38,12 +43,13 @@ import { StorefrontAffiliatesController } from './storefront-affiliates.controll
  * statement, adjustments and payouts, and what is owed by due day. AF8 (IMPULSEIA-108): the
  * affiliate's own area — what an account reads of the shops it sells for — and the e-mail a payout owes.
  * Since the user's review of 12/11/2026: an affiliate's own commission, and their identity document,
- * whose photos UploadsModule keeps privately. StoresModule for who owns the shop; AuthModule for the session an account made
+ * whose photos UploadsModule keeps privately. Since 14/11/2026: the shop's "Seja afiliado" page and the
+ * applications it takes, an approval being the shop's own invite. StoresModule for who owns the shop; AuthModule for the session an account made
  * by an invite opens with. PrismaModule and MailModule are global.
  */
 @Module({
   imports: [StoresModule, AuthModule, UploadsModule],
-  controllers: [AffiliatesController, CommissionTablesController, StoreAffiliatesController, AffiliateInvitesController, StorefrontAffiliatesController, AffiliateMoneyController, AffiliateAreaController, AffiliateDocumentsController],
+  controllers: [AffiliatesController, CommissionTablesController, StoreAffiliatesController, AffiliateInvitesController, StorefrontAffiliatesController, AffiliateMoneyController, AffiliateAreaController, AffiliateDocumentsController, AffiliatePageController, StorefrontAffiliatePageController],
   providers: [
     AffiliatesService,
     CommissionTablesService,
@@ -59,6 +65,9 @@ import { StorefrontAffiliatesController } from './storefront-affiliates.controll
     AffiliateRegistrationService,
     AffiliateDocumentsService,
     AffiliateDocumentSweeper,
+    AffiliatePageService,
+    AffiliateApplicationsService,
+    AffiliateApplicationSweeper,
   ],
 })
 export class AffiliatesModule {}

@@ -5,6 +5,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // UI
 import { ratePercentOf } from "@harness-monorepo/ui/lib/cashback"
+import { isCpf } from "@harness-monorepo/ui/lib/cpf"
 
 /**
  * The crossing between the invite on the wire (IMPULSEIA-103) and the page the person invited reads
@@ -35,13 +36,16 @@ export function invitationViewOf(invitation: AffiliateInvitation, locale: string
 
 /** Where the form starts: the `/name` the API suggests, and the name the shop invited. */
 export function acceptanceFormOf(invitation: AffiliateInvitation): AffiliateAcceptanceFormValues {
-  return { slug: invitation.suggestedSlug ?? "", pixKey: "", name: invitation.affiliate.name, password: "", agreed: false }
+  return { slug: invitation.suggestedSlug ?? "", pixKey: "", name: invitation.affiliate.name, password: "", agreed: false, cpf: "" }
 }
 
-/** What accepting sends — with the account's name and password when it is made here — or what to correct. */
+/**
+ * What accepting sends — with the account's name and password when it is made here, and the CPF when
+ * an application's invite asks it (plan 2026-11-14) — or what to correct.
+ */
 export function acceptancePayloadOf(
   value: AffiliateAcceptanceFormValues,
-  input: { signUp: boolean; termsVersion: number },
+  input: { signUp: boolean; termsVersion: number; cpfRequired?: boolean },
   text: Text["issues"],
 ): { payload: AffiliateAcceptancePayload | AffiliateSignUpPayload } | { issues: AffiliateAcceptanceIssues } {
   const slug = value.slug.trim()
@@ -52,10 +56,11 @@ export function acceptancePayloadOf(
     ...(input.signUp && (value.password.length < PASSWORD.min || value.password.length > PASSWORD.max) ? { password: text.password } : {}),
     ...(slug ? {} : { slug: text.slug }),
     ...(lengthOf(pixKey) > PIX_KEY_MAX ? { pixKey: text.pixKey } : {}),
+    ...(input.cpfRequired && !isCpf(value.cpf) ? { cpf: text.cpf } : {}),
     ...(value.agreed ? {} : { agreed: text.terms }),
   }
   if (Object.keys(issues).length > 0) return { issues }
-  const acceptance: AffiliateAcceptancePayload = { slug, pixKey: pixKey || null, termsVersion: input.termsVersion }
+  const acceptance: AffiliateAcceptancePayload = { slug, pixKey: pixKey || null, termsVersion: input.termsVersion, ...(input.cpfRequired ? { cpf: value.cpf.replace(/\D/g, "") } : {}) }
   return { payload: input.signUp ? { ...acceptance, name, password: value.password } : acceptance }
 }
 

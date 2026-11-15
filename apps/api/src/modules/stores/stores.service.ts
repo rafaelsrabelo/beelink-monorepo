@@ -7,7 +7,9 @@ import type { CreateStoreDto, UpdateStoreDto } from './dto/store.dto.js';
 import type { StoreRow } from './store.mapper.js';
 
 // App
+import { env } from '../../shared/config/env.js';
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
+import { liveAffiliatePageOf, publicPlacementOf } from '../affiliates/affiliate-page-live.js';
 import { openTrial } from '../billing/subscription-trial.js';
 import { openingPageOf, refuseShopWithoutWhatsapp } from './store-opening.js';
 import { StoreGeocoder } from './store-geocoder.service.js';
@@ -288,7 +290,9 @@ export class StoresService {
     if (unavailable) return toUnavailablePublicStore(row);
 
     const sections = homeSectionsOf(row);
-    return toPublicStore(row, await lookupsOf(this.prisma, row.id, sections), sections);
+    const [lookups, affiliatePage] = await Promise.all([lookupsOf(this.prisma, row.id, sections), liveAffiliatePageOf(this.prisma, row.id, env.AFFILIATE_LINKS_ENABLED)]);
+    // The shop window's read alone carries it: every page of the window leads to the affiliate page from it.
+    return { ...toPublicStore(row, lookups, sections), affiliatePage: publicPlacementOf(affiliatePage) };
   }
 
   /**

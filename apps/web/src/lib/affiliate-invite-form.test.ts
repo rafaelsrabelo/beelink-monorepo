@@ -19,7 +19,7 @@ const invitation: AffiliateInvitation = {
   terms: { text: "Pago por Pix.", version: 3 },
   expiresAt: "2026-11-18T13:00:00.000Z",
   hasAccount: false,
-  suggestedSlug: "joao-silva",
+  suggestedSlug: "joao-silva", cpfRequired: false,
 }
 
 describe("the invite, in words (IMPULSEIA-104)", () => {
@@ -37,13 +37,13 @@ describe("the invite, in words (IMPULSEIA-104)", () => {
   })
 
   it("starts from the /name suggested and the name the shop invited", () => {
-    expect(acceptanceFormOf(invitation)).toEqual({ slug: "joao-silva", pixKey: "", name: "João Silva", password: "", agreed: false })
+    expect(acceptanceFormOf(invitation)).toEqual({ slug: "joao-silva", pixKey: "", name: "João Silva", password: "", agreed: false, cpf: "" })
     expect(acceptanceFormOf({ ...invitation, suggestedSlug: null }).slug).toBe("")
   })
 })
 
 describe("accepting", () => {
-  const filled = { slug: " joao ", pixKey: "  ", name: " João ", password: "12345678", agreed: true }
+  const filled = { slug: " joao ", pixKey: "  ", name: " João ", password: "12345678", agreed: true, cpf: "" }
 
   it("sends the terms version read, a blank Pix key as none, and the account's name and password only when made here", () => {
     expect(acceptancePayloadOf(filled, { signUp: false, termsVersion: 3 }, text.issues)).toEqual({ payload: { slug: "joao", pixKey: null, termsVersion: 3 } })
@@ -51,9 +51,22 @@ describe("accepting", () => {
   })
 
   it("says what is missing, field by field, and asks no password of someone signed in", () => {
-    const empty = { slug: "", pixKey: "x".repeat(141), name: "J", password: "123", agreed: false }
+    const empty = { slug: "", pixKey: "x".repeat(141), name: "J", password: "123", agreed: false, cpf: "" }
     expect(acceptancePayloadOf(empty, { signUp: true, termsVersion: 1 }, text.issues)).toEqual({ issues: { name: text.issues.name, password: text.issues.password, slug: text.issues.slug, pixKey: text.issues.pixKey, agreed: text.issues.terms } })
     expect(acceptancePayloadOf(empty, { signUp: false, termsVersion: 1 }, text.issues)).toEqual({ issues: { slug: text.issues.slug, pixKey: text.issues.pixKey, agreed: text.issues.terms } })
+  })
+})
+
+describe("accepting an application's invite (plan 2026-11-14)", () => {
+  const filled = { slug: "ana", pixKey: "", name: "Ana", password: "12345678", agreed: true, cpf: "111.444.777-35" }
+
+  it("sends the CPF as its digits, and refuses one that is no CPF", () => {
+    expect(acceptancePayloadOf(filled, { signUp: false, termsVersion: 1, cpfRequired: true }, text.issues)).toEqual({ payload: { slug: "ana", pixKey: null, termsVersion: 1, cpf: "11144477735" } })
+    expect(acceptancePayloadOf({ ...filled, cpf: "111.444.777-00" }, { signUp: false, termsVersion: 1, cpfRequired: true }, text.issues)).toEqual({ issues: { cpf: text.issues.cpf } })
+  })
+
+  it("sends no CPF where the invite asks none", () => {
+    expect(acceptancePayloadOf(filled, { signUp: false, termsVersion: 1 }, text.issues)).toEqual({ payload: { slug: "ana", pixKey: null, termsVersion: 1 } })
   })
 })
 

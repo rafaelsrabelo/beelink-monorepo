@@ -12,6 +12,7 @@ import { StorefrontReorderNotice } from "@harness-monorepo/ui/blocks/storefront/
 
 // App
 import { ShopUnavailable } from "@/components/storefront/shop-unavailable"
+import { StorefrontAffiliateJoinSection } from "@/components/storefront/affiliate/storefront-affiliate-join-section"
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
 import { StorefrontHome } from "@/components/storefront/storefront-home"
 import { StorefrontOffers } from "@/components/storefront/storefront-offers"
@@ -42,7 +43,7 @@ import { shopShareOf } from "@/lib/shop-share"
 import { offTheAirAt, unavailableMetadata } from "@/lib/shop-unavailable"
 import { shopperAt } from "@/lib/shopper"
 import { siteOrigin } from "@/lib/site-origin"
-import { catalogueAt, paymentOptionsAt, shopAt } from "@/lib/storefront-data"
+import { affiliateJoinAt, catalogueAt, paymentOptionsAt, shopAt } from "@/lib/storefront-data"
 import { installmentTermsOf } from "@/lib/storefront-installments"
 import { orderNumberOf, paramOf, REORDER_FAILED_KEY, REORDER_TRIMMED_KEY, REORDERED_KEY, storefrontRoutes } from "@/lib/storefront-routes"
 import { canonicalOf, headingOf, isShelf, listingAskOf, placeOf } from "@/lib/storefront-section"
@@ -114,8 +115,9 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
     if (shop && link) return <StorefrontHome slug={slug} store={shop} arrivedBy={link.affiliate?.slug ?? null} />
     notFound()
   }
-  // A page of its own, with none of the shop's header around it.
+  // A page of its own, with none of the shop's header around it; the "Seja afiliado" page (plan 2026-11-14) read before anything streams, a 404 while closed.
   if (place.section.kind === "checkout") return <StorefrontCheckoutSection place={place} query={query} />
+  if (place.section.kind === "affiliateJoin") return <StorefrontAffiliateJoinSection place={place} page={(await affiliateJoinAt(place.store.slug)) ?? notFound()} />
 
   const { store, category, navigation, messages: ui, scope } = place
   const routes = storefrontRoutes(store)

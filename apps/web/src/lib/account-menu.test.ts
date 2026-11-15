@@ -17,6 +17,7 @@ const routes = storefrontRoutes({
     cart: "carrinho",
     signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha",
     account: "conta",
+    affiliateJoin: "seja-afiliado",
     accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", cashback: "cashback", profile: "perfil", messages: "conversas" },
   },
 })
@@ -67,6 +68,7 @@ describe("the account's menu", () => {
       cart: "carrinho",
       signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha",
       account: "conta",
+      affiliateJoin: "seja-afiliado",
       accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", cashback: "cashback", profile: "perfil", messages: "conversas" },
     }
     expect(deliveredAccountTabOf("perfil", routeWords)).toBe("profile")

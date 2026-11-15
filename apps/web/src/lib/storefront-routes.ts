@@ -117,6 +117,7 @@ export type StorefrontSection =
   | { kind: "verifyEmail" }
   | { kind: "resetPassword" }
   | { kind: "account" }
+  | { kind: "affiliateJoin" }
   | { kind: "category"; slug: string }
 
 /**
@@ -288,6 +289,12 @@ export function storefrontRoutes(shop: StorefrontShop) {
     checkout: () => `${base}/${CHECKOUT_SEGMENT}`,
 
     /**
+     * The shop's "Seja afiliado" page (plan 2026-11-14), always the shop's own address: nothing under an
+     * affiliate's name leads to it, and a person who applies is not anyone's referral.
+     */
+    affiliateJoin: () => `${shopBaseOf(shop)}/${routeWords.affiliateJoin}`,
+
+    /**
      * Where a shopper signs in — or, by `mode`, signs up (`criar`) or asks for a new password
      * (`senha`). `back` is where they return to afterwards, a path inside this shop.
      */
@@ -375,6 +382,8 @@ export function sectionOf(segment: string, routeWords: StorefrontRouteWords): St
   if (routeWords.verifyEmail && segment === routeWords.verifyEmail) return { kind: "verifyEmail" }
   if (routeWords.resetPassword && segment === routeWords.resetPassword) return { kind: "resetPassword" }
   if (segment === routeWords.account) return { kind: "account" }
+  // Spelled by the API since the plan of 2026-11-14; a shop read from the cache in the minute before has none.
+  if (routeWords.affiliateJoin && segment === routeWords.affiliateJoin) return { kind: "affiliateJoin" }
 
   return { kind: "category", slug: segment }
 }

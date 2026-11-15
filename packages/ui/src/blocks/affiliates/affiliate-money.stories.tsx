@@ -18,7 +18,7 @@ const noop = () => {}
 function OwedScreen() {
   return (
     <div className="flex max-w-4xl flex-col gap-6">
-      <AffiliatesTabs active="owed" affiliatesHref="#afiliados" owedHref="#a-pagar" settingsHref="#configuracoes" tablesHref="#tabelas" />
+      <AffiliatesTabs active="owed" affiliatesHref="#afiliados" applicationsHref="#candidaturas" owedHref="#a-pagar" settingsHref="#configuracoes" tablesHref="#tabelas" />
       <AffiliateOwedView owed={owed} />
     </div>
   )

@@ -293,6 +293,8 @@ describe("a shop's affiliates: the invite, and accepting it", () => {
         expiresAt: invited.invite!.expiresAt,
         hasAccount: false,
         suggestedSlug: 'joao-silva',
+        // The shop's own form gave it: nothing to ask on accepting.
+        cpfRequired: false,
       });
     });
 

@@ -6,6 +6,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // App
 import { orderHrefOf } from "./storefront-links"
 import { shopLegalColumnOf } from "./shop-legal-column"
+import { recruitingOf } from "@/lib/affiliate-join"
 import type { StorefrontRoutes } from "@/lib/storefront-routes"
 
 /**
@@ -19,7 +20,7 @@ import type { StorefrontRoutes } from "@/lib/storefront-routes"
  * customer's pages that still answer.
  */
 export function shopFooterColumnsOf(
-  store: PublicStore,
+  store: PublicStore & { affiliate?: string | null },
   routes: StorefrontRoutes,
   messages: UiMessages,
   pages: readonly StorefrontMenuItem[] = [],
@@ -37,6 +38,8 @@ export function shopFooterColumnsOf(
         { label: text.categoriesTitle, href: routes.categories() },
         { label: text.cart, href: routes.cart() },
         ...pages.map(({ label, href }) => ({ label, href })),
+        // The shop's "Seja afiliado" page, where the shopkeeper chose the footer (plan 2026-11-14).
+        ...(recruitingOf(store)?.placements.footerLink ? [{ label: messages.affiliateJoin.footerLink, href: routes.affiliateJoin() }] : []),
       ],
     },
     ...(whatsapp ? [{ id: "contact", title: text.footerContact, items: [{ label: text.order, href: whatsapp }] }] : []),

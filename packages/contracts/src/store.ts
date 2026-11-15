@@ -1,3 +1,4 @@
+import type { PublicAffiliatePagePlacement } from "./affiliate-page.js";
 import type { PublicCashback } from "./cashback.js";
 import type { PublicCustomDomain } from "./custom-domain.js";
 import type { PublicPageLink } from "./store-pages.js";
@@ -196,6 +197,11 @@ export interface PublicStore {
   paymentMethods: PaymentMethod[];
   /** Its cashback while switched on (BEELINK-243); null while off. */
   cashback: PublicCashback | null;
+  /**
+   * Where the shop window leads to its "Seja afiliado" page (plan 2026-11-14), and the banner's words;
+   * absent or null whenever visitors do not see the page. Only the shop window's read carries it.
+   */
+  affiliatePage?: PublicAffiliatePagePlacement | null;
   /**
    * The shop's Meta Pixel ID (BEELINK-269), digits only; null with none saved. Public on purpose —
    * any page that loads a pixel shows its ID — and the only thing of the pixel a shop gives: the
