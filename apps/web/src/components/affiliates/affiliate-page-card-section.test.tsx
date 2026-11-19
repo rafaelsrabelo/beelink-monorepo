@@ -27,6 +27,7 @@ const overview: AffiliatePageOverview = {
   page: { open: false, placements: { homeBanner: true, footerLink: true, topStrip: false }, tableId: null, approval: "MANUAL", content: written, updatedAt: null },
   blockedBy: "CLOSED",
   rateBps: 1000,
+  maxRateBps: 1000,
   pendingApplications: 0,
 }
 const tables: CommissionTableSummary[] = [{ id: "padrao", name: "Padrão", defaultRateBps: 1000, isDefault: true, productRateCount: 0, categoryRateCount: 0, affiliateCount: 0, affiliate: null }]

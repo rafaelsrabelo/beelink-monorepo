@@ -4071,6 +4071,7 @@ export const en: UiMessages = {
     back: "Back to the shop",
     linkPreview: { title: "This is how your link looks", lead: "You are in the shop of", name: "Your name", partner: "Official partner", initials: "YN", slug: "your-name" },
     example: "A sale of {sale} in products through your link earns you {earning}.",
+    upToRate: "up to {rate}",
     form: {
       close: "Close the form",
       name: "Full name",
@@ -4181,7 +4182,7 @@ export const en: UiMessages = {
       title: "Affiliate page content",
       back: "Affiliate settings",
       view: "View page",
-      marks: "Every text of the page is yours. Write {loja} and {comissao} wherever you like: they become the shop's name and the announced commission, and follow when they change. Whatever is left blank goes back to the default text.",
+      marks: "Every text of the page is yours. Write {loja} and {comissao} wherever you like: they become the shop's name and the announced commission — with “up to” in front when a product pays more than the general rate — and follow when they change. Whatever is left blank goes back to the default text.",
       restore: "Restore default",
       count: "{count} of {max}",
       tooLong: "Up to {max} characters.",

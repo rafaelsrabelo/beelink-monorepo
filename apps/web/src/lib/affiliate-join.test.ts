@@ -15,8 +15,8 @@ const nothing: AffiliatePageContent = {
   badge: null, title: null, subtitle: null, ctaLabel: null, highlights: null, imageUrl: null, stepsTitle: null, steps: null, benefits: null, questionsTitle: null, questions: null,
   closingTitle: null, closingText: null, formTitle: null, formSubtitle: null, askExtraQuestion: true, extraQuestion: null, successMessage: null, bannerTitle: null, bannerText: null, bannerCta: null,
 }
-const page: PublicAffiliatePage = { content: nothing, rateBps: 1000, terms: { text: null, version: 0 } }
-const marks = joinMarksOf({ name: "Lessari" }, 1000, "pt-BR")
+const page: PublicAffiliatePage = { content: nothing, rateBps: 1000, maxRateBps: 1000, terms: { text: null, version: 0 } }
+const marks = joinMarksOf({ name: "Lessari" }, page, join, "pt-BR")
 
 describe("the \"Seja afiliado\" page on the shop window (plan 2026-11-14)", () => {
   it("draws the product's own texts where the shop wrote none, its marks filled in", () => {
@@ -24,6 +24,16 @@ describe("the \"Seja afiliado\" page on the shop window (plan 2026-11-14)", () =
     expect(view.title).toBe("Indique a Lessari e ganhe 10% em cada venda")
     expect(view.benefits[0]?.title).toBe("10% de comissão")
     expect(view.steps).toHaveLength(3)
+  })
+
+  // Mutante's: 10% on the table, and products of its own choosing at 30%.
+  it("says \"até\" the highest rate where a product on sale earns more than the table's general one", () => {
+    const upTo = joinMarksOf({ name: "Mutante" }, { rateBps: 1000, maxRateBps: 3000 }, join, "pt-BR")
+    expect(upTo.rate).toBe("até 30%")
+    expect(joinBannerOf({ placements: { homeBanner: true, footerLink: true, topStrip: false }, rateBps: 1000, maxRateBps: 3000, bannerTitle: null, bannerText: null, bannerCta: null }, join.defaults, upTo).title).toBe(
+      "Indique a Mutante e ganhe até 30% em cada venda",
+    )
+    expect(joinPageViewOf(page, join.defaults, upTo).benefits[0]?.title).toBe("até 30% de comissão")
   })
 
   it("draws what the shop wrote, and leaves out a list it emptied", () => {
@@ -46,7 +56,7 @@ describe("the \"Seja afiliado\" page on the shop window (plan 2026-11-14)", () =
   })
 
   it("leads to the page from the home, the footer and the strip — never off the air, from a site or under an affiliate's name", () => {
-    const affiliatePage = { placements: { homeBanner: true, footerLink: true, topStrip: true }, rateBps: 1000, bannerTitle: null, bannerText: null, bannerCta: "Quero vender" }
+    const affiliatePage = { placements: { homeBanner: true, footerLink: true, topStrip: true }, rateBps: 1000, maxRateBps: 1000, bannerTitle: null, bannerText: null, bannerCta: "Quero vender" }
     const store = { type: "ECOMMERCE" as const, affiliatePage }
     expect(recruitingOf(store)).toBe(affiliatePage)
     expect(recruitingOf({ ...store, affiliate: "joao" })).toBeNull()

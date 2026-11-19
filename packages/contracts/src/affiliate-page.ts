@@ -113,6 +113,8 @@ export interface AffiliatePageOverview {
   blockedBy: AffiliatePageBlock | null;
   /** The announced table's general rate, in basis points: what `{comissao}` becomes. */
   rateBps: number;
+  /** The highest rate a product on sale earns on that table: above `rateBps`, `{comissao}` is "até" it. */
+  maxRateBps: number;
   /** Applications waiting on the shopkeeper. */
   pendingApplications: number;
 }
@@ -124,6 +126,7 @@ export interface AffiliatePageOverview {
 export interface PublicAffiliatePagePlacement {
   placements: AffiliatePagePlacements;
   rateBps: number;
+  maxRateBps: number;
   bannerTitle: string | null;
   bannerText: string | null;
   bannerCta: string | null;
@@ -133,6 +136,7 @@ export interface PublicAffiliatePagePlacement {
 export interface PublicAffiliatePage {
   content: AffiliatePageContent;
   rateBps: number;
+  maxRateBps: number;
   /** The shop's terms as they stand; null text when it wrote none. */
   terms: { text: string | null; version: number };
 }

@@ -89,7 +89,7 @@ export async function StorefrontHome({ slug, store, arrivedBy = null }: Storefro
               messages={ui}
             />
             {recruiting?.placements.homeBanner ? (
-              <StorefrontAffiliateJoinBanner view={joinBannerOf(recruiting, ui.affiliateJoin.defaults, joinMarksOf(store, recruiting.rateBps, "pt-BR"))} href={routes.affiliateJoin()} linkComponent={AppLink} />
+              <StorefrontAffiliateJoinBanner view={joinBannerOf(recruiting, ui.affiliateJoin.defaults, joinMarksOf(store, recruiting, ui.affiliateJoin, "pt-BR"))} href={routes.affiliateJoin()} linkComponent={AppLink} />
             ) : null}
           </>
         }

@@ -4072,6 +4072,7 @@ export const ptBR: UiMessages = {
     back: "Voltar para a loja",
     linkPreview: { title: "Assim fica o seu link", lead: "Você está na loja de", name: "Seu nome", partner: "Parceria oficial", initials: "SN", slug: "seu-nome" },
     example: "Uma venda de {sale} em produtos pelo seu link rende {earning} para você.",
+    upToRate: "até {rate}",
     form: {
       close: "Fechar formulário",
       name: "Nome completo",
@@ -4182,7 +4183,7 @@ export const ptBR: UiMessages = {
       title: "Conteúdo da página de afiliados",
       back: "Configurações de afiliados",
       view: "Ver página",
-      marks: "Todo texto da página é seu. Escreva {loja} e {comissao} onde quiser: viram o nome da loja e a comissão anunciada, e acompanham se mudarem. O que ficar em branco volta ao texto padrão.",
+      marks: "Todo texto da página é seu. Escreva {loja} e {comissao} onde quiser: viram o nome da loja e a comissão anunciada — com “até” na frente quando algum produto paga mais que a taxa geral — e acompanham se mudarem. O que ficar em branco volta ao texto padrão.",
       restore: "Restaurar padrão",
       count: "{count} de {max}",
       tooLong: "Até {max} caracteres.",
