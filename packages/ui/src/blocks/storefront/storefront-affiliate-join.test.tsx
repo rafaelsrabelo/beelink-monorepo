@@ -7,7 +7,7 @@ import { describe, expect, it, vi } from "vitest"
 import { expectNoA11yViolations } from "../../test/a11y"
 import { StorefrontAffiliateJoinBanner } from "./storefront-affiliate-join-banner"
 import { StorefrontAffiliateJoinForm } from "./storefront-affiliate-join-form"
-import { StorefrontAffiliateJoinHero } from "./storefront-affiliate-join-hero"
+import { JOIN_FORM_ID, StorefrontAffiliateJoinHero } from "./storefront-affiliate-join-hero"
 import { StorefrontAffiliateJoinPicture } from "./storefront-affiliate-join-picture"
 import { StorefrontAffiliateJoinSections } from "./storefront-affiliate-join-sections"
 import { StorefrontAffiliateJoinSent } from "./storefront-affiliate-join-sent"
@@ -17,28 +17,35 @@ import { StorefrontAffiliateLinkPreview } from "./storefront-affiliate-link-prev
 const noop = () => {}
 
 describe("the shop's \"Seja afiliado\" page (plan 2026-11-14)", () => {
-  it("says what the shop offers, opens the form from the top and from the closing call, and leaves out a section the shop emptied", async () => {
-    const onOpen = vi.fn()
+  it("says what the shop offers with the form already open, leads the closing call to it, and leaves out a section the shop emptied", async () => {
     const { container } = render(
       <>
-        <StorefrontAffiliateJoinHero view={joinPage} aside={<StorefrontAffiliateLinkPreview base="lessari.com.br/" example="Uma venda de R$ 200,00 rende R$ 20,00." />} onOpen={onOpen} />
-        <StorefrontAffiliateJoinSections view={{ ...joinPage, benefits: [] }} onOpen={onOpen} />
+        <StorefrontAffiliateJoinHero
+          view={joinPage}
+          form={<StorefrontAffiliateJoinForm view={joinForm} value={emptyJoinForm} onChange={noop} onSubmit={noop} onTerms={noop} privacyHref="/privacidade" />}
+          media={<StorefrontAffiliateLinkPreview base="lessari.com.br/" example="Uma venda de R$ 200,00 rende R$ 20,00." />}
+        />
+        <StorefrontAffiliateJoinSections view={{ ...joinPage, benefits: [] }} />
       </>,
     )
 
     expect(screen.getByRole("heading", { level: 1, name: joinPage.title })).toBeInTheDocument()
+    // The page is the form: nothing to press before it shows, and nothing that closes it.
+    expect(screen.getByRole("textbox", { name: "Nome completo" })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Quero ser afiliado" })).toBeNull()
+    expect(screen.queryByRole("button", { name: /Fechar/ })).toBeNull()
+    expect(screen.getByRole("link", { name: "Quero ser afiliado" })).toHaveAttribute("href", `#${JOIN_FORM_ID}`)
+    expect(document.getElementById(JOIN_FORM_ID)).toContainElement(screen.getByRole("textbox", { name: "Nome completo" }))
     expect(screen.getByText("lessari.com.br/")).toBeInTheDocument()
     expect(within(screen.getByRole("region", { name: "Como funciona" })).getAllByRole("listitem")).toHaveLength(3)
     expect(screen.queryByText("Preço de sempre")).toBeNull()
-    for (const button of screen.getAllByRole("button", { name: "Quero ser afiliado" })) await userEvent.click(button)
-    expect(onOpen).toHaveBeenCalledTimes(2)
     await expectNoA11yViolations(container)
   })
 
   it("takes the application, masks the WhatsApp, opens the terms, and says what does not hold", async () => {
     const onChange = vi.fn()
     const onTerms = vi.fn()
-    const { container, rerender } = render(<StorefrontAffiliateJoinForm view={joinForm} value={emptyJoinForm} onChange={onChange} onSubmit={noop} onClose={noop} onTerms={onTerms} privacyHref="/privacidade" />)
+    const { container, rerender } = render(<StorefrontAffiliateJoinForm view={joinForm} value={emptyJoinForm} onChange={onChange} onSubmit={noop} onTerms={onTerms} privacyHref="/privacidade" />)
 
     await userEvent.type(screen.getByRole("textbox", { name: "WhatsApp" }), "1")
     expect(onChange).toHaveBeenLastCalledWith({ ...emptyJoinForm, phone: "(1" })
@@ -48,14 +55,14 @@ describe("the shop's \"Seja afiliado\" page (plan 2026-11-14)", () => {
     expect(screen.getByRole("link", { name: "política de privacidade" })).toHaveAttribute("href", "/privacidade")
     await expectNoA11yViolations(container)
 
-    rerender(<StorefrontAffiliateJoinForm view={{ ...joinForm, extraQuestion: null }} value={emptyJoinForm} onChange={noop} onSubmit={noop} onClose={noop} onTerms={noop} privacyHref="/privacidade" issues={{ email: "Informe um e-mail válido." }} error="Tente de novo." />)
+    rerender(<StorefrontAffiliateJoinForm view={{ ...joinForm, extraQuestion: null }} value={emptyJoinForm} onChange={noop} onSubmit={noop} onTerms={noop} privacyHref="/privacidade" issues={{ email: "Informe um e-mail válido." }} error="Tente de novo." />)
     expect(screen.getByRole("textbox", { name: "E-mail" })).toHaveAttribute("aria-invalid", "true")
     expect(screen.getByText("Tente de novo.")).toHaveAttribute("role", "alert")
     expect(screen.queryByText("Onde você vai divulgar?")).toBeNull()
   })
 
   it("keeps the field no person sees out of the tab order", () => {
-    const { container } = render(<StorefrontAffiliateJoinForm view={joinForm} value={emptyJoinForm} onChange={noop} onSubmit={noop} onClose={noop} onTerms={noop} privacyHref="/privacidade" />)
+    const { container } = render(<StorefrontAffiliateJoinForm view={joinForm} value={emptyJoinForm} onChange={noop} onSubmit={noop} onTerms={noop} privacyHref="/privacidade" />)
     expect(container.querySelector('input[name="website"]')).toHaveAttribute("tabindex", "-1")
   })
 

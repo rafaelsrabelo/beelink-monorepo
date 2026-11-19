@@ -42,22 +42,16 @@ const EMPTY: AffiliateJoinFormValues = { name: "", email: "", phone: "", extraAn
 const NO_ISSUES: AffiliateJoinIssues = {}
 
 /**
- * The shop's "Seja afiliado" page, live (plan 2026-11-14): every button that asks for it opens the form
- * where the top's picture was, so one click is all there is between the page and the form, and the
- * answer takes the form's place.
+ * The shop's "Seja afiliado" page, live (plan 2026-11-14): the form is open from the start, beside the
+ * title — the owner's call (19/11/2026): the page is the form, with no button to press first — and the
+ * answer takes its place.
  */
 export function StorefrontAffiliateJoinLive({ slug, view, form, success, terms, linkBase, example, homeHref, messages }: StorefrontAffiliateJoinLiveProps) {
   const text = messages.affiliateJoin
   const send = useSendAffiliateApplication(slug)
-  const [open, setOpen] = useState(false)
   const [termsOpen, setTermsOpen] = useState(false)
   const [value, setValue] = useState<AffiliateJoinFormValues>(EMPTY)
   const [issues, setIssues] = useState<AffiliateJoinIssues>(NO_ISSUES)
-
-  function openForm() {
-    setOpen(true)
-    window.scrollTo({ top: 0, behavior: "smooth" })
-  }
 
   function submit() {
     const result = applicationPayloadOf(value, form.extraQuestion !== null, text.form.issues)
@@ -66,9 +60,9 @@ export function StorefrontAffiliateJoinLive({ slug, view, form, success, terms, 
   }
 
   const firstName = value.name.trim().split(/\s+/)[0] ?? ""
-  const aside = send.isSuccess ? (
+  const side = send.isSuccess ? (
     <StorefrontAffiliateJoinSent title={firstName ? format(text.sent.title, { name: firstName }) : text.sent.titleNoName} message={success} homeHref={homeHref} linkComponent={AppLink} messages={messages} />
-  ) : open ? (
+  ) : (
     <StorefrontAffiliateJoinForm
       view={form}
       value={value}
@@ -78,7 +72,6 @@ export function StorefrontAffiliateJoinLive({ slug, view, form, success, terms, 
         setValue(next)
       }}
       onSubmit={submit}
-      onClose={() => setOpen(false)}
       onTerms={() => setTermsOpen(true)}
       privacyHref={LEGAL_ROUTES.privacy}
       issues={issues}
@@ -86,16 +79,13 @@ export function StorefrontAffiliateJoinLive({ slug, view, form, success, terms, 
       error={send.error ? applicationErrorOf(send.error instanceof AffiliateApplicationError ? send.error.errorCode : "UNKNOWN", text.form.errors) : undefined}
       messages={messages}
     />
-  ) : view.imageUrl ? (
-    <StorefrontAffiliateJoinPicture url={view.imageUrl} />
-  ) : (
-    <StorefrontAffiliateLinkPreview base={linkBase} example={example} messages={messages} />
   )
+  const media = view.imageUrl ? <StorefrontAffiliateJoinPicture url={view.imageUrl} /> : <StorefrontAffiliateLinkPreview base={linkBase} example={example} messages={messages} />
 
   return (
     <>
-      <StorefrontAffiliateJoinHero view={view} aside={aside} onOpen={openForm} />
-      <StorefrontAffiliateJoinSections view={view} onOpen={openForm} />
+      <StorefrontAffiliateJoinHero view={view} form={side} media={media} />
+      <StorefrontAffiliateJoinSections view={view} />
       <StorefrontAffiliateTermsDialog open={termsOpen} onOpenChange={setTermsOpen} terms={terms} messages={messages} />
     </>
   )
