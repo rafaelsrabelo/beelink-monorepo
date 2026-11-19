@@ -26,6 +26,33 @@ describe("StorefrontCardCartButton", () => {
     expect(screen.getByRole("button", { name: "Adicionar ao carrinho" })).toBeInTheDocument()
   })
 
+  it("offers \"Comprar agora\" under the add, to the checkout, putting the product in on the way", () => {
+    const onAdd = vi.fn()
+    const onBuy = vi.fn()
+    render(<StorefrontCardCartButton name="Blusa" hasOptions={false} onAdd={onAdd} checkoutHref="/loja/checkout" onBuy={onBuy} />)
+
+    const buyNow = screen.getByRole("link", { name: "Comprar agora" })
+    expect(buyNow).toHaveAttribute("href", "/loja/checkout")
+    // Takes the pointer back from the card's action layer, as the add does.
+    expect(buyNow).toHaveClass("pointer-events-auto")
+    buyNow.addEventListener("click", (event) => event.preventDefault())
+    fireEvent.click(buyNow)
+
+    expect(onBuy).toHaveBeenCalledTimes(1)
+    expect(onAdd).not.toHaveBeenCalled()
+  })
+
+  it("offers no \"Comprar agora\" without the checkout's address, for a product with options, or on the round \"+\"", () => {
+    const { rerender } = render(<StorefrontCardCartButton name="Blusa" hasOptions={false} onAdd={() => {}} onBuy={() => {}} />)
+    expect(screen.queryByRole("link")).toBeNull()
+
+    rerender(<StorefrontCardCartButton name="Whey" hasOptions onAdd={() => {}} checkoutHref="/loja/checkout" onBuy={() => {}} />)
+    expect(screen.queryByRole("link")).toBeNull()
+
+    rerender(<StorefrontCardCartButton name="Blusa" hasOptions={false} onAdd={() => {}} checkoutHref="/loja/checkout" onBuy={() => {}} size="icon" />)
+    expect(screen.queryByRole("link")).toBeNull()
+  })
+
   it("is no control at all for a product with options — or one not known not to have them", () => {
     const { container, rerender } = render(<StorefrontCardCartButton name="Whey" hasOptions onAdd={() => {}} />)
 
@@ -81,6 +108,12 @@ describe("StorefrontCardCartButton", () => {
 
   it("has no accessibility violations", async () => {
     const { container } = render(<StorefrontCardCartButton name="Blusa" hasOptions={false} onAdd={() => {}} />)
+
+    await expectNoA11yViolations(container)
+  })
+
+  it("has no accessibility violations with \"Comprar agora\"", async () => {
+    const { container } = render(<StorefrontCardCartButton name="Blusa" hasOptions={false} onAdd={() => {}} checkoutHref="/loja/checkout" onBuy={() => {}} />)
 
     await expectNoA11yViolations(container)
   })

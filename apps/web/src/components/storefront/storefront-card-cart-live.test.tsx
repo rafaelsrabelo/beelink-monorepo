@@ -52,6 +52,48 @@ describe("StorefrontCardCartLive", () => {
     expect(track.mock.calls).toEqual([[{ name: "AddToCart", item: { productId: product.id, qty: 1, name: "Camiseta preta", unitPriceCents: 5990 } }]])
   })
 
+  it("puts the product in the cart on the way to the checkout with 'Comprar agora'", () => {
+    render(
+      <CartProvider slug="loja" lines={[]}>
+        <StorefrontCartLinkLive href="/loja/carrinho" messages={ptBR} />
+        <StorefrontCardCartLive product={product} checkoutHref="/loja/checkout" messages={ptBR} />
+      </CartProvider>,
+    )
+
+    const buyNow = screen.getByRole("link", { name: "Comprar agora" })
+    expect(buyNow).toHaveAttribute("href", "/loja/checkout")
+    buyNow.addEventListener("click", (event) => event.preventDefault())
+    fireEvent.click(buyNow)
+
+    expect(screen.getByRole("link", { name: "Carrinho, 1 item" })).toBeInTheDocument()
+  })
+
+  // Not one more of it: "Adicionar ao carrinho" then "Comprar agora" on the same card is still one.
+  it("adds nothing with 'Comprar agora' when the cart holds the product already", () => {
+    render(
+      <CartProvider slug="loja" lines={[{ productId: product.id, variantId: null, qty: 1 }]}>
+        <StorefrontCartLinkLive href="/loja/carrinho" messages={ptBR} />
+        <StorefrontCardCartLive product={product} checkoutHref="/loja/checkout" messages={ptBR} />
+      </CartProvider>,
+    )
+
+    const buyNow = screen.getByRole("link", { name: "Comprar agora" })
+    buyNow.addEventListener("click", (event) => event.preventDefault())
+    fireEvent.click(buyNow)
+
+    expect(screen.getByRole("link", { name: "Carrinho, 1 item" })).toBeInTheDocument()
+  })
+
+  it("offers no 'Comprar agora' without the checkout's address", () => {
+    render(
+      <CartProvider slug="loja" lines={[]}>
+        <StorefrontCardCartLive product={product} messages={ptBR} />
+      </CartProvider>,
+    )
+
+    expect(screen.queryByRole("link", { name: "Comprar agora" })).toBeNull()
+  })
+
   it("adds nothing from the card for a product with options", () => {
     render(
       <CartProvider slug="loja" lines={[]}>

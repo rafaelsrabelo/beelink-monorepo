@@ -2,6 +2,10 @@ import type { CSSProperties } from "react"
 
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
+import { shopPaletteStyle } from "@harness-monorepo/ui/lib/shop-palette"
+
+import { sampleColorPresets } from "../store/store.fixtures"
+import { StorefrontCardCartButton } from "./storefront-card-cart-button"
 import { StorefrontCatalog } from "./storefront-catalog"
 
 const products = [
@@ -72,3 +76,13 @@ export const VazioComFiltros: Story = { args: { products: [], clearHref: "#", fi
 
 /** A leitura falhou: a prateleira diz isso, em vez de "nada encontrado", e oferece tentar de novo. */
 export const NaoCarregou: Story = { args: { products: [], retryHref: "#" } }
+
+/** Com os botões do card: "Adicionar ao carrinho" e "Comprar agora" (direto para o checkout) no produto sem opções, "Ver opções" no que tem. */
+export const ComBotoesDeCompra: Story = {
+  args: {
+    productsPerRow: 2,
+    products: products.map((product, index) => ({ ...product, hasOptions: index === 1 })),
+    cardAction: (product) => <StorefrontCardCartButton name={product.name} hasOptions={product.hasOptions ?? true} onAdd={() => {}} checkoutHref="#checkout" onBuy={() => {}} />,
+  },
+  decorators: [(Story) => <div style={shopPaletteStyle(sampleColorPresets[2]!.colors)}>{Story()}</div>],
+}

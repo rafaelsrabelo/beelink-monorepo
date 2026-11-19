@@ -42,8 +42,8 @@ export interface StorefrontProductPurchaseProps {
   choiceKey: string
   /** "Em estoque" is the shop's to hide; "Esgotado" never is, since it explains the missing buttons. */
   showStock?: boolean
-  /** Puts that many of the chosen combination in the cart, with the cart's address. */
-  cart?: { onAdd: (qty: number) => void; href: string }
+  /** Puts that many of the chosen combination in the cart, with the cart's address and the checkout's. */
+  cart?: { onAdd: (qty: number) => void; href: string; checkoutHref: string }
   /** A kit still being put together (plan 2026-11-10--kits-monte-seu-kit): what is missing, said in place of the buttons; null when whole. */
   incomplete?: string | null
   /** Opens "Avise-me" for a sold-out combination; absent, it offers nothing. */
@@ -165,7 +165,7 @@ export function StorefrontProductPurchase({
               </button>
             </>
           ) : cart ? (
-            <StorefrontBuyActions name={name} qty={qty} onQtyChange={setQty} added={added} onAdd={add} cartHref={cart.href} messages={messages} />
+            <StorefrontBuyActions name={name} qty={qty} onQtyChange={setQty} added={added} onAdd={add} cartHref={cart.href} checkoutHref={cart.checkoutHref} messages={messages} />
           ) : orderHref ? (
             <a href={orderHref} rel="noreferrer" target="_blank" className={cn(BUY_PILL, "gap-2 bg-shop-primary text-shop-on-primary")}>
               <WhatsAppIcon className="size-5" />

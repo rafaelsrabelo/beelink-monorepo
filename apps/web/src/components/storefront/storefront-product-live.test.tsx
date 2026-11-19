@@ -45,6 +45,7 @@ function renderLive() {
         product={product}
         initialVariantId={null}
         cartHref="/lessari/carrinho"
+        checkoutHref="/lessari/checkout"
         showPrice
         showBadge
         showStock
@@ -122,7 +123,7 @@ describe("StorefrontProductLive — what it tells (BEELINK-272)", () => {
       <QueryClientProvider client={new QueryClient()}>
         <TrackingContext value={{ allowed: true, track }}>
           <CartProvider slug="lessari" lines={[]}>
-            <StorefrontProductLive slug="lessari" shopName="Lessari" homeHref="/lessari" product={sold} initialVariantId={null} cartHref="/lessari/carrinho" showPrice showBadge showStock finishesOnWhatsApp={false} seller={{ name: "Lessari", paymentMethods: ["PIX"], cashback }} restockCopy={copy} messages={ptBR} />
+            <StorefrontProductLive slug="lessari" shopName="Lessari" homeHref="/lessari" product={sold} initialVariantId={null} cartHref="/lessari/carrinho" checkoutHref="/lessari/checkout" showPrice showBadge showStock finishesOnWhatsApp={false} seller={{ name: "Lessari", paymentMethods: ["PIX"], cashback }} restockCopy={copy} messages={ptBR} />
           </CartProvider>
         </TrackingContext>
       </QueryClientProvider>,
@@ -158,6 +159,18 @@ describe("StorefrontProductLive — what it tells (BEELINK-272)", () => {
     renderTold(track)
 
     await userEvent.click(screen.getAllByRole("button", { name: /Adicionar ao carrinho/ })[0]!)
+
+    expect(track.mock.calls.at(-1)).toEqual([{ name: "AddToCart", item: { productId: "p2", qty: 1, name: "Whey", unitPriceCents: 10990 } }])
+  })
+
+  it("puts the product in the cart on the way to the checkout with 'Comprar agora', past the cart", async () => {
+    const track = vi.fn()
+    renderTold(track)
+
+    const buyNow = screen.getByRole("link", { name: "Comprar agora" })
+    expect(buyNow).toHaveAttribute("href", "/lessari/checkout")
+    buyNow.addEventListener("click", (event) => event.preventDefault())
+    await userEvent.click(buyNow)
 
     expect(track.mock.calls.at(-1)).toEqual([{ name: "AddToCart", item: { productId: "p2", qty: 1, name: "Whey", unitPriceCents: 10990 } }])
   })

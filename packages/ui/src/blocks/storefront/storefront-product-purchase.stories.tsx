@@ -22,7 +22,7 @@ const meta = {
     available: true,
     choosing: true,
     choiceKey: "frutas-300",
-    cart: { onAdd: () => {}, href: "#" },
+    cart: { onAdd: () => {}, href: "#", checkoutHref: "#" },
     onNotify: () => {},
     finishesOnWhatsApp: true,
     seller: { name: "Mutante Suplementos", paymentMethods: ["PIX", "CREDIT_CARD", "DEBIT_CARD", "MONEY"] },

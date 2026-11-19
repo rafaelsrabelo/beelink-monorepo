@@ -14,8 +14,10 @@ export interface StorefrontBuyActionsProps {
   added: boolean
   /** Puts `qty` in the cart; the web knows the chosen combination. */
   onAdd: () => void
-  /** The cart's address: "Comprar agora" adds, then goes there, and "Ver carrinho" follows an add. */
+  /** The cart's address, for the "Ver carrinho" that follows an add. */
   cartHref: string
+  /** The checkout's address: "Comprar agora" adds, then goes straight there — past the cart. */
+  checkoutHref: string
   maxQty?: number
   messages?: UiMessages
 }
@@ -28,9 +30,9 @@ export const BUY_PILL = "flex h-12 w-full items-center justify-center rounded-fu
 
 /**
  * The buy box's way to buy: "Quantidade" in the phone's own picker, "Adicionar ao carrinho", and
- * "Comprar agora" — which adds and goes to the cart.
+ * "Comprar agora" — which adds and goes on to pay.
  */
-export function StorefrontBuyActions({ name, qty, onQtyChange, added, onAdd, cartHref, maxQty = 10, messages = defaultMessages }: StorefrontBuyActionsProps) {
+export function StorefrontBuyActions({ name, qty, onQtyChange, added, onAdd, cartHref, checkoutHref, maxQty = 10, messages = defaultMessages }: StorefrontBuyActionsProps) {
   const text = messages.storefront
 
   return (
@@ -55,10 +57,10 @@ export function StorefrontBuyActions({ name, qty, onQtyChange, added, onAdd, car
         {text.addToCart}
       </button>
 
-      {/* A link, so the cart is an address; the add happens on the way, before the page leaves —
+      {/* A link, so the checkout is an address; the add happens on the way, before the page leaves —
           once: after "Adicionar ao carrinho" the line is already there. */}
       <a
-        href={cartHref}
+        href={checkoutHref}
         onClick={() => {
           if (!added) onAdd()
         }}

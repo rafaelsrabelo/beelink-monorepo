@@ -123,6 +123,7 @@ export async function StorefrontListing({ place, routes, catalogue: pending, ins
           showBadge={layout.showProductBadges ?? true}
           showRating={layout.showProductRating ?? true}
           quickAdd={layout.showQuickAdd ?? true}
+          checkoutHref={routes.checkout()}
           messages={ui}
         />
       </div>

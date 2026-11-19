@@ -19,7 +19,7 @@ function renderBox(over: Partial<StorefrontProductPurchaseProps> = {}) {
       available
       choosing
       choiceKey="frutas-300"
-      cart={{ onAdd, href: "/loja/carrinho" }}
+      cart={{ onAdd, href: "/loja/carrinho", checkoutHref: "/loja/checkout" }}
       finishesOnWhatsApp
       seller={{ name: "Mutante Suplementos", paymentMethods: ["PIX", "CREDIT_CARD", "DEBIT_CARD", "MONEY"] }}
       {...over}
@@ -79,7 +79,7 @@ describe("StorefrontProductPurchase", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Pré-Treino Haze foi adicionado ao carrinho.")
   })
 
-  it("adds the chosen quantity on the way to the cart with 'Comprar agora'", async () => {
+  it("adds the chosen quantity on the way to the checkout with 'Comprar agora'", async () => {
     const user = userEvent.setup()
     const { onAdd } = renderBox()
 
@@ -92,12 +92,12 @@ describe("StorefrontProductPurchase", () => {
     expect(onAdd).toHaveBeenCalledWith(3)
   })
 
-  it("adds on the way to the cart with 'Comprar agora', and only once", async () => {
+  it("adds on the way to the checkout with 'Comprar agora', and only once", async () => {
     const user = userEvent.setup()
     const { onAdd } = renderBox()
 
     const buyNow = within(box()).getByRole("link", { name: "Comprar agora" })
-    expect(buyNow).toHaveAttribute("href", "/loja/carrinho")
+    expect(buyNow).toHaveAttribute("href", "/loja/checkout")
     await user.click(within(box()).getByRole("button", { name: "Adicionar ao carrinho" }))
     buyNow.addEventListener("click", (event) => event.preventDefault())
     await user.click(buyNow)

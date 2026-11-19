@@ -19,6 +19,9 @@ type Story = StoryObj<typeof meta>
 /** Produto sem opções: vai direto para o carrinho. */
 export const Adicionar: Story = { args: { hasOptions: false } }
 
+/** Com o endereço do checkout: "Comprar agora" embaixo, que põe no carrinho e vai direto para o checkout. */
+export const ComComprarAgora: Story = { args: { hasOptions: false, checkoutHref: "#checkout", onBuy: () => {} } }
+
 /** Produto com opções: a escolha é na página do produto. */
 export const ComOpcoes: Story = { args: { hasOptions: true } }
 
