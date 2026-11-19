@@ -36,23 +36,20 @@ const page = () =>
 beforeEach(() => {
   mocks.mutate.mockReset()
   mocks.state.current = { isSuccess: false, isPending: false, error: null }
-  window.scrollTo = vi.fn()
 })
 
 describe("StorefrontAffiliateJoinLive (plan 2026-11-14)", () => {
-  it("shows how a link looks, and opens the form in its place with one click", async () => {
+  // The owner's call (19/11/2026): the page is the form, with nothing to press before it shows.
+  it("opens with the form already there, beside how a link looks", () => {
     page()
 
-    expect(screen.getByText("lessari.com.br/")).toBeInTheDocument()
-    await userEvent.click(screen.getAllByRole("button", { name: "Quero ser afiliado" })[0]!)
     expect(screen.getByRole("textbox", { name: "Nome completo" })).toBeInTheDocument()
-    expect(screen.queryByText("lessari.com.br/")).toBeNull()
+    expect(screen.queryByRole("button", { name: "Quero ser afiliado" })).toBeNull()
+    expect(screen.getByText("lessari.com.br/")).toBeInTheDocument()
   })
 
   it("says what is missing before sending, and sends what was typed", async () => {
     page()
-    await userEvent.click(screen.getAllByRole("button", { name: "Quero ser afiliado" })[0]!)
-
     await userEvent.click(screen.getByRole("button", { name: "Enviar candidatura" }))
     expect(mocks.mutate).not.toHaveBeenCalled()
     expect(screen.getByText(ui.affiliateJoin.form.issues.email)).toBeInTheDocument()
@@ -67,7 +64,6 @@ describe("StorefrontAffiliateJoinLive (plan 2026-11-14)", () => {
 
   it("opens the programme's terms over the page", async () => {
     page()
-    await userEvent.click(screen.getAllByRole("button", { name: "Quero ser afiliado" })[0]!)
     await userEvent.click(screen.getByRole("button", { name: "termos do programa" }))
     expect(screen.getByRole("dialog", { name: "Termos do programa" })).toHaveTextContent("Pagamento por Pix.")
   })
@@ -75,7 +71,6 @@ describe("StorefrontAffiliateJoinLive (plan 2026-11-14)", () => {
   it("answers with the shop's message once sent, and says a refusal in words", async () => {
     mocks.state.current = { isSuccess: false, isPending: false, error: new AffiliateApplicationError("RATE_LIMITED") }
     const { rerender } = page()
-    await userEvent.click(screen.getAllByRole("button", { name: "Quero ser afiliado" })[0]!)
     expect(screen.getByText(ui.affiliateJoin.form.errors.RATE_LIMITED)).toBeInTheDocument()
 
     mocks.state.current = { isSuccess: true, isPending: false, error: null }

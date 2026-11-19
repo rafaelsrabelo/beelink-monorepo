@@ -4,17 +4,18 @@ import { ChevronDownIcon } from "lucide-react"
 // Block
 import type { AffiliateJoinPageView } from "@harness-monorepo/ui/lib/affiliate-join"
 import { BAND } from "./storefront-band"
+import { JOIN_FORM_ID } from "./storefront-affiliate-join-hero"
 
 export interface StorefrontAffiliateJoinSectionsProps {
   view: Pick<AffiliateJoinPageView, "ctaLabel" | "stepsTitle" | "steps" | "benefits" | "questionsTitle" | "questions" | "closingTitle" | "closingText">
-  onOpen: () => void
 }
 
 /**
  * The rest of the shop's "Seja afiliado" page (plan 2026-11-14): how it works, the benefits and the
- * questions — each left out when the shop wrote none — and the closing call, which opens the form.
+ * questions — each left out when the shop wrote none — and the closing call, which leads back up to
+ * the form.
  */
-export function StorefrontAffiliateJoinSections({ view, onOpen }: StorefrontAffiliateJoinSectionsProps) {
+export function StorefrontAffiliateJoinSections({ view }: StorefrontAffiliateJoinSectionsProps) {
   return (
     <>
       <section aria-label={view.stepsTitle} className={`${BAND} flex flex-col gap-6 pt-14`}>
@@ -72,9 +73,9 @@ export function StorefrontAffiliateJoinSections({ view, onOpen }: StorefrontAffi
             <h2 className="text-2xl font-extrabold break-words shop-sm:text-3xl">{view.closingTitle}</h2>
             <p className="opacity-90 break-words">{view.closingText}</p>
           </div>
-          <button type="button" onClick={onOpen} className="bg-shop-on-primary text-shop-primary min-h-12 rounded-xl px-7 font-bold outline-none focus-visible:ring-2 focus-visible:ring-offset-2">
+          <a href={`#${JOIN_FORM_ID}`} className="bg-shop-on-primary text-shop-primary flex min-h-12 items-center rounded-xl px-7 font-bold outline-none focus-visible:ring-2 focus-visible:ring-offset-2">
             {view.ctaLabel}
-          </button>
+          </a>
         </div>
       </section>
     </>

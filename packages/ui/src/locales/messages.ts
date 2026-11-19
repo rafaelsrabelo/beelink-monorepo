@@ -4696,7 +4696,6 @@ export interface UiMessages {
     /** `{rate}`: what `{comissao}` becomes when a product on sale earns more than the table's general rate. */
     upToRate: string
     form: {
-      close: string
       name: string
       email: string
       phone: string

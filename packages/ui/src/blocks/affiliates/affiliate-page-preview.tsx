@@ -15,7 +15,8 @@ export interface AffiliatePagePreviewProps {
 
 /**
  * The top of the page as a visitor will read it (plan 2026-11-14), beside the editor: the marks
- * filled in by the screen, the shop's colour left to the shop window — the panel has none of it.
+ * filled in by the screen, the shop's colour left to the shop window — the panel has none of it. No
+ * button: the top carries the form itself, and the button's words are the closing call's.
  */
 export function AffiliatePagePreview({ view, messages = defaultMessages }: AffiliatePagePreviewProps) {
   const text = messages.affiliatePage.editor
@@ -28,7 +29,6 @@ export function AffiliatePagePreview({ view, messages = defaultMessages }: Affil
         <span className="bg-background w-fit rounded-full border px-2.5 py-0.5 text-[11px] font-semibold tracking-wide uppercase">{view.badge}</span>
         <p className="text-xl leading-tight font-bold break-words">{view.title}</p>
         <p className="text-muted-foreground text-sm break-words">{view.subtitle}</p>
-        <span className="bg-primary text-primary-foreground w-fit rounded-lg px-4 py-2 text-sm font-semibold">{view.ctaLabel}</span>
         {view.highlights.length > 0 ? (
           <ul className="flex flex-col gap-1.5">
             {view.highlights.map((highlight, index) => (

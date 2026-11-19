@@ -17,20 +17,22 @@ import { StorefrontAffiliateLinkPreview } from "./storefront-affiliate-link-prev
 
 const noop = () => {}
 
-/** The page as the shop window composes it, its side of the top as the story asks. */
-function JoinPage({ aside = "preview" }: { aside?: "preview" | "form" | "sent" }) {
-  const side =
-    aside === "form" ? (
-      <StorefrontAffiliateJoinForm view={joinForm} value={emptyJoinForm} onChange={noop} onSubmit={noop} onClose={noop} onTerms={noop} privacyHref="#privacidade" />
-    ) : aside === "sent" ? (
-      <StorefrontAffiliateJoinSent title="Recebemos sua candidatura, Ana!" message="A Lessari vai analisar. Se for aprovada, chega um convite no seu e-mail." homeHref="#loja" />
-    ) : (
-      <StorefrontAffiliateLinkPreview base="lessari.com.br/" example="Uma venda de R$ 200,00 em produtos pelo seu link rende R$ 20,00 para você." />
-    )
+/** The page as the shop window composes it: the form open at the top, or its answer, and the shop's picture or the link's preview. */
+function JoinPage({ sent = false, picture = false }: { sent?: boolean; picture?: boolean }) {
+  const form = sent ? (
+    <StorefrontAffiliateJoinSent title="Recebemos sua candidatura, Ana!" message="A Lessari vai analisar. Se for aprovada, chega um convite no seu e-mail." homeHref="#loja" />
+  ) : (
+    <StorefrontAffiliateJoinForm view={joinForm} value={emptyJoinForm} onChange={noop} onSubmit={noop} onTerms={noop} privacyHref="#privacidade" />
+  )
+  const media = picture ? (
+    <StorefrontAffiliateJoinPicture url="https://picsum.photos/seed/afiliado/800/600" />
+  ) : (
+    <StorefrontAffiliateLinkPreview base="lessari.com.br/" example="Uma venda de R$ 200,00 em produtos pelo seu link rende R$ 20,00 para você." />
+  )
   return (
     <div className="bg-shop-background">
-      <StorefrontAffiliateJoinHero view={joinPage} aside={side} onOpen={noop} />
-      <StorefrontAffiliateJoinSections view={joinPage} onOpen={noop} />
+      <StorefrontAffiliateJoinHero view={joinPage} form={form} media={media} />
+      <StorefrontAffiliateJoinSections view={joinPage} />
     </div>
   )
 }
@@ -45,23 +47,14 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** A página com os textos do produto e a prévia do link. */
+/** A página já com o formulário aberto, os textos do produto e a prévia do link. */
 export const Pagina: Story = {}
 
-/** O formulário aberto no lugar da prévia. */
-export const Formulario: Story = { args: { aside: "form" } }
-
-/** A candidatura enviada. */
-export const Enviada: Story = { args: { aside: "sent" } }
+/** A candidatura enviada, no lugar do formulário. */
+export const Enviada: Story = { args: { sent: true } }
 
 /** Com a imagem que a loja enviou no lugar da prévia do link. */
-export const ComImagem: Story = {
-  render: () => (
-    <div className="bg-shop-background">
-      <StorefrontAffiliateJoinHero view={joinPage} aside={<StorefrontAffiliateJoinPicture url="https://picsum.photos/seed/afiliado/800/600" />} onOpen={noop} />
-    </div>
-  ),
-}
+export const ComImagem: Story = { args: { picture: true } }
 
 /** O banner na página inicial da loja. */
 export const Banner: Story = {
