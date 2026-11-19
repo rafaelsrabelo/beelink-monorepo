@@ -39,8 +39,10 @@ export interface StorefrontProductLiveProps {
   /** The combination the address asked for, read on the server so the page opens on it. */
   initialVariantId: string | null
   orderHref?: string
-  /** The cart's address, for "Comprar agora" and "Ver carrinho". */
+  /** The cart's address, for "Ver carrinho". */
   cartHref: string
+  /** The checkout's address, for "Comprar agora": it goes there past the cart. */
+  checkoutHref: string
   showPrice: boolean
   /** The shop's card terms, for "em até 6x" under a price; absent when it splits nothing. */
   installments?: StorefrontInstallmentTerms
@@ -81,6 +83,7 @@ export function StorefrontProductLive({
   initialVariantId,
   orderHref,
   cartHref,
+  checkoutHref,
   showPrice,
   installments,
   showBadge,
@@ -114,6 +117,7 @@ export function StorefrontProductLive({
       cart={{
         onAdd: (variantId, qty) => add({ productId: product.id, variantId, qty, ...(kit ? { kit: kit.chosen } : {}) }, { name: product.name, unitPriceCents: priceOf(product, variantId) }),
         href: cartHref,
+        checkoutHref,
       }}
       {...(kit
         ? { kit: { builder: <StorefrontKitBuilder size={kit.size} parts={kit.parts} counts={kit.counts} onChange={kit.setCount} messages={messages} />, incomplete: kit.incomplete, key: kit.key } }

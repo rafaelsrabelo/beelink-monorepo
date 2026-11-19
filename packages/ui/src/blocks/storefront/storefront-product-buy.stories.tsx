@@ -11,7 +11,7 @@ const meta = {
   component: StorefrontProductBuy,
   parameters: { layout: "padded" },
   decorators: [(Story) => <div style={{ ...shopPaletteStyle(sampleColorPresets[2]!.colors), width: 320 }}>{Story()}</div>],
-  args: { children: <StorefrontBuyActions name="Pré-Treino Haze" qty={1} onQtyChange={() => {}} added={false} onAdd={() => {}} cartHref="#" /> },
+  args: { children: <StorefrontBuyActions name="Pré-Treino Haze" qty={1} onQtyChange={() => {}} added={false} onAdd={() => {}} cartHref="#" checkoutHref="#" /> },
 } satisfies Meta<typeof StorefrontProductBuy>
 
 export default meta

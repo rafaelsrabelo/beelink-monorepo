@@ -17,28 +17,28 @@ import { BUY_PILL } from "./storefront-buy-actions"
 export interface StorefrontFeaturedBuyProps {
   name: string
   productHref: string
-  /** The cart's address, or null where the page cannot reach one: a landing without the shop's header. */
-  cartHref: string | null
+  /** The checkout's address, or null where the page cannot reach the cart: a landing without the shop's header. */
+  checkoutHref: string | null
   /** Known false only on a product without options: that one goes in with no choice to make. */
   hasOptions?: boolean
   soldOut: boolean
-  /** Puts the product in the cart; the press then follows the link to it. */
+  /** Puts the product in the cart; the press then follows the link to the checkout. */
   onBuy?: () => void
   linkComponent?: LinkComponent
   messages?: UiMessages
 }
 
 /**
- * The featured product's button: into the cart and on to it when the product needs no choice; to
- * its page to choose when it has options; to its page when it is sold out, where "Avise-me" is; and
- * to its page when the cart cannot be reached from here.
+ * The featured product's button: into the cart and straight on to the checkout when the product
+ * needs no choice; to its page to choose when it has options; to its page when it is sold out, where
+ * "Avise-me" is; and to its page when the cart cannot be reached from here.
  *
  * Always a link, so it goes somewhere without a script. The script only adds the product on the way.
  */
 export function StorefrontFeaturedBuy({
   name,
   productHref,
-  cartHref,
+  checkoutHref,
   hasOptions,
   soldOut,
   onBuy,
@@ -47,13 +47,13 @@ export function StorefrontFeaturedBuy({
 }: StorefrontFeaturedBuyProps) {
   const text = messages.storefront
   const [bought, setBought] = useState(false)
-  const straight = !soldOut && hasOptions === false && cartHref !== null && onBuy !== undefined
+  const straight = !soldOut && hasOptions === false && checkoutHref !== null && onBuy !== undefined
 
   if (straight) {
     return (
       <>
         <Link
-          href={cartHref}
+          href={checkoutHref}
           onClick={() => {
             onBuy()
             setBought(true)

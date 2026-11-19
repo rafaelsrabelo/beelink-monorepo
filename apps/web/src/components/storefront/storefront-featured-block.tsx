@@ -37,7 +37,7 @@ export function StorefrontFeaturedBlock({ component, routes, cartReachable, inst
 
   const link = linkComponent ? { linkComponent } : {}
   const productHref = routes.product(card.slug)
-  const cartHref = cartReachable ? routes.cart() : null
+  const checkoutHref = cartReachable ? routes.checkout() : null
   const hasOptions = card.hasOptions !== undefined ? { hasOptions: card.hasOptions } : {}
 
   return (
@@ -48,9 +48,9 @@ export function StorefrontFeaturedBlock({ component, routes, cartReachable, inst
       product={{ ...card, href: productHref }}
       action={
         editing ? (
-          <StorefrontFeaturedBuy name={card.name} productHref={productHref} cartHref={cartHref} {...hasOptions} soldOut={card.soldOut} {...link} messages={messages} />
+          <StorefrontFeaturedBuy name={card.name} productHref={productHref} checkoutHref={checkoutHref} {...hasOptions} soldOut={card.soldOut} {...link} messages={messages} />
         ) : (
-          <StorefrontFeaturedBuyLive product={card} productHref={productHref} cartHref={cartHref} messages={messages} />
+          <StorefrontFeaturedBuyLive product={card} productHref={productHref} checkoutHref={checkoutHref} messages={messages} />
         )
       }
       span={component.span}

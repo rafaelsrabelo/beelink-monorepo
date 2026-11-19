@@ -25,7 +25,7 @@ const meta = {
     subtitle: "Estoque limitado",
     product,
     locale: "pt-BR",
-    action: <StorefrontFeaturedBuy name={product.name} productHref={product.href} cartHref="/loja/carrinho" hasOptions={false} soldOut={false} onBuy={() => {}} />,
+    action: <StorefrontFeaturedBuy name={product.name} productHref={product.href} checkoutHref="/loja/checkout" hasOptions={false} soldOut={false} onBuy={() => {}} />,
   },
 } satisfies Meta<typeof StorefrontFeaturedProduct>
 
@@ -42,13 +42,13 @@ export const ImagemGrande: Story = { args: { layout: "IMAGE_LARGE" } }
 export const Esgotado: Story = {
   args: {
     product: { ...product, soldOut: true },
-    action: <StorefrontFeaturedBuy name={product.name} productHref={product.href} cartHref="/loja/carrinho" hasOptions={false} soldOut />,
+    action: <StorefrontFeaturedBuy name={product.name} productHref={product.href} checkoutHref="/loja/checkout" hasOptions={false} soldOut />,
   },
 }
 
 /** Com variações: "Ver opções" leva à página para escolher. */
 export const ComOpcoes: Story = {
-  args: { action: <StorefrontFeaturedBuy name={product.name} productHref={product.href} cartHref="/loja/carrinho" hasOptions soldOut={false} /> },
+  args: { action: <StorefrontFeaturedBuy name={product.name} productHref={product.href} checkoutHref="/loja/checkout" hasOptions soldOut={false} /> },
 }
 
 /** Enquanto o editor lê o produto escolhido. */

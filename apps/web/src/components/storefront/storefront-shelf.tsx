@@ -25,7 +25,7 @@ export interface StorefrontShelfProps {
   showBadge: boolean
   /** The cards' rating line — the shop's `showProductRating`. */
   showRating?: boolean
-  /** "Adicionar ao carrinho" on each card — the shop's `showQuickAdd`. */
+  /** "Adicionar ao carrinho" and "Comprar agora" on each card — the shop's `showQuickAdd`. */
   quickAdd?: boolean
   linkComponent?: LinkComponent
   messages: UiMessages
@@ -94,7 +94,13 @@ export function StorefrontShelf({
     ...(installments ? { installments } : {}),
     showBadge,
     showRating,
-    ...(quickAdd ? { cardAction: (product: StorefrontProduct) => <StorefrontCardCartLive product={product} messages={messages} /> } : {}),
+    ...(quickAdd
+      ? {
+          cardAction: (product: StorefrontProduct) => (
+            <StorefrontCardCartLive product={product} checkoutHref={routes.checkout()} {...(linkComponent ? { linkComponent } : {})} messages={messages} />
+          ),
+        }
+      : {}),
     // Nothing outside a shop's pages: the panel's previews draw these shelves with no shopper to ask.
     cardFavorite: (product: StorefrontProduct) => <StorefrontFavoriteLive productId={product.id} productName={product.name} priceCents={product.priceCents} messages={messages} />,
     ...(linkComponent ? { linkComponent } : {}),

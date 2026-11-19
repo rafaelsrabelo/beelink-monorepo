@@ -34,12 +34,12 @@ describe("StorefrontProductDetail", () => {
   it("adds a product without options as itself, and offers no cart when sold out", async () => {
     const user = userEvent.setup()
     const onAdd = vi.fn()
-    const { rerender } = renderProduct({ cart: { onAdd, href: "/loja/carrinho" } })
+    const { rerender } = renderProduct({ cart: { onAdd, href: "/loja/carrinho", checkoutHref: "/loja/checkout" } })
 
     await user.click(screen.getByRole("button", { name: "Adicionar ao carrinho" }))
     expect(onAdd).toHaveBeenCalledWith(null, 1)
 
-    rerender(<StorefrontProductDetail shopName="Lessari" homeHref="/lessari" name="Bolsa Amora" description={null} priceCents={18900} compareAtPriceCents={null} images={images} locale="pt-BR" soldOut cart={{ onAdd, href: "#" }} />)
+    rerender(<StorefrontProductDetail shopName="Lessari" homeHref="/lessari" name="Bolsa Amora" description={null} priceCents={18900} compareAtPriceCents={null} images={images} locale="pt-BR" soldOut cart={{ onAdd, href: "#", checkoutHref: "#" }} />)
     expect(screen.queryByRole("button", { name: "Adicionar ao carrinho" })).toBeNull()
   })
 
@@ -63,7 +63,7 @@ describe("StorefrontProductDetail", () => {
   })
 
   it("lays out 5b's three parts in order: the photos, the information under the shop's name, and a region for buying", () => {
-    renderProduct({ cart: { onAdd: () => {}, href: "/lessari/carrinho" } })
+    renderProduct({ cart: { onAdd: () => {}, href: "/lessari/carrinho", checkoutHref: "/lessari/checkout" } })
 
     const photo = screen.getAllByRole("img")[0]!
     const heading = screen.getByRole("heading", { level: 1 })
@@ -75,7 +75,7 @@ describe("StorefrontProductDetail", () => {
   })
 
   it("draws the description's first list as 'Sobre este item' in the information, before the region for buying", () => {
-    renderProduct({ description: "Feita à mão.\n\n- **Algodão** cru\n- Alça longa", cart: { onAdd: () => {}, href: "#" } })
+    renderProduct({ description: "Feita à mão.\n\n- **Algodão** cru\n- Alça longa", cart: { onAdd: () => {}, href: "#", checkoutHref: "#" } })
 
     const about = screen.getByRole("heading", { level: 2, name: "Sobre este item" })
     expect(screen.getByText("Algodão", { selector: "strong" })).toBeInTheDocument()
@@ -166,7 +166,7 @@ describe("StorefrontProductDetail", () => {
     it("puts the chosen combination in the cart, in the quantity chosen, when the page has a cart", async () => {
       const user = userEvent.setup()
       const onAdd = vi.fn()
-      renderProduct({ ...withVariants, initialVariantId: "g-preto", cart: { onAdd, href: "/loja/carrinho" } })
+      renderProduct({ ...withVariants, initialVariantId: "g-preto", cart: { onAdd, href: "/loja/carrinho", checkoutHref: "/loja/checkout" } })
 
       await user.selectOptions(screen.getByRole("combobox", { name: "Quantidade" }), "2")
       await user.click(screen.getByRole("button", { name: "Adicionar ao carrinho" }))
@@ -179,7 +179,7 @@ describe("StorefrontProductDetail", () => {
     it("adds a combination chosen after an earlier add with 'Comprar agora', rather than skipping it", async () => {
       const user = userEvent.setup()
       const onAdd = vi.fn()
-      renderProduct({ ...withVariants, initialVariantId: "p-areia", cart: { onAdd, href: "/loja/carrinho" } })
+      renderProduct({ ...withVariants, initialVariantId: "p-areia", cart: { onAdd, href: "/loja/carrinho", checkoutHref: "/loja/checkout" } })
 
       await user.click(screen.getByRole("button", { name: "Adicionar ao carrinho" }))
       await user.click(screen.getByRole("button", { name: /^Terracota/ }))
@@ -294,13 +294,13 @@ describe("StorefrontProductDetail", () => {
   // Plan 2026-11-10--kits-monte-seu-kit: a kit's page puts it together where a choice goes.
   it("draws a kit's builder where a choice goes, and waits for the kit to be whole before adding", async () => {
     const onAdd = vi.fn()
-    const { rerender } = renderProduct({ cart: { onAdd, href: "#" }, kit: { builder: <p>Monte seu kit aqui</p>, incomplete: "Escolha mais 8 itens para completar o kit.", key: "kit:" } })
+    const { rerender } = renderProduct({ cart: { onAdd, href: "#", checkoutHref: "#" }, kit: { builder: <p>Monte seu kit aqui</p>, incomplete: "Escolha mais 8 itens para completar o kit.", key: "kit:" } })
 
     expect(screen.getByText("Monte seu kit aqui")).toBeInTheDocument()
     expect(screen.getAllByText("Escolha mais 8 itens para completar o kit.").length).toBeGreaterThan(0)
 
     rerender(
-      <StorefrontProductDetail shopName="Lessari" homeHref="/lessari" name="Kit Festa" description={null} priceCents={13980} compareAtPriceCents={null} images={images} locale="pt-BR" cart={{ onAdd, href: "#" }} kit={{ builder: <p>Monte seu kit aqui</p>, incomplete: null, key: "kit:a*20" }} />,
+      <StorefrontProductDetail shopName="Lessari" homeHref="/lessari" name="Kit Festa" description={null} priceCents={13980} compareAtPriceCents={null} images={images} locale="pt-BR" cart={{ onAdd, href: "#", checkoutHref: "#" }} kit={{ builder: <p>Monte seu kit aqui</p>, incomplete: null, key: "kit:a*20" }} />,
     )
     await userEvent.click(screen.getAllByRole("button", { name: "Adicionar ao carrinho" })[0]!)
     expect(onAdd).toHaveBeenCalledWith(null, 1)

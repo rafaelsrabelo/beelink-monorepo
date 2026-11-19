@@ -11,7 +11,7 @@ function renderBuy(over: Partial<StorefrontFeaturedBuyProps> = {}) {
   const props: StorefrontFeaturedBuyProps = {
     name: "Whey",
     productHref: "/loja/produtos/whey",
-    cartHref: "/loja/carrinho",
+    checkoutHref: "/loja/checkout",
     hasOptions: false,
     soldOut: false,
     onBuy: vi.fn(),
@@ -21,11 +21,11 @@ function renderBuy(over: Partial<StorefrontFeaturedBuyProps> = {}) {
 }
 
 describe("StorefrontFeaturedBuy", () => {
-  it("puts a product with no choice to make in the cart, on the way to it, and says so", async () => {
+  it("puts a product with no choice to make in the cart, on the way to the checkout, and says so", async () => {
     const { props } = renderBuy()
 
     const link = screen.getByRole("link", { name: "Comprar agora" })
-    expect(link).toHaveAttribute("href", "/loja/carrinho")
+    expect(link).toHaveAttribute("href", "/loja/checkout")
     link.addEventListener("click", (event) => event.preventDefault())
     await userEvent.click(link)
 
@@ -46,7 +46,7 @@ describe("StorefrontFeaturedBuy", () => {
   })
 
   it("buys on the product's page where no cart can be reached", () => {
-    const { props } = renderBuy({ cartHref: null })
+    const { props } = renderBuy({ checkoutHref: null })
 
     expect(screen.getByRole("link", { name: "Comprar agora" })).toHaveAttribute("href", "/loja/produtos/whey")
     expect(props.onBuy).not.toHaveBeenCalled()

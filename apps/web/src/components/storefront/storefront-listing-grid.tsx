@@ -33,6 +33,8 @@ export interface StorefrontListingGridProps {
   showBadge: boolean
   showRating: boolean
   quickAdd: boolean
+  /** `routes.checkout()`, for each card's "Comprar agora". */
+  checkoutHref: string
   messages: UiMessages
 }
 
@@ -44,7 +46,7 @@ export interface StorefrontListingGridProps {
  * cache (`useListingPages`), one at a time, as the foot of the grid comes near. A product the shop moved
  * between two pages' reads is drawn once.
  */
-export function StorefrontListingGrid({ slug, query, first, productPath, pageHrefs, quickAdd, messages, ...grid }: StorefrontListingGridProps) {
+export function StorefrontListingGrid({ slug, query, first, productPath, pageHrefs, quickAdd, checkoutHref, messages, ...grid }: StorefrontListingGridProps) {
   const listing = useListingPages(slug, query, first)
   const pages = listing.data?.pages ?? [first]
   const seen = new Set<string>()
@@ -57,7 +59,7 @@ export function StorefrontListingGrid({ slug, query, first, productPath, pageHre
       products={products}
       productHref={(productSlug) => `${productPath}${productSlug}`}
       {...grid}
-      {...(quickAdd ? { cardAction: (product: StorefrontProduct) => <StorefrontCardCartLive product={product} messages={messages} /> } : {})}
+      {...(quickAdd ? { cardAction: (product: StorefrontProduct) => <StorefrontCardCartLive product={product} checkoutHref={checkoutHref} messages={messages} /> } : {})}
       cardFavorite={(product: StorefrontProduct) => <StorefrontFavoriteLive productId={product.id} productName={product.name} priceCents={product.priceCents} messages={messages} />}
       messages={messages}
     >

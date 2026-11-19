@@ -16,7 +16,7 @@ const meta = {
   component: StorefrontBuyActions,
   parameters: { layout: "padded" },
   decorators: [(Story) => <div style={{ ...shopPaletteStyle(sampleColorPresets[2]!.colors), maxWidth: 278 }}>{Story()}</div>],
-  args: { name: "100% Whey Protein", qty: 1, onQtyChange: () => {}, added: false, onAdd: () => {}, cartHref: "#" },
+  args: { name: "100% Whey Protein", qty: 1, onQtyChange: () => {}, added: false, onAdd: () => {}, cartHref: "#", checkoutHref: "#" },
   render: (args) => {
     const [qty, setQty] = useState(args.qty)
     const [added, setAdded] = useState(args.added)

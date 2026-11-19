@@ -8,7 +8,7 @@ import { expectNoA11yViolations } from "../../test/a11y"
 import { StorefrontBuyActions, type StorefrontBuyActionsProps } from "./storefront-buy-actions"
 
 function renderActions(over: Partial<StorefrontBuyActionsProps> = {}) {
-  const props = { name: "100% Whey", qty: 1, onQtyChange: vi.fn(), added: false, onAdd: vi.fn(), cartHref: "/loja/carrinho", ...over }
+  const props = { name: "100% Whey", qty: 1, onQtyChange: vi.fn(), added: false, onAdd: vi.fn(), cartHref: "/loja/carrinho", checkoutHref: "/loja/checkout", ...over }
   render(<StorefrontBuyActions {...props} />)
   return props
 }
@@ -30,6 +30,12 @@ describe("StorefrontBuyActions", () => {
     renderActions({ qty: 12 })
 
     expect(screen.getByRole("combobox", { name: "Quantidade" })).toHaveValue("12")
+  })
+
+  it("goes straight to the checkout with 'Comprar agora', past the cart", () => {
+    renderActions()
+
+    expect(screen.getByRole("link", { name: "Comprar agora" })).toHaveAttribute("href", "/loja/checkout")
   })
 
   it("adds with 'Adicionar ao carrinho', and 'Comprar agora' adds only when nothing was added yet", async () => {
@@ -59,7 +65,7 @@ describe("StorefrontBuyActions", () => {
   })
 
   it("has no accessibility violations", async () => {
-    const { container } = render(<StorefrontBuyActions name="Whey" qty={1} onQtyChange={() => {}} added onAdd={() => {}} cartHref="#" />)
+    const { container } = render(<StorefrontBuyActions name="Whey" qty={1} onQtyChange={() => {}} added onAdd={() => {}} cartHref="#" checkoutHref="#" />)
 
     await expectNoA11yViolations(container)
   })

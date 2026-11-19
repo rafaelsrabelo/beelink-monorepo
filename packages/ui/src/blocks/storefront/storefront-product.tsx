@@ -68,9 +68,9 @@ export interface StorefrontProductDetailProps {
   onVariantChange?: (variantId: string) => void
   /**
    * Puts the chosen combination in the cart — null for a product without options — with the cart's
-   * address for "Comprar agora". Absent, the page offers the WhatsApp order alone.
+   * address for "Ver carrinho" and the checkout's for "Comprar agora". Absent, only the WhatsApp order.
    */
-  cart?: { onAdd: (variantId: string | null, qty: number) => void; href: string }
+  cart?: { onAdd: (variantId: string | null, qty: number) => void; href: string; checkoutHref: string }
   /** The rating line under the title, leading to the reviews; absent while there is none. */
   rating?: ReactNode
   /**
@@ -233,7 +233,7 @@ export function StorefrontProductDetail({
           choiceKey={kit?.key ?? variant?.id ?? "product"}
           incomplete={kit?.incomplete ?? null}
           showStock={showStock}
-          cart={cart ? { onAdd: (qty) => cart.onAdd(variant?.id ?? null, qty), href: cart.href } : undefined}
+          cart={cart ? { onAdd: (qty) => cart.onAdd(variant?.id ?? null, qty), href: cart.href, checkoutHref: cart.checkoutHref } : undefined}
           onNotify={restock && (variant ?? variants[0]) ? () => setAsking(true) : undefined}
           orderHref={order}
           finishesOnWhatsApp={finishesOnWhatsApp}

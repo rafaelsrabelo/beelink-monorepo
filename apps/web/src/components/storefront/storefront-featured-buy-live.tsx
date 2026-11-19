@@ -11,22 +11,22 @@ export interface StorefrontFeaturedBuyLiveProps {
   product: { id: string; name: string; priceCents: number; hasOptions?: boolean; soldOut: boolean }
   /** Strings and not `StorefrontRoutes`: its functions cannot cross into a client component. */
   productHref: string
-  cartHref: string | null
+  checkoutHref: string | null
   messages: UiMessages
 }
 
 /**
  * The featured product's button, into the shop's cart: a product with no choice to make goes in as
- * itself, with no variant to name, on the way to the cart; everything else goes to its page.
+ * itself, with no variant to name, on the way to the checkout; everything else goes to its page.
  */
-export function StorefrontFeaturedBuyLive({ product, productHref, cartHref, messages }: StorefrontFeaturedBuyLiveProps) {
+export function StorefrontFeaturedBuyLive({ product, productHref, checkoutHref, messages }: StorefrontFeaturedBuyLiveProps) {
   const add = useAddToCart()
 
   return (
     <StorefrontFeaturedBuy
       name={product.name}
       productHref={productHref}
-      cartHref={cartHref}
+      checkoutHref={checkoutHref}
       {...(product.hasOptions !== undefined ? { hasOptions: product.hasOptions } : {})}
       soldOut={product.soldOut}
       onBuy={() => add({ productId: product.id, variantId: null, qty: 1 }, { name: product.name, unitPriceCents: product.priceCents })}
