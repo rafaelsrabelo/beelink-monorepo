@@ -7,12 +7,12 @@ import { useState } from "react"
 import { AffiliatePageEditor, type AffiliatePagePart } from "@harness-monorepo/ui/blocks/affiliates/affiliate-page-editor"
 import { AffiliatesFailed } from "@harness-monorepo/ui/blocks/affiliates/affiliates-failed"
 import { AffiliatesSkeleton } from "@harness-monorepo/ui/blocks/affiliates/affiliates-skeleton"
-import { ratePercentOf } from "@harness-monorepo/ui/lib/cashback"
 import type { AffiliatePageContentValues, AffiliatePageIssues } from "@harness-monorepo/ui/lib/affiliate-page"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import { AppLink } from "@/components/app-link"
+import { joinMarksOf } from "@/lib/affiliate-join"
 import { contentIssuesOf, contentOf, contentValuesOf, pageAddressOf, pageErrorOf, previewOf, restoredValuesOf } from "@/lib/affiliate-page-form"
 import { AffiliateError } from "@/services/affiliates/affiliate-requests"
 import { useAffiliatePage, useSaveAffiliatePage } from "@/services/affiliates/affiliate-page-hooks"
@@ -49,7 +49,7 @@ export function AffiliatePageEditorScreen({ slug, origin, locale, messages }: Af
 
   const settings = page.data.page
   const value = typed ?? contentValuesOf(settings.content, defaults)
-  const marks = { store: store.data.name, rate: ratePercentOf(page.data.rateBps, locale) }
+  const marks = joinMarksOf(store.data, page.data, messages.affiliateJoin, locale)
 
   function change(next: AffiliatePageContentValues) {
     if (save.error || save.isSuccess) save.reset()

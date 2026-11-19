@@ -85,12 +85,14 @@ export class AffiliatePageOverviewResponse implements AffiliatePageOverview {
   @ApiProperty({ type: AffiliatePageSettingsResponse }) page!: AffiliatePageSettingsResponse;
   @ApiProperty({ enum: BLOCKS, nullable: true, description: 'Null when visitors see the page now.' }) blockedBy!: AffiliatePageBlock | null;
   @ApiProperty({ example: 1000, description: "The announced table's general rate: what {comissao} becomes." }) rateBps!: number;
+  @ApiProperty({ example: 3000, description: 'The highest rate a product on sale earns on that table: above rateBps, {comissao} is "até" it.' }) maxRateBps!: number;
   @ApiProperty() pendingApplications!: number;
 }
 
 export class PublicAffiliatePagePlacementResponse implements PublicAffiliatePagePlacement {
   @ApiProperty({ type: AffiliatePagePlacementsResponse }) placements!: AffiliatePagePlacementsResponse;
   @ApiProperty({ example: 1000 }) rateBps!: number;
+  @ApiProperty({ example: 3000 }) maxRateBps!: number;
   @ApiProperty(TEXT) bannerTitle!: string | null;
   @ApiProperty(TEXT) bannerText!: string | null;
   @ApiProperty(TEXT) bannerCta!: string | null;
@@ -104,6 +106,7 @@ class PublicAffiliatePageTermsResponse {
 export class PublicAffiliatePageResponse implements PublicAffiliatePage {
   @ApiProperty({ type: AffiliatePageContentResponse }) content!: AffiliatePageContentResponse;
   @ApiProperty({ example: 1000 }) rateBps!: number;
+  @ApiProperty({ example: 3000 }) maxRateBps!: number;
   @ApiProperty({ type: PublicAffiliatePageTermsResponse }) terms!: PublicAffiliatePageTermsResponse;
 }
 

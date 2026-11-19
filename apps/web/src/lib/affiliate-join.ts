@@ -10,7 +10,8 @@ import { format } from "@harness-monorepo/ui/locales/index"
 /*
   The shop's "Seja afiliado" page as the shop window draws it (plan 2026-11-14): each text the shop's,
   else the product's own, and `{loja}` and `{comissao}` filled in with the shop's name and the
-  announced table's general rate — the panel's preview fills them the same way.
+  announced table's rate — "até" its highest when a product on sale earns more than its general one.
+  The panel's preview fills them the same way.
 */
 
 type Join = UiMessages["affiliateJoin"]
@@ -18,12 +19,13 @@ type Join = UiMessages["affiliateJoin"]
 /** What the marks become at this shop. */
 export interface JoinMarks {
   store: string
-  /** "10%". */
+  /** "10%", or "até 30%". */
   rate: string
 }
 
-export function joinMarksOf(store: Pick<PublicStore, "name">, rateBps: number, locale: string): JoinMarks {
-  return { store: store.name, rate: ratePercentOf(rateBps, locale) }
+export function joinMarksOf(store: Pick<PublicStore, "name">, rates: Pick<PublicAffiliatePage, "rateBps" | "maxRateBps">, join: Pick<Join, "upToRate">, locale: string): JoinMarks {
+  const rate = rates.maxRateBps > rates.rateBps ? format(join.upToRate, { rate: ratePercentOf(rates.maxRateBps, locale) }) : ratePercentOf(rates.rateBps, locale)
+  return { store: store.name, rate }
 }
 
 const fill = (text: string, marks: JoinMarks): string => format(text, { loja: marks.store, comissao: marks.rate })

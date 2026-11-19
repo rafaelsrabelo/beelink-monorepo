@@ -181,7 +181,7 @@ export function StorefrontFrame({
   const recruiting = recruitingOf(store)
   const announcement =
     announcementOf(drawn) ??
-    (recruiting?.placements.topStrip && !site ? joinStripOf(joinBannerOf(recruiting, messages.affiliateJoin.defaults, joinMarksOf(store, recruiting.rateBps, "pt-BR")), routes.affiliateJoin()) : null)
+    (recruiting?.placements.topStrip && !site ? joinStripOf(joinBannerOf(recruiting, messages.affiliateJoin.defaults, joinMarksOf(store, recruiting, messages.affiliateJoin, "pt-BR")), routes.affiliateJoin()) : null)
 
   return (
     <StorefrontWindow

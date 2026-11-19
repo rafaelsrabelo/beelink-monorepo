@@ -8,7 +8,7 @@ import type { AffiliatePageOverview, PublicAffiliatePage } from '@harness-monore
 import { env } from '../../shared/config/env.js';
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoresService } from '../stores/stores.service.js';
-import { affiliatePageBlockOf, announcedRateOf, liveAffiliatePageOf } from './affiliate-page-live.js';
+import { affiliatePageBlockOf, announcedRatesOf, liveAffiliatePageOf } from './affiliate-page-live.js';
 import { contentJsonOf, toAffiliatePageSettings } from './affiliate-page.mapper.js';
 import { openProgram } from './affiliate-program.js';
 import { tableFor } from './affiliate-records.js';
@@ -58,19 +58,19 @@ export class AffiliatePageService {
     const storeId = await this.stores.publicStoreId(storeSlug);
     const live = await liveAffiliatePageOf(this.prisma, storeId, env.AFFILIATE_LINKS_ENABLED);
     if (!live) throw affiliatePageClosed();
-    return { content: live.content, rateBps: live.rateBps, terms: live.terms };
+    return { content: live.content, rateBps: live.rateBps, maxRateBps: live.maxRateBps, terms: live.terms };
   }
 
   private async overviewOf(storeId: string): Promise<AffiliatePageOverview> {
     const [page, program, pendingApplications] = await Promise.all([
-      this.prisma.affiliatePage.findUnique({ where: { storeId }, include: { table: { select: { defaultRateBps: true } } } }),
+      this.prisma.affiliatePage.findUnique({ where: { storeId }, include: { table: { select: { id: true, defaultRateBps: true } } } }),
       this.prisma.affiliateProgram.findUnique({ where: { storeId }, select: { enabled: true } }),
       this.prisma.affiliateApplication.count({ where: { storeId, status: 'PENDING' } }),
     ]);
     return {
       page: toAffiliatePageSettings(page),
       blockedBy: affiliatePageBlockOf(page?.open ?? false, program?.enabled ?? false, env.AFFILIATE_LINKS_ENABLED),
-      rateBps: await announcedRateOf(this.prisma, storeId, page?.table?.defaultRateBps ?? null),
+      ...(await announcedRatesOf(this.prisma, storeId, page?.table ?? null)),
       pendingApplications,
     };
   }

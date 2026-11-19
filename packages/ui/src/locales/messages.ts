@@ -4693,6 +4693,8 @@ export interface UiMessages {
     linkPreview: { title: string; lead: string; name: string; partner: string; initials: string; slug: string }
     /** `{sale}`, `{earning}`: what a sale through the link earns at the announced rate. */
     example: string
+    /** `{rate}`: what `{comissao}` becomes when a product on sale earns more than the table's general rate. */
+    upToRate: string
     form: {
       close: string
       name: string

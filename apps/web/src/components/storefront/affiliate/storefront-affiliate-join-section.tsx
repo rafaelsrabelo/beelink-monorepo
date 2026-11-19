@@ -26,7 +26,7 @@ export async function StorefrontAffiliateJoinSection({ place, page }: Storefront
   const locale = "pt-BR"
   const routes = storefrontRoutes(store)
   const [shopper, origin] = await Promise.all([shopperAt(store.slug), siteOrigin()])
-  const marks = joinMarksOf(store, page.rateBps, locale)
+  const marks = joinMarksOf(store, page, ui.affiliateJoin, locale)
   const linkBase = store.ownDomain && store.customDomain ? `${store.customDomain.host}/` : `${new URL(origin).host}/${store.slug}/`
 
   return (

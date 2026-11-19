@@ -108,6 +108,7 @@ describe('the "Seja afiliado" page and its applications (plan 2026-11-14)', () =
         page: { open: false, placements: { homeBanner: true, footerLink: true, topStrip: false }, tableId: null, approval: 'MANUAL', content: EMPTY_AFFILIATE_PAGE_CONTENT, updatedAt: null },
         blockedBy: 'CLOSED',
         rateBps: 1000,
+        maxRateBps: 1000,
         pendingApplications: 0,
       });
     });
@@ -151,13 +152,41 @@ describe('the "Seja afiliado" page and its applications (plan 2026-11-14)', () =
       expect(errorOf(missing)).toBe('COMMISSION_TABLE_NOT_FOUND');
     });
 
+    // Mutante's: 10% on the table, up to 30% on products of its own choosing — "{comissao}" reads "até 30%".
+    it('announces the highest rate a product on sale earns on the table — its own, else its category\'s — and no rate no sale can earn', async () => {
+      const tableId = await programOn();
+      const tables = `/api/stores/lessari/affiliate-program/tables/${tableId}`;
+      const created = async (path: string, body: object) => (await call('POST', `/api/stores/lessari/${path}`, owner, body)).json<{ id: string }>();
+      const [proteins, gifts] = [await created('product-categories', { name: 'Proteínas' }), await created('product-categories', { name: 'Brindes' })];
+      const whey = await created('products', { name: 'Whey', priceCents: 10_000, categoryId: proteins.id });
+      const draft = await created('products', { name: 'Pré-treino', priceCents: 10_000, status: 'DRAFT' });
+      const mug = await created('products', { name: 'Caneca', priceCents: 10_000, categoryId: gifts.id });
+
+      await openPage();
+      expect(await pageOf()).toMatchObject({ rateBps: 1000, maxRateBps: 1000 });
+
+      // A draft sells nothing, and a category whose every product on sale has a rate of its own pays none.
+      await call('PUT', `${tables}/rates/${draft.id}`, owner, { rateBps: 5000 });
+      await call('PUT', `${tables}/category-rates/${gifts.id}`, owner, { rateBps: 4000 });
+      await call('PUT', `${tables}/rates/${mug.id}`, owner, { rateBps: 500 });
+      expect(await pageOf()).toMatchObject({ rateBps: 1000, maxRateBps: 1000 });
+
+      await call('PUT', `${tables}/category-rates/${proteins.id}`, owner, { rateBps: 2000 });
+      expect(await pageOf()).toMatchObject({ rateBps: 1000, maxRateBps: 2000 });
+
+      await call('PUT', `${tables}/rates/${whey.id}`, owner, { rateBps: 3000 });
+      expect(await pageOf()).toMatchObject({ rateBps: 1000, maxRateBps: 3000 });
+      expect((await call('GET', '/api/stores/lessari/affiliate-join')).json<PublicAffiliatePage>()).toMatchObject({ rateBps: 1000, maxRateBps: 3000 });
+      expect((await call('GET', '/api/stores/lessari/public')).json<PublicStore>().affiliatePage).toMatchObject({ rateBps: 1000, maxRateBps: 3000 });
+    });
+
     it('hands the page back to the default table when the one it announced is deleted', async () => {
       await programOn();
       const special = (await call('POST', '/api/stores/lessari/affiliate-program/tables', owner, { name: 'Revendedoras', defaultRateBps: 1500 })).json<{ id: string }>();
       await savePage({ ...OPEN_PAGE, tableId: special.id });
       await app.inject({ method: 'DELETE', url: `/api/stores/lessari/affiliate-program/tables/${special.id}`, headers: { authorization: `Bearer ${owner.accessToken}` } });
 
-      expect(await pageOf()).toMatchObject({ page: { tableId: null }, rateBps: 1000 });
+      expect(await pageOf()).toMatchObject({ page: { tableId: null }, rateBps: 1000, maxRateBps: 1000 });
     });
 
     it.each([
@@ -190,11 +219,13 @@ describe('the "Seja afiliado" page and its applications (plan 2026-11-14)', () =
       expect(page.json<PublicAffiliatePage>()).toEqual({
         content: { ...EMPTY_AFFILIATE_PAGE_CONTENT, title: 'Venda a {loja}', bannerTitle: 'Seja parceira' },
         rateBps: 1000,
+        maxRateBps: 1000,
         terms: { text: 'Pagamento por Pix.', version: 1 },
       });
       expect((await call('GET', '/api/stores/lessari/public')).json<PublicStore>().affiliatePage).toEqual({
         placements: { homeBanner: true, footerLink: true, topStrip: false },
         rateBps: 1000,
+        maxRateBps: 1000,
         bannerTitle: 'Seja parceira',
         bannerText: null,
         bannerCta: null,
