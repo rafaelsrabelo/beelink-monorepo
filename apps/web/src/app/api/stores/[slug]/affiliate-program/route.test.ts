@@ -65,6 +65,8 @@ describe("the shop's affiliate programme, for the panel (IMPULSEIA-102)", () => 
     const removed = await removeTable(request("/api/stores/loja/affiliate-program/tables/t%201", { method: "DELETE" }), table)
     expect(removed.status).toBe(204)
     expect(await removed.text()).toBe("")
+    // The shop window's banner says the announced table's rates: a change, or a deletion, goes to it.
+    expect(mocks.revalidateStore.mock.calls).toEqual([["loja"], ["loja"]])
   })
 
   it("sets and drops a product's rate on a table, both ids escaped", async () => {
@@ -75,6 +77,7 @@ describe("the shop's affiliate programme, for the panel (IMPULSEIA-102)", () => 
     expect(String(fetched.mock.calls[0]?.[0])).toContain("/stores/loja/affiliate-program/tables/t%201/rates/p%2F1")
     expect(JSON.parse(String(fetched.mock.calls[0]?.[1]?.body))).toEqual({ rateBps: 0 })
     expect((await removeRate(request("/api/stores/loja/affiliate-program/tables/t%201/rates/p%2F1", { method: "DELETE" }), rate)).status).toBe(204)
+    expect(mocks.revalidateStore.mock.calls).toEqual([["loja"], ["loja"]])
   })
 
   it("sets and drops a category's rate on a table, both ids escaped", async () => {
@@ -88,6 +91,7 @@ describe("the shop's affiliate programme, for the panel (IMPULSEIA-102)", () => 
     const removed = await removeCategoryRate(request("/api/stores/loja/affiliate-program/tables/t%201/category-rates/c%2F1", { method: "DELETE" }), category)
     expect(removed.status).toBe(204)
     expect(await removed.text()).toBe("")
+    expect(mocks.revalidateStore.mock.calls).toEqual([["loja"], ["loja"]])
   })
 
   it("refuses a request from another origin before reaching the API", async () => {
@@ -97,5 +101,12 @@ describe("the shop's affiliate programme, for the panel (IMPULSEIA-102)", () => 
     expect((await PUT(request("/api/stores/loja/affiliate-program", { method: "PUT", body: {}, origin: "https://evil.example" }), shop)).status).toBe(403)
     expect((await removeTable(request("/api/stores/loja/affiliate-program/tables/t%201", { method: "DELETE", origin: "https://evil.example" }), table)).status).toBe(403)
     expect(fetched).not.toHaveBeenCalled()
+  })
+
+  it("leaves the shop's kept answers alone when the API refuses a rate", async () => {
+    vi.stubGlobal("fetch", vi.fn<Fetched>(async () => Response.json({ statusCode: 400, errorCode: "COMMISSION_TABLE_INVALID", message: "x" }, { status: 400 })))
+
+    expect((await setRate(request("/api/stores/loja/affiliate-program/tables/t%201/rates/p%2F1", { method: "PUT", body: { rateBps: 20_000 } }), rate)).status).toBe(400)
+    expect(mocks.revalidateStore).not.toHaveBeenCalled()
   })
 })
