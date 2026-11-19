@@ -3,9 +3,6 @@
 // React
 import { useId, type FormEvent, type ReactNode } from "react"
 
-// Libs
-import { XIcon } from "lucide-react"
-
 // UI
 import { Checkbox } from "@harness-monorepo/ui/components/checkbox"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@harness-monorepo/ui/components/field"
@@ -25,7 +22,6 @@ export interface StorefrontAffiliateJoinFormProps {
   value: AffiliateJoinFormValues
   onChange: (value: AffiliateJoinFormValues) => void
   onSubmit: () => void
-  onClose: () => void
   /** Opens the programme's terms over the page. */
   onTerms: () => void
   privacyHref: string
@@ -43,7 +39,7 @@ const INPUT = "border-shop-line-strong bg-shop-background text-shop-text h-12 ro
  * page asks it — and the terms and the privacy policy read. A field no person sees stays in the form:
  * a robot that fills it is answered as anyone, and nothing of it is kept.
  */
-export function StorefrontAffiliateJoinForm({ view, value, onChange, onSubmit, onClose, onTerms, privacyHref, issues = {}, pending = false, error, messages = defaultMessages }: StorefrontAffiliateJoinFormProps) {
+export function StorefrontAffiliateJoinForm({ view, value, onChange, onSubmit, onTerms, privacyHref, issues = {}, pending = false, error, messages = defaultMessages }: StorefrontAffiliateJoinFormProps) {
   const text = messages.affiliateJoin.form
   const id = useId()
   const set = (patch: Partial<AffiliateJoinFormValues>) => onChange({ ...value, ...patch })
@@ -73,16 +69,11 @@ export function StorefrontAffiliateJoinForm({ view, value, onChange, onSubmit, o
 
   return (
     <form noValidate onSubmit={submit} aria-labelledby={`${id}-title`} className="bg-shop-background border-shop-line flex flex-col gap-4 rounded-2xl border p-6 shadow-sm">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex flex-col gap-1">
-          <h2 id={`${id}-title`} className="text-shop-text text-xl font-extrabold">
-            {view.title}
-          </h2>
-          <p className="text-shop-muted text-sm">{view.subtitle}</p>
-        </div>
-        <button type="button" onClick={onClose} aria-label={text.close} className="bg-shop-fill text-shop-text focus-visible:ring-shop-primary flex size-11 shrink-0 items-center justify-center rounded-xl outline-none focus-visible:ring-2">
-          <XIcon aria-hidden="true" className="size-5" />
-        </button>
+      <div className="flex flex-col gap-1">
+        <h2 id={`${id}-title`} className="text-shop-text text-xl font-extrabold">
+          {view.title}
+        </h2>
+        <p className="text-shop-muted text-sm">{view.subtitle}</p>
       </div>
 
       {field("name", text.name, { type: "text", autoComplete: "name" })}
@@ -103,18 +94,21 @@ export function StorefrontAffiliateJoinForm({ view, value, onChange, onSubmit, o
       <Field orientation="horizontal" data-invalid={issues.accepted ? true : undefined}>
         <Checkbox id={`${id}-accepted`} checked={value.accepted} disabled={pending} aria-invalid={issues.accepted ? true : undefined} onCheckedChange={(accepted: boolean) => set({ accepted })} />
         <FieldLabel htmlFor={`${id}-accepted`} className="text-shop-text font-normal">
-          {withParts(text.accept, {
-            terms: (
-              <button type="button" onClick={onTerms} className="text-shop-primary-ink underline underline-offset-2">
-                {text.terms}
-              </button>
-            ),
-            privacy: (
-              <a href={privacyHref} target="_blank" rel="noreferrer" className="text-shop-primary-ink underline underline-offset-2">
-                {text.privacy}
-              </a>
-            ),
-          })}
+          {/* One child: the label lays its children out with a gap, which tore the sentence into columns. */}
+          <span>
+            {withParts(text.accept, {
+              terms: (
+                <button type="button" onClick={onTerms} className="text-shop-primary-ink underline underline-offset-2">
+                  {text.terms}
+                </button>
+              ),
+              privacy: (
+                <a href={privacyHref} target="_blank" rel="noreferrer" className="text-shop-primary-ink underline underline-offset-2">
+                  {text.privacy}
+                </a>
+              ),
+            })}
+          </span>
         </FieldLabel>
       </Field>
       {issues.accepted ? <FieldError className="-mt-2">{issues.accepted}</FieldError> : null}
