@@ -4,6 +4,7 @@ import type {
   ContactField,
   CountdownEnd,
   FaqItem,
+  PublicAffiliateJoinBanner,
   PublicBannerSlide,
   PublicCallToActionButton,
   PublicComponent,
@@ -26,6 +27,8 @@ export interface GalleryStock {
   /** When the gallery opened: a sample countdown counts to a moment after it. */
   now: number
   hasCategories: boolean
+  /** The shop's own banner words and rates while its "Seja afiliado" page is on the air; the product's own words at 10% otherwise. */
+  affiliateJoin: PublicAffiliateJoinBanner
 }
 
 /**
@@ -45,7 +48,12 @@ export function stockOf(store: PublicStore, shelves: Shelves, categoriesShown: n
     .flatMap((component) => (component.items as PublicBannerSlide[]).map((slide) => slide.imageUrl))
   const images = [...slides, ...products.flatMap((product) => (product.imageUrl ? [product.imageUrl] : []))]
 
-  return { images, products, hasCategories: categoriesShown > 0, now }
+  const affiliate = store.affiliatePage
+  const affiliateJoin: PublicAffiliateJoinBanner = affiliate
+    ? { rateBps: affiliate.rateBps, maxRateBps: affiliate.maxRateBps, bannerTitle: affiliate.bannerTitle, bannerText: affiliate.bannerText, bannerCta: affiliate.bannerCta }
+    : { rateBps: 1000, maxRateBps: 1000, bannerTitle: null, bannerText: null, bannerCta: null }
+
+  return { images, products, hasCategories: categoriesShown > 0, now, affiliateJoin }
 }
 
 const SPAN = { 1: "FULL", 2: "HALF", 3: "THIRD" } as const
@@ -157,6 +165,8 @@ export function sampleSectionOf(entry: GalleryEntry, stock: GalleryStock, messag
       const end: CountdownEnd = { id: `${id}-fim`, endsAt: new Date(stock.now + (53 * 60 + 17) * 60 * 1000).toISOString() }
       return band([sample("COUNTDOWN", id, { title: text.countdownTitle, display: "BAND", items: [end] })])
     }
+    case "AFFILIATE_JOIN":
+      return band([sample("AFFILIATE_JOIN", id, { items: [stock.affiliateJoin] })])
     case "ANNOUNCEMENT":
       return null
   }

@@ -290,7 +290,9 @@ export class StoresService {
     if (unavailable) return toUnavailablePublicStore(row);
 
     const sections = homeSectionsOf(row);
-    const [lookups, affiliatePage] = await Promise.all([lookupsOf(this.prisma, row.id, sections), liveAffiliatePageOf(this.prisma, row.id, env.AFFILIATE_LINKS_ENABLED)]);
+    // Read once: the footer's link and the strip ask for it, and so does a "Programa de afiliados" block.
+    const live = liveAffiliatePageOf(this.prisma, row.id, env.AFFILIATE_LINKS_ENABLED);
+    const [lookups, affiliatePage] = await Promise.all([lookupsOf(this.prisma, row.id, sections, live), live]);
     // The shop window's read alone carries it: every page of the window leads to the affiliate page from it.
     return { ...toPublicStore(row, lookups, sections), affiliatePage: publicPlacementOf(affiliatePage) };
   }

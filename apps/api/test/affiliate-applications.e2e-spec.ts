@@ -15,6 +15,7 @@ import type {
   ShopAffiliate,
   ShopAffiliateApplication,
   ShopAffiliateApplicationPage,
+  Section,
 } from '@harness-monorepo/contracts';
 
 // App
@@ -25,6 +26,7 @@ import { affiliateDocumentFor, affiliateIdentity } from './support/affiliate-ide
 import { PASSWORD, newEmail, signUpAndSignIn } from './support/auth-flow.js';
 import { createTestApp } from './support/create-test-app.js';
 import { clearInbox, tokenFromLink, waitForMessage } from './support/mailpit.js';
+import { draftOf, publishPage } from './support/publish.js';
 import { resetDatabase } from './support/reset-database.js';
 
 // Hoisted above the imports: `env.ts` reads the environment once. Every test applies from the one
@@ -42,7 +44,7 @@ const DAY = 24 * 60 * 60 * 1000;
 const PROGRAM_ON = { enabled: true, attributionDays: 30, payoutDelayDays: 10, termsText: 'Pagamento por Pix.' };
 const OPEN_PAGE: AffiliatePagePayload = {
   open: true,
-  placements: { homeBanner: true, footerLink: true, topStrip: false },
+  placements: { footerLink: true, topStrip: false },
   tableId: null,
   approval: 'MANUAL',
   content: { ...EMPTY_AFFILIATE_PAGE_CONTENT },
@@ -105,7 +107,7 @@ describe('the "Seja afiliado" page and its applications (plan 2026-11-14)', () =
     it('reads closed before it is saved, every text the product\'s own, announcing the default table', async () => {
       const overview = await pageOf();
       expect(overview).toEqual({
-        page: { open: false, placements: { homeBanner: true, footerLink: true, topStrip: false }, tableId: null, approval: 'MANUAL', content: EMPTY_AFFILIATE_PAGE_CONTENT, updatedAt: null },
+        page: { open: false, placements: { footerLink: true, topStrip: false }, tableId: null, approval: 'MANUAL', content: EMPTY_AFFILIATE_PAGE_CONTENT, updatedAt: null },
         blockedBy: 'CLOSED',
         rateBps: 1000,
         maxRateBps: 1000,
@@ -223,13 +225,36 @@ describe('the "Seja afiliado" page and its applications (plan 2026-11-14)', () =
         terms: { text: 'Pagamento por Pix.', version: 1 },
       });
       expect((await call('GET', '/api/stores/lessari/public')).json<PublicStore>().affiliatePage).toEqual({
-        placements: { homeBanner: true, footerLink: true, topStrip: false },
+        placements: { footerLink: true, topStrip: false },
         rateBps: 1000,
         maxRateBps: 1000,
         bannerTitle: 'Seja parceira',
         bannerText: null,
         bannerCta: null,
       });
+    });
+
+    // The owner's call (19/11/2026): the home's banner is a block of design mode, placed and hidden there.
+    it('draws a "Programa de afiliados" block with the page\'s banner while the page is on the air, holds nothing otherwise, and says so at Publicar', async () => {
+      const added = await call('POST', '/api/stores/lessari/sections', owner, { component: { kind: 'AFFILIATE_JOIN' } });
+      expect(added.statusCode, added.payload).toBe(201);
+      const block = added.json<Section>().components[0]!;
+      expect(block).toMatchObject({ kind: 'AFFILIATE_JOIN', display: null, items: [] });
+      const refused = await call('POST', '/api/stores/lessari/sections', owner, { component: { kind: 'AFFILIATE_JOIN', items: [{ id: 'x' }] } });
+      expect(refused.statusCode).toBe(400);
+
+      const home = (await draftOf(app, owner.accessToken, 'lessari')).page.id;
+      const problems = async () => (await call('GET', `/api/stores/lessari/pages/${home}/problems`, owner)).json<{ kind: string; componentId: string }[]>();
+      const served = async () => (await call('GET', '/api/stores/lessari/public')).json<PublicStore>().sections.flatMap((section) => section.components).find((row) => row.id === block.id);
+
+      // Closed: nothing to draw, and Publicar says why.
+      expect(await problems()).toContainEqual(expect.objectContaining({ kind: 'AFFILIATE_PAGE_CLOSED', componentId: block.id }));
+      await publishPage(app, owner.accessToken, 'lessari');
+      expect((await served())?.items).toEqual([]);
+
+      await openPage({ content: { ...EMPTY_AFFILIATE_PAGE_CONTENT, bannerTitle: 'Venda a {loja}' } });
+      expect((await problems()).map((problem) => problem.kind)).not.toContain('AFFILIATE_PAGE_CLOSED');
+      expect((await served())?.items).toEqual([{ rateBps: 1000, maxRateBps: 1000, bannerTitle: 'Venda a {loja}', bannerText: null, bannerCta: null }]);
     });
 
     it('is closed — on the page and on the shop window — while the shopkeeper has not opened it, or the programme is off', async () => {

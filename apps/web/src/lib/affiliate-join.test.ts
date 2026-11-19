@@ -8,7 +8,7 @@ import type { AffiliatePageContent, PublicAffiliatePage } from "@harness-monorep
 import { ptBR as ui } from "@harness-monorepo/ui/locales/pt-BR"
 
 // App
-import { applicationPayloadOf, joinBannerOf, joinExampleOf, joinFormViewOf, joinMarksOf, joinPageViewOf, joinStripOf, recruitingOf } from "./affiliate-join"
+import { applicationPayloadOf, joinBannerOf, joinBlocksFor, joinExampleOf, joinFormViewOf, joinMarksOf, joinPageViewOf, joinStripOf, recruitingOf } from "./affiliate-join"
 
 const join = ui.affiliateJoin
 const nothing: AffiliatePageContent = {
@@ -30,7 +30,7 @@ describe("the \"Seja afiliado\" page on the shop window (plan 2026-11-14)", () =
   it("says \"até\" the highest rate where a product on sale earns more than the table's general one", () => {
     const upTo = joinMarksOf({ name: "Mutante" }, { rateBps: 1000, maxRateBps: 3000 }, join, "pt-BR")
     expect(upTo.rate).toBe("até 30%")
-    expect(joinBannerOf({ placements: { homeBanner: true, footerLink: true, topStrip: false }, rateBps: 1000, maxRateBps: 3000, bannerTitle: null, bannerText: null, bannerCta: null }, join.defaults, upTo).title).toBe(
+    expect(joinBannerOf({ bannerTitle: null, bannerText: null, bannerCta: null }, join.defaults, upTo).title).toBe(
       "Indique a Mutante e ganhe até 30% em cada venda",
     )
     expect(joinPageViewOf(page, join.defaults, upTo).benefits[0]?.title).toBe("até 30% de comissão")
@@ -56,7 +56,7 @@ describe("the \"Seja afiliado\" page on the shop window (plan 2026-11-14)", () =
   })
 
   it("leads to the page from the home, the footer and the strip — never off the air, from a site or under an affiliate's name", () => {
-    const affiliatePage = { placements: { homeBanner: true, footerLink: true, topStrip: true }, rateBps: 1000, maxRateBps: 1000, bannerTitle: null, bannerText: null, bannerCta: "Quero vender" }
+    const affiliatePage = { placements: { footerLink: true, topStrip: true }, rateBps: 1000, maxRateBps: 1000, bannerTitle: null, bannerText: null, bannerCta: "Quero vender" }
     const store = { type: "ECOMMERCE" as const, affiliatePage }
     expect(recruitingOf(store)).toBe(affiliatePage)
     expect(recruitingOf({ ...store, affiliate: "joao" })).toBeNull()
@@ -67,6 +67,18 @@ describe("the \"Seja afiliado\" page on the shop window (plan 2026-11-14)", () =
     const banner = joinBannerOf(affiliatePage, join.defaults, marks)
     expect(banner).toEqual({ title: "Indique a Lessari e ganhe 10% em cada venda", text: join.defaults.bannerText, cta: "Quero vender" })
     expect(joinStripOf(banner, "/lessari/seja-afiliado")).toEqual({ left: banner.title, right: "Quero vender", background: null, href: "/lessari/seja-afiliado", external: false })
+  })
+
+  // Plan 2026-11-19: the banner is a block, and under an affiliate's name it invites nobody.
+  it("keeps a \"Programa de afiliados\" block's banner where the shop window recruits, and empties it where it does not", () => {
+    const placement = { placements: { footerLink: true, topStrip: false }, rateBps: 1000, maxRateBps: 1000, bannerTitle: null, bannerText: null, bannerCta: null }
+    const block = { id: "a", kind: "AFFILIATE_JOIN" as const, title: null, subtitle: null, body: null, span: "FULL" as const, display: null, source: null, sourceCategory: null, items: [placement], columns: null, align: null }
+    const heading = { ...block, id: "h", kind: "HEADING" as const, title: "Oi", items: [] }
+    const sections = [{ id: "s", name: null, width: "CONTAINED" as const, background: null, components: [block, heading] }]
+
+    expect(joinBlocksFor(sections, placement)).toBe(sections)
+    expect(joinBlocksFor(sections, null)?.[0]?.components).toEqual([{ ...block, items: [] }, heading])
+    expect(joinBlocksFor(undefined, null)).toBeUndefined()
   })
 })
 

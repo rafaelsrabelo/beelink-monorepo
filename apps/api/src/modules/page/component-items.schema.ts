@@ -156,6 +156,8 @@ const ITEMS_OF = {
   HEADING: NOTHING,
   TEXT: NOTHING,
   CATEGORIES: NOTHING,
+  /** Its words are the shop's "Seja afiliado" page's, read with the page (plan 2026-11-19). */
+  AFFILIATE_JOIN: NOTHING,
 } as const satisfies Record<ComponentKind, z.ZodType>;
 
 /**

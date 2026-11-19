@@ -4,6 +4,7 @@ import type {
   BannerSlide,
   CallToActionButton,
   ImageTextMedia,
+  PublicAffiliateJoinBanner,
   PublicComponent,
   PublicComponentItem,
   PublicFeaturedProduct,
@@ -56,6 +57,11 @@ export interface PageLookups {
   featured: ReadonlyMap<string, PublicFeaturedProduct>;
   /** The moment the page is read, for a countdown to be left out once it has ended. Now, unless a test fixes it. */
   now?: number;
+  /**
+   * What a "Programa de afiliados" block draws: the shop's "Seja afiliado" page's banner, while that
+   * page is on the air (plan 2026-11-19). Absent or null, every such block holds nothing.
+   */
+  affiliateJoin?: PublicAffiliateJoinBanner | null;
 }
 
 /** Nothing looked up: slides are pictures, showcases are empty and no product is featured — never a guess. */
@@ -78,6 +84,8 @@ function publicItemsOf(row: ComponentShape, shopSlug: string, words: StorefrontR
       const card = lookups.featured.get(row.id);
       return card ? [card] : [];
     }
+    case 'AFFILIATE_JOIN':
+      return lookups.affiliateJoin ? [lookups.affiliateJoin] : [];
     default:
       return itemsOf(row.kind, row.items) as PublicComponentItem[];
   }

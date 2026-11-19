@@ -1454,6 +1454,10 @@ export interface UiMessages {
       featuredUnavailable: { title: string; body: string }
       countdownEnded: { title: string; body: string }
       countdownUnset: { title: string; body: string }
+      /** A "Programa de afiliados" block while the shop's "Seja afiliado" page is not on the air. */
+      affiliatePageClosed: { title: string; body: string; action: string }
+      /** Not an empty block: where a "Programa de afiliados" block's words are written. */
+      affiliateJoinWords: { title: string; body: string; action: string }
       /** Said after a link that leaves the arrangement's draft where it is. */
       opensInNewTab: string
     }
@@ -4763,7 +4767,8 @@ export interface UiMessages {
       contentHelp: string
       editContent: string
       placements: string
-      homeBanner: string
+      /** Where the home's banner went: a block of design mode. */
+      bannerInDesign: string
       footerLink: string
       topStrip: string
       table: string

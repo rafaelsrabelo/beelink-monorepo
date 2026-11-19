@@ -79,3 +79,10 @@ describe("emptyStateOf — a countdown the shop does not draw", () => {
     expect(emptyStateOf("COUNTDOWN", facts({ countdownEndsAt: "2999-01-01T00:00:00.000Z" }))).toBeNull()
   })
 })
+
+describe("emptyStateOf — a \"Programa de afiliados\" block the shop does not draw", () => {
+  it("says the affiliate page is not on the air while the read brought no banner, and nothing while it draws", () => {
+    expect(emptyStateOf("AFFILIATE_JOIN", facts({ shelfEmpty: true }))).toEqual({ kind: "affiliatePageClosed" })
+    expect(emptyStateOf("AFFILIATE_JOIN", facts())).toBeNull()
+  })
+})

@@ -82,6 +82,7 @@ export function TemplatePreview({ template, size, page, productId, store, catego
       primary={colors.primary}
       categories={categories}
       routes={routes}
+      shopName={store.name}
       showPrice={layout.showProductPrice ?? true}
       showBadge={layout.showProductBadges ?? true}
       showRating={layout.showProductRating ?? true}

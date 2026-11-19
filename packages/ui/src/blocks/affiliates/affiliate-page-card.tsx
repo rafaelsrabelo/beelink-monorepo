@@ -25,7 +25,7 @@ import type { AffiliateTableOption } from "@harness-monorepo/ui/lib/affiliates"
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import { AffiliateTableSelect } from "./affiliate-table-select"
 
-const PLACEMENTS = ["homeBanner", "footerLink", "topStrip"] as const
+const PLACEMENTS = ["footerLink", "topStrip"] as const
 const APPROVALS = ["MANUAL", "AUTO"] as const
 
 export interface AffiliatePageCardProps {
@@ -125,6 +125,8 @@ export function AffiliatePageCard({ value, onChange, onSubmit, address, viewHref
             </FieldLabel>
           </Field>
         ))}
+        {/* No switch for it: a banner is a block of the page, placed and hidden in design mode (plan 2026-11-19). */}
+        <FieldDescription>{text.bannerInDesign}</FieldDescription>
       </FieldSet>
 
       <Field className="max-w-md">

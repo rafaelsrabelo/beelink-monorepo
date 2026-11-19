@@ -176,7 +176,6 @@ export class AffiliatePageContentDto implements AffiliatePageContent {
 }
 
 export class AffiliatePagePlacementsDto implements AffiliatePagePlacements {
-  @ApiProperty() @IsBoolean(PAGE) homeBanner!: boolean;
   @ApiProperty() @IsBoolean(PAGE) footerLink!: boolean;
   @ApiProperty() @IsBoolean(PAGE) topStrip!: boolean;
 }

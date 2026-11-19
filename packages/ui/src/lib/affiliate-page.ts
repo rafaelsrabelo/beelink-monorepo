@@ -9,7 +9,6 @@ export type AffiliateApprovalValue = "MANUAL" | "AUTO"
 /** The settings card as typed. `tableId` is always a table's: the screen reads the API's null as the default one. */
 export interface AffiliatePageCardValues {
   open: boolean
-  homeBanner: boolean
   footerLink: boolean
   topStrip: boolean
   tableId: string

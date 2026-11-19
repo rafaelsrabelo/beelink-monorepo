@@ -32,7 +32,7 @@ const shelves: Shelves = new Map([
 ])
 const NOW = Date.parse("2026-09-26T12:00:00Z")
 const stock = stockOf(store, shelves, 2, NOW)
-const empty: GalleryStock = { images: [], products: [], hasCategories: false, now: NOW }
+const empty: GalleryStock = { images: [], products: [], hasCategories: false, now: NOW, affiliateJoin: { rateBps: 1000, maxRateBps: 1000, bannerTitle: null, bannerText: null, bannerCta: null } }
 
 describe("stockOf — the shop's own things, for the previews", () => {
   it("takes the banners' pictures first, then the products', and each product once", () => {

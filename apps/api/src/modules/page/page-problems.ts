@@ -35,6 +35,11 @@ export function problemsOf(sections: readonly SectionShape[], resolved: PageLook
         problems.push({ kind: 'FEATURED_PRODUCT_UNAVAILABLE', ...where, itemId: null });
       }
 
+      // The shop's "Seja afiliado" page is closed, its programme off, or affiliates not on the air yet.
+      if (component.kind === 'AFFILIATE_JOIN' && !resolved.affiliateJoin) {
+        problems.push({ kind: 'AFFILIATE_PAGE_CLOSED', ...where, itemId: null });
+      }
+
       const pointers = pointersOf(component.kind, component.items);
 
       if (component.kind === 'BANNER' && pointers.length === 0) {

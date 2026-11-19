@@ -83,3 +83,18 @@ export interface CountdownEnd {
   id: string;
   endsAt: string;
 }
+
+/**
+ * What a "Programa de afiliados" block draws (plan 2026-11-19), read with the page: the shop's
+ * "Seja afiliado" page's banner words — `null` is the product's own — and the rates `{comissao}`
+ * becomes. Its block holds one while that page is on the air, and none otherwise.
+ */
+export interface PublicAffiliateJoinBanner {
+  /** The announced table's general rate, in basis points. */
+  rateBps: number;
+  /** The highest a product on sale earns on that table: above `rateBps`, `{comissao}` is "até" it. */
+  maxRateBps: number;
+  bannerTitle: string | null;
+  bannerText: string | null;
+  bannerCta: string | null;
+}

@@ -20,7 +20,8 @@ import { reachesTheEdge } from "./band-rhythm"
 import { deviceRhythmOf, shownClassOf, shownOn, spacingClassOf } from "./device-visibility"
 import { drawnSectionsOf } from "./empty-component"
 import { anchorsOf } from "./site-chrome"
-import { StorefrontComponent, type LiveContact } from "./storefront-component"
+import { StorefrontComponent } from "./storefront-component"
+import type { LiveContact } from "./storefront-contact-block"
 
 export interface StorefrontSectionsProps {
   /**
@@ -38,6 +39,8 @@ export interface StorefrontSectionsProps {
   /** Every category the shop has. A CATEGORIES component draws these; nothing else reads them. */
   categories: readonly PublicProductCategory[]
   routes: StorefrontRoutes
+  /** What a "Programa de afiliados" block's `{loja}` becomes. */
+  shopName: string
   showPrice: boolean
   /** The shop's card terms, for "em até 6x" under a price; absent when it splits nothing. */
   installments?: StorefrontInstallmentTerms
@@ -88,6 +91,7 @@ export function StorefrontSections({
   primary,
   categories,
   routes,
+  shopName,
   showPrice,
   installments,
   showBadge,
@@ -139,6 +143,7 @@ export function StorefrontSections({
                     component={component}
                     categories={categories}
                     routes={routes}
+                    shopName={shopName}
                     showPrice={showPrice}
                     {...(installments ? { installments } : {})}
                     showBadge={showBadge}

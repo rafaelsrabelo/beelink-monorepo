@@ -152,6 +152,17 @@ function Shape({ kind, across }: { kind: ComponentKind; across: Across }) {
           </span>
         </span>
       )
+    // A card of the shop's colour: two lines of words beside its button.
+    case "AFFILIATE_JOIN":
+      return (
+        <span className={cn(ACCENT, "flex h-full w-full items-center justify-between gap-2 rounded-md px-2")}>
+          <span className="flex flex-1 flex-col gap-1">
+            <span className="bg-background/80 h-1.5 w-4/5 rounded-full" />
+            <span className="bg-background/50 h-1 w-3/5 rounded-full" />
+          </span>
+          <span className="bg-background h-2.5 w-1/4 rounded-full" />
+        </span>
+      )
     // A kind added without a drawing fails the build here instead of drawing an empty card.
     default:
       return (kind satisfies never) && null

@@ -66,7 +66,7 @@ describe('a deployment with AFFILIATE_LINKS_ENABLED off', () => {
     await call('PUT', '/api/stores/lessari/affiliate-program', owner, { enabled: true, attributionDays: 30, payoutDelayDays: 10, termsText: null });
     const saved = await call('PUT', '/api/stores/lessari/affiliate-page', owner, {
       open: true,
-      placements: { homeBanner: true, footerLink: true, topStrip: true },
+      placements: { footerLink: true, topStrip: true },
       tableId: null,
       approval: 'AUTO',
       content: { ...EMPTY_AFFILIATE_PAGE_CONTENT },

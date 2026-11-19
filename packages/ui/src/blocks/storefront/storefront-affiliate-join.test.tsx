@@ -81,11 +81,11 @@ describe("the shop's \"Seja afiliado\" page (plan 2026-11-14)", () => {
     await expectNoA11yViolations(container)
   })
 
-  it("leads from the home's banner to the page, in the shop's colours", async () => {
+  it("leads from the \"Programa de afiliados\" block to the page, in the shop's colours", async () => {
     const { container } = render(<StorefrontAffiliateJoinBanner view={{ title: "Indique a Lessari", text: "Receba por Pix.", cta: "Quero ser afiliado" }} href="/lessari/seja-afiliado" />)
 
     expect(screen.getByRole("link", { name: "Quero ser afiliado" })).toHaveAttribute("href", "/lessari/seja-afiliado")
-    expect(screen.getByRole("heading", { name: "Indique a Lessari" }).parentElement?.parentElement).toHaveClass("bg-shop-primary")
+    expect(screen.getByRole("heading", { name: "Indique a Lessari" }).parentElement?.parentElement).toHaveClass("bg-shop-primary", "rounded-3xl")
     await expectNoA11yViolations(container)
   })
 })

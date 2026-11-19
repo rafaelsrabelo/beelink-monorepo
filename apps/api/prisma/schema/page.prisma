@@ -38,6 +38,9 @@ enum ComponentKind {
   FEATURED_PRODUCT
   /// The time left until an instant, its `items`. Left out of the shop once it has passed.
   COUNTDOWN
+  /// The invitation to become an affiliate (plan 2026-11-19). Holds nothing: its words are the shop's
+  /// "Seja afiliado" page's, read with the page, and it is left out while that page is not on the air.
+  AFFILIATE_JOIN
 }
 
 /// How wide a section sits on the page. It belongs to the band and not to what is inside it, which

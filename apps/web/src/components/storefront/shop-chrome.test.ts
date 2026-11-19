@@ -34,7 +34,7 @@ describe("shopFooterColumnsOf", () => {
   })
 
   it("links the shop's \"Seja afiliado\" page where the shopkeeper chose the footer, never under an affiliate's name (plan 2026-11-14)", () => {
-    const affiliatePage = { placements: { homeBanner: false, footerLink: true, topStrip: false }, rateBps: 1000, maxRateBps: 1000, bannerTitle: null, bannerText: null, bannerCta: null }
+    const affiliatePage = { placements: { footerLink: true, topStrip: false }, rateBps: 1000, maxRateBps: 1000, bannerTitle: null, bannerText: null, bannerCta: null }
     const store = { type: "ECOMMERCE", socialNetworks: { whatsapp: null }, affiliatePage } as unknown as PublicStore
     const hrefs = (shop: PublicStore & { affiliate?: string | null }) => shopFooterColumnsOf(shop, routes, ptBR)[0]?.items.map((item) => item.href)
 

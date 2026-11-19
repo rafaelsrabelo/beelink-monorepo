@@ -66,13 +66,13 @@ describe("the page's texts in the editor (plan 2026-11-14)", () => {
 })
 
 describe("the page's settings", () => {
-  const page: AffiliatePageSettings = { open: true, placements: { homeBanner: true, footerLink: false, topStrip: false }, tableId: null, approval: "MANUAL", content: nothing, updatedAt: null }
+  const page: AffiliatePageSettings = { open: true, placements: { footerLink: false, topStrip: false }, tableId: null, approval: "MANUAL", content: nothing, updatedAt: null }
 
   it("reads the API's null table as the default one, and sends the default one back as null", () => {
     const card = cardValuesOf(page, "padrao")
-    expect(card).toEqual({ open: true, homeBanner: true, footerLink: false, topStrip: false, tableId: "padrao", approval: "MANUAL" })
+    expect(card).toEqual({ open: true, footerLink: false, topStrip: false, tableId: "padrao", approval: "MANUAL" })
     expect(pagePayloadOf(card, nothing, "padrao").tableId).toBeNull()
-    expect(pagePayloadOf({ ...card, tableId: "revenda" }, nothing, "padrao")).toEqual({ open: true, placements: { homeBanner: true, footerLink: false, topStrip: false }, tableId: "revenda", approval: "MANUAL", content: nothing })
+    expect(pagePayloadOf({ ...card, tableId: "revenda" }, nothing, "padrao")).toEqual({ open: true, placements: { footerLink: false, topStrip: false }, tableId: "revenda", approval: "MANUAL", content: nothing })
   })
 
   it("says whether visitors see it, and why not", () => {

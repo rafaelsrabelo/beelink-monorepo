@@ -96,6 +96,7 @@ export const COMPONENT_KINDS = [
   'IMAGE_TEXT',
   'FEATURED_PRODUCT',
   'COUNTDOWN',
+  'AFFILIATE_JOIN',
 ] as const satisfies readonly ComponentKind[];
 
 /**

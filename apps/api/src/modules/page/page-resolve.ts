@@ -1,10 +1,12 @@
 // Types
-import type { PublicFeaturedProduct, PublicSection, ShowcaseProduct } from '@harness-monorepo/contracts';
+import type { PublicAffiliateJoinBanner, PublicFeaturedProduct, PublicSection, ShowcaseProduct } from '@harness-monorepo/contracts';
 import type { RouteVocabulary } from '../../generated/prisma/enums.js';
 import type { PrismaService } from '../../shared/prisma/prisma.service.js';
 import type { SectionShape } from './page-document.js';
 
 // App
+import { env } from '../../shared/config/env.js';
+import { liveAffiliatePageOf, type LiveAffiliatePage } from '../affiliates/affiliate-page-live.js';
 import type { PricingPromotion } from '../promotions/discount-pricing.js';
 import { promotedCard } from '../promotions/shelf-pricing.js';
 import { runningShelfPromotions, shelfSaleOf } from '../promotions/shelf-sale.js';
@@ -41,19 +43,36 @@ export async function servedSections(
   return sections.map((section) => toPublicSection(section, store.slug, words, lookups));
 }
 
-/** Every lookup for a page's bands, in parallel. */
-export async function lookupsOf(db: PrismaService, storeId: string, sections: readonly SectionShape[]): Promise<PageLookups> {
+/**
+ * Every lookup for a page's bands, in parallel. `affiliatePage` is the shop's "Seja afiliado" page when
+ * the caller reads it already — the shop's own read does, for its footer and its strip — so it is
+ * asked once.
+ */
+export async function lookupsOf(
+  db: PrismaService,
+  storeId: string,
+  sections: readonly SectionShape[],
+  affiliatePage?: Promise<LiveAffiliatePage | null>,
+): Promise<PageLookups> {
   const components = sections.flatMap((section) => section.components);
   // Asked only by a page that draws products: the promotions that price them.
   const drawsProducts = components.some((component) => component.isActive && (component.kind === 'PRODUCTS' || component.kind === 'FEATURED_PRODUCT'));
   const promotions = drawsProducts ? await runningShelfPromotions(db, storeId, new Date()) : [];
+  const invites = components.some((component) => component.isActive && component.kind === 'AFFILIATE_JOIN');
 
-  const [slugs, shelves, featured] = await Promise.all([
+  const [slugs, shelves, featured, live] = await Promise.all([
     slideSlugs(db, sections),
     shelvesOf(db, storeId, sections, promotions),
     featuredOf(db, storeId, sections, promotions),
+    invites ? (affiliatePage ?? liveAffiliatePageOf(db, storeId, env.AFFILIATE_LINKS_ENABLED)) : null,
   ]);
-  return { slugs, shelves, featured };
+  return { slugs, shelves, featured, affiliateJoin: live ? joinBannerOf(live) : null };
+}
+
+/** What a "Programa de afiliados" block draws of the shop's live "Seja afiliado" page: its banner's words and its rates. */
+function joinBannerOf(live: LiveAffiliatePage): PublicAffiliateJoinBanner {
+  const { content } = live;
+  return { rateBps: live.rateBps, maxRateBps: live.maxRateBps, bannerTitle: content.bannerTitle, bannerText: content.bannerText, bannerCta: content.bannerCta };
 }
 
 /**

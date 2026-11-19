@@ -87,5 +87,15 @@ export function EmptyStateNote({ state, slug, messages }: EmptyStateNoteProps) {
       return <EmptyStateNotice title={text.countdownUnset.title} body={text.countdownUnset.body} messages={messages} />
     case "countdownEnded":
       return <EmptyStateNotice title={text.countdownEnded.title} body={text.countdownEnded.body} messages={messages} />
+    case "affiliatePageClosed":
+      // Where the page is opened, and where it says whether the programme is on.
+      return (
+        <EmptyStateNotice
+          title={text.affiliatePageClosed.title}
+          body={text.affiliatePageClosed.body}
+          action={{ label: text.affiliatePageClosed.action, href: `${admin}/affiliates/settings` }}
+          messages={messages}
+        />
+      )
   }
 }
