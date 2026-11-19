@@ -42,7 +42,6 @@ export class AffiliatePageService {
 
     const data = {
       open: dto.open,
-      homeBanner: dto.placements.homeBanner,
       footerLink: dto.placements.footerLink,
       topStrip: dto.placements.topStrip,
       tableId: dto.tableId,

@@ -1,5 +1,6 @@
 // Types
 import type { AffiliateStatus } from "./affiliate.js";
+import type { PublicAffiliateJoinBanner } from "./page-items.js";
 
 /**
  * A shop's "Seja afiliado" page and the applications it takes (plan 2026-11-14--afiliados-candidatura-publica):
@@ -71,10 +72,12 @@ export interface AffiliatePageContent {
   bannerCta: string | null;
 }
 
-/** Where the shop window leads to the page. None of them is drawn under an affiliate's name. */
+/**
+ * Where the shop window leads to the page. None of them is drawn under an affiliate's name. A banner
+ * is not one of them: it is a block of design mode, "Programa de afiliados", that the shopkeeper puts
+ * where they want (plan 2026-11-19).
+ */
 export interface AffiliatePagePlacements {
-  /** A banner on the shop's home. */
-  homeBanner: boolean;
   /** "Seja afiliado" among the footer's links. */
   footerLink: boolean;
   /** A thin strip above every page of the shop. */
@@ -123,13 +126,8 @@ export interface AffiliatePageOverview {
  * What every page of the shop window knows of the affiliate page (`PublicStore.affiliatePage`): where it
  * leads to it and the banner's words. Absent or `null` whenever visitors do not see the page.
  */
-export interface PublicAffiliatePagePlacement {
+export interface PublicAffiliatePagePlacement extends PublicAffiliateJoinBanner {
   placements: AffiliatePagePlacements;
-  rateBps: number;
-  maxRateBps: number;
-  bannerTitle: string | null;
-  bannerText: string | null;
-  bannerCta: string | null;
 }
 
 /** `GET /stores/:slug/affiliate-page/public`: the page as a visitor reads it, with the programme's terms. */

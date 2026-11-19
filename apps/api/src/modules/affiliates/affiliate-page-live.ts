@@ -85,7 +85,7 @@ export async function liveAffiliatePageOf(prisma: PrismaService, storeId: string
   return {
     tableId: page.tableId,
     approval: page.approval,
-    placements: { homeBanner: page.homeBanner, footerLink: page.footerLink, topStrip: page.topStrip },
+    placements: { footerLink: page.footerLink, topStrip: page.topStrip },
     content: affiliatePageContentOf(page.content),
     ...(await announcedRatesOf(prisma, storeId, page.table)),
     terms: { text: program.termsText, version: program.termsVersion },

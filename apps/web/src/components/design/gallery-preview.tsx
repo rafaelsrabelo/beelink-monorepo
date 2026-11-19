@@ -54,6 +54,7 @@ export function GalleryPreview({ entry, store, categories, stock, colors, messag
               primary={colors.primary}
               categories={categories}
               routes={storefrontRoutes(store)}
+              shopName={store.name}
               showPrice={store.layoutSettings.showProductPrice ?? true}
               showBadge={store.layoutSettings.showProductBadges ?? true}
               showRating={store.layoutSettings.showProductRating ?? true}

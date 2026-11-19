@@ -29,8 +29,17 @@ export function isEmptyComponent({ kind, title, subtitle, body, items }: Compone
   // A kind this build does not know — a cached page, or a newer API's — has nothing that draws it.
   if (!isKnownKind(kind)) return true
   // A showcase's and a featured product's items are the cards the public read resolved.
-  // A countdown's one item is its end: with none it has nothing to count.
-  if (kind === "BANNER" || kind === "BENEFITS" || kind === "PRODUCTS" || kind === "FEATURED_PRODUCT" || kind === "FAQ" || kind === "COUNTDOWN") {
+  // A countdown's one item is its end: with none it has nothing to count. A "Programa de afiliados"
+  // holds its banner while the shop's "Seja afiliado" page is on the air, and nothing otherwise.
+  if (
+    kind === "BANNER" ||
+    kind === "BENEFITS" ||
+    kind === "PRODUCTS" ||
+    kind === "FEATURED_PRODUCT" ||
+    kind === "FAQ" ||
+    kind === "COUNTDOWN" ||
+    kind === "AFFILIATE_JOIN"
+  ) {
     return items.length === 0
   }
   // `StorefrontHeading` draws a line under a title that is not there; the strip is its title alone.

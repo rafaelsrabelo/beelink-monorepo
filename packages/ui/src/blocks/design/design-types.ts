@@ -27,6 +27,7 @@ export const COMPONENT_KINDS = [
   "IMAGE_TEXT",
   "FEATURED_PRODUCT",
   "COUNTDOWN",
+  "AFFILIATE_JOIN",
 ] as const
 export type ComponentKind = (typeof COMPONENT_KINDS)[number]
 
@@ -103,3 +104,4 @@ export type DesignPublishProblemKind =
   | "BANNER_WITHOUT_IMAGE"
   | "FEATURED_PRODUCT_UNAVAILABLE"
   | "COUNTDOWN_ENDED"
+  | "AFFILIATE_PAGE_CLOSED"

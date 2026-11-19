@@ -8,6 +8,7 @@ import { StorefrontFrame } from "@/components/storefront/storefront-frame"
 import { contactCopyOf } from "@/components/storefront/storefront-contact-copy"
 import { StorefrontSections } from "@/components/storefront/storefront-sections"
 import { orderHrefOf } from "@/components/storefront/storefront-links"
+import { joinBlocksFor, recruitingOf } from "@/lib/affiliate-join"
 import { getMessages } from "@/lib/locale"
 import { shopShareOf } from "@/lib/shop-share"
 import { unavailableMetadata } from "@/lib/shop-unavailable"
@@ -81,10 +82,11 @@ export default async function LandingPage({ params }: PageProps<"/[slug]/lp/[pag
         <>
           <h1 className="sr-only">{landing.title}</h1>
           <StorefrontSections
-            sections={landing.sections}
+            sections={joinBlocksFor(landing.sections, recruitingOf(store))}
             primary={store.colors.primary}
             categories={categories}
             routes={routes}
+            shopName={store.name}
             showPrice={layout.showProductPrice ?? true}
             {...(installments ? { installments } : {})}
             showBadge={layout.showProductBadges ?? true}

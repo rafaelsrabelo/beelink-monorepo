@@ -50,9 +50,11 @@ export function previewItemsOf(
       }))
     // What a showcase or a featured product stores is the ids picked, never the cards a visitor is
     // served; the cards are the public read's to resolve. One saved since the page loaded keeps the
-    // cards it had then until the next load.
+    // cards it had then until the next load. A "Programa de afiliados" stores nothing: its banner is
+    // the read's too.
     case "PRODUCTS":
     case "FEATURED_PRODUCT":
+    case "AFFILIATE_JOIN":
       return shelves.get(component.id)?.items ?? []
     default:
       return (was?.items ?? []) as PublicComponentItem[]

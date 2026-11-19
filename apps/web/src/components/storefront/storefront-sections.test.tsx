@@ -71,6 +71,7 @@ function draw(sections: PublicSection[]) {
       primary=""
       categories={[]}
       routes={routes}
+      shopName="Lessari"
       showPrice
       showBadge
       messages={ptBR}
@@ -162,6 +163,25 @@ describe("StorefrontSections — a band is a grid", () => {
     expect(screen.getAllByRole("heading", { name: "Feito à mão" })).toHaveLength(1)
   })
 
+  // Plan 2026-11-19: the home's banner is a block of design mode, drawn where the shopkeeper put it.
+  it("draws a \"Programa de afiliados\" block with the page's banner and its marks filled in, and leaves out one the read brought none to", () => {
+    const join: PublicComponent = {
+      ...heading("afiliados", "FULL"),
+      kind: "AFFILIATE_JOIN",
+      title: null,
+      subtitle: null,
+      items: [{ rateBps: 1000, maxRateBps: 3000, bannerTitle: null, bannerText: null, bannerCta: "Quero vender" }],
+    }
+
+    const { unmount } = draw([band([join])])
+    expect(screen.getByRole("heading", { name: "Indique a Lessari e ganhe até 30% em cada venda" })).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Quero vender" })).toHaveAttribute("href", "/loja/seja-afiliado")
+    unmount()
+
+    const { container } = draw([band([{ ...join, items: [] }])])
+    expect(container).toBeEmptyDOMElement()
+  })
+
   it("draws a featured product with a button that fills the cart on the way to the checkout, or leads to its page where no cart is reachable", () => {
     const card = { id: "p", slug: "whey", name: "Whey Baunilha", priceCents: 12990, compareAtPriceCents: null, imageUrl: null, categorySlug: null, priceRange: { minCents: 12990, maxCents: 12990 }, hasOptions: false, soldOut: false }
     const featured: PublicComponent = { ...heading("destaque", "FULL"), kind: "FEATURED_PRODUCT", title: "Oferta", display: "IMAGE_LEFT", items: [card] }
@@ -172,7 +192,7 @@ describe("StorefrontSections — a band is a grid", () => {
     unmount()
 
     render(
-      <StorefrontSections sections={[band([featured])]} primary="" categories={[]} routes={routes} showPrice showBadge cartReachable={false} messages={ptBR} />,
+      <StorefrontSections sections={[band([featured])]} primary="" categories={[]} routes={routes} shopName="Lessari" showPrice showBadge cartReachable={false} messages={ptBR} />,
     )
     expect(screen.getByRole("link", { name: "Comprar agora" })).toHaveAttribute("href", "/loja/produtos/whey")
   })
@@ -195,6 +215,7 @@ describe("StorefrontSections — a band is a grid", () => {
         primary=""
         categories={[]}
         routes={routes}
+        shopName="Lessari"
         showPrice
         showBadge
         renderBlock={(_component, block) => block}
@@ -367,6 +388,7 @@ describe("StorefrontSections — the categories are a rail or a grid", () => {
         primary=""
         categories={[blusas]}
         routes={routes}
+        shopName="Lessari"
         showPrice
         showBadge
         messages={ptBR}
@@ -407,6 +429,7 @@ describe("StorefrontSections — the categories are a rail or a grid", () => {
           primary=""
           categories={[tintas, blusas]}
           routes={routes}
+          shopName="Lessari"
           showPrice
           showBadge
           messages={ptBR}
@@ -508,6 +531,7 @@ describe("StorefrontSections — one spacing, and edge to edge means edge to edg
         primary=""
         categories={[]}
         routes={routes}
+        shopName="Lessari"
         showPrice
         showBadge
         messages={ptBR}
@@ -526,6 +550,7 @@ describe("StorefrontSections — design mode's room beside a block", () => {
         primary=""
         categories={[]}
         routes={routes}
+        shopName="Lessari"
         showPrice
         showBadge
         messages={ptBR}

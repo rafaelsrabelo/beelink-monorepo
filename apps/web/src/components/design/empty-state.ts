@@ -13,6 +13,7 @@ export type EmptyState =
   | { kind: "featuredUnavailable" }
   | { kind: "countdownUnset" }
   | { kind: "countdownEnded" }
+  | { kind: "affiliatePageClosed" }
 
 export interface EmptyFacts {
   /** Categories the shop window shows — the public list, which leaves out a category with nothing published. */
@@ -24,7 +25,7 @@ export interface EmptyFacts {
    * second is null when it cannot be told from the page the panel loaded. Null while they load.
    */
   products: { total: number; onShelf: number | null } | null
-  /** The showcase's shelf, or the featured product, as the public read resolved it, came back empty. */
+  /** The showcase's shelf, the featured product or the affiliate banner, as the public read resolved it, came back empty. */
   shelfEmpty: boolean
   /** A countdown's saved end, or null when it has none. */
   countdownEndsAt?: string | null
@@ -62,6 +63,9 @@ export function emptyStateOf(kind: ComponentKind, facts: EmptyFacts): EmptyState
 
   // The product chosen is not on sale — a draft, archived or deleted — and the fix is to choose another.
   if (kind === "FEATURED_PRODUCT") return facts.shelfEmpty ? { kind: "featuredUnavailable" } : null
+
+  // The shop's "Seja afiliado" page is closed, its programme off, or affiliates not on the air yet.
+  if (kind === "AFFILIATE_JOIN") return facts.shelfEmpty ? { kind: "affiliatePageClosed" } : null
 
   // The shop leaves out a countdown with nothing to count; the editor still draws it, so it says why.
   if (kind === "COUNTDOWN") {

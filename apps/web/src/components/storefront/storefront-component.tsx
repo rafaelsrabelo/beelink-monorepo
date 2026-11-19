@@ -4,7 +4,6 @@ import type { ReactNode } from "react"
 // Types
 import type {
   BenefitRow,
-  ContactField,
   CountdownEnd,
   FaqItem,
   PublicCallToActionButton,
@@ -20,7 +19,6 @@ import { defaultAlignOf } from "@harness-monorepo/ui/blocks/design/text-align"
 import type { LinkComponent } from "@harness-monorepo/ui/blocks/auth/auth-link"
 import { StorefrontBenefits } from "@harness-monorepo/ui/blocks/storefront/storefront-benefits"
 import { StorefrontCallToAction } from "@harness-monorepo/ui/blocks/storefront/storefront-call-to-action"
-import { StorefrontContact } from "@harness-monorepo/ui/blocks/storefront/storefront-contact"
 import { StorefrontFaq } from "@harness-monorepo/ui/blocks/storefront/storefront-faq"
 import { StorefrontHeading } from "@harness-monorepo/ui/blocks/storefront/storefront-heading"
 import { StorefrontImageText } from "@harness-monorepo/ui/blocks/storefront/storefront-image-text"
@@ -29,29 +27,21 @@ import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // App
 import type { StorefrontRoutes } from "@/lib/storefront-routes"
-import { ContactFormLive } from "./contact-form-live"
+import { StorefrontAffiliateJoinBlock } from "./storefront-affiliate-join-block"
 import { StorefrontBannerBlock } from "./storefront-banner-block"
 import { StorefrontCountdownLive } from "./storefront-countdown-live"
 import { StorefrontFeaturedBlock } from "./storefront-featured-block"
 import { StorefrontCategoriesBlock } from "./storefront-categories-block"
-import type { ContactCopy } from "./storefront-contact-copy"
+import { StorefrontContactBlock, type LiveContact } from "./storefront-contact-block"
 import { StorefrontShelf } from "./storefront-shelf"
-
-/**
- * What a contact form needs to send: the site, its WhatsApp and the sentences for a refusal. Null
- * in design mode's preview, where the form draws and sends nothing.
- */
-export interface LiveContact {
-  slug: string
-  whatsappHref: string | null
-  copy: ContactCopy
-}
 
 export interface StorefrontComponentProps {
   component: PublicComponent
   /** Every category the shop has. A CATEGORIES component draws these; nothing else reads them. */
   categories: readonly PublicProductCategory[]
   routes: StorefrontRoutes
+  /** What a "Programa de afiliados" block's `{loja}` becomes. */
+  shopName: string
   showPrice: boolean
   /** The shop's card terms, for "em até 6x" under a price; absent when it splits nothing. */
   installments?: StorefrontInstallmentTerms
@@ -83,6 +73,7 @@ export function StorefrontComponent({
   component,
   categories,
   routes,
+  shopName,
   showPrice,
   installments,
   showBadge,
@@ -123,24 +114,8 @@ export function StorefrontComponent({
         />
       )
 
-    case "CONTACT": {
-      const fields = component.items as ContactField[]
-
-      return contact ? (
-        <ContactFormLive
-          slug={contact.slug}
-          componentId={component.id}
-          title={component.title}
-          subtitle={component.subtitle}
-          fields={fields}
-          whatsappHref={contact.whatsappHref}
-          copy={contact.copy}
-          messages={messages}
-        />
-      ) : (
-        <StorefrontContact title={component.title} subtitle={component.subtitle} fields={fields} messages={messages} />
-      )
-    }
+    case "CONTACT":
+      return <StorefrontContactBlock component={component} contact={contact} messages={messages} />
 
     case "HEADING":
       return <StorefrontHeading title={component.title} subtitle={component.subtitle} align={component.align ?? defaultAlignOf(component.kind)} />
@@ -217,6 +192,9 @@ export function StorefrontComponent({
         />
       )
     }
+
+    case "AFFILIATE_JOIN":
+      return <StorefrontAffiliateJoinBlock component={component} shopName={shopName} routes={routes} {...link} messages={messages} />
 
     case "FAQ":
       return (

@@ -1,6 +1,7 @@
 // Libs
 import {
   BadgeCheckIcon,
+  HandshakeIcon,
   HeadingIcon,
   ImageIcon,
   LayoutGridIcon,
@@ -38,6 +39,7 @@ const KIND_ICON: Record<ComponentKind, typeof LayoutGridIcon> = {
   IMAGE_TEXT: LayoutPanelLeftIcon,
   FEATURED_PRODUCT: StarIcon,
   COUNTDOWN: TimerIcon,
+  AFFILIATE_JOIN: HandshakeIcon,
 }
 
 /** A block's thumbnail on its row or its card: a banner's first picture, or its kind's glyph. */

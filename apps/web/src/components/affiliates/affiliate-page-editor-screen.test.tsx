@@ -25,7 +25,7 @@ const nothing: AffiliatePageContent = {
   closingTitle: null, closingText: null, formTitle: null, formSubtitle: null, askExtraQuestion: true, extraQuestion: null, successMessage: null, bannerTitle: null, bannerText: null, bannerCta: null,
 }
 const overview: AffiliatePageOverview = {
-  page: { open: true, placements: { homeBanner: true, footerLink: true, topStrip: false }, tableId: "revenda", approval: "AUTO", content: nothing, updatedAt: "2026-11-14T12:00:00.000Z" },
+  page: { open: true, placements: { footerLink: true, topStrip: false }, tableId: "revenda", approval: "AUTO", content: nothing, updatedAt: "2026-11-14T12:00:00.000Z" },
   blockedBy: null,
   rateBps: 1500,
   maxRateBps: 1500,

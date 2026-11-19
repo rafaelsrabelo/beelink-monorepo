@@ -24,7 +24,7 @@ const written: AffiliatePageContent = {
   closingTitle: null, closingText: null, formTitle: null, formSubtitle: null, askExtraQuestion: false, extraQuestion: null, successMessage: null, bannerTitle: null, bannerText: null, bannerCta: null,
 }
 const overview: AffiliatePageOverview = {
-  page: { open: false, placements: { homeBanner: true, footerLink: true, topStrip: false }, tableId: null, approval: "MANUAL", content: written, updatedAt: null },
+  page: { open: false, placements: { footerLink: true, topStrip: false }, tableId: null, approval: "MANUAL", content: written, updatedAt: null },
   blockedBy: "CLOSED",
   rateBps: 1000,
   maxRateBps: 1000,
@@ -52,6 +52,6 @@ describe("AffiliatePageCardSection (plan 2026-11-14)", () => {
 
     await userEvent.click(screen.getByRole("switch", { name: "Receber candidaturas pela loja" }))
     await userEvent.click(screen.getByRole("button", { name: "Salvar" }))
-    expect(mocks.save).toHaveBeenCalledWith({ open: true, placements: { homeBanner: true, footerLink: true, topStrip: false }, tableId: null, approval: "MANUAL", content: written }, expect.anything())
+    expect(mocks.save).toHaveBeenCalledWith({ open: true, placements: { footerLink: true, topStrip: false }, tableId: null, approval: "MANUAL", content: written }, expect.anything())
   })
 })

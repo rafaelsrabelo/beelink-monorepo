@@ -6,7 +6,8 @@ import { readsCatalog, resolvedOnServer, unavailableKindsOf } from "./design-kin
 
 describe("unavailableKindsOf", () => {
   it("keeps a site from selling and a store from taking leads by form", () => {
-    expect(unavailableKindsOf("INSTITUTIONAL", false)).toEqual(["PRODUCTS", "CATEGORIES", "FEATURED_PRODUCT"])
+    // A site has no affiliates to recruit either: the "Programa de afiliados" block is filed under selling.
+    expect(unavailableKindsOf("INSTITUTIONAL", false)).toEqual(["PRODUCTS", "CATEGORIES", "FEATURED_PRODUCT", "AFFILIATE_JOIN"])
     expect(unavailableKindsOf("ECOMMERCE", false)).toEqual(["CONTACT"])
   })
 

@@ -1089,6 +1089,7 @@ export const ptBR: UiMessages = {
       IMAGE_TEXT: "Imagem e texto",
       FEATURED_PRODUCT: "Produto em destaque",
       COUNTDOWN: "Contagem regressiva",
+      AFFILIATE_JOIN: "Programa de afiliados",
     },
     emptyAction: {
       ANNOUNCEMENT: "Escrever o aviso",
@@ -1104,6 +1105,7 @@ export const ptBR: UiMessages = {
       IMAGE_TEXT: "Escolher a imagem",
       FEATURED_PRODUCT: "Escolher o produto",
       COUNTDOWN: "Escolher quando termina",
+      AFFILIATE_JOIN: "Abrir a página de afiliados",
     },
     showcaseOnPublish: "Os produtos aparecem ao publicar",
     categoriesHiddenAction: "Nenhuma categoria aparece na loja ainda",
@@ -1150,6 +1152,16 @@ export const ptBR: UiMessages = {
       countdownUnset: {
         title: "Falta a data de término",
         body: "A contagem só aparece na loja depois que você escolher quando ela termina.",
+      },
+      affiliatePageClosed: {
+        title: "A página de afiliados não está no ar",
+        body: "O banner só aparece na loja com a página “Seja afiliado” aberta e o programa de afiliados ligado.",
+        action: "Abrir a página de afiliados",
+      },
+      affiliateJoinWords: {
+        title: "Os textos vêm da página de afiliados",
+        body: "Título, texto e botão deste banner são os da sua página “Seja afiliado”, com o nome da loja e a comissão que ela anuncia.",
+        action: "Editar os textos",
       },
       featuredUnavailable: {
         title: "Este produto não está à venda",
@@ -1266,6 +1278,7 @@ export const ptBR: UiMessages = {
         IMAGE_TEXT: "Uma imagem ao lado de título e texto",
         FEATURED_PRODUCT: "Um produto grande, com preço e botão de comprar",
         COUNTDOWN: "Dias, horas e minutos até a oferta acabar",
+        AFFILIATE_JOIN: "Convite para vender pela loja, com a comissão",
       },
       bannersAcross: "{count} banners lado a lado",
       bannersAcrossHints: {
@@ -1379,6 +1392,7 @@ export const ptBR: UiMessages = {
         BANNER_WITHOUT_IMAGE: "{block}, em {band}: o banner não tem imagem.",
         FEATURED_PRODUCT_UNAVAILABLE: "{block}, em {band}: o produto em destaque não está à venda.",
         COUNTDOWN_ENDED: "{block}, em {band}: a contagem já terminou ou não tem data, e não aparece na loja.",
+        AFFILIATE_PAGE_CLOSED: "{block}, em {band}: a página de afiliados não está no ar, e o banner não aparece na loja.",
       },
       note: "Nota para o histórico (opcional)",
       notePlaceholder: "Ex.: preços da Black Friday",
@@ -4165,7 +4179,7 @@ export const ptBR: UiMessages = {
       contentHelp: "Título, textos, passos, benefícios, perguntas e o formulário: tudo escrito por você.",
       editContent: "Editar conteúdo",
       placements: "Onde aparece na loja",
-      homeBanner: "Banner na página inicial",
+      bannerInDesign: "Para um banner na página inicial, adicione o bloco “Programa de afiliados” no modo design, onde quiser.",
       footerLink: "Link “Seja afiliado” no rodapé",
       topStrip: "Faixa fina no topo de todas as páginas",
       table: "Comissão de quem entra pela página",

@@ -13,7 +13,7 @@ export function toAffiliatePageSettings(row: AffiliatePageModel | null): Affilia
   if (!row) {
     return {
       open: false,
-      placements: { homeBanner: true, footerLink: true, topStrip: false },
+      placements: { footerLink: true, topStrip: false },
       tableId: null,
       approval: 'MANUAL',
       content: { ...EMPTY_AFFILIATE_PAGE_CONTENT },
@@ -22,7 +22,7 @@ export function toAffiliatePageSettings(row: AffiliatePageModel | null): Affilia
   }
   return {
     open: row.open,
-    placements: { homeBanner: row.homeBanner, footerLink: row.footerLink, topStrip: row.topStrip },
+    placements: { footerLink: row.footerLink, topStrip: row.topStrip },
     tableId: row.tableId,
     approval: row.approval,
     content: affiliatePageContentOf(row.content),

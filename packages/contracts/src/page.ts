@@ -6,6 +6,7 @@ import type {
   CountdownEnd,
   FaqItem,
   ImageTextMedia,
+  PublicAffiliateJoinBanner,
   PublicCallToActionButton,
   PublicFeaturedProduct,
   PublicImageTextMedia,
@@ -68,7 +69,13 @@ export type ComponentKind =
    * The time left until an instant, in its `items`. Once it has passed the shop leaves it out — the
    * read drops it, and a page left open hides it at zero.
    */
-  | "COUNTDOWN";
+  | "COUNTDOWN"
+  /**
+   * The invitation to sell for the shop, leading to its "Seja afiliado" page (plan 2026-11-19). It
+   * holds nothing: its words are the affiliate page's, read with the page into its `items` while
+   * that page is on the air.
+   */
+  | "AFFILIATE_JOIN";
 
 /**
  * How wide a section sits on the page.
@@ -329,7 +336,8 @@ export type PublicComponentItem =
   | PublicCallToActionButton
   | PublicImageTextMedia
   | PublicFeaturedProduct
-  | CountdownEnd;
+  | CountdownEnd
+  | PublicAffiliateJoinBanner;
 
 /** A component as a visitor is served it: already resolved, so the storefront joins nothing. */
 export interface PublicComponent {

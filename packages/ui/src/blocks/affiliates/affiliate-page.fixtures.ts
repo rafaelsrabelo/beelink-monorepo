@@ -12,7 +12,7 @@ export const pageTables: AffiliateTableOption[] = [
   { id: "revenda", name: "Revendedoras", rate: "15%" },
 ]
 
-export const pageCard: AffiliatePageCardValues = { open: true, homeBanner: true, footerLink: true, topStrip: false, tableId: "padrao", approval: "MANUAL" }
+export const pageCard: AffiliatePageCardValues = { open: true, footerLink: true, topStrip: false, tableId: "padrao", approval: "MANUAL" }
 
 /** A page whose shop wrote nothing: the product's own texts, marks and all. */
 export const pageContent: AffiliatePageContentValues = {

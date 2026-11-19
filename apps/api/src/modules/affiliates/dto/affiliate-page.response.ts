@@ -67,7 +67,6 @@ export class AffiliatePageContentResponse implements AffiliatePageContent {
 }
 
 class AffiliatePagePlacementsResponse implements AffiliatePagePlacements {
-  @ApiProperty() homeBanner!: boolean;
   @ApiProperty() footerLink!: boolean;
   @ApiProperty() topStrip!: boolean;
 }

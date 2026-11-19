@@ -40,6 +40,8 @@ export const SECTION_TYPES = {
   IMAGE_TEXT: { category: "CONTENT", recommended: false, layouts: ["IMAGE_LEFT", "IMAGE_RIGHT"], rows: false },
   FEATURED_PRODUCT: { category: "SELLING", recommended: false, layouts: ["IMAGE_LEFT", "IMAGE_LARGE"], rows: false },
   COUNTDOWN: { category: "CONVERSION", recommended: false, layouts: ["BAND", "BLOCK"], rows: false },
+  // Under selling, which a site does not offer: a site has no affiliates to recruit.
+  AFFILIATE_JOIN: { category: "SELLING", recommended: false, layouts: null, rows: false },
   ANNOUNCEMENT: { category: "CHROME", recommended: false, layouts: ["STATIC", "MARQUEE"], rows: false },
 } as const satisfies Record<ComponentKind, SectionType>
 

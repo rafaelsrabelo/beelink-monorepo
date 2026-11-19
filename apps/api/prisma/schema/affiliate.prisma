@@ -488,7 +488,6 @@ model AffiliatePage {
   store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
 
   open       Boolean               @default(false)
-  homeBanner Boolean               @default(true)
   footerLink Boolean               @default(true)
   topStrip   Boolean               @default(false)
   /// The table the page announces and approvals start from; null is the shop's default table. A table

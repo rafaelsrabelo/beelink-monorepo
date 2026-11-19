@@ -1,5 +1,5 @@
 // Types
-import type { AffiliateApplicationPayload, PublicAffiliatePage, PublicAffiliatePagePlacement, PublicStore } from "@harness-monorepo/contracts"
+import type { AffiliateApplicationPayload, PublicAffiliateJoinBanner, PublicAffiliatePage, PublicAffiliatePagePlacement, PublicSection, PublicStore } from "@harness-monorepo/contracts"
 import type { AffiliateJoinBannerView, AffiliateJoinFormValues, AffiliateJoinFormView, AffiliateJoinIssues, AffiliateJoinPageView } from "@harness-monorepo/ui/lib/affiliate-join"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
@@ -23,7 +23,7 @@ export interface JoinMarks {
   rate: string
 }
 
-export function joinMarksOf(store: Pick<PublicStore, "name">, rates: Pick<PublicAffiliatePage, "rateBps" | "maxRateBps">, join: Pick<Join, "upToRate">, locale: string): JoinMarks {
+export function joinMarksOf(store: Pick<PublicStore, "name">, rates: Pick<PublicAffiliateJoinBanner, "rateBps" | "maxRateBps">, join: Pick<Join, "upToRate">, locale: string): JoinMarks {
   const rate = rates.maxRateBps > rates.rateBps ? format(join.upToRate, { rate: ratePercentOf(rates.maxRateBps, locale) }) : ratePercentOf(rates.rateBps, locale)
   return { store: store.name, rate }
 }
@@ -38,6 +38,19 @@ const fill = (text: string, marks: JoinMarks): string => format(text, { loja: ma
 export function recruitingOf(store: Pick<PublicStore, "affiliatePage" | "unavailable" | "type"> & { affiliate?: string | null }): PublicAffiliatePagePlacement | null {
   if (!store.affiliatePage || store.unavailable || store.type !== "ECOMMERCE" || store.affiliate) return null
   return store.affiliatePage
+}
+
+/**
+ * The bands as this visit draws them: where the shop window does not recruit (`recruitingOf`) — under
+ * an affiliate's name, above all — a "Programa de afiliados" block holds nothing, and is left out as
+ * any empty block is (plan 2026-11-19). The read put the banner in it for the shop's own address.
+ */
+export function joinBlocksFor(sections: readonly PublicSection[] | undefined, recruiting: PublicAffiliatePagePlacement | null): readonly PublicSection[] | undefined {
+  if (recruiting || !sections) return sections
+  return sections.map((section) => ({
+    ...section,
+    components: section.components.map((component) => (component.kind === "AFFILIATE_JOIN" ? { ...component, items: [] } : component)),
+  }))
 }
 
 /** The page's body, in words. */
@@ -76,8 +89,8 @@ export function joinSuccessOf(page: PublicAffiliatePage, defaults: Join["default
   return fill(page.content.successMessage ?? defaults.successMessage, marks)
 }
 
-/** The home's banner — and the top strip, which says its title and its button. */
-export function joinBannerOf(placement: PublicAffiliatePagePlacement, defaults: Join["defaults"], marks: JoinMarks): AffiliateJoinBannerView {
+/** The "Programa de afiliados" block's banner — and the top strip, which says its title and its button. */
+export function joinBannerOf(placement: Pick<PublicAffiliateJoinBanner, "bannerTitle" | "bannerText" | "bannerCta">, defaults: Join["defaults"], marks: JoinMarks): AffiliateJoinBannerView {
   return {
     title: fill(placement.bannerTitle ?? defaults.bannerTitle, marks),
     text: fill(placement.bannerText ?? defaults.bannerText, marks),

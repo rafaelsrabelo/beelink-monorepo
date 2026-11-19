@@ -54,6 +54,8 @@ const WORDS_OF = {
   COUNTDOWN: HEADED,
   TEXT: { title: false, subtitle: false, body: true },
   BANNER: WORDLESS,
+  // Its words are the shop's "Seja afiliado" page's, written there (plan 2026-11-19).
+  AFFILIATE_JOIN: WORDLESS,
   BENEFITS: WORDLESS,
 } as const satisfies Record<ComponentKind, Words>
 

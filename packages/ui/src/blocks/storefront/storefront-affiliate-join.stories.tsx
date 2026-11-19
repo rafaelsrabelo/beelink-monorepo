@@ -63,7 +63,7 @@ export const ComImagem: Story = {
   ),
 }
 
-/** O banner na página inicial da loja. */
+/** O bloco “Programa de afiliados” do modo design. */
 export const Banner: Story = {
   render: () => <StorefrontAffiliateJoinBanner view={{ title: "Indique a Lessari e ganhe 10% em cada venda", text: "Divulgue com um link só seu e receba por Pix a cada venda entregue.", cta: "Quero ser afiliado" }} href="#seja-afiliado" />,
 }

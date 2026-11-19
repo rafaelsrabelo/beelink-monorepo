@@ -19,10 +19,11 @@ export function unavailableKindsOf(storeType: StoreType, landing: boolean): Comp
 
 /**
  * Whether what a kind draws is resolved on the server — a showcase's products, a featured product's
- * card — so a new or saved one sends the page for it, and the preview draws the server's answer.
+ * card, the "Seja afiliado" page's banner — so a new or saved one sends the page for it, and the
+ * preview draws the server's answer.
  */
 export function resolvedOnServer(kind: ComponentKind): boolean {
-  return kind === "PRODUCTS" || kind === "FEATURED_PRODUCT"
+  return kind === "PRODUCTS" || kind === "FEATURED_PRODUCT" || kind === "AFFILIATE_JOIN"
 }
 
 /**

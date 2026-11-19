@@ -1088,6 +1088,7 @@ export const en: UiMessages = {
       IMAGE_TEXT: "Image and text",
       FEATURED_PRODUCT: "Featured product",
       COUNTDOWN: "Countdown",
+      AFFILIATE_JOIN: "Affiliate programme",
     },
     emptyAction: {
       ANNOUNCEMENT: "Write the notice",
@@ -1103,6 +1104,7 @@ export const en: UiMessages = {
       IMAGE_TEXT: "Choose the picture",
       FEATURED_PRODUCT: "Choose the product",
       COUNTDOWN: "Choose when it ends",
+      AFFILIATE_JOIN: "Open the affiliate page",
     },
     showcaseOnPublish: "Its products appear once you publish",
     categoriesHiddenAction: "No category shows in the shop yet",
@@ -1149,6 +1151,16 @@ export const en: UiMessages = {
       countdownUnset: {
         title: "The end date is missing",
         body: "The countdown shows in the shop once you choose when it ends.",
+      },
+      affiliatePageClosed: {
+        title: "The affiliate page is not on the air",
+        body: "The banner shows in the shop only with the “Become an affiliate” page open and the affiliate programme on.",
+        action: "Open the affiliate page",
+      },
+      affiliateJoinWords: {
+        title: "The words come from the affiliate page",
+        body: "This banner's title, text and button are your “Become an affiliate” page's, with the shop's name and the commission it announces.",
+        action: "Edit the words",
       },
       featuredUnavailable: {
         title: "This product is not on sale",
@@ -1265,6 +1277,7 @@ export const en: UiMessages = {
         IMAGE_TEXT: "A picture beside a title and text",
         FEATURED_PRODUCT: "One product, large, with its price and a buy button",
         COUNTDOWN: "Days, hours and minutes until the sale ends",
+        AFFILIATE_JOIN: "An invitation to sell for the shop, with the commission",
       },
       bannersAcross: "{count} banners side by side",
       bannersAcrossHints: {
@@ -1378,6 +1391,7 @@ export const en: UiMessages = {
         BANNER_WITHOUT_IMAGE: "{block}, in {band}: the banner has no picture.",
         FEATURED_PRODUCT_UNAVAILABLE: "{block}, in {band}: the featured product is not on sale.",
         COUNTDOWN_ENDED: "{block}, in {band}: the countdown has ended or has no date, and does not show in the shop.",
+        AFFILIATE_PAGE_CLOSED: "{block}, in {band}: the affiliate page is not on the air, and the banner does not show in the shop.",
       },
       note: "Note for the history (optional)",
       notePlaceholder: "E.g. Black Friday prices",
@@ -4164,7 +4178,7 @@ export const en: UiMessages = {
       contentHelp: "Title, texts, steps, benefits, questions and the form: all written by you.",
       editContent: "Edit content",
       placements: "Where it shows in the shop",
-      homeBanner: "Banner on the home page",
+      bannerInDesign: "For a banner on the home, add the “Affiliate programme” block in design mode, wherever you like.",
       footerLink: "“Become an affiliate” link in the footer",
       topStrip: "Thin strip at the top of every page",
       table: "Commission for who joins through the page",

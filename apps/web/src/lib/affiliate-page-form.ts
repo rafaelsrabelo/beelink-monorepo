@@ -133,14 +133,14 @@ export function previewOf(values: AffiliatePageContentValues, defaults: Defaults
 
 /** The card as the page stands; the API's null table is the default one. */
 export function cardValuesOf(page: AffiliatePageSettings, defaultTableId: string): AffiliatePageCardValues {
-  const { homeBanner, footerLink, topStrip } = page.placements
-  return { open: page.open, homeBanner, footerLink, topStrip, tableId: page.tableId ?? defaultTableId, approval: page.approval }
+  const { footerLink, topStrip } = page.placements
+  return { open: page.open, footerLink, topStrip, tableId: page.tableId ?? defaultTableId, approval: page.approval }
 }
 
 /** The whole page to save: the card as chosen, the texts as they stand. */
 export function pagePayloadOf(card: AffiliatePageCardValues, content: AffiliatePageContent, defaultTableId: string): AffiliatePagePayload {
-  const { open, homeBanner, footerLink, topStrip, tableId, approval } = card
-  return { open, placements: { homeBanner, footerLink, topStrip }, tableId: tableId === defaultTableId ? null : tableId, approval, content }
+  const { open, footerLink, topStrip, tableId, approval } = card
+  return { open, placements: { footerLink, topStrip }, tableId: tableId === defaultTableId ? null : tableId, approval, content }
 }
 
 /** Whether visitors see the page, said. */

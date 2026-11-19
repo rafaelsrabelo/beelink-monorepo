@@ -8,6 +8,7 @@ import type { ComponentDisplay, PublicComponentItem, StoreComponent } from "@har
 
 // UI
 import { ComponentContentFields } from "@harness-monorepo/ui/blocks/design/component-content-fields"
+import { EmptyStateNotice } from "@harness-monorepo/ui/blocks/design/empty-state-notice"
 import type { ComponentFormValues, SlideTargetOption } from "@harness-monorepo/ui/blocks/design/component-content-fields"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
@@ -94,6 +95,15 @@ export function BlockContent({
   return (
     <>
       {empty ? <EmptyStateNote state={empty} slug={slug} messages={messages} /> : null}
+      {/* Not empty, and still nothing to fill here: its words are the "Seja afiliado" page's (plan 2026-11-19). */}
+      {component.kind === "AFFILIATE_JOIN" && !empty ? (
+        <EmptyStateNotice
+          title={messages.design.emptyStates.affiliateJoinWords.title}
+          body={messages.design.emptyStates.affiliateJoinWords.body}
+          action={{ label: messages.design.emptyStates.affiliateJoinWords.action, href: `/admin/${encodeURIComponent(slug)}/affiliates/join-page` }}
+          messages={messages}
+        />
+      ) : null}
       <ComponentContentFields
         value={value}
         onChange={onChange}
