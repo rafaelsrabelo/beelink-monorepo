@@ -12,7 +12,8 @@ import type { CashbackAdjustmentPayload, CashbackErrorCode, CashbackMode, Cashba
 import { MaxCodePoints } from '../../../shared/http/max-code-points.js';
 import {
   CASHBACK_AMOUNT_MAX_CENTS,
-  CASHBACK_BPS_MAX,
+  CASHBACK_RATE_BPS_MAX,
+  CASHBACK_REDEEM_BPS_MAX,
   CASHBACK_MODES,
   CASHBACK_PAGE_MAX,
   CASHBACK_PAGE_SIZE,
@@ -39,10 +40,10 @@ export class CashbackSettingsDto implements CashbackSettingsPayload {
   @IsIn(CASHBACK_MODES, SETTINGS)
   mode!: CashbackMode;
 
-  @ApiProperty({ minimum: 1, maximum: CASHBACK_BPS_MAX, example: 500, description: 'Basis points of the products paid for (500 = 5.00%). Read on STORE; kept on PRODUCT.' })
+  @ApiProperty({ minimum: 1, maximum: CASHBACK_RATE_BPS_MAX, example: 500, description: 'Basis points of the products paid for (500 = 5.00%; up to 1000%). Read on STORE; kept on PRODUCT.' })
   @IsInt(SETTINGS)
   @Min(1, SETTINGS)
-  @Max(CASHBACK_BPS_MAX, SETTINGS)
+  @Max(CASHBACK_RATE_BPS_MAX, SETTINGS)
   rateBps!: number;
 
   @ApiProperty({ nullable: true, type: Number, minimum: 1, maximum: CASHBACK_VALIDITY_DAYS_MAX, description: 'Days a credit stays usable once delivered; null never expires.' })
@@ -59,10 +60,10 @@ export class CashbackSettingsDto implements CashbackSettingsPayload {
   @Max(CASHBACK_AMOUNT_MAX_CENTS, SETTINGS)
   minSubtotalCents!: number;
 
-  @ApiProperty({ minimum: 1, maximum: CASHBACK_BPS_MAX, example: 10000, description: 'Basis points of the products credit may pay for; never the delivery.' })
+  @ApiProperty({ minimum: 1, maximum: CASHBACK_REDEEM_BPS_MAX, example: 10000, description: 'Basis points of the products credit may pay for; never the delivery.' })
   @IsInt(SETTINGS)
   @Min(1, SETTINGS)
-  @Max(CASHBACK_BPS_MAX, SETTINGS)
+  @Max(CASHBACK_REDEEM_BPS_MAX, SETTINGS)
   maxRedeemBps!: number;
 }
 

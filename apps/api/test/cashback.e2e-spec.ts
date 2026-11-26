@@ -100,9 +100,19 @@ describe("a shop's cashback: its rules and each customer's credit", () => {
       expect(saved.json<CashbackOverview>().settings).toMatchObject({ mode: 'PRODUCT', rateBps: 500 });
     });
 
+    it('saves a promotion that gives back more than was paid, up to 1000%', async () => {
+      for (const rateBps of [11_000, 100_000]) {
+        const saved = await save({ ...RULES, rateBps });
+
+        expect(saved.statusCode).toBe(200);
+        expect(saved.json<CashbackOverview>().settings).toMatchObject({ rateBps });
+      }
+    });
+
     it.each([
       ['a rate of nothing', { rateBps: 0 }],
-      ['a rate past 100%', { rateBps: 10001 }],
+      ['a rate past 1000%', { rateBps: 100_001 }],
+      ['credit paying for more than the products', { maxRedeemBps: 10_001 }],
       ['a validity of no days', { expiresAfterDays: 0 }],
       ['a validity past ten years', { expiresAfterDays: 3651 }],
       ['a negative minimum', { minSubtotalCents: -1 }],

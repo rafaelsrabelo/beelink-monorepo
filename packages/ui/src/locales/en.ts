@@ -2825,7 +2825,7 @@ export const en: UiMessages = {
       compareInvalid: "The was-price has to be above the price.",
       cashbackLabel: "Cashback on this product (%)",
       cashbackHelp: "Over what the customer paid for it, never the delivery. Left empty, this product earns no cashback.",
-      cashbackInvalid: "Enter a percentage between 0.01% and 100%, or leave it empty.",
+      cashbackInvalid: "Enter a percentage between 0.01% and 1000%, or leave it empty.",
       commissionLabel: "Affiliate commission (%)",
       commissionHelp: "Over what the customer paid for it, never the delivery. Left empty, it follows the default table: {rate}. At 0, this product pays no commission.",
       commissionHelpCategory: "Over what the customer paid for it, never the delivery. Left empty, it follows its category {name} on the default table: {rate}. At 0, this product pays no commission.",
@@ -3414,7 +3414,7 @@ export const en: UiMessages = {
       saved: "Rules saved.",
     },
     issues: {
-      rate: "Enter a percentage between 0.01% and 100%.",
+      rate: "Enter a percentage between 0.01% and 1000%.",
       validityDays: "Enter 1 to 3650 days.",
       minimum: "Enter an amount from R$ 0.00 to R$ 1,000,000.00.",
       maxRedeem: "Enter a percentage between 0.01% and 100%.",

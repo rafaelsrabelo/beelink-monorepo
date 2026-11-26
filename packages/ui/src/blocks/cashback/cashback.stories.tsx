@@ -42,7 +42,7 @@ export const RegrasRecusadas: Story = {
         value={{ ...settings, rate: "0", validityDays: "0" }}
         onChange={noop}
         onSubmit={noop}
-        issues={{ rate: "Informe um percentual entre 0,01% e 100%.", validityDays: "Informe de 1 a 3650 dias." }}
+        issues={{ rate: "Informe um percentual entre 0,01% e 1000%.", validityDays: "Informe de 1 a 3650 dias." }}
         example="Com o cashback desligado, os pedidos novos não geram crédito."
         error="Alguma regra está fora do permitido. Confira os campos."
       />

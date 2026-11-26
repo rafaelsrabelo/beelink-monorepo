@@ -108,6 +108,9 @@ export function kitIssuesOf(value: FormValues, text: { sizeInvalid: string; cate
   return Object.keys(issues).length ? issues : null
 }
 
+/** The API's `CASHBACK_RATE_BPS_MAX`, 1000%: a rate may give back more than was paid. */
+const CASHBACK_RATE_BPS_MAX = 100_000
+
 /**
  * The product's own cashback as the wire takes it (BEELINK-313): "2,5" is 250 basis points, and an
  * empty field is none. `undefined` is a percentage that does not hold — the form says so, and nothing is sent.
@@ -115,7 +118,7 @@ export function kitIssuesOf(value: FormValues, text: { sizeInvalid: string; cate
 export function cashbackRateOf(typed: string): number | null | undefined {
   if (typed.trim() === "") return null
   const bps = centsFromStrict(typed)
-  return bps !== null && bps >= 1 && bps <= 10_000 ? bps : undefined
+  return bps !== null && bps >= 1 && bps <= CASHBACK_RATE_BPS_MAX ? bps : undefined
 }
 
 /** What describes the product itself, whatever its variations. */

@@ -13,12 +13,14 @@ describe("the product's cashback as the wire takes it", () => {
     expect(cashbackRateOf("5")).toBe(500)
     expect(cashbackRateOf("2,5")).toBe(250)
     expect(cashbackRateOf("100")).toBe(10_000)
+    expect(cashbackRateOf("110")).toBe(11_000)
+    expect(cashbackRateOf("1000")).toBe(100_000)
     expect(cashbackRateOf("  ")).toBeNull()
   })
 
   it("refuses what is not a share of the price, rather than guess", () => {
     expect(cashbackRateOf("0")).toBeUndefined()
-    expect(cashbackRateOf("100,01")).toBeUndefined()
+    expect(cashbackRateOf("1000,01")).toBeUndefined()
     expect(cashbackRateOf("-5")).toBeUndefined()
     expect(cashbackRateOf("cinco")).toBeUndefined()
   })
