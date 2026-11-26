@@ -21,11 +21,11 @@ describe("ProductCashbackField (BEELINK-313)", () => {
   })
 
   it("says its refusal in place of the help, under the id the products' list sends to", async () => {
-    const { container } = render(<ProductCashbackField value={{ ...EMPTY_PRODUCT, cashback: "150" }} onChange={() => {}} errors={{ cashback: { message: "Informe um percentual entre 0,01% e 100%, ou deixe vazio." } }} />)
+    const { container } = render(<ProductCashbackField value={{ ...EMPTY_PRODUCT, cashback: "150" }} onChange={() => {}} errors={{ cashback: { message: "Informe um percentual entre 0,01% e 1000%, ou deixe vazio." } }} />)
 
     expect(screen.getByLabelText("Cashback deste produto (%)")).toHaveAttribute("id", PRODUCT_CASHBACK_FIELD_ID)
     expect(screen.getByLabelText("Cashback deste produto (%)")).toBeInvalid()
-    expect(screen.getByText("Informe um percentual entre 0,01% e 100%, ou deixe vazio.")).toBeInTheDocument()
+    expect(screen.getByText("Informe um percentual entre 0,01% e 1000%, ou deixe vazio.")).toBeInTheDocument()
     expect(screen.queryByText(/Vazio, este produto não gera cashback/)).not.toBeInTheDocument()
     await expectNoA11yViolations(container)
   })

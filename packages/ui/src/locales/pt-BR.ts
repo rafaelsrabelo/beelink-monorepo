@@ -2826,7 +2826,7 @@ export const ptBR: UiMessages = {
       compareInvalid: "O preço antes tem que ser maior que o preço.",
       cashbackLabel: "Cashback deste produto (%)",
       cashbackHelp: "Sobre o que o cliente pagou por ele, sem o frete. Vazio, este produto não gera cashback.",
-      cashbackInvalid: "Informe um percentual entre 0,01% e 100%, ou deixe vazio.",
+      cashbackInvalid: "Informe um percentual entre 0,01% e 1000%, ou deixe vazio.",
       commissionLabel: "Comissão de afiliado (%)",
       commissionHelp: "Sobre o que o cliente pagou por ele, sem o frete. Vazio, segue a tabela Padrão: {rate}. Com 0, este produto não paga comissão.",
       commissionHelpCategory: "Sobre o que o cliente pagou por ele, sem o frete. Vazio, segue a categoria {name} na tabela Padrão: {rate}. Com 0, este produto não paga comissão.",
@@ -3415,7 +3415,7 @@ export const ptBR: UiMessages = {
       saved: "Regras salvas.",
     },
     issues: {
-      rate: "Informe um percentual entre 0,01% e 100%.",
+      rate: "Informe um percentual entre 0,01% e 1000%.",
       validityDays: "Informe de 1 a 3650 dias.",
       minimum: "Informe um valor de R$ 0,00 a R$ 1.000.000,00.",
       maxRedeem: "Informe um percentual entre 0,01% e 100%.",

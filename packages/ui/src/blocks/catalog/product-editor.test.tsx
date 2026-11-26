@@ -42,11 +42,11 @@ describe("ProductEditor", () => {
     const { props, rerender } = renderEditor()
     expect(screen.queryByLabelText("Cashback deste produto (%)")).not.toBeInTheDocument()
 
-    rerender(<ProductEditor {...props} cashback variations={{ value: BLOUSE, onChange: () => {} }} errors={{ cashback: { message: "Informe um percentual entre 0,01% e 100%, ou deixe vazio." } }} />)
+    rerender(<ProductEditor {...props} cashback variations={{ value: BLOUSE, onChange: () => {} }} errors={{ cashback: { message: "Informe um percentual entre 0,01% e 1000%, ou deixe vazio." } }} />)
     await userEvent.type(screen.getByLabelText("Cashback deste produto (%)"), "5")
 
     expect(props.onChange).toHaveBeenLastCalledWith({ ...props.value, cashback: "5" })
-    expect(screen.getByText("Informe um percentual entre 0,01% e 100%, ou deixe vazio.")).toBeInTheDocument()
+    expect(screen.getByText("Informe um percentual entre 0,01% e 1000%, ou deixe vazio.")).toBeInTheDocument()
   })
 
   it("keeps the price fields while the product sells one thing", () => {

@@ -17,7 +17,7 @@ export type CashbackMode = "STORE" | "PRODUCT";
 export interface CashbackSettings {
   enabled: boolean;
   mode: CashbackMode;
-  /** What comes back, 1 to 10000, over what the customer paid for the products. Read on `STORE`; kept on `PRODUCT`. */
+  /** What comes back, 1 to 100000 (1000%), over what the customer paid for the products. Read on `STORE`; kept on `PRODUCT`. */
   rateBps: number;
   /** Days a credit stays usable once its order is delivered, 1 to 3650; null never expires. */
   expiresAfterDays: number | null;

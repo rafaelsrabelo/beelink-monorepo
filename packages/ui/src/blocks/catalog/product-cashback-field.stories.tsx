@@ -21,5 +21,5 @@ export const Vazio: Story = { args: { value: EMPTY_PRODUCT } }
 
 /** Um percentual que não vale, dito no campo. */
 export const Recusado: Story = {
-  args: { value: { ...EMPTY_PRODUCT, cashback: "150" }, errors: { cashback: { message: "Informe um percentual entre 0,01% e 100%, ou deixe vazio." } } },
+  args: { value: { ...EMPTY_PRODUCT, cashback: "150" }, errors: { cashback: { message: "Informe um percentual entre 0,01% e 1000%, ou deixe vazio." } } },
 }

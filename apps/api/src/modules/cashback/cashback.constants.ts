@@ -15,8 +15,14 @@ export const CASHBACK_DEFAULTS = {
   maxRedeemBps: 10_000,
 } as const satisfies CashbackSettingsPayload;
 
-/** 100.00%, in basis points. */
-export const CASHBACK_BPS_MAX = 10_000;
+/**
+ * The most a rate may give back, 1000.00% in basis points: a promotion may give more than was paid,
+ * since what credit may pay for is held by `maxRedeemBps` — and never the delivery. Past it, a typo
+ * rather than a rule. The CHECKs on `cashback_settings`, `products` and `orders` repeat it.
+ */
+export const CASHBACK_RATE_BPS_MAX = 100_000;
+/** 100.00%, in basis points: credit never pays for more than the products. */
+export const CASHBACK_REDEEM_BPS_MAX = 10_000;
 /** Ten years: past it, a typo rather than a rule. The migration's CHECK repeats it. */
 export const CASHBACK_VALIDITY_DAYS_MAX = 3650;
 /** R$ 1.000.000,00, the cap an order's own amounts have. */

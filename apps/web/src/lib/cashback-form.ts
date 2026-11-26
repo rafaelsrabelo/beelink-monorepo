@@ -18,7 +18,11 @@ import { percentFrom } from "@/lib/discount-form"
 
 type Text = UiMessages["cashback"]
 
-const BPS_MAX = 10_000
+const BPS_WHOLE = 10_000
+/** The API's `CASHBACK_RATE_BPS_MAX`: a rate may give back up to 1000%, since credit's use is held by `maxRedeem`. */
+const RATE_BPS_MAX = 100_000
+/** Credit never pays for more than the products. */
+const REDEEM_BPS_MAX = 10_000
 const AMOUNT_MAX_CENTS = 100_000_000
 const DAYS_MAX = 3650
 const WHOLE = /^\d{1,4}$/
@@ -28,9 +32,9 @@ const REASON_MAX = 200
 const EXAMPLE_ORDER_CENTS = 10_000
 
 /** A percentage typed as a person types it, read as basis points: "2,5" is 250. The strict parser refuses what it would have to guess. */
-function bpsFrom(typed: string): number | null {
+function bpsFrom(typed: string, max: number): number | null {
   const bps = centsFromStrict(typed)
-  return bps !== null && bps >= 1 && bps <= BPS_MAX ? bps : null
+  return bps !== null && bps >= 1 && bps <= max ? bps : null
 }
 
 function daysFrom(typed: string): number | null {
@@ -53,8 +57,8 @@ export function cashbackFormOf(settings: CashbackSettings): CashbackSettingsForm
 
 /** The rules as the API takes them, or what to correct, field by field. A blank minimum is none. */
 export function cashbackPayloadOf(value: CashbackSettingsFormValues, text: Text["issues"]): { payload: CashbackSettingsPayload } | { issues: CashbackSettingsIssues } {
-  const rateBps = bpsFrom(value.rate)
-  const maxRedeemBps = bpsFrom(value.maxRedeem)
+  const rateBps = bpsFrom(value.rate, RATE_BPS_MAX)
+  const maxRedeemBps = bpsFrom(value.maxRedeem, REDEEM_BPS_MAX)
   const days = value.validity === "DAYS" ? daysFrom(value.validityDays) : null
   const minimum = value.minimum.trim() === "" ? 0 : centsFromStrict(value.minimum)
   const minimumHolds = minimum !== null && minimum >= 0 && minimum <= AMOUNT_MAX_CENTS
@@ -82,11 +86,11 @@ export function cashbackExampleOf(value: CashbackSettingsFormValues, money: (cen
   const validity = days === null ? "" : format(text.exampleValidity, { days: String(days) })
   // By product there is no one sum to show: each product's own page of the panel holds its rate.
   if (value.mode === "PRODUCT") return `${text.exampleByProduct}${validity}.`
-  const rateBps = bpsFrom(value.rate)
+  const rateBps = bpsFrom(value.rate, RATE_BPS_MAX)
   if (rateBps === null) return text.exampleRateMissing
   const minimum = value.minimum.trim() === "" ? 0 : centsFromStrict(value.minimum)
   const orderCents = minimum !== null && minimum > EXAMPLE_ORDER_CENTS && minimum <= AMOUNT_MAX_CENTS ? minimum : EXAMPLE_ORDER_CENTS
-  const earned = Math.floor((orderCents * rateBps) / BPS_MAX)
+  const earned = Math.floor((orderCents * rateBps) / BPS_WHOLE)
   return `${format(text.example, { order: money(orderCents), earned: money(earned) })}${validity}.`
 }
 

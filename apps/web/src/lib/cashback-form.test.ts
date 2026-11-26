@@ -35,6 +35,7 @@ describe("the cashback rules' form (BEELINK-242)", () => {
     expect(cashbackPayloadOf({ ...typed, rate: "0", validityDays: "0", minimum: "-1", maxRedeem: "101" }, text.issues)).toEqual({
       issues: { rate: text.issues.rate, validityDays: text.issues.validityDays, minimum: text.issues.minimum, maxRedeem: text.issues.maxRedeem },
     })
+    expect(cashbackPayloadOf({ ...typed, rate: "1000,01" }, text.issues)).toEqual({ issues: { rate: text.issues.rate } })
     expect(cashbackPayloadOf({ ...typed, validityDays: "3651" }, text.issues)).toEqual({ issues: { validityDays: text.issues.validityDays } })
   })
 
@@ -43,6 +44,8 @@ describe("the cashback rules' form (BEELINK-242)", () => {
     // On with no rate that holds: asked for, never told it is off.
     expect(cashbackExampleOf({ ...typed, rate: "0,333", validity: "NONE" }, money, text.settings)).toBe(text.settings.exampleRateMissing)
     expect(cashbackExampleOf({ ...typed, rate: "3,33", validity: "NONE" }, money, text.settings)).toBe("Num pedido de R$ 100,00, o cliente ganha R$ 3,33 de cashback.")
+    // A promotion may give back more than was paid: what credit pays for is held by `maxRedeem`.
+    expect(cashbackExampleOf({ ...typed, rate: "110", minimum: "", validity: "NONE" }, money, text.settings)).toBe("Num pedido de R$ 100,00, o cliente ganha R$ 110,00 de cashback.")
     expect(cashbackExampleOf({ ...typed, enabled: false }, money, text.settings)).toBe(text.settings.exampleOff)
   })
 

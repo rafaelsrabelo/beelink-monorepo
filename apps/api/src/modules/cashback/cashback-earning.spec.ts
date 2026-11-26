@@ -111,6 +111,11 @@ describe('earning by product', () => {
   });
 
   it('holds whole past what a double does: the largest order at the largest rate', () => {
-    expect(earningOf(BY_PRODUCT, parts({ subtotalCents: 100_000_000, lines: [{ netCents: 100_000_000, rateBps: 10_000 }] }))).toEqual({ earnedCents: 100_000_000, rateBps: 10_000 });
+    expect(earningOf(BY_PRODUCT, parts({ subtotalCents: 100_000_000, lines: [{ netCents: 100_000_000, rateBps: 100_000 }] }))).toEqual({ earnedCents: 1_000_000_000, rateBps: 100_000 });
+  });
+
+  it('gives back more than was paid on a rate past 100%: what credit pays for is held elsewhere', () => {
+    expect(earningOf({ ...ON, rateBps: 11_000 }, parts({}))).toEqual({ earnedCents: 11_000, rateBps: 11_000 });
+    expect(earningOf(BY_PRODUCT, parts({ lines: [{ netCents: 10_000, rateBps: 11_000 }] }))).toEqual({ earnedCents: 11_000, rateBps: 11_000 });
   });
 });
